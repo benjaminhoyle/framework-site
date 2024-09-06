@@ -1,0 +1,120 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body, html {
+    font-family: 'Poppins', sans-serif;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+header, footer {
+    text-align: center;
+    padding: 20px 0; /* Vertical padding in pixels */
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 10%; /* Horizontal padding as percentage of width */
+}
+
+header .logo {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+header nav ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+}
+
+header nav ul li {
+    display: inline;
+}
+
+header nav ul li a {
+    color: black;
+    text-decoration: none;
+}
+
+footer {
+    padding: 20px 10%; /* Horizontal padding as percentage of width */
+}
+
+footer p {
+    margin: 0;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    min-height: 100vh;
+    align-items: flex-start; /* Align items to the top */
+}
+
+.content-section {
+    flex: 0.7;
+    padding: 10%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Adjust to start from the top */
+}
+
+.image-section {
+    flex: 1;
+    min-height: 100vh; /* Ensure it takes at least the viewport height */
+    overflow: hidden; /* Ensure any cropped part is hidden */
+    position: relative;
+}
+
+.image-section img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top; /* Ensure image is anchored at the top */
+}
+
+.spacer {
+    height: 1000px; /* Adjust height as needed */
+    width: 100%; /* Ensure the spacer takes the full width */
+}
+
+/* Media query for mobile view */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .image-section {
+        height: auto;
+        width: 100%;
+        min-height: 0; /* Allow the image section to adjust based on content */
+    }
+
+    .image-section img {
+        width: 100%;
+        height: auto;
+    }
+
+    header {
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 5%; /* Adjusted horizontal padding as percentage for mobile view */
+    }
+
+    footer {
+        padding: 10px 5%; /* Adjusted horizontal padding as percentage for mobile view */
+    }
+
+    .spacer {
+        display: none; /* Hide the spacer element in mobile view */
+    }
+}
