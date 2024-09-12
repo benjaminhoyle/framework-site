@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@300;400;500;700&display=swap');
+
 * {
     margin: 0;
     padding: 0;
@@ -5,7 +7,7 @@
 }
 
 body, html {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Red Hat Display', sans-serif;
     height: 100%;
     margin: 0;
     padding: 0;
@@ -13,7 +15,7 @@ body, html {
 
 header, footer {
     text-align: center;
-    padding: 20px 0; /* Vertical padding in pixels */
+    padding: 20px 0;
     width: 100%;
     position: relative;
     z-index: 1;
@@ -22,7 +24,7 @@ header, footer {
 header {
     display: flex;
     justify-content: space-between;
-    padding: 20px 10%; /* Horizontal padding as percentage of width */
+    padding: 20px 10%;
 }
 
 header .logo {
@@ -46,7 +48,7 @@ header nav ul li a {
 }
 
 footer {
-    padding: 20px 10%; /* Horizontal padding as percentage of width */
+    padding: 20px 10%;
 }
 
 footer p {
@@ -57,7 +59,7 @@ footer p {
     display: flex;
     flex-direction: row;
     min-height: 100vh;
-    align-items: flex-start; /* Align items to the top */
+    align-items: flex-start;
 }
 
 .content-section {
@@ -65,13 +67,13 @@ footer p {
     padding: 10%;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; /* Adjust to start from the top */
+    justify-content: flex-start;
 }
 
 .image-section {
     flex: 1;
-    min-height: 100vh; /* Ensure it takes at least the viewport height */
-    overflow: hidden; /* Ensure any cropped part is hidden */
+    min-height: 100vh;
+    overflow: hidden;
     position: relative;
 }
 
@@ -79,15 +81,54 @@ footer p {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: top; /* Ensure image is anchored at the top */
+    object-position: top;
 }
 
 .spacer {
-    height: 1000px; /* Adjust height as needed */
-    width: 100%; /* Ensure the spacer takes the full width */
+    height: 1000px;
+    width: 100%;
 }
 
-/* Media query for mobile view */
+/* Tower page styles */
+.tower-container {
+    padding: 10%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.tower-container h1 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#module-count-select {
+    font-size: 1rem;
+    padding: 0.5rem;
+    margin-left: 1rem;
+}
+
+.module-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.module {
+    width: 40%;
+    cursor: pointer;
+}
+
+.module-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    vertical-align: bottom; /* This removes any small gaps that might appear between images */
+}
+
+
 @media (max-width: 768px) {
     .container {
         flex-direction: column;
@@ -96,7 +137,7 @@ footer p {
     .image-section {
         height: auto;
         width: 100%;
-        min-height: 0; /* Allow the image section to adjust based on content */
+        min-height: 0;
     }
 
     .image-section img {
@@ -107,14 +148,33 @@ footer p {
     header {
         flex-direction: column;
         align-items: center;
-        padding: 10px 5%; /* Adjusted horizontal padding as percentage for mobile view */
+        padding: 10px 5%;
     }
 
     footer {
-        padding: 10px 5%; /* Adjusted horizontal padding as percentage for mobile view */
+        padding: 10px 5%;
     }
 
     .spacer {
-        display: none; /* Hide the spacer element in mobile view */
+        display: none;
+    }
+
+    .tower-container {
+        padding: 5%;
+    }
+
+    .tower-container h1 {
+        font-size: 1.5rem;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #module-count-select {
+        margin-left: 0;
+        margin-top: 1rem;
+    }
+
+    .module {
+        width: 100%;
     }
 }
