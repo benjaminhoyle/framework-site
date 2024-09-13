@@ -3,12 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Framework Designs - Tower</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@300;400;500;700&display=swap">
+    <title>Tower Builder</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 </head>
 <body>
     <header>
@@ -24,90 +20,16 @@
     </header>
 
     <div class="tower-container">
-        <h1>Framework Designs is setting a new standard for steelwork in Kenya 
-            <select id="module-count-select">
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-            </select>
-        </h1>
+        <h1>Build your own shelf.</h1>
         <div id="tower-app"></div>
     </div>
 
     <footer>
-        <p>&copy; 2024 My Website. All rights reserved.</p>
+        <p>© 2024 My Website. All rights reserved.</p>
     </footer>
 
-    <script type="text/babel">
-        const ModuleStack = () => {
-            const [moduleCount, setModuleCount] = React.useState(1);
-            const [modules, setModules] = React.useState(['A']);
-
-            const MODULE_TYPES = {
-                A: { image: 'tower-images/type-a.jpeg' },
-                B: { image: 'tower-images/type-b.jpeg' },
-                C: { image: 'tower-images/type-c.jpeg' },
-                D: { image: 'tower-images/type-d.jpeg' },
-            };
-
-            React.useEffect(() => {
-                const select = document.getElementById('module-count-select');
-                select.value = moduleCount;
-                select.addEventListener('change', handleCountChange);
-                return () => select.removeEventListener('change', handleCountChange);
-            }, [moduleCount]);
-
-            const handleCountChange = (event) => {
-                const value = parseInt(event.target.value);
-                setModuleCount(value);
-                setModules(prev => {
-                    const newModules = ['A'];
-                    if (value > 1) {
-                        newModules.unshift(...Array(value - 1).fill('B'));
-                    }
-                    return newModules;
-                });
-            };
-
-            const handleModuleTypeChange = (index) => {
-                if (index === modules.length - 1) return; // Don't change type A
-                const currentType = modules[index];
-                const types = ['B', 'C', 'D'];
-                const nextTypeIndex = (types.indexOf(currentType) + 1) % types.length;
-                const nextType = types[nextTypeIndex];
-                
-                setModules(prev => {
-                    const newModules = [...prev];
-                    newModules[index] = nextType;
-                    return newModules;
-                });
-            };
-
-            return (
-                <div className="module-stack">
-                    {modules.map((type, index) => (
-                        <div
-                            key={index}
-                            className="module"
-                            onClick={() => handleModuleTypeChange(index)}
-                        >
-                            <img 
-                                src={MODULE_TYPES[type].image} 
-                                alt={`Type ${type} module`}
-                                className="module-image"
-                            />
-                        </div>
-                    ))}
-                </div>
-            );
-        };
-
-        ReactDOM.render(<ModuleStack />, document.getElementById('tower-app'));
-    </script>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="tower.js"></script>
 </body>
 </html>
