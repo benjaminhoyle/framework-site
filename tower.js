@@ -19,7 +19,7 @@ const calculatePricing = (modules) => {
     const breakdown = modules.reduce((acc, type) => {
         const count = acc[type] ? acc[type].count + 1 : 1;
         const { name, price } = PRICING[type];
-        total += price * count;
+        total += price;
         return { ...acc, [type]: { count, name, price } };
     }, {});
 
@@ -163,11 +163,7 @@ const WhatsAppButton = ({ pricingInfo }) => {
 };
 
 const ShelfCalculator = ({ modules }) => {
-    const [pricingInfo, setPricingInfo] = React.useState({ lines: [], total: "" });
-
-    React.useEffect(() => {
-        setPricingInfo(calculatePricing(modules));
-    }, [modules]);
+    const pricingInfo = React.useMemo(() => calculatePricing(modules), [modules]);
 
     return React.createElement(React.Fragment, null,
         React.createElement('div', { className: 'pricing-info' },
@@ -177,7 +173,7 @@ const ShelfCalculator = ({ modules }) => {
                     index < pricingInfo.lines.length - 1 ? React.createElement('span', null, ' +') : null
                 )
             ),
-            React.createElement('div', { className: 'pricing-total' },pricingInfo.total)
+            React.createElement('div', { className: 'pricing-total' }, pricingInfo.total)
         ),
         React.createElement(WhatsAppButton, { pricingInfo })
     );
@@ -233,7 +229,7 @@ const App = () => {
         }, React.createElement(ShelfPreview, { modules, imageDimensions })),
         React.createElement(Section, {
             title: "3. Order your shelf",
-            content: "See the total cost of your shelf here, and click the button to send us your order detail by WhatsApp."
+            content: "See the total cost of your shelf here, and click the button to send us your order details by WhatsApp."
         }, React.createElement(ShelfCalculator, { modules }))
     );
 };

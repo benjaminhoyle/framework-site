@@ -151,6 +151,7 @@ footer {
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 70%; /* Set a fixed proportion for the shelf */
 }
 
 .shelf-stack .module {
@@ -161,6 +162,7 @@ footer {
     display: flex;
     justify-content: center;
     align-items: flex-end;
+    width: 30%; /* Set a fixed proportion for the person */
 }
 
 .person-image img {
@@ -217,18 +219,14 @@ footer {
         width: 50px;
         height: auto;
     }
+}
 
-    .shelf-display {
-        flex-direction: column;
-        align-items: center;
+@media (max-width: 480px) {
+    .module-count-selector {
+        font-size: 1rem;
     }
 
-    .shelf-stack,
-    .person-image {
-        width: 100% !important;
-        margin-bottom: 1rem;
+    .pricing-info {
+        font-size: 1rem;
     }
-
-
-
 }
