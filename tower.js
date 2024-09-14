@@ -8,10 +8,10 @@ const MODULE_TYPES = {
 const PERSON_IMAGE = { src: 'tower-images/person.jpeg' };
 
 const PRICING = {
-    A: { name: "Base Unit", price: 5000 },
-    B: { name: "Short Extension", price: 4000 },
-    C: { name: "Long Extension", price: 4500 },
-    D: { name: "Double Extension", price: 5500 },
+    A: { name: "Base Unit", price: 5000, height: 430 },
+    B: { name: "Short Extension", price: 4000, height: 305 },
+    C: { name: "Long Extension", price: 4500, height: 355 },
+    D: { name: "Double Extension", price: 5500, height: 609 },
 };
 
 const calculatePricing = (modules) => {
@@ -30,6 +30,25 @@ const calculatePricing = (modules) => {
         lines: breakdownLines,
         total: `Total Cost: Ksh ${total.toLocaleString()}`
     };
+};
+
+const calculateDimensions = (modules) => {
+    const totalHeight = modules.reduce((sum, type) => sum + PRICING[type].height, 0);
+    const roundedHeight = Math.ceil(totalHeight / 10);
+    return [
+        React.createElement('div', null, 
+            React.createElement('strong', null, 'Depth: '),
+            '23cm (shelf), 28cm (structure)'
+        ),
+        React.createElement('div', null, 
+            React.createElement('strong', null, 'Width: '),
+            '98cm'
+        ),
+        React.createElement('div', null, 
+            React.createElement('strong', null, 'Height: '),
+            `${roundedHeight}cm`
+        )
+    ];
 };
 
 const ModuleCountSelector = ({ modules, setModules }) => {
@@ -132,17 +151,25 @@ const ShelfPreview = ({ modules, imageDimensions }) => {
     };
 
     const { shelfPercentage, personPercentage } = calculateWidths();
+    const dimensions = calculateDimensions(modules);
 
-    return React.createElement('div', { className: 'shelf-display', style: { display: 'flex' } },
-        React.createElement('div', { className: 'shelf-stack', style: { width: `${shelfPercentage}%` } },
-            modules.map((type, index) => 
-                React.createElement('div', { key: `module-${index}`, className: `module module-${type}` },
-                    React.createElement('img', { src: MODULE_TYPES[type].image, alt: MODULE_TYPES[type].label })
-                )
-            ).reverse()
+    return React.createElement(React.Fragment, null,
+        React.createElement('div', { className: 'shelf-display', style: { display: 'flex' } },
+            React.createElement('div', { className: 'shelf-stack', style: { width: `${shelfPercentage}%` } },
+                modules.map((type, index) => 
+                    React.createElement('div', { key: `module-${index}`, className: `module module-${type}` },
+                        React.createElement('img', { src: MODULE_TYPES[type].image, alt: MODULE_TYPES[type].label })
+                    )
+                ).reverse()
+            ),
+            React.createElement('div', { className: 'person-image', style: { width: `${personPercentage}%` } },
+                React.createElement('img', { src: PERSON_IMAGE.src, alt: 'Person' })
+            )
         ),
-        React.createElement('div', { className: 'person-image', style: { width: `${personPercentage}%` } },
-            React.createElement('img', { src: PERSON_IMAGE.src, alt: 'Person' })
+        React.createElement('div', { className: 'pricing-info' },
+            React.createElement('div', { className: 'pricing-total' }, 
+                dimensions
+            )
         )
     );
 };
