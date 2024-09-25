@@ -1,11 +1,11 @@
 const MODULE_TYPES = {
-    A: { label: 'Base Unit', image: 'tower-images/type-a.jpeg' },
-    B: { label: 'Short Extension', image: 'tower-images/type-b.jpeg' },
-    C: { label: 'Long Extension', image: 'tower-images/type-c.jpeg' },
-    D: { label: 'Double Extension', image: 'tower-images/type-d.jpeg' },
+    A: { label: 'Base Unit', image: 'images/tower/type-a.jpeg' },
+    B: { label: 'Short Extension', image: 'images/tower/type-b.jpeg' },
+    C: { label: 'Long Extension', image: 'images/tower/type-c.jpeg' },
+    D: { label: 'Double Extension', image: 'images/tower/type-d.jpeg' },
 };
 
-const PERSON_IMAGE = { src: 'tower-images/person.jpeg' };
+const PERSON_IMAGE = { src: 'images/tower/person.jpeg' };
 
 const PRICING = {
     A: { name: "Base Unit", price: 5000, height: 430 },
@@ -122,7 +122,7 @@ const BuildShelf = ({ modules, setModules }) => {
                 return [
                     moduleElement,
                     React.createElement('div', { key: `arrow-${index}`, className: 'module-arrow' },
-                        React.createElement('img', { src: 'tower-images/arrows.jpeg', alt: 'Arrow' })
+                        React.createElement('img', { src: 'images/tower/arrows.jpeg', alt: 'Arrow' })
                     )
                 ];
             }
