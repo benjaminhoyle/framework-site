@@ -305,6 +305,7 @@ footer {
     .logo .mobile-logo {
         display: block;
         max-width: 300px;
+        padding: 0 0 10px 0;
     }
 
     footer {
@@ -370,7 +371,7 @@ footer {
 
 @media (max-width: 480px) {
     .logo .mobile-logo {
-        max-width: 120px;
+        max-width: 250px;
     }
 
     .module-count-selector {
