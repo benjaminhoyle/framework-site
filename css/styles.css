@@ -14,9 +14,25 @@ body, html {
     padding: 0;
 }
 
+/* Universal Logo Styling */
+.logo {
+    padding: 50px 0 0 0;
+}
+
+.logo img {
+    max-width: 70px;
+    height: auto;
+    display: block;
+}
+
+.logo .mobile-logo {
+    display: none;
+}
+
 header {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding: 20px 10%;
 }
 
@@ -246,6 +262,15 @@ footer {
         padding: 10px 5%;
     }
 
+    .logo .desktop-logo {
+        display: none;
+    }
+
+    .logo .mobile-logo {
+        display: block;
+        max-width: 300px;
+    }
+
     footer {
         padding: 10px 5%;
     }
@@ -286,9 +311,17 @@ footer {
         width: 50px;
         height: auto;
     }
+
+    h1 {
+        font-size: 1.2rem; /* Reduced from 2rem */
+    }
 }
 
 @media (max-width: 480px) {
+    .logo .mobile-logo {
+        max-width: 120px;
+    }
+
     .module-count-selector {
         font-size: 1rem;
     }
