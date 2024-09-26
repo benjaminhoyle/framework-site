@@ -14,9 +14,15 @@ body, html {
     padding: 0;
 }
 
+body {
+    padding-top: 100px; /* Adjust this value based on your header height */
+    padding-bottom: 60px; /* Adjust this value based on your footer height */
+    min-height: 100vh;
+}
+
 /* Universal Logo Styling */
 .logo {
-    padding: 50px 0 0 0;
+    padding: 10px 0;
 }
 
 .logo img {
@@ -25,20 +31,25 @@ body, html {
     display: block;
 }
 
-.logo .mobile-logo {
-    display: none;
-}
-
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 10%;
+    padding: 0 10%;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: white;
+    z-index: 1000;
 }
 
 header .logo {
     font-size: 1.5em;
     font-weight: bold;
+}
+
+header nav {
+    margin-left: auto;
 }
 
 header nav ul {
@@ -56,17 +67,50 @@ header nav ul li a {
     text-decoration: none;
 }
 
+header nav ul li a.active {
+    font-weight: bold;
+}
+
+#mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 20px;
+    position: relative;
+}
+
+#mobile-menu-toggle span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: black;
+    position: absolute;
+    left: 0;
+    transition: transform 0.3s ease-in-out;
+}
+
+#mobile-menu-toggle span:nth-child(1) { top: 0; }
+#mobile-menu-toggle span:nth-child(2) { top: 50%; transform: translateY(-50%); }
+#mobile-menu-toggle span:nth-child(3) { bottom: 0; }
+
 footer {
     text-align: center;
     padding: 20px 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: white;
+    z-index: 1000;
 }
 
 /* Styles for index.html */
 .container {
     display: flex;
     flex-direction: row;
-    min-height: 100vh;
-    align-items: flex-start;
+    min-height: calc(100vh - 160px); /* Subtracting header and footer height */
 }
 
 .content-section {
@@ -78,27 +122,20 @@ footer {
 }
 
 .content-section-text {
-    flex: 0.7;
-    padding: 10%;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    max-width: 1000px; /* Add this line to limit the width on larger screens */
-    margin: 0 auto; /* Add this line to center the content */
+    max-width: 600px;
+    padding-top: 50px;
+    margin: 0 auto;
 }
 
 .image-section {
     flex: 1;
-    min-height: 100vh;
-    overflow: hidden;
     position: relative;
 }
 
 .image-section img {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: top;
+    height: auto;
+    display: block;
 }
 
 .spacer {
@@ -111,6 +148,7 @@ footer {
     padding: 5% 10%;
     max-width: 1200px;
     margin: 0 auto;
+    overflow-y: auto;
 }
 
 .tower-container h1 {
@@ -254,6 +292,7 @@ footer {
     padding: 20px;
     max-width: 1200px;
     margin: 0 auto;
+    overflow-y: auto;
 }
 
 .gallery-intro {
@@ -281,10 +320,13 @@ footer {
         flex-direction: column;
     }
 
+    body {
+        padding-top: 30px; /* Reduce top padding for mobile */
+        padding-bottom: 100px; /* Reduce bottom padding for mobile */
+    }
+
     .image-section {
         height: auto;
-        width: 100%;
-        min-height: 0;
     }
 
     .image-section img {
@@ -292,24 +334,48 @@ footer {
         height: auto;
     }
 
-    header {
-        flex-direction: column;
-        align-items: center;
-        padding: 10px 5%;
+    .content-section-text {
+        padding: 0 30px; /* Add horizontal padding for mobile */
+        padding-top: 50px;
+
     }
 
-    .logo .desktop-logo {
+    header {
+        flex-wrap: wrap;
+        padding: 0px 7%; /* Adjust header padding for mobile */
+
+    }
+
+    header .logo {
+        flex-basis: auto;
+        text-align: left;
+        margin-bottom: 0;
+    }
+
+    header .logo img {
+        max-width: 50px; /* Adjust as needed */
+    }
+
+    header nav {
+        flex-basis: 100%;
         display: none;
     }
 
-    .logo .mobile-logo {
+    header.mobile-menu-open nav {
         display: block;
-        max-width: 300px;
-        padding: 0 0 10px 0;
     }
 
-    footer {
-        padding: 10px 5%;
+    #mobile-menu-toggle {
+        display: block;
+    }
+
+    header nav ul {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    header nav ul li {
+        margin: 10px 0;
     }
 
     .spacer {
@@ -358,7 +424,7 @@ footer {
     }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
     .gallery {
         grid-template-columns: 1fr 1fr;
         gap: 30px;
@@ -370,10 +436,6 @@ footer {
 }
 
 @media (max-width: 480px) {
-    .logo .mobile-logo {
-        max-width: 250px;
-    }
-
     .module-count-selector {
         font-size: 1rem;
     }
