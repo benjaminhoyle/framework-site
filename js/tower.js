@@ -8,10 +8,10 @@ const MODULE_TYPES = {
 const PERSON_IMAGE = { src: 'images/tower/person.jpeg' };
 
 const PRICING = {
-    A: { name: "Base Unit", price: 6000, height: 430 },
-    B: { name: "Short Extension", price: 4500, height: 305 },
-    C: { name: "Long Extension", price: 5000, height: 355 },
-    D: { name: "Double Extension", price: 6500, height: 609 },
+    A: { name: "Base Unit", price: 5900, height: 430 },
+    B: { name: "Short Extension", price: 4900, height: 305 },
+    C: { name: "Long Extension", price: 5500, height: 355 },
+    D: { name: "Double Extension", price: 6900, height: 609 },
 };
 
 const calculatePricing = (modules) => {
@@ -28,7 +28,7 @@ const calculatePricing = (modules) => {
 
     return {
         lines: breakdownLines,
-        total: `Total Cost: Ksh ${total.toLocaleString()}`
+        total: `Total Cost: Ksh ${total.toLocaleString()} (VAT inclusive)`
     };
 };
 
