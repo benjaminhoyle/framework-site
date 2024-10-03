@@ -12,8 +12,7 @@ function loadHeaderAndFooter() {
         <nav>
             <ul id="nav-menu">
                 <li><a href="index.html">Home</a></li>
-                <li><a href="tower.html">Shelf Builder</a></li>
-                <li><a href="gallery.html">Gallery</a></li>
+                <li><a href="shelving.html">Shelving</a></li>
                 <li><a href="https://wa.me/254783891005">Contact</a></li>
             </ul>
         </nav>
