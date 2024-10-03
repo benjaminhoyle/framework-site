@@ -70,7 +70,7 @@ const ModuleCountSelector = ({ modules, setModules }) => {
             onChange: handleCountChange,
             className: 'minimal-select'
         },
-            [...Array(8)].map((_, i) => 
+            [...Array(6)].map((_, i) => 
                 React.createElement('option', { key: i, value: i + 1 }, i + 1)
             )
         ),
