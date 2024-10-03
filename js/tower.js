@@ -2,7 +2,7 @@ const MODULE_TYPES = {
     A: { label: 'Base Unit', image: 'images/tower/type-a.jpeg' },
     B: { label: 'Short Extension', image: 'images/tower/type-b.jpeg' },
     C: { label: 'Long Extension', image: 'images/tower/type-c.jpeg' },
-    D: { label: 'Double Extension', image: 'images/tower/type-d.jpeg' },
+    // D: { label: 'Double Extension', image: 'images/tower/type-d.jpeg' },
 };
 
 const PERSON_IMAGE = { src: 'images/tower/person.jpeg' };
@@ -11,7 +11,7 @@ const PRICING = {
     A: { name: "Base Unit", price: 5900, height: 430 },
     B: { name: "Short Extension", price: 4900, height: 305 },
     C: { name: "Long Extension", price: 5500, height: 355 },
-    D: { name: "Double Extension", price: 6900, height: 609 },
+    // D: { name: "Double Extension", price: 6900, height: 609 },
 };
 
 const calculatePricing = (modules) => {
@@ -94,7 +94,7 @@ const BuildShelf = ({ modules, setModules }) => {
     const handleModuleTypeChange = (index) => {
         if (index === 0) return; // Prevent changing the base module
         const currentType = modules[index];
-        const types = ['B', 'C', 'D'];
+        const types = ['B', 'C'];
         const nextTypeIndex = (types.indexOf(currentType) + 1) % types.length;
         const nextType = types[nextTypeIndex];
         
