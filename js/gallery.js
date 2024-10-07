@@ -2,14 +2,14 @@
 const galleryData = {
   "images": [
     {
+      "src": "images/shelving/shelf (00).jpg",
+      "alt": "Gallery Image 1",
+      "description": "Available in green, black and blue"
+    },
+    {
       "src": "images/shelving/shelf (01).jpg",
       "alt": "Gallery Image 1",
       "description": "Base unit"
-    },
-    {
-      "src": "images/shelving/shelf (02).jpg",
-      "alt": "Gallery Image 2",
-      "description": "Base unit + short extension"
     },
     {
       "src": "images/shelving/shelf (03).jpg",
@@ -30,7 +30,11 @@ const galleryData = {
       "src": "images/shelving/shelf (11).jpg",
       "alt": "Gallery Image 6",
       "description": "Steel construction makes for a rock-solid shelving system"
-
+    },
+    {
+      "src": "images/shelving/shelf (11b).jpg",
+      "alt": "Gallery Image 7",
+      "description": "Grow your shelves as you grow your library."
     },
     {
       "src": "images/shelving/shelf (12).jpg",
@@ -46,6 +50,26 @@ const galleryData = {
       "src": "images/shelving/shelf (14).jpg",
       "alt": "Gallery Image 9",
       "description": "Top-knotch fabrication and perfectly engineered details."
+    },
+    {
+      "src": "images/shelving/shelf (16a).jpg",
+      "alt": "Gallery Image 11",
+      "description": "Base unit + one short extension, blue"
+    },
+    {
+      "src": "images/shelving/shelf (16b).jpg",
+      "alt": "Gallery Image 12",
+      "description": "Base unit + one short extension, green"
+    },
+    {
+      "src": "images/shelving/shelf (16c).jpg",
+      "alt": "Gallery Image 13",
+      "description": "Base unit + one short extension, black"
+    },
+    {
+      "src": "images/shelving/shelf (17).jpg",
+      "alt": "Gallery Image 14",
+      "description": "Designed to fit in any corner of your home or office."  
     }
   ]
 };

@@ -8,9 +8,9 @@ const MODULE_TYPES = {
 const PERSON_IMAGE = { src: 'images/tower/person.jpeg' };
 
 const PRICING = {
-    A: { name: "Base Unit", price: 5900, height: 430 },
-    B: { name: "Short Extension", price: 4900, height: 305 },
-    C: { name: "Long Extension", price: 5500, height: 355 },
+    A: { name: "Base Unit", price: 6500, height: 430 },
+    B: { name: "Short Extension", price: 5500, height: 305 },
+    C: { name: "Long Extension", price: 5900, height: 355 },
     // D: { name: "Double Extension", price: 6900, height: 609 },
 };
 
@@ -256,7 +256,7 @@ const App = () => {
         }, React.createElement(ShelfPreview, { modules, imageDimensions })),
         React.createElement(Section, {
             title: "3. Order your shelf",
-            content: "See the total cost of your shelf here, and click the button to send us your order details by WhatsApp."
+            content: "See the total cost of your shelf here, and click the button to send us your order details by WhatsApp. You can let us know your color preference in the chat."
         }, React.createElement(ShelfCalculator, { modules }))
     );
 };
