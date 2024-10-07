@@ -69,36 +69,24 @@ const galleryData = {
     {
       "src": "images/shelving/shelf (17).jpg",
       "alt": "Gallery Image 14",
-      "description": "Designed to fit in any corner of your home or office."  
+      "description": "Designed to fit in any corner of your home or office."
     }
   ]
 };
-  
-  const GalleryImage = ({ src, alt, title, description }) => {
-      const [isActive, setIsActive] = React.useState(false);
-  
-      const toggleActive = () => {
-          setIsActive(!isActive);
-      };
-  
-      return React.createElement('div', { 
-          className: `gallery-item ${isActive ? 'active' : ''}`,
-          onClick: toggleActive
-      },
-          React.createElement('img', { src, alt }),
-          React.createElement('div', { className: 'gallery-item-info' },
-              React.createElement('h2', null, title),
-              React.createElement('p', null, description)
-          )
-      );
-  };
-  
-  const Gallery = () => {
-      return React.createElement('div', { className: 'gallery-grid' },
-          galleryData.images.map((image, index) => 
-              React.createElement(GalleryImage, { key: index, ...image })
-          )
-      );
-  };
-  
-  ReactDOM.render(React.createElement(Gallery), document.getElementById('gallery'));
+
+const GalleryImage = ({ src, alt, description }) => {
+    return React.createElement('div', { className: 'gallery-item' },
+        React.createElement('img', { src, alt }),
+        React.createElement('div', { className: 'gallery-item-caption' }, description)
+    );
+};
+
+const Gallery = () => {
+    return React.createElement('div', { className: 'gallery-grid' },
+        galleryData.images.map((image, index) => 
+            React.createElement(GalleryImage, { key: index, ...image })
+        )
+    );
+};
+
+ReactDOM.render(React.createElement(Gallery), document.getElementById('gallery'));
