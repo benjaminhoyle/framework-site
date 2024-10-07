@@ -4,22 +4,22 @@ const galleryData = {
     {
       "src": "images/shelving/shelf (00).jpg",
       "alt": "Gallery Image 1",
-      "description": "Available in green, black and blue"
+      "description": "Our shelves are available in green, black and blue"
     },
     {
       "src": "images/shelving/shelf (01).jpg",
       "alt": "Gallery Image 1",
-      "description": "Base unit"
+      "description": "The base unit comes with two tiers and is fully functional on its own."
     },
     {
       "src": "images/shelving/shelf (03).jpg",
       "alt": "Gallery Image 3",
-      "description": "Base unit + two short extensions"
+      "description": "Base unit + two short extensions grows into a multi-functional shelving system."
     },
     {
       "src": "images/shelving/shelf (04).jpg",
       "alt": "Gallery Image 4",
-      "description": "Base unit + three short extensions + one long extension"
+      "description": "Base unit + three short extensions + one long extension shows how much room there is to grow."
     },
     {
       "src": "images/shelving/shelf (10).jpg",
@@ -29,7 +29,7 @@ const galleryData = {
     {
       "src": "images/shelving/shelf (11).jpg",
       "alt": "Gallery Image 6",
-      "description": "Steel construction makes for a rock-solid shelving system"
+      "description": "Steel construction makes for a rock-solid structure"
     },
     {
       "src": "images/shelving/shelf (11b).jpg",
@@ -54,17 +54,17 @@ const galleryData = {
     {
       "src": "images/shelving/shelf (16a).jpg",
       "alt": "Gallery Image 11",
-      "description": "Base unit + one short extension, blue"
+      "description": "Base unit + one short extension shown in blue"
     },
     {
       "src": "images/shelving/shelf (16b).jpg",
       "alt": "Gallery Image 12",
-      "description": "Base unit + one short extension, green"
+      "description": "Base unit + one short extension shown in green"
     },
     {
       "src": "images/shelving/shelf (16c).jpg",
       "alt": "Gallery Image 13",
-      "description": "Base unit + one short extension, black"
+      "description": "Base unit + one short extension shown in black"
     },
     {
       "src": "images/shelving/shelf (17).jpg",

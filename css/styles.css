@@ -137,7 +137,7 @@ footer {
 }
 
 .spacer {
-    height: 1000px;
+    height: 10px;
     width: 100%;
 }
 
@@ -313,7 +313,7 @@ footer {
 }
 
 .gallery-intro {
-    text-align: center;
+    text-align: left;
     margin-bottom: 20px;
     font-size: 1.1em;
     padding-top: 20px;

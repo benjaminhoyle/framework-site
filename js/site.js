@@ -7,12 +7,15 @@ document.addEventListener('DOMContentLoaded', function() {
 function loadHeaderAndFooter() {
     const headerContent = `
         <div class="logo">
-            <img src="images/global/fwk-icon.png" alt="Framework Designs Logo">
+            <a href="index.html">
+                <img src="images/global/fwk-icon.png" alt="Framework Designs Logo">
+            </a>
         </div>
         <nav>
             <ul id="nav-menu">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="shelving.html">Shelving</a></li>
+                <li><a href="products-services.html">Products and Services</a></li>
                 <li><a href="https://wa.me/254783891005">Contact</a></li>
             </ul>
         </nav>
@@ -24,7 +27,7 @@ function loadHeaderAndFooter() {
     `;
 
     const footerContent = `
-        <p>© ${new Date().getFullYear()} Framework Designs Limited. info@framework.co.ke</p>
+        <p>© ${new Date().getFullYear()} Framework Designs Limited / info@framework.co.ke</p>
     `;
 
     const header = document.createElement('header');
