@@ -1,30 +1,40 @@
-### Analytics
+## Analytics
 
-This website uses Libre Counter, a privacy-friendly analytics tool, to count unique visitors. Here's what you need to know:
+This website uses GoatCounter, a privacy-friendly analytics tool, to understand our website traffic. Here's what you need to know:
 
+- GoatCounter does not use cookies for tracking.
 - No personal data is collected or stored.
-- The counter is not visible on the site.
-- We only track the number of unique visitors, not individual browsing behavior.
-- No cookies are used for this purpose.
+- We track basic visit information, such as page views and referrer sources.
+- GoatCounter respects Do Not Track headers.
 
-For more information about Libre Counter, visit [their website](https://librecounter.org/).
+For more information about GoatCounter, visit [their website](https://www.goatcounter.com/).
 
 ### Implementation
 
-The Libre Counter is implemented using the following HTML tag, placed at the end of each page:
+GoatCounter is implemented using the following JavaScript code, placed at the end of each page:
 
 ```html
-<img src="https://librecounter.org/unique.svg" referrerPolicy="unsafe-url" width="0" alt="" />
+<script data-goatcounter="https://fwknbo.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 ```
 
 This implementation:
-- Counts unique visitors (with a 30-minute window between counts for the same user)
-- Does not display anything visible on the page
-- Respects user privacy by not using cookies or collecting personal data
+- Counts page views and collects basic analytics data
+- Does not use cookies or collect personal information
+- Respects user privacy and browser settings
+
 
 ### Data Usage
 
-The visitor count data is used solely to understand the general usage of our site. We do not use this data for any other purpose, nor do we share it with third parties.
+The analytics data is used solely to understand the general usage of our site, including:
+- Which pages are most popular
+- How visitors find our site
+- General geographic distribution of visitors (country level only)
+
+We do not use this data for any other purpose, nor do we share it with third parties.
+
+### Data Retention
+
+GoatCounter retains detailed data for a maximum of 6 months. After this period, only aggregated statistics are kept.
 
 ## Contact
 
