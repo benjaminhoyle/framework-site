@@ -8,7 +8,7 @@ const MODULE_TYPES = {
 const PERSON_IMAGE = { src: 'images/tower/person.jpeg' };
 
 const PRICING = {
-    A: { name: "Base Unit", price: 6500, height: 430 },
+    A: { name: "Base Unit", price: 6500, height: 435 },
     B: { name: "Short Extension", price: 5500, height: 305 },
     C: { name: "Long Extension", price: 5900, height: 355 },
     // D: { name: "Double Extension", price: 6900, height: 609 },
