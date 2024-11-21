@@ -70,6 +70,14 @@ const galleryData = {
       "src": "images/shelving/shelf (17).jpg",
       "alt": "Gallery Image 14",
       "description": "Designed to fit in any corner of your home or office."
+    },
+    {
+      "src": "images/shelving/shelf (18).jpg",
+      "description": "Arrange shelves of different heights of a dynamic effect."
+    },
+    {
+      "src": "images/shelving/shelf (19).jpg",
+      "description": "The system can expand to hold your entire collection."
     }
   ]
 };

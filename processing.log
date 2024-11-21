@@ -1,0 +1,11 @@
+2024-11-04 16:25:01,Processing survey SV_3TYtSG10VKCa6IC
+2024-11-04 16:25:03,Created/updated embedded fields for survey SV_3TYtSG10VKCa6IC
+2024-11-04 16:25:12,Found 300 responses for survey SV_3TYtSG10VKCa6IC
+2024-11-04 16:25:16,Progress for SV_3TYtSG10VKCa6IC: 1.7% (5/300)
+2024-11-04 16:25:21,Progress for SV_3TYtSG10VKCa6IC: 3.3% (10/300)
+2024-11-04 16:25:27,Progress for SV_3TYtSG10VKCa6IC: 5.0% (15/300)
+2024-11-04 16:25:32,Progress for SV_3TYtSG10VKCa6IC: 6.7% (20/300)
+2024-11-04 16:25:37,Progress for SV_3TYtSG10VKCa6IC: 8.3% (25/300)
+2024-11-04 16:26:07,Error updating response R_4VMlZWICtxpLpVc: HTTPSConnectionPool(host='fra1.qualtrics.com', port=443): Max retries exceeded with url: /API/v3/responses/R_4VMlZWICtxpLpVc (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x0000025164D68F10>: Failed to resolve 'fra1.qualtrics.com' ([Errno 11001] getaddrinfo failed)"))
+2024-11-04 16:26:22,Progress for SV_3TYtSG10VKCa6IC: 10.0% (30/300)
+2024-11-04 16:26:29,Progress for SV_3TYtSG10VKCa6IC: 11.7% (35/300)
