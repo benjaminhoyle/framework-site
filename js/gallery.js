@@ -76,7 +76,7 @@ const galleryData = {
       "description": "Arrange shelves of different heights of a dynamic effect."
     },
     {
-      "src": "images/shelving/shelf (19).jpg",
+      "src": "images/shelving/shelf (20).jpg",
       "description": "The system can expand to hold your entire collection."
     }
   ]
