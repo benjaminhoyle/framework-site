@@ -1,7 +1,8 @@
 const MODULE_TYPES = {
     A: { label: 'Base Unit', image: 'images/tower/type-a.jpeg' },
     B: { label: 'Short Extension', image: 'images/tower/type-b.jpeg' },
-    C: { label: 'Long Extension', image: 'images/tower/type-c.jpeg' },
+    C: { label: 'Short Extension', image: 'images/tower/type-b.jpeg' },
+    //C: { label: 'Long Extension', image: 'images/tower/type-c.jpeg' },
     // D: { label: 'Double Extension', image: 'images/tower/type-d.jpeg' },
 };
 
@@ -10,7 +11,8 @@ const PERSON_IMAGE = { src: 'images/tower/person.jpeg' };
 const PRICING = {
     A: { name: "Base Unit", price: 6500, height: 435 },
     B: { name: "Short Extension", price: 5500, height: 305 },
-    C: { name: "Long Extension", price: 5900, height: 355 },
+    C: { name: "Short Extension", price: 5500, height: 305 },
+    //C: { name: "Long Extension", price: 5900, height: 355 },
     // D: { name: "Double Extension", price: 6900, height: 609 },
 };
 
