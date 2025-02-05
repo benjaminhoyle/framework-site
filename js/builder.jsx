@@ -101,12 +101,12 @@ const colorThemes = {
   THEME_2: {
     displayName: 'Green',
     parameterMappings: {
-      SET_1: { fill: '#C5D6C0', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Light sage
+      SET_1: { fill: '#E0F0D2', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Light sage
       SET_2: { fill: '#A8BFA2', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Medium sage
       SET_3: { fill: '#DAE4D6', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Lightest sage
       SET_4: { fill: '#445E3D', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Dark sage
       SET_5: { fill: '#374E32', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Darker sage
-      SET_6: { fill: 'none', fillOpacity: '0', stroke: '#374E32', strokeWidth: '0' },  // Stroke using darker sage
+      SET_6: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.2' },
       SET_7: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0' },
       //context colors; same from set to set
       CONTEXT_BLUE: { fill: '#5394BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
@@ -127,8 +127,8 @@ const colorThemes = {
       SET_3: { fill: '#9CA3AF', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
       SET_4: { fill: '#4B5563', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
       SET_5: { fill: '#374151', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-      SET_6: { fill: 'none', fillOpacity: '0', stroke: '#111827', strokeWidth: '0' },
-      SET_7: { fill: 'none', fillOpacity: '0', stroke: '#374151', strokeWidth: '0' },
+      SET_6: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.2' },
+      SET_7: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0' },
       //context colors; same from set to set
       CONTEXT_BLUE: { fill: '#5394BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
       CONTEXT_PURPLE: { fill: '#8B75BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
@@ -230,6 +230,14 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNW", x: 112.151924, y: 126.655871 },
       { type: "HSNW", x: 112.15187, y: 97.066035 }         
+         
+    ]
+  },
+  {
+    id: 'lamp-NW',
+    filename: 'lamp-NW.svg',
+    anchors: [
+      { type: "FSNW", x: 129.210985, y: 146.854794 }     
          
     ]
   }
