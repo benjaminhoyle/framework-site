@@ -56,7 +56,7 @@ const originalParameterSets = {
   CONTEXT_GREEN: {
     original: { fill: '#147314', fillOpacity: '1', stroke: 'Black', strokeWidth: '0' },
     description: 'Context Green'
-  },  
+  },
   CONTEXT_BEIGE: {
     original: { fill: '#FDF5E6', fillOpacity: '1', stroke: 'Black', strokeWidth: '0' },
     description: 'Context Beige'
@@ -155,7 +155,7 @@ const moduleFilenames = [
     anchors: [
       { type: "SW", x: 77.204969, y: 147.394692 },
       { type: "NE", x: 163.478418, y: 97.584693 },
-      { type: "HSNE", x: 120.341721, y: 105.000352 }             
+      { type: "HSNE", x: 120.341721, y: 105.000352 }
     ]
   },
   {
@@ -164,7 +164,7 @@ const moduleFilenames = [
     anchors: [
       { type: "NW", x: 76.521582, y: 97.584693 },
       { type: "SE", x: 162.795031, y: 147.394692 },
-      { type: "HSNW", x: 119.658279, y: 105.000352 }            
+      { type: "HSNW", x: 119.658279, y: 105.000352 }
     ]
   },
   {
@@ -172,8 +172,8 @@ const moduleFilenames = [
     filename: 'standard-extension-NE.svg',
     anchors: [
       { type: "FSNE", x: 109.113135, y: 139.408133 },
-      { type: "HSNE", x: 109.113135, y: 109.818297 }    
-      
+      { type: "HSNE", x: 109.113135, y: 109.818297 }
+
     ]
   },
   {
@@ -181,16 +181,16 @@ const moduleFilenames = [
     filename: 'standard-extension-NW.svg',
     anchors: [
       { type: "HSNW", x: 130.886865, y: 109.818297 },
-      { type: "FSNW", x: 130.886865, y: 139.408133 }      
+      { type: "FSNW", x: 130.886865, y: 139.408133 }
     ]
-  },  
+  },
   {
     id: 'wide-base-NE',
     filename: 'wide-base-NE.svg',
     anchors: [
       { type: "HWNE", x: 123.440863, y: 99.040327 },
       { type: "SW", x: 62.67575, y: 151.612438 },
-      { type: "NE", x: 184.205976, y: 81.446929 }          
+      { type: "NE", x: 184.205976, y: 81.446929 }
     ]
   },
   {
@@ -199,7 +199,7 @@ const moduleFilenames = [
     anchors: [
       { type: "NW", x: 60.746793, y: 81.446929 },
       { type: "SE", x: 182.277019, y: 151.612438 },
-      { type: "HWNW", x: 121.511852, y: 99.040327 }                
+      { type: "HWNW", x: 121.511852, y: 99.040327 }
     ]
   },
   {
@@ -207,7 +207,7 @@ const moduleFilenames = [
     filename: 'wide-extension-NE.svg',
     anchors: [
       { type: "HWNE", x: 118.950485, y: 105.604582 },
-      { type: "FWNE", x: 118.950485, y: 135.194418 }      
+      { type: "FWNE", x: 118.950485, y: 135.194418 }
     ]
   },
   {
@@ -215,7 +215,7 @@ const moduleFilenames = [
     filename: 'wide-extension-NW.svg',
     anchors: [
       { type: "FWNW", x: 118.105399, y: 135.194418 },
-      { type: "HWNW", x: 118.105399, y: 105.604582 }        
+      { type: "HWNW", x: 118.105399, y: 105.604582 }
     ]
   },
 
@@ -225,7 +225,7 @@ const moduleFilenames = [
     filename: 'adapter-unit-NE.svg',
     anchors: [
       { type: "FWNE", x: 124.221766, y: 139.173491 },
-      { type: "HSNE", x: 142.889358, y: 98.805885 }             
+      { type: "HSNE", x: 142.889358, y: 98.805885 }
     ]
   },
   {
@@ -233,7 +233,7 @@ const moduleFilenames = [
     filename: 'adapter-unit-SE.svg',
     anchors: [
       { type: "FWNW", x: 114.817492, y: 137.652845 },
-      { type: "HSNW", x: 133.485138, y: 118.840748 }                     
+      { type: "HSNW", x: 133.485138, y: 118.840748 }
     ]
   },
   {
@@ -241,7 +241,7 @@ const moduleFilenames = [
     filename: 'adapter-unit-SW.svg',
     anchors: [
       { type: "HSNE", x: 104.70945, y: 125.640295 },
-      { type: "FWNE", x: 123.377096, y: 144.452392 },       
+      { type: "FWNE", x: 123.377096, y: 144.452392 },
     ]
   },
   {
@@ -249,7 +249,7 @@ const moduleFilenames = [
     filename: 'adapter-unit-NW.svg',
     anchors: [
       { type: "HSNW", x: 106.253397, y: 96.103436 },
-      { type: "FWNW", x: 124.920989, y: 136.471043 }           
+      { type: "FWNW", x: 124.920989, y: 136.471043 }
     ]
   },
 
@@ -263,7 +263,7 @@ const moduleFilenames = [
       { type: "NW", x: 148.102815, y: 97.832079 },
       { type: "SE", x: 170.736654, y: 110.899732 },
       { type: "SW", x: 64.166412, y: 159.360437 },
-      { type: "HSNE", x: 107.679665, y: 116.739394 }      
+      { type: "HSNE", x: 107.679665, y: 116.739394 }
     ]
   },
   {
@@ -273,9 +273,9 @@ const moduleFilenames = [
       { type: "HSNW", x: 132.328929, y: 116.739599 },
       { type: "SW", x: 69.263346, y: 110.899732 },
       { type: "NE", x: 91.897185, y: 97.832079 },
-      { type: "SE", x: 175.833642, y: 159.360437 }    
-      
-         
+      { type: "SE", x: 175.833642, y: 159.360437 }
+
+
     ]
   },
   {
@@ -285,8 +285,8 @@ const moduleFilenames = [
       { type: "SE", x: 92.091865, y: 148.200692 },
       { type: "NW", x: 69.458027, y: 135.133039 },
       { type: "HSNE", x: 132.483072, y: 94.314541 },
-      { type: "NE", x: 176.02815, y: 86.672222 }      
-         
+      { type: "NE", x: 176.02815, y: 86.672222 }
+
     ]
   },
   {
@@ -296,8 +296,8 @@ const moduleFilenames = [
       { type: "NE", x: 174.384519, y: 135.133039 },
       { type: "SW", x: 151.75068, y: 148.200692 },
       { type: "HSNW", x: 111.343529, y: 94.314603 },
-      { type: "NW", x: 67.814331, y: 86.672334 }         
-         
+      { type: "NW", x: 67.814331, y: 86.672334 }
+
     ]
   },
   {
@@ -305,8 +305,8 @@ const moduleFilenames = [
     filename: 'corner-extension-SE.svg',
     anchors: [
       { type: "FSNW", x: 112.151924, y: 126.655871 },
-      { type: "HSNW", x: 112.15187, y: 97.066035 }         
-         
+      { type: "HSNW", x: 112.15187, y: 97.066035 }
+
     ]
   },
   {
@@ -314,7 +314,7 @@ const moduleFilenames = [
     filename: 'corner-extension-SW.svg',
     anchors: [
       { type: "HSNE", x: 111.418787, y: 97.066035 },
-      { type: "FSNE", x: 111.418787, y: 126.655871 }                
+      { type: "FSNE", x: 111.418787, y: 126.655871 }
     ]
   },
   {
@@ -322,7 +322,7 @@ const moduleFilenames = [
     filename: 'corner-extension-NW.svg',
     anchors: [
       { type: "HSNW", x: 131.237134, y: 115.74989 },
-      { type: "FSNW", x: 131.237188, y: 145.339726 }  
+      { type: "FSNW", x: 131.237188, y: 145.339726 }
     ]
   },
   {
@@ -330,28 +330,28 @@ const moduleFilenames = [
     filename: 'corner-extension-NE.svg',
     anchors: [
       { type: "HSNE", x: 108.746724, y: 115.74989 },
-      { type: "FSNE", x: 108.746724, y: 145.339726 }      
+      { type: "FSNE", x: 108.746724, y: 145.339726 }
     ]
   },
   {
     id: 'lamp-NW',
     filename: 'lamp-NW.svg',
     anchors: [
-      { type: "FSNW", x: 129.210985, y: 146.854794 }    
+      { type: "FSNW", x: 129.210985, y: 146.854794 }
     ]
   },
   {
     id: 'lamp-NE',
     filename: 'lamp-NE.svg',
     anchors: [
-      { type: "FSNE", x: 129.210985, y: 146.854794 }    
+      { type: "FSNE", x: 129.210985, y: 146.854794 }
     ]
   },
   {
     id: 'lamp-SE',
     filename: 'lamp-SE.svg',
     anchors: [
-      { type: "FSNW", x: 106.750408, y: 147.351661 } 
+      { type: "FSNW", x: 106.750408, y: 147.351661 }
     ]
   },
   {
@@ -361,7 +361,39 @@ const moduleFilenames = [
       { type: "FSNE", x: 133.249592, y: 147.351661 }
     ]
   }
-  
+
+
+
+  ,
+  {
+    id: 'lamp-NW-2',
+    filename: 'lamp-NW-2.svg',
+    anchors: [
+      { type: "FSNW", x: 117.580133, y: 154.714673 }
+    ]
+  },
+  {
+    id: 'lamp-NE-2',
+    filename: 'lamp-NE-2.svg',
+    anchors: [
+      { type: "FSNE", x: 101.616181, y: 146.826659 }
+    ]
+  },
+  {
+    id: 'lamp-SE-2',
+    filename: 'lamp-SE-2.svg',
+    anchors: [
+      { type: "FSNW", x: 109.947308, y: 165.795899 }
+    ]
+  },
+  {
+    id: 'lamp-SW-2',
+    filename: 'lamp-SW-2.svg',
+    anchors: [
+      { type: "FSNE", x: 138.180926, y: 142.876599 }
+    ]
+  }
+
 ];
 
 
@@ -369,37 +401,37 @@ const contextFigures = [
   {
     id: 'cxt_woman_book_1',
     filename: 'cxt_woman-book-1.svg',
-    anchorPoint: {x: 124.064914, y: 203.815396 }
+    anchorPoint: { x: 124.064914, y: 203.815396 }
   },
   {
     id: 'cxt_book_man_1',
     filename: 'cxt_book-man-1.svg',
-    anchorPoint: {x: 124.064914, y: 203.815396 }
+    anchorPoint: { x: 124.064914, y: 203.815396 }
   },
   {
     id: 'cxt_woman-bed',
     filename: 'cxt_woman-bed.svg',
-    anchorPoint: {x: 124.064914, y: 203.815396 }
+    anchorPoint: { x: 124.064914, y: 203.815396 }
   },
   {
     id: 'cxt_plant-1',
     filename: 'cxt_plant-1.svg',
-    anchorPoint: {x: 124.064914, y: 203.815396 }
+    anchorPoint: { x: 124.064914, y: 203.815396 }
   },
   {
     id: 'cxt_plant-2',
     filename: 'cxt_plant-2.svg',
-    anchorPoint: {x: 124.064914, y: 203.815396 }
+    anchorPoint: { x: 124.064914, y: 203.815396 }
   },
   {
     id: 'cxt_fruit-bowl-1',
     filename: 'cxt_fruit-bowl-1.svg',
-    anchorPoint: {x: 124.064914, y: 203.815396 }
+    anchorPoint: { x: 124.064914, y: 203.815396 }
   },
   {
     id: 'cxt_kid-1',
     filename: 'cxt_kid-1.svg',
-    anchorPoint: {x: 124.064914, y: 203.815396 }
+    anchorPoint: { x: 124.064914, y: 203.815396 }
   }
 ];
 
@@ -413,34 +445,34 @@ const testPieces = moduleFilenames.map(module => ({
 
 // Core helper functions
 function findConnections(piece, placedPieces) {
-  return placedPieces.flatMap(otherPiece => 
-    otherPiece === piece ? [] : 
-    piece.piece.anchors.flatMap(anchor =>
-      otherPiece.piece.anchors
-        .filter(otherAnchor => {
-          const isCompatible = compatibilityMap[anchor.type] === otherAnchor.type ||
-                             compatibilityMap[otherAnchor.type] === anchor.type;
-          if (!isCompatible) return false;
+  return placedPieces.flatMap(otherPiece =>
+    otherPiece === piece ? [] :
+      piece.piece.anchors.flatMap(anchor =>
+        otherPiece.piece.anchors
+          .filter(otherAnchor => {
+            const isCompatible = compatibilityMap[anchor.type] === otherAnchor.type ||
+              compatibilityMap[otherAnchor.type] === anchor.type;
+            if (!isCompatible) return false;
 
-          const [x1, y1] = [piece.x + anchor.x, piece.y + anchor.y];
-          const [x2, y2] = [otherPiece.x + otherAnchor.x, otherPiece.y + otherAnchor.y];
-          return Math.abs(x1 - x2) < 0.1 && Math.abs(y1 - y2) < 0.1;
-        })
-        .map(otherAnchor => ({
-          piece: otherPiece,
-          pieceAnchor: anchor,
-          otherAnchor,
-          globalX: piece.x + anchor.x,
-          globalY: piece.y + anchor.y
-        }))
-    )
+            const [x1, y1] = [piece.x + anchor.x, piece.y + anchor.y];
+            const [x2, y2] = [otherPiece.x + otherAnchor.x, otherPiece.y + otherAnchor.y];
+            return Math.abs(x1 - x2) < 0.1 && Math.abs(y1 - y2) < 0.1;
+          })
+          .map(otherAnchor => ({
+            piece: otherPiece,
+            pieceAnchor: anchor,
+            otherAnchor,
+            globalX: piece.x + anchor.x,
+            globalY: piece.y + anchor.y
+          }))
+      )
   );
 }
 
 function isRoot(piece, placedPieces) {
   const footAnchors = piece.piece.anchors.filter(a => a.type.startsWith('F'));
-  return footAnchors.length === 0 || !placedPieces.some(other => 
-    other !== piece && other.piece.anchors.some(otherAnchor => 
+  return footAnchors.length === 0 || !placedPieces.some(other =>
+    other !== piece && other.piece.anchors.some(otherAnchor =>
       otherAnchor.type.startsWith('H') && footAnchors.some(footAnchor => {
         const [x1, y1] = [piece.x + footAnchor.x, piece.y + footAnchor.y];
         const [x2, y2] = [other.x + otherAnchor.x, other.y + otherAnchor.y];
@@ -453,16 +485,16 @@ function isRoot(piece, placedPieces) {
 function findGroupFromRoot(root, placedPieces, visited = new Set()) {
   if (visited.has(root)) return [];
   visited.add(root);
-  
+
   const group = [root];
   placedPieces.forEach(piece => {
     if (!visited.has(piece) && root.piece.anchors.some(rootAnchor => {
       return piece.piece.anchors.some(pieceAnchor => {
         // Check for both standard and wide head-foot connections
-        const isHeadToFoot = ((rootAnchor.type.startsWith('HS') || rootAnchor.type.startsWith('HW')) && 
-                             (pieceAnchor.type.startsWith('FS') || pieceAnchor.type.startsWith('FW')));
-        const isFootToHead = ((rootAnchor.type.startsWith('FS') || rootAnchor.type.startsWith('FW')) && 
-                             (pieceAnchor.type.startsWith('HS') || pieceAnchor.type.startsWith('HW')));
+        const isHeadToFoot = ((rootAnchor.type.startsWith('HS') || rootAnchor.type.startsWith('HW')) &&
+          (pieceAnchor.type.startsWith('FS') || pieceAnchor.type.startsWith('FW')));
+        const isFootToHead = ((rootAnchor.type.startsWith('FS') || rootAnchor.type.startsWith('FW')) &&
+          (pieceAnchor.type.startsWith('HS') || pieceAnchor.type.startsWith('HW')));
         if (!isHeadToFoot && !isFootToHead) return false;
 
         const [x1, y1] = [root.x + rootAnchor.x, root.y + rootAnchor.y];
@@ -473,7 +505,7 @@ function findGroupFromRoot(root, placedPieces, visited = new Set()) {
       group.push(...findGroupFromRoot(piece, placedPieces, visited));
     }
   });
-  
+
   // Sort by y-coordinate ascending (smaller y values first)
   return group.sort((a, b) => a.y - b.y);
 }
@@ -484,14 +516,14 @@ function orderPieces(placedPieces) {
     root,
     pieces: findGroupFromRoot(root, placedPieces)
   }));
-  
+
   groups.sort((a, b) => (b.root.y + b.root.piece.height) - (a.root.y + a.root.piece.height));
   return groups.flatMap(g => g.pieces);
 }
 
 function generateConfigCode(placedPieces, placedContextFigures) {
   if (placedPieces.length === 0 && placedContextFigures.length === 0) return '';
-  
+
   const processed = new Set();
   const usedConnections = new Set();
 
@@ -504,53 +536,53 @@ function generateConfigCode(placedPieces, placedContextFigures) {
 
   function formatGroup(group) {
     if (group.pieces.length === 0) return '';
-    
+
     let code = '(';
     const sortedPieces = [...group.pieces].sort((a, b) => b.y - a.y);
-    
+
     for (let i = 0; i < sortedPieces.length; i++) {
       const piece = sortedPieces[i];
       code += `{${piece.piece.id}}`;
-      
+
       if (i < sortedPieces.length - 1) {
         const nextPiece = sortedPieces[i + 1];
         const verticalConn = findConnections(piece, [nextPiece])
-          .find(conn => 
-            ((conn.pieceAnchor.type.startsWith('FS') || conn.pieceAnchor.type.startsWith('FW')) && 
-             (conn.otherAnchor.type.startsWith('HS') || conn.otherAnchor.type.startsWith('HW'))) ||
-            ((conn.pieceAnchor.type.startsWith('HS') || conn.pieceAnchor.type.startsWith('HW')) && 
-             (conn.otherAnchor.type.startsWith('FS') || conn.otherAnchor.type.startsWith('FW')))
+          .find(conn =>
+            ((conn.pieceAnchor.type.startsWith('FS') || conn.pieceAnchor.type.startsWith('FW')) &&
+              (conn.otherAnchor.type.startsWith('HS') || conn.otherAnchor.type.startsWith('HW'))) ||
+            ((conn.pieceAnchor.type.startsWith('HS') || conn.pieceAnchor.type.startsWith('HW')) &&
+              (conn.otherAnchor.type.startsWith('FS') || conn.otherAnchor.type.startsWith('FW')))
           );
-        
+
         if (verticalConn) {
           code += verticalConn.pieceAnchor.type + '-' + verticalConn.otherAnchor.type;
         }
       }
     }
-    
+
     return code + ')';
   }
 
   // Create a graph of group connections
   const groupConnections = new Map();
   const connectionTypes = new Map();
-  
+
   for (const group1 of groups) {
     for (const group2 of groups) {
       if (group1 === group2) continue;
-      
+
       for (const piece1 of group1.pieces) {
         for (const piece2 of group2.pieces) {
           const lateralConn = findConnections(piece1, [piece2])
-            .find(conn => !conn.pieceAnchor.type.startsWith('HS') && 
-                         !conn.pieceAnchor.type.startsWith('FS'));
-          
+            .find(conn => !conn.pieceAnchor.type.startsWith('HS') &&
+              !conn.pieceAnchor.type.startsWith('FS'));
+
           if (lateralConn) {
             if (!groupConnections.has(group1)) {
               groupConnections.set(group1, new Set());
             }
             groupConnections.get(group1).add(group2);
-            connectionTypes.set(`${group1.root.uniqueId}-${group2.root.uniqueId}`, 
+            connectionTypes.set(`${group1.root.uniqueId}-${group2.root.uniqueId}`,
               `${lateralConn.pieceAnchor.type}-${lateralConn.otherAnchor.type}`);
           }
         }
@@ -560,7 +592,7 @@ function generateConfigCode(placedPieces, placedContextFigures) {
 
   // Helper to find entry points (groups with 1 or 0 connections)
   function findEntryGroups() {
-    return groups.filter(group => 
+    return groups.filter(group =>
       !groupConnections.has(group) || groupConnections.get(group).size <= 1
     ).sort((a, b) => a.root.x - b.root.x);
   }
@@ -569,12 +601,12 @@ function generateConfigCode(placedPieces, placedContextFigures) {
   function buildChain(startGroup, visited = new Set()) {
     const chain = [startGroup];
     visited.add(startGroup);
-    
+
     let currentGroup = startGroup;
     while (true) {
       const connections = groupConnections.get(currentGroup);
       if (!connections) break;
-      
+
       let nextGroup = null;
       for (const connected of connections) {
         if (!visited.has(connected)) {
@@ -582,40 +614,40 @@ function generateConfigCode(placedPieces, placedContextFigures) {
           break;
         }
       }
-      
+
       if (!nextGroup) break;
-      
+
       chain.push(nextGroup);
       visited.add(nextGroup);
       currentGroup = nextGroup;
     }
-    
+
     return chain;
   }
 
   // Generate code for placed pieces
   let baseCode = '';
   const processedGroups = new Set();
-  
+
   while (processedGroups.size < groups.length) {
     const entryGroups = findEntryGroups()
       .filter(group => !processedGroups.has(group));
-    
+
     if (entryGroups.length === 0) break;
-    
+
     const startGroup = entryGroups[0];
     const chain = buildChain(startGroup, processedGroups);
-    
+
     // Add code for this chain
     for (let i = 0; i < chain.length; i++) {
       const group = chain[i];
       baseCode += formatGroup(group);
       processedGroups.add(group);
-      
+
       if (i < chain.length - 1) {
         const nextGroup = chain[i + 1];
         const connType = connectionTypes.get(`${group.root.uniqueId}-${nextGroup.root.uniqueId}`) ||
-                        connectionTypes.get(`${nextGroup.root.uniqueId}-${group.root.uniqueId}`);
+          connectionTypes.get(`${nextGroup.root.uniqueId}-${group.root.uniqueId}`);
         if (connType) {
           baseCode += connType;
         }
@@ -625,20 +657,20 @@ function generateConfigCode(placedPieces, placedContextFigures) {
 
   // Add context figures if present
   if (placedContextFigures.length > 0) {
-    baseCode += '_' + placedContextFigures.map(fig => 
+    baseCode += '_' + placedContextFigures.map(fig =>
       `[${fig.filename},${fig.x.toFixed(1)},${fig.y.toFixed(1)}]`
     ).join('');
   }
-  
+
   return baseCode;
 }
 
 async function animateConfiguration(code, setPlacedPieces, setNewPieceId, setPlacedContextFigures) {
   console.log('Starting animation with code:', code);
-  
+
   // Get reference to the global contextFigures array
   const contextFiguresRef = window.contextFigures || contextFigures;
-  
+
   let moduleCode = code;
   let contextCode = '';
 
@@ -653,9 +685,9 @@ async function animateConfiguration(code, setPlacedPieces, setNewPieceId, setPla
 
   const pieces = [];
   const uniqueCounter = (() => {
-  let count = 0;
-  return () => `piece-${Date.now()}-${count++}`;
-  
+    let count = 0;
+    return () => `piece-${Date.now()}-${count++}`;
+
   })();
 
   function isModuleId(token) {
@@ -679,10 +711,10 @@ async function animateConfiguration(code, setPlacedPieces, setNewPieceId, setPla
   }
 
   function positionPieceRelativeTo(newPiece, basePiece, sourceType, targetType) {
-    
+
     const sourceAnchor = newPiece.piece.anchors.find(a => a.type === sourceType);
     const targetAnchor = basePiece.piece.anchors.find(a => a.type === targetType);
-    
+
     if (!sourceAnchor || !targetAnchor) {
       console.error('Missing anchors for:', sourceType, targetType);
       throw new Error(`Cannot find required anchors: ${sourceType}, ${targetType}`);
@@ -699,7 +731,7 @@ async function animateConfiguration(code, setPlacedPieces, setNewPieceId, setPla
     function isConnectionChar(char) {
       return /[A-Z]/.test(char) || char === '-';
     }
-    
+
     while (i < code.length) {
       while (i < code.length && /\s/.test(code[i])) i++;
       if (i >= code.length) break;
@@ -739,57 +771,57 @@ async function animateConfiguration(code, setPlacedPieces, setNewPieceId, setPla
   }
 
   async function processVerticalChain(tokens, startIndex) {
-    
+
     const groupPieces = [];
     let i = startIndex;
     let lastPiece = null;
     let pendingConnection = null;
 
-  function isVerticalConnection(token) {
+    function isVerticalConnection(token) {
       // Updated to include both standard and wide variants
       return /^(HS|FS|HW|FW)(NE|NW)-(HS|FS|HW|FW)(NE|NW)$/.test(token);
-  }
+    }
 
-  function analyzeConnection(token) {
+    function analyzeConnection(token) {
       if (!isVerticalConnection(token)) return null;
       const [source, target] = token.split('-');
       return {
-          source,
-          target,
-          isReversed: source.startsWith('F'), // Changed to check for any F prefix
-          direction: source.endsWith('NE') ? 'NE' : 'NW'
+        source,
+        target,
+        isReversed: source.startsWith('F'), // Changed to check for any F prefix
+        direction: source.endsWith('NE') ? 'NE' : 'NW'
       };
-  }
-    
-    while (i < tokens.length && tokens[i] !== ')') {
-        const token = tokens[i];
-        
-        if (isModuleId(token)) {
-            const newPiece = createPiece(token);
-            
-            if (lastPiece && pendingConnection) {
-                const connection = analyzeConnection(pendingConnection);
-                if (connection) {
-                    const sourceType = connection.isReversed ? connection.target : connection.source;
-                    const targetType = connection.isReversed ? connection.source : connection.target;
-                    positionPieceRelativeTo(newPiece, lastPiece, targetType, sourceType);
-                }
-                pendingConnection = null;
-            }
-            
-            groupPieces.push(newPiece);
-            lastPiece = newPiece;
-        } else if (isVerticalConnection(token)) {
-            pendingConnection = token;
-        }
-        
-        i++;
     }
-    
 
-    
+    while (i < tokens.length && tokens[i] !== ')') {
+      const token = tokens[i];
+
+      if (isModuleId(token)) {
+        const newPiece = createPiece(token);
+
+        if (lastPiece && pendingConnection) {
+          const connection = analyzeConnection(pendingConnection);
+          if (connection) {
+            const sourceType = connection.isReversed ? connection.target : connection.source;
+            const targetType = connection.isReversed ? connection.source : connection.target;
+            positionPieceRelativeTo(newPiece, lastPiece, targetType, sourceType);
+          }
+          pendingConnection = null;
+        }
+
+        groupPieces.push(newPiece);
+        lastPiece = newPiece;
+      } else if (isVerticalConnection(token)) {
+        pendingConnection = token;
+      }
+
+      i++;
+    }
+
+
+
     return { pieces: groupPieces, endIndex: i };
-}
+  }
 
   async function processTokens(tokens) {
     const allGroups = [];
@@ -804,17 +836,17 @@ async function animateConfiguration(code, setPlacedPieces, setNewPieceId, setPla
       } else if (isLateralConnection(tokens[i])) {
         const connection = tokens[i];
         const [sourceType, targetType] = connection.split('-');
-        
+
         // Find the next group
         i++;
         while (i < tokens.length && tokens[i] !== '(') i++;
-        
+
         if (i < tokens.length) {
           const { pieces, endIndex } = await processVerticalChain(tokens, i + 1);
-          
+
           if (allGroups[currentGroupIndex].length > 0 && pieces.length > 0) {
             positionPieceRelativeTo(pieces[0], allGroups[currentGroupIndex][0], targetType, sourceType);
-            
+
             // Adjust all pieces in the new group
             const dx = pieces[0].x - 200;
             const dy = pieces[0].y - 200;
@@ -823,7 +855,7 @@ async function animateConfiguration(code, setPlacedPieces, setNewPieceId, setPla
               pieces[j].y += dy;
             }
           }
-          
+
           allGroups.push(pieces);
           currentGroupIndex++;
           i = endIndex + 1;
@@ -834,31 +866,31 @@ async function animateConfiguration(code, setPlacedPieces, setNewPieceId, setPla
     }
 
 
-// Add all pieces to the scene with animation
-for (const group of allGroups) {
-    for (const piece of group) {
-      const uniqueId = `piece-${Date.now()}-${Math.random()}`;
-      piece.uniqueId = uniqueId;
-      
-      // First set the newPieceId
-      setNewPieceId(uniqueId);
-      // Wait a frame for React
-      await new Promise(resolve => requestAnimationFrame(resolve));
-      
-      // Now add the piece
-      pieces.push(piece);
-      setPlacedPieces(orderPieces([...pieces]));
-      
-      // Wait for animation
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Clear animation state
-      setNewPieceId(null);
-      // Small delay before next piece
-      await new Promise(resolve => setTimeout(resolve, 50));
+    // Add all pieces to the scene with animation
+    for (const group of allGroups) {
+      for (const piece of group) {
+        const uniqueId = `piece-${Date.now()}-${Math.random()}`;
+        piece.uniqueId = uniqueId;
+
+        // First set the newPieceId
+        setNewPieceId(uniqueId);
+        // Wait a frame for React
+        await new Promise(resolve => requestAnimationFrame(resolve));
+
+        // Now add the piece
+        pieces.push(piece);
+        setPlacedPieces(orderPieces([...pieces]));
+
+        // Wait for animation
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Clear animation state
+        setNewPieceId(null);
+        // Small delay before next piece
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
     }
   }
-}
 
 
   setPlacedPieces([]); // Clear existing pieces
@@ -866,7 +898,7 @@ for (const group of allGroups) {
   const tokens = parseCode(moduleCode);
   await processTokens(tokens);
 
-    // Handle context figures if present
+  // Handle context figures if present
   if (contextCode) {
     console.log('Processing context code:', contextCode);
     const figures = [...contextCode.matchAll(/\[(.*?)\]/g)]
@@ -901,14 +933,14 @@ function canPieceReplace(originalPiece, newPieceTemplate, placedPieces) {
 
   // If it's a corner-extension, check what's below it
   if (newPieceTemplate.id.startsWith('corner-extension-')) {
-    const headConnection = connections.find(conn => 
+    const headConnection = connections.find(conn =>
       conn.pieceAnchor.type.startsWith('HS') || conn.pieceAnchor.type.startsWith('FS')
     );
-    
+
     if (headConnection) {
       const connectedPiece = headConnection.piece.piece.id;
       if (!connectedPiece.startsWith('corner-')) return false;
-      
+
       // Check if suffixes match
       const newSuffix = newPieceTemplate.id.slice(-2);
       const connectedSuffix = connectedPiece.slice(-2);
@@ -917,7 +949,7 @@ function canPieceReplace(originalPiece, newPieceTemplate, placedPieces) {
   }
 
   // If it has a corner-extension above it, check if suffixes match
-  const cornerExtensionAbove = connections.find(conn => 
+  const cornerExtensionAbove = connections.find(conn =>
     conn.piece.piece.id.startsWith('corner-extension-') &&
     (conn.pieceAnchor.type.startsWith('HS') || conn.pieceAnchor.type.startsWith('FS'))
   );
@@ -929,14 +961,14 @@ function canPieceReplace(originalPiece, newPieceTemplate, placedPieces) {
   }
 
   const usedAnchorTypes = new Set(connections.map(conn => conn.pieceAnchor.type));
-  return Array.from(usedAnchorTypes).every(type => 
+  return Array.from(usedAnchorTypes).every(type =>
     newPieceTemplate.anchors.some(a => a.type === type)
   );
 }
 
 function getCompatibleReplacements(piece, placedPieces) {
-  return testPieces.filter(template => 
-    template.id !== piece.piece.id && 
+  return testPieces.filter(template =>
+    template.id !== piece.piece.id &&
     canPieceReplace(piece, template, placedPieces)
   );
 }
@@ -955,10 +987,10 @@ function applySVGTheme(svgDoc, theme) {
   if (!svgDoc?.documentElement) {
     return;
   }
-  
-  
+
+
   const paths = svgDoc.getElementsByTagName('path');
-  
+
   Array.from(paths).forEach(path => {
     // Get current attributes with more flexible matching
     const currentAttributes = {
@@ -973,14 +1005,14 @@ function applySVGTheme(svgDoc, theme) {
       const orig = set.original;
       const origFill = orig.fill.toLowerCase();
       const origStroke = orig.stroke.toLowerCase();
-      
+
       return (
-        (origFill === currentAttributes.fill || 
-         (origFill === '#ffffff' && currentAttributes.fill === '#fff') ||
-         (origFill === 'none' && !currentAttributes.fill)) &&
+        (origFill === currentAttributes.fill ||
+          (origFill === '#ffffff' && currentAttributes.fill === '#fff') ||
+          (origFill === 'none' && !currentAttributes.fill)) &&
         (origStroke === currentAttributes.stroke ||
-         (origStroke === '#000000' && currentAttributes.stroke === '#000') ||
-         (origStroke === 'none' && !currentAttributes.stroke)) &&
+          (origStroke === '#000000' && currentAttributes.stroke === '#000') ||
+          (origStroke === 'none' && !currentAttributes.stroke)) &&
         Math.abs(parseFloat(orig.strokeWidth) - parseFloat(currentAttributes.strokeWidth)) < 0.01
       );
     });
@@ -1063,48 +1095,48 @@ function ModuleBuilder() {
   const [isContextPlacementMode, setIsContextPlacementMode] = React.useState(false);
   const [draggingContextId, setDraggingContextId] = React.useState(null);
   const dragStartRef = React.useRef({ x: 0, y: 0 });
-  
-// Update handleDragStart to store the initial click position
-const handleDragStart = (figureId, e) => {
-  e.stopPropagation();
-  const rect = containerRef.current.getBoundingClientRect();
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  
-  dragStartRef.current = {
-    x: (clientX - rect.left - offset.x) / scale,
-    y: (clientY - rect.top - offset.y) / scale
-  };
-  
-  setDraggingContextId(figureId);
-};
-  
-const handleDragMove = (e) => {
-  if (!draggingContextId) return;
-  
-  const rect = containerRef.current.getBoundingClientRect();
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  
-  const currentX = (clientX - rect.left - offset.x) / scale;
-  const currentY = (clientY - rect.top - offset.y) / scale;
-  
-  const deltaX = currentX - dragStartRef.current.x;
-  const deltaY = currentY - dragStartRef.current.y;
 
-  setPlacedContextFigures(prev => prev.map(fig => {
-    if (fig.uniqueId === draggingContextId) {
-      return {
-        ...fig,
-        x: fig.x + deltaX,
-        y: fig.y + deltaY
-      };
-    }
-    return fig;
-  }));
-  
-  dragStartRef.current = { x: currentX, y: currentY };
-};
+  // Update handleDragStart to store the initial click position
+  const handleDragStart = (figureId, e) => {
+    e.stopPropagation();
+    const rect = containerRef.current.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    dragStartRef.current = {
+      x: (clientX - rect.left - offset.x) / scale,
+      y: (clientY - rect.top - offset.y) / scale
+    };
+
+    setDraggingContextId(figureId);
+  };
+
+  const handleDragMove = (e) => {
+    if (!draggingContextId) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const currentX = (clientX - rect.left - offset.x) / scale;
+    const currentY = (clientY - rect.top - offset.y) / scale;
+
+    const deltaX = currentX - dragStartRef.current.x;
+    const deltaY = currentY - dragStartRef.current.y;
+
+    setPlacedContextFigures(prev => prev.map(fig => {
+      if (fig.uniqueId === draggingContextId) {
+        return {
+          ...fig,
+          x: fig.x + deltaX,
+          y: fig.y + deltaY
+        };
+      }
+      return fig;
+    }));
+
+    dragStartRef.current = { x: currentX, y: currentY };
+  };
 
   const handleDragEnd = () => {
     setDraggingContextId(null);
@@ -1135,62 +1167,62 @@ const handleDragMove = (e) => {
   const handleAddContext = () => {
     setIsContextPlacementMode(true);
   };
-  
+
   const handleContextPlace = (e) => {
     if (!isContextPlacementMode) return;
-    
+
     const rect = containerRef.current.getBoundingClientRect();
     const clickX = (e.clientX - rect.left - offset.x) / scale;
     const clickY = (e.clientY - rect.top - offset.y) / scale;
-    
+
     // Filter out already placed figures
     const availableFigures = contextFigures.filter(
       fig => !placedContextFigures.some(placed => placed.id === fig.id)
     );
     if (availableFigures.length === 0) return;
-    
+
     const randomFigure = availableFigures[Math.floor(Math.random() * availableFigures.length)];
-    
+
     // Offset the position by the anchor point so the anchor aligns with click
     const x = clickX - randomFigure.anchorPoint.x;
     const y = clickY - randomFigure.anchorPoint.y;
-    
+
     setPlacedContextFigures(prev => [...prev, {
       ...randomFigure,
       x,
       y,
       uniqueId: Date.now().toString()
     }]);
-    
+
     setIsContextPlacementMode(false);
   };
-  
+
   const handleContextCycle = (placedFigure) => {
     const availableFigures = contextFigures.filter(
       fig => fig.id !== placedFigure.id
     );
     if (availableFigures.length === 0) return;
-    
+
     // Find current index and get next in rotation
     const currentIndex = contextFigures.findIndex(fig => fig.id === placedFigure.id);
     const nextIndex = (currentIndex + 1) % contextFigures.length;
     const nextFigure = contextFigures[nextIndex];
-    
+
     // Clear from cache using proper key before cycling
     svgCache.current.delete(`context-${placedFigure.filename}`);
-    
-    setPlacedContextFigures(prev => prev.map(fig => 
-      fig.uniqueId === placedFigure.uniqueId 
+
+    setPlacedContextFigures(prev => prev.map(fig =>
+      fig.uniqueId === placedFigure.uniqueId
         ? { ...nextFigure, x: fig.x, y: fig.y, uniqueId: fig.uniqueId }
         : fig
     ));
   };
-  
-  
+
+
   const handleContextDelete = (uniqueId) => {
     setPlacedContextFigures(prev => prev.filter(fig => fig.uniqueId !== uniqueId));
   };
-  
+
 
   const handleCopyCode = async () => {
     try {
@@ -1203,12 +1235,12 @@ const handleDragMove = (e) => {
   // Add SVG content cache
   const svgCache = React.useRef(new Map());
 
-  
+
   const isAnchorInUse = React.useCallback((piece, anchor) => {
-    return placedPieces.some(otherPiece => 
+    return placedPieces.some(otherPiece =>
       otherPiece !== piece && otherPiece.piece.anchors?.some(otherAnchor => {
-        const compatibleType = compatibilityMap[anchor.type] === otherAnchor.type || 
-                             compatibilityMap[otherAnchor.type] === anchor.type;
+        const compatibleType = compatibilityMap[anchor.type] === otherAnchor.type ||
+          compatibilityMap[otherAnchor.type] === anchor.type;
         if (!compatibleType) return false;
 
         const [x1, y1] = [piece.x + anchor.x, piece.y + anchor.y];
@@ -1218,48 +1250,48 @@ const handleDragMove = (e) => {
     );
   }, [placedPieces]);
 
-      const handleSVGLoad = async (obj, type, id) => {
-        try {
-          const svgDoc = obj.contentDocument;
-          if (!svgDoc?.documentElement) {
-            console.error('No SVG document found:', id);
-            return;
-          }
+  const handleSVGLoad = async (obj, type, id) => {
+    try {
+      const svgDoc = obj.contentDocument;
+      if (!svgDoc?.documentElement) {
+        console.error('No SVG document found:', id);
+        return;
+      }
 
-          obj.style.visibility = 'hidden';
-          
-          // Cache handling - now works for both types
-          if (!svgCache.current.has(id)) {
-            const originalSvg = svgDoc.documentElement.cloneNode(true);
-            svgCache.current.set(id, originalSvg);
-          } else {
-            const cachedSvg = svgCache.current.get(id);
-            const freshSvg = cachedSvg.cloneNode(true);
-            svgDoc.documentElement.replaceWith(freshSvg);
-          }
-          
-          // Apply theme
-          applySVGTheme(svgDoc, selectedTheme);
-          
-          // Handle anchor points only for furniture pieces
-          if (type === 'furniture') {
-            const anchorPointsString = svgDoc.documentElement.getAttribute('data-anchor-points');
-            if (anchorPointsString) {
-              const anchors = JSON.parse(anchorPointsString);
-              const piece = testPieces.find(p => p.id === id);
-              if (piece) piece.anchors = anchors;
-            }
-          }
-          
-          loadedSvgs.current.add(id);
-          obj.style.visibility = 'visible';
-          
-        } catch (error) {
-          console.error('Error in handleSVGLoad:', id, error);
-          obj.style.visibility = 'visible';
+      obj.style.visibility = 'hidden';
+
+      // Cache handling - now works for both types
+      if (!svgCache.current.has(id)) {
+        const originalSvg = svgDoc.documentElement.cloneNode(true);
+        svgCache.current.set(id, originalSvg);
+      } else {
+        const cachedSvg = svgCache.current.get(id);
+        const freshSvg = cachedSvg.cloneNode(true);
+        svgDoc.documentElement.replaceWith(freshSvg);
+      }
+
+      // Apply theme
+      applySVGTheme(svgDoc, selectedTheme);
+
+      // Handle anchor points only for furniture pieces
+      if (type === 'furniture') {
+        const anchorPointsString = svgDoc.documentElement.getAttribute('data-anchor-points');
+        if (anchorPointsString) {
+          const anchors = JSON.parse(anchorPointsString);
+          const piece = testPieces.find(p => p.id === id);
+          if (piece) piece.anchors = anchors;
         }
-      };
-  
+      }
+
+      loadedSvgs.current.add(id);
+      obj.style.visibility = 'visible';
+
+    } catch (error) {
+      console.error('Error in handleSVGLoad:', id, error);
+      obj.style.visibility = 'visible';
+    }
+  };
+
   const checkCacheStatus = (pieceId) => {
     return {
       isCached: svgCache.current.has(pieceId),
@@ -1269,14 +1301,14 @@ const handleDragMove = (e) => {
 
   const calculateBounds = React.useCallback(() => {
     if (placedPieces.length === 0 && placedContextFigures.length === 0) return null;
-  
+
     const bounds = {
       minX: Infinity,
       minY: Infinity,
       maxX: -Infinity,
       maxY: -Infinity
     };
-  
+
     // Include placed pieces
     placedPieces.forEach(piece => {
       bounds.minX = Math.min(bounds.minX, piece.x);
@@ -1284,7 +1316,7 @@ const handleDragMove = (e) => {
       bounds.maxX = Math.max(bounds.maxX, piece.x + piece.piece.width);
       bounds.maxY = Math.max(bounds.maxY, piece.y + piece.piece.height);
     });
-  
+
     // Include context figures
     placedContextFigures.forEach(figure => {
       bounds.minX = Math.min(bounds.minX, figure.x);
@@ -1292,30 +1324,30 @@ const handleDragMove = (e) => {
       bounds.maxX = Math.max(bounds.maxX, figure.x + 240);
       bounds.maxY = Math.max(bounds.maxY, figure.y + 240);
     });
-  
+
     return bounds;
   }, [placedPieces, placedContextFigures]);
 
   const updateZoom = React.useCallback(() => {
     // Don't update zoom if we're dragging
     if (draggingContextId) return;
-  
+
     if (!containerRef.current) return;
     const bounds = calculateBounds();
     if (!bounds) return;
-  
+
     const padding = 40;
     const container = containerRef.current;
     const contentWidth = bounds.maxX - bounds.minX + (padding * 2);
     const contentHeight = bounds.maxY - bounds.minY + (padding * 2);
-  
+
     const scaleX = container.clientWidth / contentWidth;
     const scaleY = container.clientHeight / contentHeight;
     const newScale = Math.min(scaleX, scaleY);
-  
+
     const centerX = (bounds.minX + bounds.maxX) / 2;
     const centerY = (bounds.minY + bounds.maxY) / 2;
-  
+
     requestAnimationFrame(() => {
       setScale(newScale);
       setOffset({
@@ -1363,48 +1395,48 @@ const handleDragMove = (e) => {
 
   const handleCyclePiece = (piece, e) => {
     e.stopPropagation();
-    
+
     // Get connections to determine if this is a first piece
     const connections = findConnections(piece, placedPieces);
     const isFirstPiece = connections.length === 0;
-    
+
     // Get all possible pieces for this position, including current piece
     const allPieces = testPieces.filter(p => {
       // Must be current piece or able to replace it
       const isValidReplacement = p.id === piece.piece.id || canPieceReplace(piece, p, placedPieces);
-      
+
       // For first piece with no connections, exclude pieces with foot anchors
       if (isFirstPiece) {
         const hasFootAnchor = p.anchors.some(anchor => anchor.type.startsWith('F'));
         return isValidReplacement && !hasFootAnchor;
       }
-      
+
       return isValidReplacement;
     });
-    
-    
+
+
     // Find current index in all pieces
     const currentIndex = allPieces.findIndex(p => p.id === piece.piece.id);
-    
+
     // Calculate next index with wraparound
     const nextIndex = (currentIndex + 1) % allPieces.length;
-    
+
     // Get next piece
     const nextPiece = allPieces[nextIndex];
-  
+
     // Remove from loaded SVGs cache before cycling
     const pieceId = `${piece.piece.id}-${piece.uniqueId}`;
     loadedSvgs.current.delete(pieceId);
-    
+
     setPlacedPieces(prev => {
       const index = prev.findIndex(p => p === piece);
       const newPieces = [...prev];
-      
-      
+
+
       if (connections.length > 0) {
         const firstConnection = connections[0];
         const newAnchor = nextPiece.anchors.find(a => a.type === firstConnection.pieceAnchor.type);
-        
+
         newPieces[index] = {
           ...piece,
           piece: nextPiece,
@@ -1413,28 +1445,28 @@ const handleDragMove = (e) => {
           uniqueId: Date.now().toString()
         };
       } else {
-        newPieces[index] = { 
-          ...piece, 
+        newPieces[index] = {
+          ...piece,
           piece: nextPiece,
           uniqueId: Date.now().toString()
         };
       }
-      
+
       return newPieces;
     });
   };
 
-  
 
-  
+
+
   const handleAnchorClick = (sourcePiece, anchor) => {
-    const compatiblePieces = testPieces.filter(piece => 
+    const compatiblePieces = testPieces.filter(piece =>
       piece.anchors.some(a => compatibilityMap[anchor.type] === a.type)
     );
     if (compatiblePieces.length === 0) return;
 
     const newPiece = compatiblePieces[0];
-    const compatibleAnchor = newPiece.anchors.find(a => 
+    const compatibleAnchor = newPiece.anchors.find(a =>
       compatibilityMap[anchor.type] === a.type
     );
 
@@ -1449,37 +1481,37 @@ const handleDragMove = (e) => {
 
     setNewPieceId(uniqueId);
     setPlacedPieces(orderPieces([...placedPieces, newPlacedPiece]));
-    
+
     setTimeout(() => setNewPieceId(null), 300);
   };
 
 
 
   return (
-      <div ref={containerRef} 
-          className="relative w-full h-screen bg-gray-100 overflow-hidden"
-          onClick={isContextPlacementMode ? handleContextPlace : undefined}
-          onMouseMove={handleDragMove}
-          onTouchMove={handleDragMove}
-          onMouseUp={handleDragEnd}
-          onTouchEnd={handleDragEnd}>
+    <div ref={containerRef}
+      className="relative w-full h-screen bg-gray-100 overflow-hidden"
+      onClick={isContextPlacementMode ? handleContextPlace : undefined}
+      onMouseMove={handleDragMove}
+      onTouchMove={handleDragMove}
+      onMouseUp={handleDragEnd}
+      onTouchEnd={handleDragEnd}>
       <div className="absolute top-0 left-0 origin-top-left"
         style={{
           transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
           transition: 'transform 2s cubic-bezier(0.25, 1, 0.3, 1)',
           willChange: 'transform'
         }}>
-      {/* Add placement instruction */}
-      {isContextPlacementMode && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
-          <div className="bg-white/90 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg text-center">
-            <p className="text-gray-700 font-medium mb-1">Click anywhere to add context</p>
-            <p className="text-gray-500 text-sm">Press ESC or click Add Context again to cancel</p>
+        {/* Add placement instruction */}
+        {isContextPlacementMode && (
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+            <div className="bg-white/90 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg text-center">
+              <p className="text-gray-700 font-medium mb-1">Click anywhere to add context</p>
+              <p className="text-gray-500 text-sm">Press ESC or click Add Context again to cancel</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* SVG Layer */}
+        {/* SVG Layer */}
         {/* Furniture SVG Layer */}
         {placedPieces.map((placedPiece, index) => (
           <div
@@ -1524,41 +1556,41 @@ const handleDragMove = (e) => {
               style={{ width: '240px', height: '240px' }}
               onLoad={(e) => handleSVGLoad(e.target, 'context', figure.filename)}
             />
-          {showButtons && (
-            <div 
-              style={{ 
-                position: 'absolute',
-                left: `${figure.anchorPoint.x}px`,
-                top: `${figure.anchorPoint.y}px`,
-                transform: `scale(${1/scale})`,
-                display: 'flex',
-                gap: '4px',
-                transformOrigin: 'center'
-              }}
-            >
-              <button
-                className="bg-red-500 rounded-full w-6 h-6 text-white hover:bg-red-600 flex items-center justify-center"
-                onClick={() => handleContextDelete(figure.uniqueId)}
+            {showButtons && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `${figure.anchorPoint.x}px`,
+                  top: `${figure.anchorPoint.y}px`,
+                  transform: `scale(${1 / scale})`,
+                  display: 'flex',
+                  gap: '4px',
+                  transformOrigin: 'center'
+                }}
               >
-                -
-              </button>
-              <button
-                className="bg-blue-500 rounded-full w-6 h-6 text-white hover:bg-blue-600 flex items-center justify-center"
-                onClick={() => handleContextCycle(figure)}
-              >
-                ↻
-              </button>
-              <button
-                className={`${draggingContextId === figure.uniqueId ? 'bg-green-600' : 'bg-green-500'} rounded-full w-6 h-6 text-white hover:bg-green-600 flex items-center justify-center`}
-                onMouseDown={(e) => handleDragStart(figure.uniqueId, e)}
-                onTouchStart={(e) => handleDragStart(figure.uniqueId, e)}
-              >
-                ⇄
-              </button>
-            </div>
-          )}
-        </div>
-      ))}
+                <button
+                  className="bg-red-500 rounded-full w-6 h-6 text-white hover:bg-red-600 flex items-center justify-center"
+                  onClick={() => handleContextDelete(figure.uniqueId)}
+                >
+                  -
+                </button>
+                <button
+                  className="bg-blue-500 rounded-full w-6 h-6 text-white hover:bg-blue-600 flex items-center justify-center"
+                  onClick={() => handleContextCycle(figure)}
+                >
+                  ↻
+                </button>
+                <button
+                  className={`${draggingContextId === figure.uniqueId ? 'bg-green-600' : 'bg-green-500'} rounded-full w-6 h-6 text-white hover:bg-green-600 flex items-center justify-center`}
+                  onMouseDown={(e) => handleDragStart(figure.uniqueId, e)}
+                  onTouchStart={(e) => handleDragStart(figure.uniqueId, e)}
+                >
+                  ⇄
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
 
         {/* Controls Layer */}
         <div className="absolute inset-0" style={{ zIndex: 20000 }}>
@@ -1566,61 +1598,61 @@ const handleDragMove = (e) => {
             <React.Fragment key={`controls-${placedPiece.uniqueId}`}>
               {showButtons && (
                 <>
-            {/* Control Buttons Group */}
-            {getCompatibleReplacements(placedPiece, placedPieces).length > 0 && 
-            countActiveConnections(placedPiece, placedPieces) <= 1 &&
-            !hasActiveHeadAnchor(placedPiece, placedPieces) && (
-              <div 
-                className="absolute flex flex-col gap-1 items-center"
-                style={{
-                  left: `${placedPiece.x + placedPiece.piece.width/2}px`,
-                  top: `${placedPiece.y + placedPiece.piece.height/2}px`,
-                  transform: `translate(-50%, -50%) scale(${1/scale})`,
-                  transformOrigin: 'center',
-                  pointerEvents: 'auto'
-                }}
-              >
-                <button
-                  className="bg-blue-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
-                  onClick={(e) => handleCyclePiece(placedPiece, e)}
-                >
-                  ↻
-                </button>
-                <button
-                  className="bg-red-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPlacedPieces(pieces => pieces.filter(p => p !== placedPiece));
-                  }}
-                >
-                  -
-                </button>
-              </div>
-            )}
+                  {/* Control Buttons Group */}
+                  {getCompatibleReplacements(placedPiece, placedPieces).length > 0 &&
+                    countActiveConnections(placedPiece, placedPieces) <= 1 &&
+                    !hasActiveHeadAnchor(placedPiece, placedPieces) && (
+                      <div
+                        className="absolute flex flex-col gap-1 items-center"
+                        style={{
+                          left: `${placedPiece.x + placedPiece.piece.width / 2}px`,
+                          top: `${placedPiece.y + placedPiece.piece.height / 2}px`,
+                          transform: `translate(-50%, -50%) scale(${1 / scale})`,
+                          transformOrigin: 'center',
+                          pointerEvents: 'auto'
+                        }}
+                      >
+                        <button
+                          className="bg-blue-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
+                          onClick={(e) => handleCyclePiece(placedPiece, e)}
+                        >
+                          ↻
+                        </button>
+                        <button
+                          className="bg-red-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPlacedPieces(pieces => pieces.filter(p => p !== placedPiece));
+                          }}
+                        >
+                          -
+                        </button>
+                      </div>
+                    )}
 
-        {/* Anchor Points */}
-        {placedPiece.piece.anchors?.map((anchor, anchorIndex) => !isAnchorInUse(placedPiece, anchor) && (
-          <button
-            key={anchorIndex}
-            className="absolute bg-green-500 rounded-full flex items-center justify-center text-white text-xs shadow-sm"
-            style={{
-              left: `${placedPiece.x + anchor.x}px`,
-              top: `${placedPiece.y + anchor.y}px`,
-              width: '14px',
-              height: '14px',
-              transform: `translate(-50%, -50%) scale(${1/scale})`,
-              transformOrigin: 'center',
-              pointerEvents: 'auto'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAnchorClick(placedPiece, anchor);
-            }}
-          >
-            +
-          </button>
-        ))}
-                        </>
+                  {/* Anchor Points */}
+                  {placedPiece.piece.anchors?.map((anchor, anchorIndex) => !isAnchorInUse(placedPiece, anchor) && (
+                    <button
+                      key={anchorIndex}
+                      className="absolute bg-green-500 rounded-full flex items-center justify-center text-white text-xs shadow-sm"
+                      style={{
+                        left: `${placedPiece.x + anchor.x}px`,
+                        top: `${placedPiece.y + anchor.y}px`,
+                        width: '14px',
+                        height: '14px',
+                        transform: `translate(-50%, -50%) scale(${1 / scale})`,
+                        transformOrigin: 'center',
+                        pointerEvents: 'auto'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAnchorClick(placedPiece, anchor);
+                      }}
+                    >
+                      +
+                    </button>
+                  ))}
+                </>
               )}
             </React.Fragment>
           ))}
@@ -1631,22 +1663,22 @@ const handleDragMove = (e) => {
 
 
       {/* Color Picker */}
-      <ColorPicker 
+      <ColorPicker
         selectedTheme={selectedTheme}
         showButtons={showButtons}
         onToggleButtons={() => setShowButtons(!showButtons)}
         onThemeChange={(newTheme) => {
           setSelectedTheme(newTheme);
-          
+
           document.querySelectorAll('object[type="image/svg+xml"]').forEach(obj => {
             const svgDoc = obj.contentDocument;
             if (!svgDoc?.documentElement) return;
-            
+
             obj.style.visibility = 'hidden';
-            
+
             const svgPath = obj.data;
             const baseId = svgPath.split('/').pop().replace('.svg', '');
-            
+
             const cachedSvg = svgCache.current.get(baseId);
             if (cachedSvg) {
               const freshSvg = cachedSvg.cloneNode(true);
@@ -1655,17 +1687,17 @@ const handleDragMove = (e) => {
             } else {
               applySVGTheme(svgDoc, newTheme);
             }
-            
+
             obj.style.visibility = 'visible';
           });
         }}
       />
       {/* Add after ColorPicker */}
-    <ContextControls
-      onAddContext={handleAddContext}
-      showButtons={showButtons}
-      isContextPlacementMode={isContextPlacementMode}
-    />
+      <ContextControls
+        onAddContext={handleAddContext}
+        showButtons={showButtons}
+        isContextPlacementMode={isContextPlacementMode}
+      />
 
       {/* Bottom Controls */}
       <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg px-4 py-2 z-50">
