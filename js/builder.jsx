@@ -898,6 +898,36 @@ for (const group of allGroups) {
 
 function canPieceReplace(originalPiece, newPieceTemplate, placedPieces) {
   const connections = findConnections(originalPiece, placedPieces);
+
+  // If it's a corner-extension, check what's below it
+  if (newPieceTemplate.id.startsWith('corner-extension-')) {
+    const headConnection = connections.find(conn => 
+      conn.pieceAnchor.type.startsWith('HS') || conn.pieceAnchor.type.startsWith('FS')
+    );
+    
+    if (headConnection) {
+      const connectedPiece = headConnection.piece.piece.id;
+      if (!connectedPiece.startsWith('corner-')) return false;
+      
+      // Check if suffixes match
+      const newSuffix = newPieceTemplate.id.slice(-2);
+      const connectedSuffix = connectedPiece.slice(-2);
+      if (newSuffix !== connectedSuffix) return false;
+    }
+  }
+
+  // If it has a corner-extension above it, check if suffixes match
+  const cornerExtensionAbove = connections.find(conn => 
+    conn.piece.piece.id.startsWith('corner-extension-') &&
+    (conn.pieceAnchor.type.startsWith('HS') || conn.pieceAnchor.type.startsWith('FS'))
+  );
+
+  if (cornerExtensionAbove) {
+    const aboveSuffix = cornerExtensionAbove.piece.piece.id.slice(-2);
+    const thisSuffix = newPieceTemplate.id.slice(-2);
+    if (aboveSuffix !== thisSuffix) return false;
+  }
+
   const usedAnchorTypes = new Set(connections.map(conn => conn.pieceAnchor.type));
   return Array.from(usedAnchorTypes).every(type => 
     newPieceTemplate.anchors.some(a => a.type === type)
@@ -1384,6 +1414,9 @@ const handleDragMove = (e) => {
     });
   };
 
+  
+
+  
   const handleAnchorClick = (sourcePiece, anchor) => {
     const compatiblePieces = testPieces.filter(piece => 
       piece.anchors.some(a => compatibilityMap[anchor.type] === a.type)
