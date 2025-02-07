@@ -1015,31 +1015,33 @@ function applySVGTheme(svgDoc, theme) {
 
 const ColorPicker = ({ selectedTheme, onThemeChange, showButtons, onToggleButtons }) => {
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
-      <select
-        value={selectedTheme}
-        onChange={(e) => onThemeChange(e.target.value)}
-        className="bg-white border border-gray-300 rounded-lg shadow-sm px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer hover:border-gray-400 transition-colors duration-200"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-          backgroundPosition: 'right 0.5rem center',
-          backgroundSize: '1.5em 1.5em',
-          backgroundRepeat: 'no-repeat',
-          paddingRight: '2.5rem'
-        }}
-      >
-        {Object.entries(colorThemes).map(([themeKey, theme]) => (
-          <option key={themeKey} value={themeKey}>
-            {theme.displayName}
-          </option>
-        ))}
-      </select>
-      <button
-        onClick={onToggleButtons}
-        className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-      >
-        {showButtons ? 'Hide' : 'Show'} Buttons
-      </button>
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-3">
+      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2 flex flex-col gap-2">
+        <select
+          value={selectedTheme}
+          onChange={(e) => onThemeChange(e.target.value)}
+          className="bg-white/80 border border-gray-200 rounded-md shadow-sm px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer hover:border-gray-300 transition-colors duration-200 w-32"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+            backgroundPosition: 'right 0.5rem center',
+            backgroundSize: '1.5em 1.5em',
+            backgroundRepeat: 'no-repeat',
+            paddingRight: '2.5rem'
+          }}
+        >
+          {Object.entries(colorThemes).map(([themeKey, theme]) => (
+            <option key={themeKey} value={themeKey}>
+              {theme.displayName}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={onToggleButtons}
+          className="bg-white/80 border border-gray-200 rounded-md px-4 py-2 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm"
+        >
+          {showButtons ? 'Hide Controls' : 'Show Controls'}
+        </button>
+      </div>
     </div>
   );
 };
@@ -1108,19 +1110,27 @@ const handleDragMove = (e) => {
     setDraggingContextId(null);
   };
 
-  const ContextControls = ({ onAddContext, showButtons }) => {
+  const ContextControls = ({ onAddContext, showButtons, isContextPlacementMode }) => {
     return (
-      <div className="fixed top-24 right-4 z-50">
-        <button
-          onClick={onAddContext}
-          className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-        >
-          Add Context
-        </button>
+      <div className="fixed top-32 right-4 z-50">
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2">
+          <button
+            onClick={onAddContext}
+            className={`bg-white/80 border border-gray-200 rounded-md px-4 py-2 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm w-32 ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
+          >
+            Add Context
+          </button>
+          {isContextPlacementMode && (
+            <div className="text-xs text-gray-600 mt-2 px-2">
+              Click anywhere to place context element
+            </div>
+          )}
+        </div>
       </div>
     );
   };
-  
+
+
   // In ModuleBuilder component, add these handlers:
   const handleAddContext = () => {
     setIsContextPlacementMode(true);
@@ -1461,8 +1471,11 @@ const handleDragMove = (e) => {
         }}>
       {/* Add placement instruction */}
       {isContextPlacementMode && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/50 text-white px-4 py-2 rounded-lg backdrop-blur-sm text-sm z-50">
-          Tap location where context should be added
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+          <div className="bg-white/90 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg text-center">
+            <p className="text-gray-700 font-medium mb-1">Click anywhere to add context</p>
+            <p className="text-gray-500 text-sm">Press ESC or click Add Context again to cancel</p>
+          </div>
         </div>
       )}
 
@@ -1635,10 +1648,11 @@ const handleDragMove = (e) => {
         }}
       />
       {/* Add after ColorPicker */}
-      <ContextControls
-        onAddContext={handleAddContext}
-        showButtons={showButtons}
-      />
+    <ContextControls
+      onAddContext={handleAddContext}
+      showButtons={showButtons}
+      isContextPlacementMode={isContextPlacementMode}
+    />
 
       {/* Bottom Controls */}
       <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg px-4 py-2 z-50">
