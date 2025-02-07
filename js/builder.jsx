@@ -4,6 +4,10 @@ const compatibilityMap = {
   'HSNW': 'FSNW',  //'head-std-NE': 'foot-std-NE',
   'FSNE': 'HSNE',
   'FSNW': 'HSNW',
+  'HWNE': 'FWNE',  //'head-wide-NE': 'foot-wide-NE',
+  'HWNW': 'FWNW',  //'head-wide-NE': 'foot-wide-NE',
+  'FWNE': 'HWNE',
+  'FWNW': 'HWNW',
   'SW': 'NE',
   'NE': 'SW',
   'NW': 'SE',
@@ -179,7 +183,79 @@ const moduleFilenames = [
       { type: "HSNW", x: 130.886865, y: 109.818297 },
       { type: "FSNW", x: 130.886865, y: 139.408133 }      
     ]
+  },  
+  {
+    id: 'wide-base-NE',
+    filename: 'wide-base-NE.svg',
+    anchors: [
+      { type: "HWNE", x: 123.440863, y: 99.040327 },
+      { type: "SW", x: 62.67575, y: 151.612438 },
+      { type: "NE", x: 184.205976, y: 81.446929 }          
+    ]
   },
+  {
+    id: 'wide-base-NW',
+    filename: 'wide-base-NW.svg',
+    anchors: [
+      { type: "NW", x: 60.746793, y: 81.446929 },
+      { type: "SE", x: 182.277019, y: 151.612438 },
+      { type: "HWNW", x: 121.511852, y: 99.040327 }                
+    ]
+  },
+  {
+    id: 'wide-extension-NE',
+    filename: 'wide-extension-NE.svg',
+    anchors: [
+      { type: "HWNE", x: 118.950485, y: 105.604582 },
+      { type: "FWNE", x: 118.950485, y: 135.194418 }      
+    ]
+  },
+  {
+    id: 'wide-extension-NW',
+    filename: 'wide-extension-NW.svg',
+    anchors: [
+      { type: "FWNW", x: 118.105399, y: 135.194418 },
+      { type: "HWNW", x: 118.105399, y: 105.604582 }        
+    ]
+  },
+
+
+  {
+    id: 'adapter-unit-NE',
+    filename: 'adapter-unit-NE.svg',
+    anchors: [
+      { type: "FWNE", x: 124.221766, y: 139.173491 },
+      { type: "HSNE", x: 142.889358, y: 98.805885 }             
+    ]
+  },
+  {
+    id: 'adapter-unit-SE',
+    filename: 'adapter-unit-SE.svg',
+    anchors: [
+      { type: "FWNW", x: 114.817492, y: 137.652845 },
+      { type: "HSNW", x: 133.485138, y: 118.840748 }                     
+    ]
+  },
+  {
+    id: 'adapter-unit-SW',
+    filename: 'adapter-unit-SW.svg',
+    anchors: [
+      { type: "HSNE", x: 104.70945, y: 125.640295 },
+      { type: "FWNE", x: 123.377096, y: 144.452392 },       
+    ]
+  },
+  {
+    id: 'adapter-unit-NW',
+    filename: 'adapter-unit-NW.svg',
+    anchors: [
+      { type: "HSNW", x: 106.253397, y: 96.103436 },
+      { type: "FWNW", x: 124.920989, y: 136.471043 }           
+    ]
+  },
+
+
+
+
   {
     id: 'corner-base-NE',
     filename: 'corner-base-NE.svg',
@@ -234,11 +310,55 @@ const moduleFilenames = [
     ]
   },
   {
+    id: 'corner-extension-SW',
+    filename: 'corner-extension-SW.svg',
+    anchors: [
+      { type: "HSNE", x: 111.418787, y: 97.066035 },
+      { type: "FSNE", x: 111.418787, y: 126.655871 }                
+    ]
+  },
+  {
+    id: 'corner-extension-NW',
+    filename: 'corner-extension-NW.svg',
+    anchors: [
+      { type: "HSNW", x: 131.237134, y: 115.74989 },
+      { type: "FSNW", x: 131.237188, y: 145.339726 }  
+    ]
+  },
+  {
+    id: 'corner-extension-NE',
+    filename: 'corner-extension-NE.svg',
+    anchors: [
+      { type: "HSNE", x: 108.746724, y: 115.74989 },
+      { type: "FSNE", x: 108.746724, y: 145.339726 }      
+    ]
+  },
+  {
     id: 'lamp-NW',
     filename: 'lamp-NW.svg',
     anchors: [
-      { type: "FSNW", x: 129.210985, y: 146.854794 }     
-         
+      { type: "FSNW", x: 129.210985, y: 146.854794 }    
+    ]
+  },
+  {
+    id: 'lamp-NE',
+    filename: 'lamp-NE.svg',
+    anchors: [
+      { type: "FSNE", x: 129.210985, y: 146.854794 }    
+    ]
+  },
+  {
+    id: 'lamp-SE',
+    filename: 'lamp-SE.svg',
+    anchors: [
+      { type: "FSNW", x: 106.750408, y: 147.351661 } 
+    ]
+  },
+  {
+    id: 'lamp-SW',
+    filename: 'lamp-SW.svg',
+    anchors: [
+      { type: "FSNE", x: 133.249592, y: 147.351661 }
     ]
   }
   
@@ -338,9 +458,11 @@ function findGroupFromRoot(root, placedPieces, visited = new Set()) {
   placedPieces.forEach(piece => {
     if (!visited.has(piece) && root.piece.anchors.some(rootAnchor => {
       return piece.piece.anchors.some(pieceAnchor => {
-        // Check for FSNE-HSNE connections
-        const isHeadToFoot = (rootAnchor.type.startsWith('HS') && pieceAnchor.type.startsWith('FS'));
-        const isFootToHead = (rootAnchor.type.startsWith('FS') && pieceAnchor.type.startsWith('HS'));
+        // Check for both standard and wide head-foot connections
+        const isHeadToFoot = ((rootAnchor.type.startsWith('HS') || rootAnchor.type.startsWith('HW')) && 
+                             (pieceAnchor.type.startsWith('FS') || pieceAnchor.type.startsWith('FW')));
+        const isFootToHead = ((rootAnchor.type.startsWith('FS') || rootAnchor.type.startsWith('FW')) && 
+                             (pieceAnchor.type.startsWith('HS') || pieceAnchor.type.startsWith('HW')));
         if (!isHeadToFoot && !isFootToHead) return false;
 
         const [x1, y1] = [root.x + rootAnchor.x, root.y + rootAnchor.y];
@@ -380,7 +502,6 @@ function generateConfigCode(placedPieces, placedContextFigures) {
     pieces: findGroupFromRoot(root, placedPieces)
   }));
 
-  // Helper function to format a single vertical group
   function formatGroup(group) {
     if (group.pieces.length === 0) return '';
     
@@ -395,8 +516,10 @@ function generateConfigCode(placedPieces, placedContextFigures) {
         const nextPiece = sortedPieces[i + 1];
         const verticalConn = findConnections(piece, [nextPiece])
           .find(conn => 
-            (conn.pieceAnchor.type.startsWith('FS') && conn.otherAnchor.type.startsWith('HS')) ||
-            (conn.pieceAnchor.type.startsWith('HS') && conn.otherAnchor.type.startsWith('FS'))
+            ((conn.pieceAnchor.type.startsWith('FS') || conn.pieceAnchor.type.startsWith('FW')) && 
+             (conn.otherAnchor.type.startsWith('HS') || conn.otherAnchor.type.startsWith('HW'))) ||
+            ((conn.pieceAnchor.type.startsWith('HS') || conn.pieceAnchor.type.startsWith('HW')) && 
+             (conn.otherAnchor.type.startsWith('FS') || conn.otherAnchor.type.startsWith('FW')))
           );
         
         if (verticalConn) {
@@ -622,20 +745,21 @@ async function animateConfiguration(code, setPlacedPieces, setNewPieceId, setPla
     let lastPiece = null;
     let pendingConnection = null;
 
-    function isVerticalConnection(token) {
-        return /^(HS|FS)(NE|NW)-(HS|FS)(NE|NW)$/.test(token);
-    }
-    
-    function analyzeConnection(token) {
-        if (!isVerticalConnection(token)) return null;
-        const [source, target] = token.split('-');
-        return {
-            source,
-            target,
-            isReversed: source.startsWith('FS'),
-            direction: source.endsWith('NE') ? 'NE' : 'NW'
-        };
-    }
+  function isVerticalConnection(token) {
+      // Updated to include both standard and wide variants
+      return /^(HS|FS|HW|FW)(NE|NW)-(HS|FS|HW|FW)(NE|NW)$/.test(token);
+  }
+
+  function analyzeConnection(token) {
+      if (!isVerticalConnection(token)) return null;
+      const [source, target] = token.split('-');
+      return {
+          source,
+          target,
+          isReversed: source.startsWith('F'), // Changed to check for any F prefix
+          direction: source.endsWith('NE') ? 'NE' : 'NW'
+      };
+  }
     
     while (i < tokens.length && tokens[i] !== ')') {
         const token = tokens[i];

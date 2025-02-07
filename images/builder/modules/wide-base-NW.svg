@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="120pt" height="120pt" viewBox="0 0 120 120" overflow="visible" xmlns="http://www.w3.org/2000/svg">
+  <path d="M30.6938,38.83957 L30.6938,39.395 L26.02811,36.70127 L26.02811,36.11809 z" stroke="Black" stroke-width="0" fill="#BBBBBB" fill-opacity="1" />
+  <path d="M30.6938,53.63418 L30.6938,54.21735 L26.02811,51.52362 L26.02811,50.94044 z" stroke="Black" stroke-width="0" fill="#BBBBBB" fill-opacity="1" />
+  <path d="M78.79923,81.40787 L78.79923,81.99104 L31.8842,54.90463 L31.8842,54.32146 z" stroke="Black" stroke-width="0" fill="#BBBBBB" fill-opacity="1" />
+  <path d="M79.98963,82.67832 L79.98963,82.09515 L85.79164,85.44494 L85.79164,86.02811 z" stroke="Black" stroke-width="0" fill="#BBBBBB" fill-opacity="1" />
+  <path d="M31.8842,40.08228 L31.8842,39.4991 L78.80103,66.58656 L78.79923,67.16869 z" stroke="Black" stroke-width="0" fill="#BBBBBB" fill-opacity="1" />
+  <path d="M79.98964,67.85597 L79.98968,67.27285 L85.79164,70.62258 L85.79164,71.20576 z" stroke="Black" stroke-width="0" fill="#BBBBBB" fill-opacity="1" />
+  <path d="M85.79164,71.20576 L85.79164,70.62258 L95.47165,65.03383 L95.47165,65.617 z" stroke="Black" stroke-width="0" fill="#CCCCCC" fill-opacity="1" />
+  <path d="M95.47165,80.43935 L85.79164,86.02811 L85.79164,85.44494 L95.47165,79.85618 z" stroke="Black" stroke-width="0" fill="#CCCCCC" fill-opacity="1" />
+  <path d="M31.8842,39.4991 L31.8842,38.83957 L31.70987,38.59658 C31.52376,38.46489 31.05423,38.46489 30.86813,38.59658 L30.69559,38.81287 L26.02811,36.11809 L35.70811,30.52934 L95.47165,65.03383 L85.79164,70.62258 L79.98968,67.27285 L79.98963,66.61325 L79.8153,66.37026 C79.6292,66.23857 79.15966,66.23857 78.97356,66.37026 L78.80103,66.58656 z" stroke="Black" stroke-width="0" fill="#EEEEEE" fill-opacity="1" />
+  <path d="M78.79923,70.23035 L78.79923,81.40787 L31.8842,54.32146 L31.88432,47.55928 L35.70811,45.35169 z" stroke="Black" stroke-width="0" fill="#EEEEEE" fill-opacity="1" />
+  <path d="M30.6938,53.63418 L26.02811,50.94044 L30.6938,48.24671 z" stroke="Black" stroke-width="0" fill="#EEEEEE" fill-opacity="1" />
+  <path d="M85.79164,85.44494 L79.98963,82.09515 L79.98963,70.91763 L95.47165,79.85618 z" stroke="Black" stroke-width="0" fill="#EEEEEE" fill-opacity="1" />
+  <path d="M31.88424,55.35928 L31.8842,54.90463 L32.27803,55.13201 z" stroke="Black" stroke-width="0" fill="#555555" fill-opacity="1" />
+  <path d="M78.80103,66.58657 L78.97356,66.37026 C79.15966,66.23857 79.6292,66.23857 79.8153,66.37026 L79.98963,66.61325 L79.8153,66.85624 C79.6292,66.98793 79.15966,66.98793 78.97356,66.85624 z" stroke="Black" stroke-width="0" fill="#555555" fill-opacity="1" />
+  <path d="M90.80596,60.36844 L90.63163,60.61143 C90.44553,60.74312 89.97599,60.74312 89.78989,60.61143 L89.61576,60.37733 L89.78989,60.12545 C89.97599,59.99376 90.44553,59.99376 90.63163,60.12545 z" stroke="Black" stroke-width="0" fill="#555555" fill-opacity="1" />
+  <path d="M79.98963,68.31072 L79.98964,67.85597 L80.38346,68.08334 z" stroke="Black" stroke-width="0" fill="#555555" fill-opacity="1" />
+  <path d="M79.98964,83.13306 L79.98963,82.67832 L80.38346,82.9057 z" stroke="Black" stroke-width="0" fill="#555555" fill-opacity="1" />
+  <path d="M31.8841,38.84846 L31.70987,39.08255 C31.52376,39.21424 31.05423,39.21424 30.86813,39.08255 L30.6939,38.84846 L30.86813,38.59658 C31.05423,38.46489 31.52376,38.46489 31.70987,38.59658 z" stroke="Black" stroke-width="0" fill="#555555" fill-opacity="1" />
+  <path d="M31.8842,40.08228 L32.27803,40.30966 L31.8842,40.53704 z" stroke="Black" stroke-width="0" fill="#555555" fill-opacity="1" />
+  <path d="M41.51013,32.59475 L41.68446,32.35176 C41.87056,32.22007 42.3401,32.22007 42.5262,32.35176 L42.70053,32.59475 L42.5262,32.83774 C42.3401,32.96943 41.87056,32.96943 41.68446,32.83774 z" stroke="Black" stroke-width="0" fill="#555555" fill-opacity="1" />
+  <path d="M90.80586,60.37733 L90.80596,62.34009 L89.61556,61.65281 L89.61566,60.37733 L89.78989,60.61143 C89.97599,60.74312 90.44553,60.74312 90.63163,60.61143 z" stroke="Black" stroke-width="0" fill="#777777" fill-opacity="1" />
+  <path d="M42.5262,32.83774 L42.70043,32.60365 L42.70053,34.56641 L41.51013,33.87913 L41.51023,32.60364 L41.68446,32.83774 C41.87056,32.96943 42.3401,32.96943 42.5262,32.83774 z" stroke="Black" stroke-width="0" fill="#777777" fill-opacity="1" />
+  <path d="M89.61556,68.99802 L90.80596,68.31074 L90.80596,77.16245 L89.61556,76.47517 z" stroke="Black" stroke-width="0" fill="#777777" fill-opacity="1" />
+  <path d="M31.8842,56.33135 L31.8842,59.34787 L31.70987,59.59086 C31.52376,59.72255 31.05423,59.72255 30.86813,59.59086 L30.6938,59.34787 L30.6939,38.84846 L30.86813,39.08255 C31.05423,39.21424 31.52376,39.21424 31.70987,39.08255 L31.8841,38.84846 L31.8842,40.53704 L32.27803,40.30966 L33.11977,40.79564 L31.8842,41.509 L31.88424,55.35928 L32.27803,55.13201 L33.11977,55.61799 z" stroke="Black" stroke-width="0" fill="#777777" fill-opacity="1" />
+  <path d="M41.5101,48.7014 L41.51013,45.63981 L42.70053,46.32709 L42.70053,49.38876 z" stroke="Black" stroke-width="0" fill="#777777" fill-opacity="1" />
+  <path d="M79.98963,69.28268 L79.98964,83.13306 L80.38346,82.9057 L81.2252,83.39168 L79.98963,84.10503 L79.98963,87.12155 L79.8153,87.36455 C79.6292,87.49623 79.15966,87.49623 78.97356,87.36455 L78.79923,87.12155 L78.79933,66.62215 L78.97356,66.85624 C79.15966,66.98793 79.6292,66.98793 79.8153,66.85624 L79.98953,66.62215 L79.98963,68.31072 L80.38346,68.08334 L81.2252,68.56932 z" stroke="Black" stroke-width="0" fill="#777777" fill-opacity="1" />
+  <path d="M26.02813,50.94047 L30.69382,48.24673" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M26.02813,51.52364 L26.02813,50.94047" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M30.69382,54.21738 L26.02813,51.52364" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M30.69382,59.34789 L30.69382,54.21738" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M30.86813,59.59086 L30.6938,59.34787" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M31.70987,59.59086 C31.52376,59.72255 31.05423,59.72255 30.86813,59.59086" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M31.88422,56.33137 L31.88422,59.34789" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M78.79926,81.99107 L33.11979,55.61801" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M78.79926,87.12158 L78.79926,81.99107" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M78.97356,87.36455 L78.79923,87.12155" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M79.8153,87.36455 C79.6292,87.49623 79.15966,87.49623 78.97356,87.36455" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M79.98963,87.12155 L79.8153,87.36455" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M79.98965,84.10506 L79.98965,87.12158" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M81.22523,83.3917 L79.98965,84.10506" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M85.79166,86.02814 L81.22523,83.3917" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M95.47167,80.43938 L85.79166,86.02814" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M31.88435,47.55931 L35.70814,45.35171" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M31.88422,41.50902 L31.88435,47.55931" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M33.11979,40.79566 L31.88422,41.50902" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M41.51015,45.63984 L33.11979,40.79566" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M35.70814,45.35171 L41.51012,48.70142" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M42.70055,49.38878 L78.79926,70.23038" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M42.70055,46.32711 L42.70055,49.38878" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M89.61559,68.99804 L85.79166,71.20578" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M89.61559,76.47519 L89.61559,68.99804" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M79.98965,70.91766 L89.61559,76.47519" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M79.98965,69.28271 L79.98965,70.91766" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M81.22523,68.56935 L79.98965,69.28271" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M79.98963,66.61325 L79.8153,66.37026 C79.6292,66.23857 79.15966,66.23857 78.97356,66.37026 L78.79923,66.61325" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M31.8842,38.83957 L31.70987,38.59658 C31.52376,38.46489 31.05423,38.46489 30.86813,38.59658 L30.6938,38.83957" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M81.2253,83.39165 L79.8153,84.20572" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M78.79923,87.12155 L78.79923,66.61325" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M79.98963,66.61325 L79.98963,68.31072" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M79.98963,69.28268 L79.98963,83.13305" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M35.70814,30.52936 L95.47167,65.03385" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M85.79166,71.20578 L79.98966,67.856" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M78.79926,67.16872 L31.88422,40.08231" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M31.70986,56.43204 L33.12002,55.61788" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M81.2253,68.56931 L79.8153,69.38337" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M31.8842,38.83957 L31.8842,40.53704" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M31.8842,41.509 L31.8842,55.35921" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M30.6938,38.83957 L30.6938,59.34787" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M35.70814,45.35171 L78.79931,70.23041" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M79.98965,70.91766 L95.47167,79.8562" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M85.79166,86.02814 L79.98965,82.67834" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M78.79926,81.99107 L31.88422,54.90466" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M31.70986,41.60968 L33.1198,40.79565" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M95.47167,65.61703 L85.79166,71.20578" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M95.47167,79.8562 L95.47167,80.43938" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M90.80598,77.16247 L95.47167,79.8562" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M90.80598,68.31076 L90.80598,77.16247" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M95.47167,65.61703 L90.80598,68.31076" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M95.47167,65.03385 L95.47167,65.61703" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M90.80598,62.34011 L95.47167,65.03385" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M90.80598,60.36847 L90.80598,62.34011" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M90.63163,60.12545 L90.80596,60.36844" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M89.78989,60.12545 C89.97599,59.99376 90.44553,59.99376 90.63163,60.12545" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M89.61556,60.36844 L89.78989,60.12545" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M30.69382,39.39503 L26.02813,36.70129" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M42.70055,32.59478 L42.70055,34.56643" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M85.79166,71.20578 L81.22523,68.56935" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M42.5262,32.35176 L42.70053,32.59475" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M41.68446,32.35176 C41.87056,32.22007 42.3401,32.22007 42.5262,32.35176" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M41.51015,33.87915 L41.51025,32.60367" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M26.02813,36.70129 L26.02813,36.11811" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M78.79926,67.16872 L42.70055,46.32711" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M30.69382,48.24673 L30.69382,39.39503" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M78.79926,70.23038 L78.79926,67.16872" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M35.70814,30.52936 L41.51015,33.87915" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M26.02813,36.11811 L35.70814,30.52936" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M41.51012,48.70142 L41.51015,45.63984" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M89.61559,61.65284 L89.61568,60.37736" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M42.70055,34.56643 L89.61559,61.65284" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M41.51013,32.59475 L41.68446,32.35176" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M33.11979,55.61801 L31.88422,56.33137" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M31.8842,59.34787 L31.70987,59.59086" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M42.70053,32.59475 L42.70053,34.56641" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M42.5262,32.83774 L42.70053,32.59475" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M78.79923,87.12155 L78.97356,87.36455 C79.15966,87.49623 79.6292,87.49623 79.8153,87.36455 L79.98963,87.12155" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M79.98963,84.10503 L79.98963,87.12155" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M89.78989,60.12545 L89.61556,60.36844" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M90.80596,60.36844 L90.80596,62.34009" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M89.61556,60.36844 L89.78989,60.61143 C89.97599,60.74312 90.44553,60.74312 90.63163,60.61143 L90.80596,60.36844" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M26.02813,36.11811 L35.70814,30.52936" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M26.02813,36.70129 L26.02813,36.11811" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M95.47167,65.61703 L95.47167,65.03385" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M85.79166,71.20578 L85.79166,70.6226 L79.98975,67.27287" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M31.70987,59.59086 L31.8842,59.34787" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M30.6938,59.34787 L30.86813,59.59086 C31.05423,59.72255 31.52376,59.72255 31.70987,59.59086" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M95.47167,80.43938 L85.79166,86.02814" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M95.47167,79.8562 L85.79166,85.44496" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M30.69382,54.21738 L26.02813,51.52364" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M30.69382,53.6342 L26.02813,50.94047" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M30.69562,38.81289 L26.02813,36.11811" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M31.8842,56.33135 L31.8842,59.34787" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M30.6938,38.83957 L30.86813,39.08255 C31.05423,39.21424 31.52376,39.21424 31.70987,39.08255" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M89.61556,61.65281 L89.61556,60.36844" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M89.61556,76.47517 L89.61556,68.99802" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M90.80596,68.31074 L90.80596,77.16245" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M30.69382,39.39503 L26.02813,36.70129" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M41.51013,33.87913 L41.51013,32.59475" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M78.79926,81.40789 L31.88422,54.32148" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M80.38367,82.90562 L79.8153,83.23376" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M78.79923,66.61325 L78.97356,66.85624 C79.15966,66.98793 79.6292,66.98793 79.8153,66.85624 L79.98963,66.61325" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M78.8011,66.5866 L31.88422,39.49913" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M31.70986,40.63773 L32.27816,40.30962" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M85.79166,85.44496 L79.98965,82.09517" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M80.38367,68.08327 L79.8153,68.41142" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M31.70986,55.46008 L32.27813,55.13199" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M41.51013,48.70135 L41.51013,45.63981" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M42.70053,46.32702 L42.70053,49.38876" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M95.47167,65.03385 L85.79166,70.6226" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M26.02813,50.94047 L30.69388,48.2467" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M31.88447,47.55931 L35.70814,45.35171" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M85.79166,86.02814 L85.79166,85.44496" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M95.47167,80.43938 L95.47167,79.8562" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M26.02813,51.52364 L26.02813,50.94047" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M31.70987,39.08255 L31.8842,38.83957" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M90.80596,60.36844 L90.63163,60.12545 C90.44553,59.99376 89.97599,59.99376 89.78989,60.12545" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M41.51013,32.59475 L41.68446,32.83774 C41.87056,32.96943 42.3401,32.96943 42.5262,32.83774 L42.5262,32.35176 C42.3401,32.22007 41.87056,32.22007 41.68446,32.35176 z" stroke="#111111" stroke-width="0.24" fill="none" />
+</svg>
