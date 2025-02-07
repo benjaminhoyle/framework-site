@@ -1566,48 +1566,61 @@ const handleDragMove = (e) => {
             <React.Fragment key={`controls-${placedPiece.uniqueId}`}>
               {showButtons && (
                 <>
-                  {/* Cycle Button */}
-                  {getCompatibleReplacements(placedPiece, placedPieces).length > 0 && 
-                   countActiveConnections(placedPiece, placedPieces) <= 1 &&
-                   !hasActiveHeadAnchor(placedPiece, placedPieces) && (
-                    <button
-                      className="absolute bg-blue-500 rounded-full hover:bg-blue-600 flex items-center justify-center text-white w-6 h-6"
-                      style={{
-                        left: `${placedPiece.x + placedPiece.piece.width/2}px`,
-                        top: `${placedPiece.y + placedPiece.piece.height/2}px`,
-                        transform: `translate(-50%, -50%) scale(${1/scale})`,
-                        transformOrigin: 'center',
-                        pointerEvents: 'auto'
-                      }}
-                      onClick={(e) => handleCyclePiece(placedPiece, e)}
-                    >
-                      ↻
-                    </button>
-                  )}
+            {/* Control Buttons Group */}
+            {getCompatibleReplacements(placedPiece, placedPieces).length > 0 && 
+            countActiveConnections(placedPiece, placedPieces) <= 1 &&
+            !hasActiveHeadAnchor(placedPiece, placedPieces) && (
+              <div 
+                className="absolute flex flex-col gap-1 items-center"
+                style={{
+                  left: `${placedPiece.x + placedPiece.piece.width/2}px`,
+                  top: `${placedPiece.y + placedPiece.piece.height/2}px`,
+                  transform: `translate(-50%, -50%) scale(${1/scale})`,
+                  transformOrigin: 'center',
+                  pointerEvents: 'auto'
+                }}
+              >
+                <button
+                  className="bg-blue-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
+                  onClick={(e) => handleCyclePiece(placedPiece, e)}
+                >
+                  ↻
+                </button>
+                <button
+                  className="bg-red-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPlacedPieces(pieces => pieces.filter(p => p !== placedPiece));
+                  }}
+                >
+                  -
+                </button>
+              </div>
+            )}
 
-                  {/* Anchor Points */}
-                  {placedPiece.piece.anchors?.map((anchor, anchorIndex) => !isAnchorInUse(placedPiece, anchor) && (
-                    <button
-                      key={anchorIndex}
-                      className="absolute bg-red-500 rounded-full hover:bg-red-600 flex items-center justify-center text-white text-sm cursor-pointer"
-                      style={{
-                        left: `${placedPiece.x + anchor.x}px`,
-                        top: `${placedPiece.y + anchor.y}px`,
-                        width: '16px',
-                        height: '16px',
-                        transform: `translate(-50%, -50%) scale(${1/scale})`,
-                        transformOrigin: 'center',
-                        pointerEvents: 'auto'
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAnchorClick(placedPiece, anchor);
-                      }}
-                    >
-                      +
-                    </button>
-                  ))}
-                </>
+        {/* Anchor Points */}
+        {placedPiece.piece.anchors?.map((anchor, anchorIndex) => !isAnchorInUse(placedPiece, anchor) && (
+          <button
+            key={anchorIndex}
+            className="absolute bg-green-500 rounded-full flex items-center justify-center text-white text-xs shadow-sm"
+            style={{
+              left: `${placedPiece.x + anchor.x}px`,
+              top: `${placedPiece.y + anchor.y}px`,
+              width: '14px',
+              height: '14px',
+              transform: `translate(-50%, -50%) scale(${1/scale})`,
+              transformOrigin: 'center',
+              pointerEvents: 'auto'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAnchorClick(placedPiece, anchor);
+            }}
+          >
+            +
+          </button>
+        ))}
+                        </>
               )}
             </React.Fragment>
           ))}
