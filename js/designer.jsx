@@ -360,7 +360,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNE", x: 133.249592, y: 147.351661 }
     ]
-  }  ,
+  },
   {
     id: 'lamp-NW-2',
     filename: 'lamp-NW-2.svg',
@@ -408,11 +408,11 @@ const contextFigures = [
     id: 'cxt_woman-bed',
     filename: 'cxt_woman-bed.svg',
     anchorPoint: { x: 124.064914, y: 203.815396 }
-  },  
+  },
   {
     id: 'cxt_sofa-1',
     filename: 'cxt_sofa-1.svg',
-    anchorPoint: {x: 175.613618, y: 226.63924 }
+    anchorPoint: { x: 175.613618, y: 226.63924 }
 
   },
   {
@@ -433,12 +433,12 @@ const contextFigures = [
   {
     id: 'cxt_fruit-bowl-1',
     filename: 'cxt_fruit-bowl-1.svg',
-    anchorPoint: {x: 126.299744, y: 139.27703 }
+    anchorPoint: { x: 126.299744, y: 139.27703 }
   },
   {
     id: 'cxt_fruit-bowl-2',
     filename: 'cxt_fruit-bowl-2.svg',
-    anchorPoint: {x: 120.812059, y: 132.695053 }
+    anchorPoint: { x: 120.812059, y: 132.695053 }
   },
   {
     id: 'cxt_coffee-cup-1',
@@ -453,7 +453,7 @@ const contextFigures = [
   {
     id: 'cxt_hanger-1',
     filename: 'cxt_hangers-1.svg',
-    anchorPoint: {x: 109.672563, y: 143.278959 }
+    anchorPoint: { x: 109.672563, y: 143.278959 }
   }
 ];
 
@@ -1103,11 +1103,9 @@ const ColorPicker = ({ selectedTheme, onThemeChange, showButtons, onToggleButton
 };
 
 // Add this before ModuleBuilder component
-const ControlsKey = () => {
-  const [isExpanded, setIsExpanded] = React.useState(true); // Start expanded
+const ControlsKey = ({ isExpanded, setIsExpanded }) => {
   const [hasInteracted, setHasInteracted] = React.useState(false);
-  
-  // Add click handler to document on mount
+
   React.useEffect(() => {
     const handleFirstClick = () => {
       if (!hasInteracted) {
@@ -1119,6 +1117,8 @@ const ControlsKey = () => {
     document.addEventListener('click', handleFirstClick);
     return () => document.removeEventListener('click', handleFirstClick);
   }, [hasInteracted]);
+
+  // Rest of component remains the same
 
   const controls = [
     { symbol: '↻', description: 'Cycle through available objects', color: 'bg-blue-500' },
@@ -1137,9 +1137,9 @@ const ControlsKey = () => {
           }}
           className="w-full text-left px-2 py-1 text-sm text-gray-700 hover:text-gray-900 focus:outline-none"
         >
-          {isExpanded ? 'Hide Controls Key' : 'Show Controls Key'}
+          {isExpanded ? 'Hide Help' : 'Show Help'}
         </button>
-        
+
         {isExpanded && (
           <div className="mt-2 space-y-2">
             {controls.map((control, index) => (
@@ -1175,6 +1175,34 @@ function ModuleBuilder() {
   const [isContextPlacementMode, setIsContextPlacementMode] = React.useState(false);
   const [draggingContextId, setDraggingContextId] = React.useState(null);
   const dragStartRef = React.useRef({ x: 0, y: 0 });
+  const [isExpanded, setIsExpanded] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadFromHash = async () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#')) {
+        const hashContent = decodeURIComponent(hash.slice(1));
+        if (hashContent) {
+          // Hide controls when loading from URL
+          setShowButtons(false);
+          setIsExpanded(false);
+
+          const [code, theme] = hashContent.split(';');
+          if (theme && Object.keys(colorThemes).includes(theme)) {
+            setSelectedTheme(theme);
+          }
+          if (code) {
+            setInputCode(code);
+            // Add delay before starting animation
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await animateConfiguration(code, setPlacedPieces, setNewPieceId, setPlacedContextFigures);
+          }
+        }
+      }
+    };
+    loadFromHash();
+  }, []);
+
 
   // Update handleDragStart to store the initial click position
   const handleDragStart = (figureId, e) => {
@@ -1457,15 +1485,17 @@ function ModuleBuilder() {
   }, [updateZoom]);
 
   React.useEffect(() => {
-    const basePiece = testPieces.find(p => p.id === 'standard-base-NE');
-    if (basePiece) {
-      setPlacedPieces([{
-        piece: basePiece,
-        x: 200,
-        y: 200,
-        rotation: 0,
-        uniqueId: 'initial'
-      }]);
+    if (!window.location.hash) {  // Only load default if no hash present
+      const basePiece = testPieces.find(p => p.id === 'standard-base-NE');
+      if (basePiece) {
+        setPlacedPieces([{
+          piece: basePiece,
+          x: 200,
+          y: 200,
+          rotation: 0,
+          uniqueId: 'initial'
+        }]);
+      }
     }
   }, []);
 
@@ -1773,8 +1803,11 @@ function ModuleBuilder() {
         }}
       />
 
-            {/* Controls Key */}
-            <ControlsKey />
+      {/* Controls Key */}
+      <ControlsKey
+        isExpanded={isExpanded}
+        setIsExpanded={setIsExpanded}
+      />
       {/* Add after ColorPicker */}
       <ContextControls
         onAddContext={handleAddContext}
@@ -1782,7 +1815,6 @@ function ModuleBuilder() {
         isContextPlacementMode={isContextPlacementMode}
       />
 
-      {/* Bottom Controls */}
       <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg px-4 py-2 z-50">
         <input
           type="text"
@@ -1801,7 +1833,25 @@ function ModuleBuilder() {
           onClick={handleCopyCode}
           className="text-gray-600 px-3 py-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 text-sm"
         >
-          Copy
+          Copy Code
+        </button>
+        <button
+          onClick={async (e) => {
+            const shareableURL = `http://localhost:8000/designer.html#${encodeURIComponent(configCode)};${selectedTheme}`;
+            try {
+              await navigator.clipboard.writeText(shareableURL);
+              const button = e.target;
+              button.textContent = 'Copied!';
+              setTimeout(() => {
+                button.textContent = 'Share URL';
+              }, 2000);
+            } catch (err) {
+              console.error('Failed to copy URL:', err);
+            }
+          }}
+          className="text-gray-600 px-3 py-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 text-sm"
+        >
+          Share URL
         </button>
         {error && (
           <div className="text-red-500 text-sm">
