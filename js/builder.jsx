@@ -97,7 +97,7 @@ const colorThemes = {
       CONTEXT_BEIGE: { fill: '#9EAAAE', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
       CONTEXT_DARK_BROWN: { fill: '#483933', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
       CONTEXT_LIGHT_BROWN: { fill: '#BD7C54', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-      CONTEXT_LINE_LIGHT: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.05' },
+      CONTEXT_LINE_LIGHT: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.1' },
       CONTEXT_LINE_DARK: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0.2' }
 
     }
@@ -119,7 +119,7 @@ const colorThemes = {
       CONTEXT_BEIGE: { fill: '#9EAAAE', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
       CONTEXT_DARK_BROWN: { fill: '#483933', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
       CONTEXT_LIGHT_BROWN: { fill: '#BD7C54', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-      CONTEXT_LINE_LIGHT: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.05' },
+      CONTEXT_LINE_LIGHT: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.1' },
       CONTEXT_LINE_DARK: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0.2' }
     }
   },
@@ -140,7 +140,7 @@ const colorThemes = {
       CONTEXT_BEIGE: { fill: '#9EAAAE', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
       CONTEXT_DARK_BROWN: { fill: '#483933', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
       CONTEXT_LIGHT_BROWN: { fill: '#BD7C54', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-      CONTEXT_LINE_LIGHT: { fill: 'none', fillOpacity: '0', stroke: '#FFFFFF', strokeWidth: '.05' },
+      CONTEXT_LINE_LIGHT: { fill: 'none', fillOpacity: '0', stroke: '#FFFFFF', strokeWidth: '.01' },
       CONTEXT_LINE_DARK: { fill: 'none', fillOpacity: '0', stroke: '#FFFFFF', strokeWidth: '0.2' }
     }
   }
@@ -360,11 +360,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNE", x: 133.249592, y: 147.351661 }
     ]
-  }
-
-
-
-  ,
+  }  ,
   {
     id: 'lamp-NW-2',
     filename: 'lamp-NW-2.svg',
@@ -412,6 +408,12 @@ const contextFigures = [
     id: 'cxt_woman-bed',
     filename: 'cxt_woman-bed.svg',
     anchorPoint: { x: 124.064914, y: 203.815396 }
+  },  
+  {
+    id: 'cxt_sofa-1',
+    filename: 'cxt_sofa-1.svg',
+    anchorPoint: {x: 175.613618, y: 226.63924 }
+
   },
   {
     id: 'cxt_plant-1',
@@ -421,19 +423,41 @@ const contextFigures = [
   {
     id: 'cxt_plant-2',
     filename: 'cxt_plant-2.svg',
-    anchorPoint: { x: 124.064914, y: 203.815396 }
+    anchorPoint: { x: 124.470299, y: 108.468635 }
+  },
+  {
+    id: 'cxt_plant-3',
+    filename: 'cxt_plant-3.svg',
+    anchorPoint: { x: 124.470299, y: 108.468635 }
   },
   {
     id: 'cxt_fruit-bowl-1',
     filename: 'cxt_fruit-bowl-1.svg',
-    anchorPoint: { x: 124.064914, y: 203.815396 }
+    anchorPoint: {x: 126.299744, y: 139.27703 }
+  },
+  {
+    id: 'cxt_fruit-bowl-2',
+    filename: 'cxt_fruit-bowl-2.svg',
+    anchorPoint: {x: 120.812059, y: 132.695053 }
+  },
+  {
+    id: 'cxt_coffee-cup-1',
+    filename: 'cxt_coffee-cup-1.svg',
+    anchorPoint: { x: 125.573715, y: 133.23317 }
   },
   {
     id: 'cxt_kid-1',
     filename: 'cxt_kid-1.svg',
     anchorPoint: { x: 124.064914, y: 203.815396 }
+  },
+  {
+    id: 'cxt_hanger-1',
+    filename: 'cxt_hangers-1.svg',
+    anchorPoint: {x: 109.672563, y: 143.278959 }
   }
 ];
+
+
 
 const testPieces = moduleFilenames.map(module => ({
   ...module,
@@ -1078,6 +1102,62 @@ const ColorPicker = ({ selectedTheme, onThemeChange, showButtons, onToggleButton
   );
 };
 
+// Add this before ModuleBuilder component
+const ControlsKey = () => {
+  const [isExpanded, setIsExpanded] = React.useState(true); // Start expanded
+  const [hasInteracted, setHasInteracted] = React.useState(false);
+  
+  // Add click handler to document on mount
+  React.useEffect(() => {
+    const handleFirstClick = () => {
+      if (!hasInteracted) {
+        setHasInteracted(true);
+        setIsExpanded(false);
+      }
+    };
+
+    document.addEventListener('click', handleFirstClick);
+    return () => document.removeEventListener('click', handleFirstClick);
+  }, [hasInteracted]);
+
+  const controls = [
+    { symbol: '↻', description: 'Cycle through available objects', color: 'bg-blue-500' },
+    { symbol: '+', description: 'Add module', color: 'bg-green-500' },
+    { symbol: '-', description: 'Remove object', color: 'bg-red-500' },
+    { symbol: '⇄', description: 'Click and drag to move context', color: 'bg-green-500' }
+  ];
+
+  return (
+    <div className="fixed top-48 right-4 z-50"> {/* Moved down by adjusting top value */}
+      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent this click from triggering the auto-hide
+            setIsExpanded(!isExpanded);
+          }}
+          className="w-full text-left px-2 py-1 text-sm text-gray-700 hover:text-gray-900 focus:outline-none"
+        >
+          {isExpanded ? 'Hide Controls Key' : 'Show Controls Key'}
+        </button>
+        
+        {isExpanded && (
+          <div className="mt-2 space-y-2">
+            {controls.map((control, index) => (
+              <div key={index} className="flex items-center gap-2 px-2 py-1">
+                <div className={`${control.color} w-5 h-5 rounded-full flex items-center justify-center text-white text-sm`}>
+                  {control.symbol}
+                </div>
+                <span className="text-sm text-gray-700">{control.description}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
 function ModuleBuilder() {
   // Replace all state declarations with these:
   const [placedPieces, setPlacedPieces] = React.useState([]);
@@ -1692,6 +1772,9 @@ function ModuleBuilder() {
           });
         }}
       />
+
+            {/* Controls Key */}
+            <ControlsKey />
       {/* Add after ColorPicker */}
       <ContextControls
         onAddContext={handleAddContext}
