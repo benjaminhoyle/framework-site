@@ -462,7 +462,7 @@ const contextFigures = [
 const testPieces = moduleFilenames.map(module => ({
   ...module,
   name: module.id.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-  imagePath: `./images/builder/modules/${module.filename}`,
+  imagePath: `./images/designer/modules/${module.filename}`,
   width: 240,
   height: 240
 }));
@@ -1630,7 +1630,7 @@ function ModuleBuilder() {
             }}
           >
             <object
-              data={`./images/builder/context/${figure.filename}`}
+              data={`./images/designer/context/${figure.filename}`}
               type="image/svg+xml"
               className="absolute pointer-events-none"
               style={{ width: '240px', height: '240px' }}
