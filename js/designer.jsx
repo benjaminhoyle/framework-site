@@ -1102,10 +1102,9 @@ const ColorPicker = ({ selectedTheme, onThemeChange, showButtons, onToggleButton
   );
 };
 
-// Add this before ModuleBuilder component
 const ControlsKey = ({ isExpanded, setIsExpanded }) => {
   const [hasInteracted, setHasInteracted] = React.useState(false);
-
+  
   React.useEffect(() => {
     const handleFirstClick = () => {
       if (!hasInteracted) {
@@ -1118,8 +1117,6 @@ const ControlsKey = ({ isExpanded, setIsExpanded }) => {
     return () => document.removeEventListener('click', handleFirstClick);
   }, [hasInteracted]);
 
-  // Rest of component remains the same
-
   const controls = [
     { symbol: '↻', description: 'Cycle through available objects', color: 'bg-blue-500' },
     { symbol: '+', description: 'Add module', color: 'bg-green-500' },
@@ -1128,20 +1125,20 @@ const ControlsKey = ({ isExpanded, setIsExpanded }) => {
   ];
 
   return (
-    <div className="fixed top-48 right-4 z-50"> {/* Moved down by adjusting top value */}
-      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2">
+    <div className="fixed top-48 right-4 z-50">
+      <div className="bg-white rounded-lg shadow-lg p-2">
         <button
           onClick={(e) => {
-            e.stopPropagation(); // Prevent this click from triggering the auto-hide
+            e.stopPropagation();
             setIsExpanded(!isExpanded);
           }}
           className="w-full text-left px-2 py-1 text-sm text-gray-700 hover:text-gray-900 focus:outline-none"
         >
           {isExpanded ? 'Hide Help' : 'Show Help'}
         </button>
-
+        
         {isExpanded && (
-          <div className="mt-2 space-y-2">
+          <div className="mt-2 space-y-2 border-t border-gray-100 pt-2">
             {controls.map((control, index) => (
               <div key={index} className="flex items-center gap-2 px-2 py-1">
                 <div className={`${control.color} w-5 h-5 rounded-full flex items-center justify-center text-white text-sm`}>
@@ -1156,7 +1153,6 @@ const ControlsKey = ({ isExpanded, setIsExpanded }) => {
     </div>
   );
 };
-
 
 function ModuleBuilder() {
   // Replace all state declarations with these:
@@ -1611,15 +1607,6 @@ function ModuleBuilder() {
           transition: 'transform 2s cubic-bezier(0.25, 1, 0.3, 1)',
           willChange: 'transform'
         }}>
-        {/* Add placement instruction */}
-        {isContextPlacementMode && (
-          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
-            <div className="bg-white/90 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg text-center">
-              <p className="text-gray-700 font-medium mb-1">Click anywhere to add context</p>
-              <p className="text-gray-500 text-sm">Press ESC or click Add Context again to cancel</p>
-            </div>
-          </div>
-        )}
 
         {/* SVG Layer */}
         {/* Furniture SVG Layer */}
@@ -1808,57 +1795,33 @@ function ModuleBuilder() {
         isExpanded={isExpanded}
         setIsExpanded={setIsExpanded}
       />
-      {/* Add after ColorPicker */}
+      {/* Add context button */}
       <ContextControls
         onAddContext={handleAddContext}
         showButtons={showButtons}
         isContextPlacementMode={isContextPlacementMode}
       />
 
-      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg px-4 py-2 z-50">
-        <input
-          type="text"
-          value={inputCode}
-          onChange={(e) => setInputCode(e.target.value)}
-          placeholder="Enter configuration code"
-          className="border border-gray-200 p-1.5 rounded-full w-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-        />
-        <button
-          onClick={handleCodeSubmit}
-          className="bg-blue-500 text-white px-3 py-1.5 rounded-full hover:bg-blue-600 transition-colors duration-200 text-sm"
-        >
-          Submit
-        </button>
-        <button
-          onClick={handleCopyCode}
-          className="text-gray-600 px-3 py-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 text-sm"
-        >
-          Copy Code
-        </button>
-        <button
-          onClick={async (e) => {
-            const shareableURL = `http://localhost:8000/designer.html#${encodeURIComponent(configCode)};${selectedTheme}`;
-            try {
-              await navigator.clipboard.writeText(shareableURL);
-              const button = e.target;
-              button.textContent = 'Copied!';
-              setTimeout(() => {
-                button.textContent = 'Share URL';
-              }, 2000);
-            } catch (err) {
-              console.error('Failed to copy URL:', err);
-            }
-          }}
-          className="text-gray-600 px-3 py-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 text-sm"
-        >
-          Share URL
-        </button>
-        {error && (
-          <div className="text-red-500 text-sm">
-            {error}
-          </div>
-        )}
-      </div>
+      {/* Share Design Button - Bottom Right */}
+      <button
+        onClick={async (e) => {
+          // make http://localhost:8000/designer.html#${ for testing
+          const shareableURL = `https://framework.co.ke/designer#${encodeURIComponent(configCode)};${selectedTheme}`;
+          try {
+            await navigator.clipboard.writeText(shareableURL);
+            const button = e.target;
+            button.textContent = 'Link Copied!';
+            setTimeout(() => {
+              button.textContent = 'Share Your Design';
+            }, 2000);
+          } catch (err) {
+            console.error('Failed to copy URL:', err);
+          }
+        }}
+        className="fixed bottom-6 right-6 bg-indigo-600 text-white px-6 py-3 rounded-full hover:bg-indigo-700 transition-colors duration-200 text-sm font-medium shadow-lg flex items-center gap-2 z-50"
+      >
+        Share Your Design
+      </button>
     </div>
   );
 }
