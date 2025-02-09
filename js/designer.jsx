@@ -147,247 +147,376 @@ const colorThemes = {
 };
 
 
-
 const moduleFilenames = [
   {
     id: 'standard-base-NE',
     filename: 'standard-base-NE.svg',
+    product: 'Standard Base',
     anchors: [
       { type: "SW", x: 77.204969, y: 147.394692 },
       { type: "NE", x: 163.478418, y: 97.584693 },
       { type: "HSNE", x: 120.341721, y: 105.000352 }
-    ]
+    ],
+    price: 6500,
+    dim_NE: 980,
+    dim_NW: 280,
+    dim_height: 430
   },
   {
     id: 'standard-base-NW',
     filename: 'standard-base-NW.svg',
+    product: 'Standard Base',
     anchors: [
       { type: "NW", x: 76.521582, y: 97.584693 },
       { type: "SE", x: 162.795031, y: 147.394692 },
       { type: "HSNW", x: 119.658279, y: 105.000352 }
-    ]
+    ],
+    price: 6500,
+    dim_NW: 980,
+    dim_NE: 280,
+    dim_height: 430
   },
   {
     id: 'standard-extension-NE',
     filename: 'standard-extension-NE.svg',
+    product: 'Standard Extension',
     anchors: [
       { type: "FSNE", x: 109.113135, y: 139.408133 },
       { type: "HSNE", x: 109.113135, y: 109.818297 }
-
-    ]
+    ],
+    price: 5500,
+    dim_NE: 980,
+    dim_NW: 280,
+    dim_height: 300
   },
   {
     id: 'standard-extension-NW',
     filename: 'standard-extension-NW.svg',
+    product: 'Standard Extension',
     anchors: [
       { type: "HSNW", x: 130.886865, y: 109.818297 },
       { type: "FSNW", x: 130.886865, y: 139.408133 }
-    ]
+    ],
+    price: 5500,
+    dim_NW: 980,
+    dim_NE: 280,
+    dim_height: 300
   },
   {
     id: 'wide-base-NE',
     filename: 'wide-base-NE.svg',
+    product: 'Wide Base',
     anchors: [
       { type: "HWNE", x: 123.440863, y: 99.040327 },
       { type: "SW", x: 62.67575, y: 151.612438 },
       { type: "NE", x: 184.205976, y: 81.446929 }
-    ]
+    ],
+    price: 7500,
+    dim_NE: 1420,
+    dim_NW: 280,
+    dim_height: 430
   },
   {
     id: 'wide-base-NW',
+    product: 'Wide Base',
     filename: 'wide-base-NW.svg',
     anchors: [
       { type: "NW", x: 60.746793, y: 81.446929 },
       { type: "SE", x: 182.277019, y: 151.612438 },
       { type: "HWNW", x: 121.511852, y: 99.040327 }
-    ]
+    ],
+    price: 7500,
+    dim_NW: 1420,
+    dim_NE: 280,
+    dim_height: 430
   },
   {
     id: 'wide-extension-NE',
     filename: 'wide-extension-NE.svg',
+    product: 'Wide Extension',
     anchors: [
       { type: "HWNE", x: 118.950485, y: 105.604582 },
       { type: "FWNE", x: 118.950485, y: 135.194418 }
-    ]
+    ],
+    price: 6500,
+    dim_NE: 1420,
+    dim_NW: 280,
+    dim_height: 300
   },
   {
     id: 'wide-extension-NW',
     filename: 'wide-extension-NW.svg',
+    product: 'Wide Extension',
     anchors: [
       { type: "FWNW", x: 118.105399, y: 135.194418 },
       { type: "HWNW", x: 118.105399, y: 105.604582 }
-    ]
+    ],
+    price: 6500,
+    dim_NW: 1420,
+    dim_NE: 280,
+    dim_height: 300
   },
 
 
   {
     id: 'adapter-unit-NE',
     filename: 'adapter-unit-NE.svg',
+    product: 'Adapter Unit',
     anchors: [
       { type: "FWNE", x: 124.221766, y: 139.173491 },
       { type: "HSNE", x: 142.889358, y: 98.805885 }
-    ]
+    ],
+    price: 7000,
+    dim_NE: 1420,
+    dim_NW: 280,
+    dim_height: 300
   },
   {
     id: 'adapter-unit-SE',
     filename: 'adapter-unit-SE.svg',
+    product: 'Adapter Unit',
     anchors: [
       { type: "FWNW", x: 114.817492, y: 137.652845 },
       { type: "HSNW", x: 133.485138, y: 118.840748 }
-    ]
+    ],
+    price: 7000,
+    dim_NE: 1420,
+    dim_NW: 280,
+    dim_height: 300
   },
   {
     id: 'adapter-unit-SW',
     filename: 'adapter-unit-SW.svg',
+    product: 'Adapter Unit',
     anchors: [
       { type: "HSNE", x: 104.70945, y: 125.640295 },
       { type: "FWNE", x: 123.377096, y: 144.452392 },
-    ]
+    ],
+    price: 7000,
+    dim_NW: 1420,
+    dim_NE: 280,
+    dim_height: 300
   },
   {
     id: 'adapter-unit-NW',
     filename: 'adapter-unit-NW.svg',
+    product: 'Adapter Unit',
     anchors: [
       { type: "HSNW", x: 106.253397, y: 96.103436 },
       { type: "FWNW", x: 124.920989, y: 136.471043 }
-    ]
+    ],
+    price: 7000,
+    dim_NW: 1420,
+    dim_NE: 280,
+    dim_height: 300
   },
-
-
-
-
   {
     id: 'corner-base-NE',
     filename: 'corner-base-NE.svg',
+    product: 'Corner Base',
     anchors: [
       { type: "NW", x: 148.102815, y: 97.832079 },
       { type: "SE", x: 170.736654, y: 110.899732 },
       { type: "SW", x: 64.166412, y: 159.360437 },
       { type: "HSNE", x: 107.679665, y: 116.739394 }
-    ]
+    ],
+    price: 7000,
+    dim_NE: 1220,
+    dim_NW: 280,
+    dim_height: 430
   },
   {
     id: 'corner-base-NW',
     filename: 'corner-base-NW.svg',
+    product: 'Corner Base',
     anchors: [
       { type: "HSNW", x: 132.328929, y: 116.739599 },
       { type: "SW", x: 69.263346, y: 110.899732 },
       { type: "NE", x: 91.897185, y: 97.832079 },
       { type: "SE", x: 175.833642, y: 159.360437 }
-
-
-    ]
+    ],
+    price: 7000,
+    dim_NW: 1220,
+    dim_NE: 280,
+    dim_height: 430
   },
   {
     id: 'corner-base-SW',
     filename: 'corner-base-SW.svg',
+    product: 'Corner Base',
     anchors: [
       { type: "SE", x: 92.091865, y: 148.200692 },
       { type: "NW", x: 69.458027, y: 135.133039 },
       { type: "HSNE", x: 132.483072, y: 94.314541 },
       { type: "NE", x: 176.02815, y: 86.672222 }
-
-    ]
+    ],
+    price: 7000,
+    dim_NE: 1220,
+    dim_NW: 280,
+    dim_height: 430
   },
   {
     id: 'corner-base-SE',
     filename: 'corner-base-SE.svg',
+    product: 'Corner Base',
     anchors: [
       { type: "NE", x: 174.384519, y: 135.133039 },
       { type: "SW", x: 151.75068, y: 148.200692 },
       { type: "HSNW", x: 111.343529, y: 94.314603 },
       { type: "NW", x: 67.814331, y: 86.672334 }
-
-    ]
+    ],
+    price: 7000,
+    dim_NW: 1220,
+    dim_NE: 280,
+    dim_height: 430
   },
   {
     id: 'corner-extension-SE',
     filename: 'corner-extension-SE.svg',
+    product: 'Corner Extension',
     anchors: [
       { type: "FSNW", x: 112.151924, y: 126.655871 },
       { type: "HSNW", x: 112.15187, y: 97.066035 }
-
-    ]
+    ],
+    price: 6000,
+    dim_NW: 1220,
+    dim_NE: 280,
+    dim_height: 300
   },
   {
     id: 'corner-extension-SW',
     filename: 'corner-extension-SW.svg',
+    product: 'Corner Extension',
     anchors: [
       { type: "HSNE", x: 111.418787, y: 97.066035 },
       { type: "FSNE", x: 111.418787, y: 126.655871 }
-    ]
+    ],
+    price: 6000,
+    dim_NE: 1220,
+    dim_NW: 280,
+    dim_height: 300
   },
   {
     id: 'corner-extension-NW',
     filename: 'corner-extension-NW.svg',
+    product: 'Corner Extension',
     anchors: [
       { type: "HSNW", x: 131.237134, y: 115.74989 },
       { type: "FSNW", x: 131.237188, y: 145.339726 }
-    ]
+    ],
+    price: 6000,
+    dim_NW: 1220,
+    dim_NE: 280,
+    dim_height: 300
   },
   {
     id: 'corner-extension-NE',
     filename: 'corner-extension-NE.svg',
+    product: 'Corner Extension',
     anchors: [
       { type: "HSNE", x: 108.746724, y: 115.74989 },
       { type: "FSNE", x: 108.746724, y: 145.339726 }
-    ]
+    ],
+    price: 6000,
+    dim_NE: 1220,
+    dim_NW: 280,
+    dim_height: 300
   },
   {
     id: 'lamp-NW',
     filename: 'lamp-NW.svg',
+    product: 'Lamp (left)',
     anchors: [
       { type: "FSNW", x: 129.210985, y: 146.854794 }
-    ]
+    ],
+    price: 2500,
+    dim_NW: 720,
+    dim_NE: 280,
+    dim_height: 760
   },
   {
     id: 'lamp-NE',
     filename: 'lamp-NE.svg',
+    product: 'Lamp (right)',
     anchors: [
       { type: "FSNE", x: 129.210985, y: 146.854794 }
-    ]
+    ],
+    price: 2500,
+    dim_NE: 720,
+    dim_NW: 280,
+    dim_height: 760
   },
   {
     id: 'lamp-SE',
     filename: 'lamp-SE.svg',
+    product: 'Lamp (left)',
     anchors: [
       { type: "FSNW", x: 106.750408, y: 147.351661 }
-    ]
+    ],
+    price: 2500,
+    dim_NW: 720,
+    dim_NE: 280,
+    dim_height: 760
   },
   {
     id: 'lamp-SW',
     filename: 'lamp-SW.svg',
+    product: 'Lamp (right)',
     anchors: [
       { type: "FSNE", x: 133.249592, y: 147.351661 }
-    ]
+    ],
+    price: 2500,
+    dim_NE: 720,
+    dim_NW: 280,
+    dim_height: 760
   },
   {
     id: 'lamp-NW-2',
     filename: 'lamp-NW-2.svg',
+    product: 'Lamp (right)',
     anchors: [
       { type: "FSNW", x: 117.580133, y: 154.714673 }
-    ]
+    ],
+    price: 2500,
+    dim_NW: 720,
+    dim_NE: 280,
+    dim_height: 760
   },
   {
     id: 'lamp-NE-2',
     filename: 'lamp-NE-2.svg',
+    product: 'Lamp (left)',
     anchors: [
       { type: "FSNE", x: 101.616181, y: 146.826659 }
-    ]
+    ],
+    price: 2500,
+    dim_NE: 720,
+    dim_NW: 280,
+    dim_height: 760
   },
   {
     id: 'lamp-SE-2',
     filename: 'lamp-SE-2.svg',
+    product: 'Lamp (right)',
     anchors: [
       { type: "FSNW", x: 109.947308, y: 165.795899 }
-    ]
+    ],
+    price: 2500,
+    dim_NW: 720,
+    dim_NE: 280,
+    dim_height: 760
   },
   {
     id: 'lamp-SW-2',
     filename: 'lamp-SW-2.svg',
+    product: 'Lamp (left)',
     anchors: [
       { type: "FSNE", x: 138.180926, y: 142.876599 }
-    ]
+    ],
+    price: 2500,
+    dim_NE: 720,
+    dim_NW: 280,
+    dim_height: 760
   }
 
 ];
@@ -1069,90 +1198,8 @@ function applySVGTheme(svgDoc, theme) {
   });
 }
 
-const ColorPicker = ({ selectedTheme, onThemeChange, showButtons, onToggleButtons }) => {
-  return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-3">
-      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2 flex flex-col gap-2">
-        <select
-          value={selectedTheme}
-          onChange={(e) => onThemeChange(e.target.value)}
-          className="bg-white/80 border border-gray-200 rounded-md shadow-sm px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer hover:border-gray-300 transition-colors duration-200 w-32"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-            backgroundPosition: 'right 0.5rem center',
-            backgroundSize: '1.5em 1.5em',
-            backgroundRepeat: 'no-repeat',
-            paddingRight: '2.5rem'
-          }}
-        >
-          {Object.entries(colorThemes).map(([themeKey, theme]) => (
-            <option key={themeKey} value={themeKey}>
-              {theme.displayName}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={onToggleButtons}
-          className="bg-white/80 border border-gray-200 rounded-md px-4 py-2 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm"
-        >
-          {showButtons ? 'Hide Controls' : 'Show Controls'}
-        </button>
-      </div>
-    </div>
-  );
-};
 
-const ControlsKey = ({ isExpanded, setIsExpanded }) => {
-  const [hasInteracted, setHasInteracted] = React.useState(false);
-  
-  React.useEffect(() => {
-    const handleFirstClick = () => {
-      if (!hasInteracted) {
-        setHasInteracted(true);
-        setIsExpanded(false);
-      }
-    };
 
-    document.addEventListener('click', handleFirstClick);
-    return () => document.removeEventListener('click', handleFirstClick);
-  }, [hasInteracted]);
-
-  const controls = [
-    { symbol: '↻', description: 'Cycle through available objects', color: 'bg-blue-500' },
-    { symbol: '+', description: 'Add module', color: 'bg-green-500' },
-    { symbol: '-', description: 'Remove object', color: 'bg-red-500' },
-    { symbol: '⇄', description: 'Click and drag to move context', color: 'bg-green-500' }
-  ];
-
-  return (
-    <div className="fixed top-48 right-4 z-50">
-      <div className="bg-white rounded-lg shadow-lg p-2">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsExpanded(!isExpanded);
-          }}
-          className="w-full text-left px-2 py-1 text-sm text-gray-700 hover:text-gray-900 focus:outline-none"
-        >
-          {isExpanded ? 'Hide Help' : 'Show Help'}
-        </button>
-        
-        {isExpanded && (
-          <div className="mt-2 space-y-2 border-t border-gray-100 pt-2">
-            {controls.map((control, index) => (
-              <div key={index} className="flex items-center gap-2 px-2 py-1">
-                <div className={`${control.color} w-5 h-5 rounded-full flex items-center justify-center text-white text-sm`}>
-                  {control.symbol}
-                </div>
-                <span className="text-sm text-gray-700">{control.description}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 function ModuleBuilder() {
   // Replace all state declarations with these:
@@ -1171,7 +1218,7 @@ function ModuleBuilder() {
   const [isContextPlacementMode, setIsContextPlacementMode] = React.useState(false);
   const [draggingContextId, setDraggingContextId] = React.useState(null);
   const dragStartRef = React.useRef({ x: 0, y: 0 });
-  const [isExpanded, setIsExpanded] = React.useState(true);
+  const [isExpanded, setIsExpanded] = React.useState(false);
 
   React.useEffect(() => {
     const loadFromHash = async () => {
@@ -1246,25 +1293,6 @@ function ModuleBuilder() {
     setDraggingContextId(null);
   };
 
-  const ContextControls = ({ onAddContext, showButtons, isContextPlacementMode }) => {
-    return (
-      <div className="fixed top-32 right-4 z-50">
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2">
-          <button
-            onClick={onAddContext}
-            className={`bg-white/80 border border-gray-200 rounded-md px-4 py-2 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm w-32 ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
-          >
-            Add Context
-          </button>
-          {isContextPlacementMode && (
-            <div className="text-xs text-gray-600 mt-2 px-2">
-              Click anywhere to place context element
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
 
   // In ModuleBuilder component, add these handlers:
@@ -1591,7 +1619,112 @@ function ModuleBuilder() {
     setTimeout(() => setNewPieceId(null), 300);
   };
 
+  const HelpDisplay = ({ isExpanded }) => {
+    if (!isExpanded) return null;
 
+    const controls = [
+      { symbol: '↻', description: 'Cycle through available objects', color: 'bg-blue-500' },
+      { symbol: '+', description: 'Add module', color: 'bg-green-500' },
+      { symbol: '-', description: 'Remove object', color: 'bg-red-500' },
+      { symbol: '⇄', description: 'Click and drag to move context', color: 'bg-green-500' }
+    ];
+
+    return (
+      <div className="absolute bottom-full mb-2 left-0 right-0">
+        <div className="bg-white rounded-lg shadow-lg p-3">
+          <div className="space-y-2">
+            {controls.map((control, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <div className={`${control.color} w-5 h-5 rounded-full flex items-center justify-center text-white text-xs shrink-0`}>
+                  {control.symbol}
+                </div>
+                <span className="text-xs text-gray-700">{control.description}</span>
+              </div>
+            ))}
+          </div>
+          <div className="absolute bottom-0 left-4 w-2 h-2 bg-white transform translate-y-1/2 rotate-45 border-r border-b border-gray-200"></div>
+        </div>
+      </div>
+    );
+  };
+
+  const EditorControls = ({ selectedTheme, onThemeChange, onAddContext, showButtons, isContextPlacementMode }) => {
+    return (
+      <div className="fixed top-4 right-4 z-50">
+        <div className="bg-white rounded-lg shadow-lg p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-600">Shelf color:</span>
+            <select
+              value={selectedTheme}
+              onChange={(e) => onThemeChange(e.target.value)}
+              className="bg-white border border-gray-200 rounded-md shadow-sm px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:border-gray-300 transition-colors duration-200 sm:text-xs md:text-sm"
+            >
+              {Object.entries(colorThemes).map(([themeKey, theme]) => (
+                <option key={themeKey} value={themeKey}>
+                  {theme.displayName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={onAddContext}
+            className={`w-full bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm sm:text-xs md:text-sm ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
+          >
+            Add Context
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const HelperControls = ({ showButtons, onToggleButtons, isExpanded, setIsExpanded }) => {
+    return (
+      <div className="fixed bottom-6 left-6 z-50">
+        <div className="relative"> {/* Add this wrapper */}
+          <div className="bg-white rounded-lg shadow-lg p-1.5 flex gap-2">
+            <div className="relative">
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 sm:text-xs md:text-sm"
+              >
+                {isExpanded ? 'Hide Help' : 'Show Help'}
+              </button>
+            </div>
+            <div className="w-px bg-gray-200"></div>
+            <button
+              onClick={onToggleButtons}
+              className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 sm:text-xs md:text-sm"
+            >
+              {showButtons ? 'Hide Controls' : 'Show Controls'}
+            </button>
+          </div>
+          {/* Move HelpDisplay here */}
+          {isExpanded && (
+            <div className="absolute bottom-full mb-2 left-0 w-full">
+              <div className="bg-white rounded-lg shadow-lg p-3">
+                <div className="space-y-2">
+                  {[
+                    { symbol: '↻', description: 'Cycle through available objects', color: 'bg-blue-500' },
+                    { symbol: '+', description: 'Add module', color: 'bg-green-500' },
+                    { symbol: '-', description: 'Remove object', color: 'bg-red-500' },
+                    { symbol: '⇄', description: 'Click and drag to move context', color: 'bg-green-500' }
+                  ].map((control, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className={`${control.color} w-5 h-5 rounded-full flex items-center justify-center text-white text-xs shrink-0`}>
+                        {control.symbol}
+                      </div>
+                      <span className="text-xs text-gray-700">{control.description}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="absolute bottom-0 left-4 w-2 h-2 bg-white transform translate-y-1/2 rotate-45 border-r border-b border-gray-200"></div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div ref={containerRef}
@@ -1759,23 +1892,17 @@ function ModuleBuilder() {
 
 
 
-      {/* Color Picker */}
-      <ColorPicker
+      {/* Editor Controls */}
+      <EditorControls
         selectedTheme={selectedTheme}
-        showButtons={showButtons}
-        onToggleButtons={() => setShowButtons(!showButtons)}
         onThemeChange={(newTheme) => {
           setSelectedTheme(newTheme);
-
           document.querySelectorAll('object[type="image/svg+xml"]').forEach(obj => {
             const svgDoc = obj.contentDocument;
             if (!svgDoc?.documentElement) return;
-
             obj.style.visibility = 'hidden';
-
             const svgPath = obj.data;
             const baseId = svgPath.split('/').pop().replace('.svg', '');
-
             const cachedSvg = svgCache.current.get(baseId);
             if (cachedSvg) {
               const freshSvg = cachedSvg.cloneNode(true);
@@ -1784,44 +1911,129 @@ function ModuleBuilder() {
             } else {
               applySVGTheme(svgDoc, newTheme);
             }
-
             obj.style.visibility = 'visible';
           });
         }}
-      />
-
-      {/* Controls Key */}
-      <ControlsKey
-        isExpanded={isExpanded}
-        setIsExpanded={setIsExpanded}
-      />
-      {/* Add context button */}
-      <ContextControls
         onAddContext={handleAddContext}
         showButtons={showButtons}
         isContextPlacementMode={isContextPlacementMode}
       />
 
-      {/* Share Design Button - Bottom Right */}
-      <button
-        onClick={async (e) => {
-          // make http://localhost:8000/designer.html#${ for testing
-          const shareableURL = `https://framework.co.ke/designer#${encodeURIComponent(configCode)};${selectedTheme}`;
-          try {
-            await navigator.clipboard.writeText(shareableURL);
-            const button = e.target;
-            button.textContent = 'Link Copied!';
-            setTimeout(() => {
-              button.textContent = 'Share Your Design';
-            }, 2000);
-          } catch (err) {
-            console.error('Failed to copy URL:', err);
-          }
-        }}
-        className="fixed bottom-6 right-6 bg-indigo-600 text-white px-6 py-3 rounded-full hover:bg-indigo-700 transition-colors duration-200 text-sm font-medium shadow-lg flex items-center gap-2 z-50"
-      >
-        Share Your Design
-      </button>
+
+      {/* Helper Controls */}
+      <HelperControls
+        showButtons={showButtons}
+        onToggleButtons={() => setShowButtons(!showButtons)}
+        isExpanded={isExpanded}
+        setIsExpanded={setIsExpanded}
+      />
+
+      {placedPieces.length > 0 && (
+        <div className="fixed bottom-6 right-6 bg-white rounded-lg shadow-lg p-4 max-w-md z-50">
+          {/* Product List */}
+          {Object.entries(
+            placedPieces.reduce((acc, { piece }) => {
+              acc[piece.id] = (acc[piece.id] || 0) + 1;
+              return acc;
+            }, {})
+          )
+            .sort(([idA], [idB]) => {
+              const order = {
+                'standard-base': 1,
+                'standard-extension': 2,
+                'corner-base': 3,
+                'corner-extension': 4,
+                'wide-base': 5,
+                'adapter-unit': 6,
+                'wide-extension': 7,
+                'lamp': 8
+              };
+              const baseA = Object.keys(order).find(key => idA.startsWith(key)) || idA;
+              const baseB = Object.keys(order).find(key => idB.startsWith(key)) || idB;
+              return (order[baseA] || 999) - (order[baseB] || 999);
+            })
+            .map(([id, count], index, array) => {
+              const piece = testPieces.find(p => p.id === id);
+              return (
+                <div key={id} className="text-sm text-gray-600">
+                  {`${count} x ${piece.product} @ Ksh ${piece.price.toLocaleString()}${index !== array.length - 1 ? ' +' : ''}`}
+                </div>
+              );
+            })}
+
+          {/* Total Price */}
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <span className="text-lg font-medium">
+              Total: Ksh {placedPieces.reduce((sum, { piece }) => sum + piece.price, 0).toLocaleString()}
+            </span>
+            <span className="text-sm text-gray-500 ml-2">(VAT inclusive)</span>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="mt-4 space-y-2">
+            <a
+              href={`https://wa.me/254783891005?text=${encodeURIComponent(
+                `I'd like to place an order for:\n${Object.entries(
+                  placedPieces.reduce((acc, { piece }) => {
+                    acc[piece.id] = (acc[piece.id] || 0) + 1;
+                    return acc;
+                  }, {})
+                )
+                  .sort(([idA], [idB]) => {
+                    const order = {
+                      'standard-base': 1,
+                      'standard-extension': 2,
+                      'corner-base': 3,
+                      'corner-extension': 4,
+                      'wide-base': 5,
+                      'adapter-unit': 6,
+                      'wide-extension': 7,
+                      'lamp': 8
+                    };
+                    const baseA = Object.keys(order).find(key => idA.startsWith(key)) || idA;
+                    const baseB = Object.keys(order).find(key => idB.startsWith(key)) || idB;
+                    return (order[baseA] || 999) - (order[baseB] || 999);
+                  })
+                  .map(([id, count]) => {
+                    const piece = testPieces.find(p => p.id === id);
+                    return `${count} x ${piece.product} @ Ksh ${piece.price.toLocaleString()}`;
+                  })
+                  .join('\n')
+                }\nAll in ${colorThemes[selectedTheme].displayName}\nTotal Cost: Ksh ${placedPieces.reduce((sum, { piece }) => sum + piece.price, 0).toLocaleString()
+                } (VAT inclusive)`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full bg-green-600 text-white text-center px-2.5 py-1 rounded-md text-xs font-medium"
+            >
+              Order via WhatsApp
+            </a>
+            <button
+              onClick={async (e) => {
+                const shareableURL = `https://framework.co.ke/designer#${encodeURIComponent(configCode)};${selectedTheme}`;
+                try {
+                  await navigator.clipboard.writeText(shareableURL);
+                  const button = e.target;
+                  button.textContent = 'Link Copied!';
+                  setTimeout(() => {
+                    button.textContent = 'Share Your Design';
+                  }, 2000);
+                } catch (err) {
+                  console.error('Failed to copy URL:', err);
+                }
+              }}
+              className="block w-full bg-indigo-600 text-white text-center px-2.5 py-1 rounded-md text-xs font-medium"
+            >
+              Share Your Design
+            </button>
+          </div>
+        </div>
+      )}
+
+
+
+
     </div>
+
   );
 }
