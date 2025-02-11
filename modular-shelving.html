@@ -1,5 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shelving - Framework Designs</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+    <div class="gallery-container" role="main">
+        <p class="gallery-intro">
+            Kenya's first modular shelf system. Infinitely expandable with no tools necessary. Start small and add more shelves as you need them.<br>
+            Scroll down to learn more or <a href="#product-list" class="hover:text-blue-800">click here to order</a>.
+        </p>
+    </div>
+    <div id="root"></div>
 
 <head>
     <meta charset="UTF-8">
@@ -57,7 +71,7 @@
     </style>
 </head>
 
-<body class="bg-gray-50">
+<body class="bg-white">
     <div id="root"></div>
 
     <script type="text/babel">
@@ -102,6 +116,22 @@
                 dimensions: '430mm tall, 1420mm wide',
                 price: 7500,
                 relatedGalleryIds: ['shelf-10', 'shelf-11']
+            },
+            {
+                id: 'wide-extension',
+                name: 'Wide Extension',
+                svgPath: 'images/designer/modules/wide-extension-NE.svg',
+                dimensions: '300mm tall, 1420mm wide',
+                price: 7500,
+                relatedGalleryIds: []
+            },
+            {
+                id: 'adapter-unit',
+                name: 'Adapter Unit',
+                svgPath: 'images/designer/modules/adapter-unit-NE.svg',
+                dimensions: '300mm tall, 1420mm wide',
+                price: 7500,
+                relatedGalleryIds: []
             }
         ];
 
@@ -600,124 +630,127 @@
         }
 
         function Cart() {
-    const [selectedColor, setSelectedColor] = React.useState('THEME_1');
-    const [items, setItems] = React.useState({});
-    const productListRef = React.useRef(null);
+            const [selectedColor, setSelectedColor] = React.useState('THEME_1');
+            const [items, setItems] = React.useState({});
+            const productListRef = React.useRef(null);
 
-    function addToCart(product) {
-        setItems(function (prev) {
-            var newItems = Object.assign({}, prev);
-            newItems[product.id] = (prev[product.id] || 0) + 1;
-            return newItems;
-        });
-    }
+            function addToCart(product) {
+                setItems(function (prev) {
+                    var newItems = Object.assign({}, prev);
+                    newItems[product.id] = (prev[product.id] || 0) + 1;
+                    return newItems;
+                });
+            }
 
-    function setConfiguration(config) {
-        const newItems = {};
-        config.items.forEach(function (item) {
-            newItems[item.productId] = item.quantity;
-        });
-        setItems(newItems);
-        
-        // Scroll to the product list section
-        if (productListRef.current) {
-            productListRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }
+            function setConfiguration(config) {
+                const newItems = {};
+                config.items.forEach(function (item) {
+                    newItems[item.productId] = item.quantity;
+                });
+                setItems(newItems);
 
-    const total = Object.keys(items).reduce(function (sum, productId) {
-        var product = products.find(function (p) { return p.id === productId; });
-        return sum + (product ? product.price * items[productId] : 0);
-    }, 0);
+                // Scroll to the product list section
+                if (productListRef.current) {
+                    productListRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
 
-    function generateWhatsAppMessage() {
-        var lines = Object.keys(items)
-            .filter(function (productId) { return items[productId] > 0; })
-            .map(function (productId) {
+            const total = Object.keys(items).reduce(function (sum, productId) {
                 var product = products.find(function (p) { return p.id === productId; });
-                return items[productId] + ' x ' + product.name + ' @ Ksh ' + product.price.toLocaleString();
-            });
+                return sum + (product ? product.price * items[productId] : 0);
+            }, 0);
 
-        return encodeURIComponent(
-            'I\'d like to place an order for:\n' + lines.join('\n') + '\n' +
-            'All in ' + colorThemes[selectedColor].displayName + '\n' +
-            'Total Cost: Ksh ' + total.toLocaleString() + ' (VAT inclusive)'
-        );
-    }
+            function generateWhatsAppMessage() {
+                var lines = Object.keys(items)
+                    .filter(function (productId) { return items[productId] > 0; })
+                    .map(function (productId) {
+                        var product = products.find(function (p) { return p.id === productId; });
+                        return items[productId] + ' x ' + product.name + ' @ Ksh ' + product.price.toLocaleString();
+                    });
 
-    return (
-        <div className="max-w-6xl mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-8">Modular Shelving</h1>
+                return encodeURIComponent(
+                    'I\'d like to place an order for:\n' + lines.join('\n') + '\n' +
+                    'All in ' + colorThemes[selectedColor].displayName + '\n' +
+                    'Total Cost: Ksh ' + total.toLocaleString() + ' (VAT inclusive)'
+                );
+            }
 
-            <Gallery onConfigurationSelect={setConfiguration} />
+            return (
+                <div className="max-w-6xl mx-auto px-4 py-8">
 
-            <div className="mb-8" ref={productListRef}>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Color:
-                </label>
-                <select
-                    value={selectedColor}
-                    onChange={function (e) { setSelectedColor(e.target.value); }}
-                    className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                    {Object.keys(colorThemes).map(function (key) {
-                        return (
-                            <option key={key} value={key}>
-                                {colorThemes[key].displayName}
-                            </option>
-                        );
-                    })}
-                </select>
-            </div>
+                    <Gallery onConfigurationSelect={setConfiguration} />
 
-            <div className="pb-24"> {/* Added padding at bottom */}
-                <ProductList
-                    products={products}
-                    items={items}
-                    onUpdateQuantity={function (productId, newQuantity) {
-                        setItems(function (prev) {
-                            var newItems = Object.assign({}, prev);
-                            if (newQuantity <= 0) {
-                                delete newItems[productId];
-                            } else {
-                                newItems[productId] = newQuantity;
-                            }
-                            return newItems;
-                        });
-                    }}
-                    selectedColor={selectedColor}
-                />
-            </div>
+                    <div className="mb-8" ref={productListRef} id="product-list">
 
-            {total > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
-                    <div className="max-w-6xl mx-auto flex items-center justify-between">
-                        <div>
-                            <span className="text-lg font-medium">
-                                Total: Ksh {total.toLocaleString()}
-                            </span>
-                            <span className="text-sm text-gray-500 ml-2">
-                                (VAT inclusive)
-                            </span>
-                        </div>
-                        <a
-                            href={"https://wa.me/254783891005?text=" + generateWhatsAppMessage()}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Select Color:
+                        </label>
+                        <select
+                            value={selectedColor}
+                            onChange={function (e) { setSelectedColor(e.target.value); }}
+                            className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                            Order via WhatsApp
-                        </a>
+                            {Object.keys(colorThemes).map(function (key) {
+                                return (
+                                    <option key={key} value={key}>
+                                        {colorThemes[key].displayName}
+                                    </option>
+                                );
+                            })}
+                        </select>
                     </div>
+
+                    <div className="pb-24"> {/* Added padding at bottom */}
+                        <ProductList
+                            products={products}
+                            items={items}
+                            onUpdateQuantity={function (productId, newQuantity) {
+                                setItems(function (prev) {
+                                    var newItems = Object.assign({}, prev);
+                                    if (newQuantity <= 0) {
+                                        delete newItems[productId];
+                                    } else {
+                                        newItems[productId] = newQuantity;
+                                    }
+                                    return newItems;
+                                });
+                            }}
+                            selectedColor={selectedColor}
+                        />
+                    </div>
+
+                    {total > 0 && (
+                        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
+                            <div className="max-w-6xl mx-auto flex items-center justify-between">
+                                <div>
+                                    <span className="text-lg font-medium">
+                                        Total: Ksh {total.toLocaleString()}
+                                    </span>
+                                    <span className="text-sm text-gray-500 ml-2">
+                                        (VAT inclusive)
+                                    </span>
+                                </div>
+                                <a
+                                    href={"https://wa.me/254783891005?text=" + generateWhatsAppMessage()}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                                >
+                                    Order via WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            )}
-        </div>
-    );
-}
+            );
+        }
 
         // Render the app
         ReactDOM.render(React.createElement(Cart), document.getElementById('root'));
     </script>
 </body>
 
+
+<script src="js/site.js"></script>
+<script data-goatcounter="https://fwknbo.goatcounter.com/count"></script>
 </html>
