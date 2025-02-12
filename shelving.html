@@ -686,6 +686,12 @@
                 });
             }
 
+
+            const total = Object.keys(items).reduce(function (sum, productId) {
+                var product = products.find(function (p) { return p.id === productId; });
+                return sum + (product ? product.price * items[productId] : 0);
+            }, 0);
+
             function setConfiguration(config) {
                 const newItems = {};
                 config.items.forEach(function (item) {
@@ -693,16 +699,59 @@
                 });
                 setItems(newItems);
 
-                // Scroll to the product list section
+                // Track "select_design" event
+                gtag('event', 'select_design', {
+                    items: config.items.map(item => {
+                        const product = products.find(p => p.id === item.productId);
+                        return {
+                            item_id: item.productId,
+                            item_name: product.name,
+                            quantity: item.quantity,
+                            price: product.price
+                        };
+                    })
+                });
+
                 if (productListRef.current) {
                     productListRef.current.scrollIntoView({ behavior: 'smooth' });
                 }
             }
 
-            const total = Object.keys(items).reduce(function (sum, productId) {
-                var product = products.find(function (p) { return p.id === productId; });
-                return sum + (product ? product.price * items[productId] : 0);
-            }, 0);
+            function onUpdateQuantity(productId, newQuantity) {
+                setItems(function (prev) {
+                    const prevQuantity = prev[productId] || 0;
+                    const newItems = Object.assign({}, prev);
+
+                    // Track add/remove from cart
+                    const product = products.find(p => p.id === productId);
+                    if (newQuantity > prevQuantity) {
+                        gtag('event', 'add_to_cart', {
+                            items: [{
+                                item_id: productId,
+                                item_name: product.name,
+                                quantity: newQuantity - prevQuantity,
+                                price: product.price
+                            }]
+                        });
+                    } else if (newQuantity < prevQuantity) {
+                        gtag('event', 'remove_from_cart', {
+                            items: [{
+                                item_id: productId,
+                                item_name: product.name,
+                                quantity: prevQuantity - newQuantity,
+                                price: product.price
+                            }]
+                        });
+                    }
+
+                    if (newQuantity <= 0) {
+                        delete newItems[productId];
+                    } else {
+                        newItems[productId] = newQuantity;
+                    }
+                    return newItems;
+                });
+            }
 
             function generateWhatsAppMessage() {
                 var lines = Object.keys(items)
@@ -712,6 +761,22 @@
                         return items[productId] + ' x ' + product.name + ' @ Ksh ' + product.price.toLocaleString();
                     });
 
+
+                gtag('event', 'begin_checkout', {
+                    items: Object.keys(items)
+                        .filter(productId => items[productId] > 0)
+                        .map(productId => {
+                            const product = products.find(p => p.id === productId);
+                            return {
+                                item_id: productId,
+                                item_name: product.name,
+                                quantity: items[productId],
+                                price: product.price
+                            };
+                        }),
+                    value: total,
+                    currency: 'KES'
+                });
                 return encodeURIComponent(
                     'I\'d like to place an order for:\n' + lines.join('\n') + '\n' +
                     'All in ' + colorThemes[selectedColor].displayName + '\n' +
@@ -731,7 +796,13 @@
                         </label>
                         <select
                             value={selectedColor}
-                            onChange={function (e) { setSelectedColor(e.target.value); }}
+                            onChange={function (e) {
+                                setSelectedColor(e.target.value);
+                                // Track color selection
+                                gtag('event', 'select_color', {
+                                    color_name: colorThemes[e.target.value].displayName
+                                });
+                            }}
                             className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             {Object.keys(colorThemes).map(function (key) {
@@ -748,17 +819,7 @@
                         <ProductList
                             products={products}
                             items={items}
-                            onUpdateQuantity={function (productId, newQuantity) {
-                                setItems(function (prev) {
-                                    var newItems = Object.assign({}, prev);
-                                    if (newQuantity <= 0) {
-                                        delete newItems[productId];
-                                    } else {
-                                        newItems[productId] = newQuantity;
-                                    }
-                                    return newItems;
-                                });
-                            }}
+                            onUpdateQuantity={onUpdateQuantity}
                             selectedColor={selectedColor}
                         />
                     </div>
