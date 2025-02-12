@@ -1728,7 +1728,13 @@ function ModuleBuilder() {
 
   return (
     <div ref={containerRef}
-      className="relative w-full h-screen bg-gray-100 overflow-hidden"
+      className="relative w-full h-screen bg-gray-100 overflow-hidden touch-none"
+      style={{
+        touchAction: 'none',
+        WebkitOverflowScrolling: 'touch',
+        position: 'fixed',
+        inset: 0
+      }}
       onClick={isContextPlacementMode ? handleContextPlace : undefined}
       onMouseMove={handleDragMove}
       onTouchMove={handleDragMove}
