@@ -2,31 +2,26 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shelving - Framework Designs</title>
-    <link rel="stylesheet" href="css/styles.css">
-</head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HXHT6KGZT3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
 
-<div class="gallery-container" role="main">
-    <p class="gallery-intro">
-        Kenya's first modular shelf system. Infinitely expandable with no tools necessary. Start small and add more
-        shelves as you need them.<br>
-        Scroll down to learn more or <a href="#" onclick="document.getElementById('product-list').scrollIntoView({behavior: 'smooth'}); return false;" class="hover:text-blue-800">click here to order</a>.
-    </p>
-</div>
-<div id="root"></div>
-
-<head>
+        gtag('config', 'G-HXHT6KGZT3');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modular Shelving - Framework Designs</title>
+    <link rel="stylesheet" href="css/styles.css">
+
     <!-- Load React -->
     <script src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
     <!-- Load Babel -->
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <!-- Load Tailwind (consider hosting this locally for production) -->
+    <!-- Load Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .gallery-item {
@@ -74,6 +69,15 @@
 </head>
 
 <body class="bg-white">
+    <div class="gallery-container" role="main">
+        <p class="gallery-intro">
+            Kenya's first modular shelf system. Infinitely expandable with no tools necessary. Start small and add more
+            shelves as you need them.<br>
+            Scroll down to learn more or <a href="#"
+                onclick="document.getElementById('product-list').scrollIntoView({behavior: 'smooth'}); return false;"
+                class="hover:text-blue-800">click here to order</a>.
+        </p>
+    </div>
     <div id="root"></div>
 
     <script type="text/babel">
@@ -788,10 +792,9 @@
         // Render the app
         ReactDOM.render(React.createElement(Cart), document.getElementById('root'));
     </script>
+
+
+    <script src="js/site.js"></script>
 </body>
-
-
-<script src="js/site.js"></script>
-<script data-goatcounter="https://fwknbo.goatcounter.com/count"></script>
 
 </html>
