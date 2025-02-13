@@ -9,7 +9,17 @@
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
 
-        gtag('config', 'G-HXHT6KGZT3');
+        gtag('config', 'G-HXHT6KGZT3', {
+            debug_mode: true,
+            send_page_view: true,
+            allow_google_signals: true,
+            enhanced_measurement: {
+                scroll: true,        // Enable scroll tracking
+                engagement: true,    // Enable engagement time tracking
+                page_changes: true,
+                url_changes: true
+            }
+        });
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -141,7 +151,30 @@
             }
         ];
 
+        function trackScrollDepth() {
+            let maxScroll = 0;
+            let ticking = false;
 
+            document.addEventListener('scroll', () => {
+                if (!ticking) {
+                    window.requestAnimationFrame(() => {
+                        const scrollPercent = Math.round(
+                            (window.scrollY + window.innerHeight) /
+                            document.documentElement.scrollHeight * 100
+                        );
+
+                        if (scrollPercent > maxScroll) {
+                            maxScroll = scrollPercent;
+                            gtag('event', 'scroll_depth', {
+                                percent_scrolled: maxScroll
+                            });
+                        }
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            });
+        }
         // Original parameter sets definition
         const originalParameterSets = {
             SET_1: {
@@ -210,7 +243,7 @@
             {
                 id: 'shelf-04',
                 path: 'images/shelving/shelf (04).jpg',
-                caption: 'Standard Base + three Standard Extensions + one long extension shows how much room there is to grow.',
+                caption: 'Standard Base + four Standard Extensions shows how much room there is to grow.',
                 orderConfig: {
                     enabled: true,
                     items: [
@@ -275,42 +308,6 @@
                 id: 'shelf-14',
                 path: 'images/shelving/shelf (14).jpg',
                 caption: 'Top-knotch fabrication and perfectly engineered details.',
-                orderConfig: {
-                    enabled: true,
-                    items: [
-                        { productId: 'standard-base', quantity: 1 },
-                        { productId: 'standard-extension', quantity: 1 }
-                    ]
-                }
-            },
-            {
-                id: 'shelf-16a',
-                path: 'images/shelving/shelf (16a).jpg',
-                caption: 'Standard Base + one Standard Extension shown in blue',
-                orderConfig: {
-                    enabled: true,
-                    items: [
-                        { productId: 'standard-base', quantity: 1 },
-                        { productId: 'standard-extension', quantity: 1 }
-                    ]
-                }
-            },
-            {
-                id: 'shelf-16b',
-                path: 'images/shelving/shelf (16b).jpg',
-                caption: 'Standard Base + one Standard Extension shown in green',
-                orderConfig: {
-                    enabled: true,
-                    items: [
-                        { productId: 'standard-base', quantity: 1 },
-                        { productId: 'standard-extension', quantity: 1 }
-                    ]
-                }
-            },
-            {
-                id: 'shelf-16c',
-                path: 'images/shelving/shelf (16c).jpg',
-                caption: 'Standard Base + one Standard Extension shown in black',
                 orderConfig: {
                     enabled: true,
                     items: [
@@ -413,6 +410,74 @@
             }
         };
 
+
+        const CartTracker = {
+            cartStartTime: null,
+            maxCartValue: 0,
+            initialCartValue: 0,
+
+            trackCartUpdate(items, currentValue, action) {
+                if (currentValue > 0 && !this.cartStartTime) {
+                    this.cartStartTime = Date.now();
+                    this.initialCartValue = currentValue;
+                    this.maxCartValue = currentValue;
+
+                    gtag('event', 'cart_started', {
+                        value: currentValue,
+                        currency: 'KES',
+                        items: this.formatItems(items)
+                    });
+                }
+
+                if (currentValue > this.maxCartValue) {
+                    this.maxCartValue = currentValue;
+                }
+
+                if (action) {
+                    gtag('event', action, {
+                        currency: 'KES',
+                        value: currentValue,
+                        time_in_cart_ms: Date.now() - this.cartStartTime,
+                        items: this.formatItems(items)
+                    });
+                }
+
+                if (currentValue === 0 && this.cartStartTime) {
+                    gtag('event', 'cart_abandoned', {
+                        time_in_cart_ms: Date.now() - this.cartStartTime,
+                        initial_value: this.initialCartValue,
+                        max_value: this.maxCartValue,
+                        currency: 'KES'
+                    });
+
+                    this.cartStartTime = null;
+                    this.maxCartValue = 0;
+                    this.initialCartValue = 0;
+                }
+            },
+
+            trackCheckoutStart(items, value) {
+                gtag('event', 'begin_checkout', {
+                    currency: 'KES',
+                    value: value,
+                    time_in_cart_ms: this.cartStartTime ? Date.now() - this.cartStartTime : 0,
+                    items: this.formatItems(items)
+                });
+            },
+
+            formatItems(items) {
+                return Object.entries(items).map(([id, quantity]) => {
+                    const product = products.find(p => p.id === id);
+                    return {
+                        item_id: id,
+                        item_name: product ? product.name : '',
+                        quantity: quantity,
+                        price: product ? product.price : 0
+                    };
+                });
+            }
+        };
+
         // Components
         function GalleryImage(props) {
             const image = props.image;
@@ -421,10 +486,10 @@
 
             const actionButton = hasOrderConfig ? (
                 <button
-                    onClick={() => props.onConfigurationSelect(image.orderConfig)}
+                    onClick={() => props.onConfigurationSelect(image.orderConfig, image)}
                     className="absolute bottom-3 right-3 bg-white/90 text-gray-800 px-3 py-1.5 
-            rounded-md text-sm shadow-sm border border-gray-100
-            transition-all duration-200 hover:bg-white hover:shadow-md"
+                rounded-md text-sm shadow-sm border border-gray-100
+                transition-all duration-200 hover:bg-white hover:shadow-md"
                 >
                     Order this design
                 </button>
@@ -556,12 +621,6 @@
                             `stroke="${theme.parameterMappings.SET_7.stroke}"`
                         );
 
-                        // Log the changes for debugging
-                        console.log('Theme:', props.selectedColor);
-                        console.log('Line styles applied:', {
-                            SET_6: theme.parameterMappings.SET_6,
-                            SET_7: theme.parameterMappings.SET_7
-                        });
 
                         setSvgContent(modifiedSvg);
                     })
@@ -697,152 +756,111 @@
             );
         }
 
+        // Update the Cart component
         function Cart() {
             const [selectedColor, setSelectedColor] = React.useState('THEME_1');
             const [items, setItems] = React.useState({});
             const productListRef = React.useRef(null);
 
-            function addToCart(product) {
-                setItems(function (prev) {
-                    var newItems = Object.assign({}, prev);
-                    newItems[product.id] = (prev[product.id] || 0) + 1;
-                    const hasItems = total > 0;
-                    return newItems;
-                });
-            }
+            // Initialize scroll tracking
+            React.useEffect(() => {
+                trackScrollDepth();
+            }, []);
 
-
-            const total = Object.keys(items).reduce(function (sum, productId) {
-                var product = products.find(function (p) { return p.id === productId; });
-                return sum + (product ? product.price * items[productId] : 0);
-            }, 0);
-
-            const hasItems = total > 0;
-
-            function setConfiguration(config) {
-                const newItems = {};
-                config.items.forEach(function (item) {
-                    newItems[item.productId] = item.quantity;
-                });
-                setItems(newItems);
-
-                // Track "select_design" event
-                gtag('event', 'select_design', {
-                    items: config.items.map(item => {
-                        const product = products.find(p => p.id === item.productId);
-                        return {
-                            item_id: item.productId,
-                            item_name: product.name,
-                            quantity: item.quantity,
-                            price: product.price
-                        };
-                    })
-                });
-
-                if (productListRef.current) {
-                    productListRef.current.scrollIntoView({ behavior: 'smooth' });
-                }
-            }
-
-            function onUpdateQuantity(productId, newQuantity) {
-                setItems(function (prev) {
-                    const prevQuantity = prev[productId] || 0;
-                    const newItems = Object.assign({}, prev);
-
-                    // Track add/remove from cart
+            // Calculate current cart value
+            const calculateTotal = (items) => {
+                return Object.keys(items).reduce((sum, productId) => {
                     const product = products.find(p => p.id === productId);
-                    if (newQuantity > prevQuantity) {
-                        gtag('event', 'add_to_cart', {
-                            items: [{
-                                item_id: productId,
-                                item_name: product.name,
-                                quantity: newQuantity - prevQuantity,
-                                price: product.price
-                            }]
-                        });
-                    } else if (newQuantity < prevQuantity) {
-                        gtag('event', 'remove_from_cart', {
-                            items: [{
-                                item_id: productId,
-                                item_name: product.name,
-                                quantity: prevQuantity - newQuantity,
-                                price: product.price
-                            }]
-                        });
-                    }
+                    return sum + (product ? product.price * items[productId] : 0);
+                }, 0);
+            };
+
+            // Simplified onUpdateQuantity function
+            function onUpdateQuantity(productId, newQuantity) {
+                setItems(prev => {
+                    const newItems = { ...prev };
 
                     if (newQuantity <= 0) {
                         delete newItems[productId];
                     } else {
                         newItems[productId] = newQuantity;
                     }
+
+                    CartTracker.trackCartUpdate(
+                        newItems,
+                        calculateTotal(newItems),
+                        newQuantity > (prev[productId] || 0) ? 'add_to_cart' : 'remove_from_cart'
+                    );
+
                     return newItems;
                 });
             }
 
+            // Updated generateWhatsAppMessage function
             function generateWhatsAppMessage() {
-                var lines = Object.keys(items)
-                    .filter(function (productId) { return items[productId] > 0; })
-                    .map(function (productId) {
-                        var product = products.find(function (p) { return p.id === productId; });
-                        return items[productId] + ' x ' + product.name + ' @ Ksh ' + product.price.toLocaleString();
+                const currentValue = calculateTotal(items);
+                const lines = Object.keys(items)
+                    .filter(productId => items[productId] > 0)
+                    .map(productId => {
+                        const product = products.find(p => p.id === productId);
+                        return `${items[productId]} x ${product.name} @ Ksh ${product.price.toLocaleString()}`;
                     });
 
+                CartTracker.trackCheckoutStart(items, currentValue);
 
-                gtag('event', 'begin_checkout', {
-                    items: Object.keys(items)
-                        .filter(productId => items[productId] > 0)
-                        .map(productId => {
-                            const product = products.find(p => p.id === productId);
-                            return {
-                                item_id: productId,
-                                item_name: product.name,
-                                quantity: items[productId],
-                                price: product.price
-                            };
-                        }),
-                    value: total,
-                    currency: 'KES'
-                });
                 return encodeURIComponent(
                     'I\'d like to place an order for:\n' + lines.join('\n') + '\n' +
                     'All in ' + colorThemes[selectedColor].displayName + '\n' +
-                    'Total Cost: Ksh ' + total.toLocaleString() + ' (VAT inclusive)'
+                    'Total Cost: Ksh ' + currentValue.toLocaleString() + ' (VAT inclusive)'
                 );
+            }
+
+            const total = calculateTotal(items);
+            const hasItems = total > 0;
+
+            function setConfiguration(config) {
+                if (!config || !config.items) return;
+
+                const newItems = {};
+                config.items.forEach(item => {
+                    newItems[item.productId] = item.quantity;
+                });
+
+                setItems(newItems);
+
+                // Add scroll to product list
+                if (productListRef.current) {
+                    productListRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
             }
 
             return (
                 <div className="max-w-6xl mx-auto px-4 py-8">
-
                     <Gallery onConfigurationSelect={setConfiguration} />
 
                     <div className="mb-8" ref={productListRef} id="product-list">
-
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Select Color:
                         </label>
                         <select
                             value={selectedColor}
-                            onChange={function (e) {
+                            onChange={(e) => {
                                 setSelectedColor(e.target.value);
-                                // Track color selection
                                 gtag('event', 'select_color', {
                                     color_name: colorThemes[e.target.value].displayName
                                 });
                             }}
                             className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                            {Object.keys(colorThemes).map(function (key) {
-                                return (
-                                    <option key={key} value={key}>
-                                        {colorThemes[key].displayName}
-                                    </option>
-                                );
-                            })}
+                            {Object.keys(colorThemes).map((key) => (
+                                <option key={key} value={key}>
+                                    {colorThemes[key].displayName}
+                                </option>
+                            ))}
                         </select>
                     </div>
 
-                    <div className="pb-24"> {/* Added padding at bottom */}
+                    <div className="pb-24">
                         <ProductList
                             products={products}
                             items={items}
@@ -863,7 +881,7 @@
                                     </span>
                                 </div>
                                 <a
-                                    href={"https://wa.me/254783891005?text=" + generateWhatsAppMessage()}
+                                    href={`https://wa.me/254783891005?text=${generateWhatsAppMessage()}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
