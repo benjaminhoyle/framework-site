@@ -150,29 +150,47 @@
                 relatedGalleryIds: []
             }
         ];
-
         function trackScrollDepth() {
             let maxScroll = 0;
-            let ticking = false;
+            let scrollTimeout;
 
             document.addEventListener('scroll', () => {
-                if (!ticking) {
-                    window.requestAnimationFrame(() => {
-                        const scrollPercent = Math.round(
-                            (window.scrollY + window.innerHeight) /
-                            document.documentElement.scrollHeight * 100
-                        );
-
-                        if (scrollPercent > maxScroll) {
-                            maxScroll = scrollPercent;
-                            gtag('event', 'scroll_depth', {
-                                percent_scrolled: maxScroll
-                            });
-                        }
-                        ticking = false;
-                    });
-                    ticking = true;
+                if (scrollTimeout) {
+                    clearTimeout(scrollTimeout);
                 }
+
+                scrollTimeout = setTimeout(() => {
+                    const scrollPercent = Math.round(
+                        (window.scrollY + window.innerHeight) /
+                        document.documentElement.scrollHeight * 100
+                    );
+
+                    // Only track at significant thresholds
+                    if (scrollPercent >= 90 && maxScroll < 90) {
+                        maxScroll = 90;
+                        gtag('event', 'scroll_depth', {
+                            percent_scrolled: 90
+                        });
+                    }
+                    else if (scrollPercent >= 75 && maxScroll < 75) {
+                        maxScroll = 75;
+                        gtag('event', 'scroll_depth', {
+                            percent_scrolled: 75
+                        });
+                    }
+                    else if (scrollPercent >= 50 && maxScroll < 50) {
+                        maxScroll = 50;
+                        gtag('event', 'scroll_depth', {
+                            percent_scrolled: 50
+                        });
+                    }
+                    else if (scrollPercent >= 25 && maxScroll < 25) {
+                        maxScroll = 25;
+                        gtag('event', 'scroll_depth', {
+                            percent_scrolled: 25
+                        });
+                    }
+                }, 100); // 100ms debounce
             });
         }
         // Original parameter sets definition
