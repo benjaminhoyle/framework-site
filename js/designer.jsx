@@ -429,7 +429,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNW", x: 129.210985, y: 146.854794 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NW: 720,
     dim_NE: 280,
     dim_height: 760
@@ -441,7 +441,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNE", x: 129.210985, y: 146.854794 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NE: 720,
     dim_NW: 280,
     dim_height: 760
@@ -453,7 +453,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNW", x: 106.750408, y: 147.351661 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NW: 720,
     dim_NE: 280,
     dim_height: 760
@@ -465,7 +465,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNE", x: 133.249592, y: 147.351661 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NE: 720,
     dim_NW: 280,
     dim_height: 760
@@ -477,7 +477,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNW", x: 117.580133, y: 154.714673 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NW: 720,
     dim_NE: 280,
     dim_height: 760
@@ -489,7 +489,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNE", x: 101.616181, y: 146.826659 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NE: 720,
     dim_NW: 280,
     dim_height: 760
@@ -501,7 +501,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNW", x: 109.947308, y: 165.795899 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NW: 720,
     dim_NE: 280,
     dim_height: 760
@@ -513,7 +513,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNE", x: 138.180926, y: 142.876599 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NE: 720,
     dim_NW: 280,
     dim_height: 760
