@@ -20,6 +20,17 @@
                 url_changes: true
             }
         });
+
+        // Add right after your gtag config
+        const startTime = performance.now();
+
+        window.addEventListener('load', () => {
+            const loadTime = performance.now() - startTime;
+            gtag('event', 'page_load_time', {
+                value: Math.round(loadTime),
+                metric_id: 'load_time'
+            });
+        });
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -845,7 +856,13 @@
 
                 setItems(newItems);
 
-                // Add scroll to product list
+                // Add tracking here
+                CartTracker.trackCartUpdate(
+                    newItems,
+                    calculateTotal(newItems),
+                    'add_to_cart'
+                );
+
                 if (productListRef.current) {
                     productListRef.current.scrollIntoView({ behavior: 'smooth' });
                 }
