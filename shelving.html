@@ -827,91 +827,101 @@
                 CartTracker.trackCheckoutStart(items, currentValue);
 
                 return encodeURIComponent(
-                    'I\'d like to place an order for:\n' + lines.join('\n') + '\n' +
-                    'All in ' + colorThemes[selectedColor].displayName + '\n' +
-                    'Total Cost: Ksh ' + currentValue.toLocaleString() + ' (VAT inclusive)'
+                    'I\'d like to place an order for:\n' +
+                    lines.join('\n') +
+                    '\nAll in ' + colorThemes[selectedColor].displayName +
+                    '\nTotal Cost: Ksh ' + currentValue.toLocaleString() + ' (VAT inclusive)'
                 );
             }
 
-            const total = calculateTotal(items);
-            const hasItems = total > 0;
+            CartTracker.trackCheckoutStart(items, currentValue);
 
-            function setConfiguration(config) {
-                if (!config || !config.items) return;
-
-                const newItems = {};
-                config.items.forEach(item => {
-                    newItems[item.productId] = item.quantity;
-                });
-
-                setItems(newItems);
-
-                // Add scroll to product list
-                if (productListRef.current) {
-                    productListRef.current.scrollIntoView({ behavior: 'smooth' });
-                }
-            }
-
-            return (
-                <div className="max-w-6xl mx-auto px-4 py-8">
-                    <Gallery onConfigurationSelect={setConfiguration} />
-
-                    <div className="mb-8" ref={productListRef} id="product-list">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Select Color:
-                        </label>
-                        <select
-                            value={selectedColor}
-                            onChange={(e) => {
-                                setSelectedColor(e.target.value);
-                                gtag('event', 'select_color', {
-                                    color_name: colorThemes[e.target.value].displayName
-                                });
-                            }}
-                            className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            {Object.keys(colorThemes).map((key) => (
-                                <option key={key} value={key}>
-                                    {colorThemes[key].displayName}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="pb-24">
-                        <ProductList
-                            products={products}
-                            items={items}
-                            onUpdateQuantity={onUpdateQuantity}
-                            selectedColor={selectedColor}
-                        />
-                    </div>
-
-                    {total > 0 && (
-                        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
-                            <div className="max-w-6xl mx-auto flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <span className="text-lg font-medium whitespace-nowrap">
-                                        Total: Ksh {total.toLocaleString()}
-                                    </span>
-                                    <span className="text-sm text-gray-500 ml-2 hidden sm:inline">
-                                        (VAT inclusive)
-                                    </span>
-                                </div>
-                                <a
-                                    href={`https://wa.me/254783891005?text=${generateWhatsAppMessage()}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
-                                >
-                                    Order via WhatsApp
-                                </a>
-                            </div>
-                        </div>
-                    )}
-                    <WhatsAppButton isCartVisible={hasItems} />
-                </div>
+            return encodeURIComponent(
+                'I\'d like to place an order for:\n' + lines.join('\n') + '\n' +
+                'All in ' + colorThemes[selectedColor].displayName + '\n' +
+                'Total Cost: Ksh ' + currentValue.toLocaleString() + ' (VAT inclusive)'
             );
+        }
+
+        const total = calculateTotal(items);
+        const hasItems = total > 0;
+
+        function setConfiguration(config) {
+            if (!config || !config.items) return;
+
+            const newItems = {};
+            config.items.forEach(item => {
+                newItems[item.productId] = item.quantity;
+            });
+
+            setItems(newItems);
+
+            // Add scroll to product list
+            if (productListRef.current) {
+                productListRef.current.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        return (
+            <div className="max-w-6xl mx-auto px-4 py-8">
+                <Gallery onConfigurationSelect={setConfiguration} />
+
+                <div className="mb-8" ref={productListRef} id="product-list">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Select Color:
+                    </label>
+                    <select
+                        value={selectedColor}
+                        onChange={(e) => {
+                            setSelectedColor(e.target.value);
+                            gtag('event', 'select_color', {
+                                color_name: colorThemes[e.target.value].displayName
+                            });
+                        }}
+                        className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        {Object.keys(colorThemes).map((key) => (
+                            <option key={key} value={key}>
+                                {colorThemes[key].displayName}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="pb-24">
+                    <ProductList
+                        products={products}
+                        items={items}
+                        onUpdateQuantity={onUpdateQuantity}
+                        selectedColor={selectedColor}
+                    />
+                </div>
+
+                {total > 0 && (
+                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
+                        <div className="max-w-6xl mx-auto flex items-center justify-between">
+                            <div className="flex items-center">
+                                <span className="text-lg font-medium whitespace-nowrap">
+                                    Total: Ksh {total.toLocaleString()}
+                                </span>
+                                <span className="text-sm text-gray-500 ml-2 hidden sm:inline">
+                                    (VAT inclusive)
+                                </span>
+                            </div>
+                            <a
+                                href={`https://wa.me/254783891005?text=${generateWhatsAppMessage()}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+                            >
+                                Order via WhatsApp
+                            </a>
+                        </div>
+                    </div>
+                )}
+                <WhatsAppButton isCartVisible={hasItems} />
+            </div>
+        );
         }
 
         // Render the app
