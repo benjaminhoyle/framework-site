@@ -474,10 +474,10 @@
                 }
             },
 
-            trackCheckoutStart(items, value) {
+            trackCheckoutStart(items, currentValue) {
                 gtag('event', 'begin_checkout', {
                     currency: 'KES',
-                    value: value,
+                    value: currentValue,
                     time_in_cart_ms: this.cartStartTime ? Date.now() - this.cartStartTime : 0,
                     items: this.formatItems(items)
                 });
@@ -824,8 +824,6 @@
                         return `${items[productId]} x ${product.name} @ Ksh ${product.price.toLocaleString()}`;
                     });
 
-                CartTracker.trackCheckoutStart(items, currentValue);
-
                 return encodeURIComponent(
                     'I\'d like to place an order for:\n' +
                     lines.join('\n') +
@@ -904,6 +902,10 @@
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+                                    onClick={() => {
+                                        const currentValue = calculateTotal(items);
+                                        CartTracker.trackCheckoutStart(items, currentValue);
+                                    }}
                                 >
                                     Order via WhatsApp
                                 </a>
