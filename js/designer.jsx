@@ -259,9 +259,9 @@ const moduleFilenames = [
 
 
   {
-    id: 'adapter-unit-NE',
+    id: 'wide-adapter-NE',
     filename: 'adapter-unit-NE.svg',
-    product: 'Adapter Unit',
+    product: 'Wide Adapter',
     anchors: [
       { type: "FWNE", x: 124.221766, y: 139.173491 },
       { type: "HSNE", x: 142.889358, y: 98.805885 }
@@ -272,9 +272,9 @@ const moduleFilenames = [
     dim_height: 300
   },
   {
-    id: 'adapter-unit-SE',
+    id: 'wide-adapter-SE',
     filename: 'adapter-unit-SE.svg',
-    product: 'Adapter Unit',
+    product: 'Wide Adapter',
     anchors: [
       { type: "FWNW", x: 114.817492, y: 137.652845 },
       { type: "HSNW", x: 133.485138, y: 118.840748 }
@@ -285,9 +285,9 @@ const moduleFilenames = [
     dim_height: 300
   },
   {
-    id: 'adapter-unit-SW',
+    id: 'wide-adapter-SW',
     filename: 'adapter-unit-SW.svg',
-    product: 'Adapter Unit',
+    product: 'Wide Adapter',
     anchors: [
       { type: "HSNE", x: 104.70945, y: 125.640295 },
       { type: "FWNE", x: 123.377096, y: 144.452392 },
@@ -298,9 +298,9 @@ const moduleFilenames = [
     dim_height: 300
   },
   {
-    id: 'adapter-unit-NW',
+    id: 'wide-adapter-NW',
     filename: 'adapter-unit-NW.svg',
-    product: 'Adapter Unit',
+    product: 'Wide Adapter',
     anchors: [
       { type: "HSNW", x: 106.253397, y: 96.103436 },
       { type: "FWNW", x: 124.920989, y: 136.471043 }
@@ -1950,7 +1950,7 @@ function ModuleBuilder() {
                 'corner-base': 3,
                 'corner-extension': 4,
                 'wide-base': 5,
-                'adapter-unit': 6,
+                'wide-adapter': 6,
                 'wide-extension': 7,
                 'lamp': 8
               };
@@ -1992,7 +1992,7 @@ function ModuleBuilder() {
                       'corner-base': 3,
                       'corner-extension': 4,
                       'wide-base': 5,
-                      'adapter-unit': 6,
+                      'wide-adapter': 6,
                       'wide-extension': 7,
                       'lamp': 8
                     };
