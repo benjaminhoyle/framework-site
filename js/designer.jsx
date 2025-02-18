@@ -1666,12 +1666,22 @@ function ModuleBuilder() {
               ))}
             </select>
           </div>
-          <button
-            onClick={onAddContext}
-            className={`w-full bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm sm:text-xs md:text-sm ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
-          >
-            Add Context
-          </button>
+          <div className="relative">
+            <button
+              onClick={onAddContext}
+              className={`w-full bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm sm:text-xs md:text-sm ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
+            >
+              Add Context
+            </button>
+            {isContextPlacementMode && (
+              <div className="absolute top-full left-0 right-0 mt-5">
+                <div className="bg-white rounded-lg shadow-lg p-2 text-xs text-gray-600 relative">
+                  Click anywhere to add objects or people.
+                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-t border-l border-gray-200"></div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
