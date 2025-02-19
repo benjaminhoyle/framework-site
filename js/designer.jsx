@@ -1199,7 +1199,44 @@ function applySVGTheme(svgDoc, theme) {
 }
 
 
+const QRPanel = ({ url, onClose }) => {
+  const canvasRef = React.useRef(null);
 
+  React.useEffect(() => {
+    if (!canvasRef.current || !url) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    script.onload = () => {
+      // Clear any existing content
+      while (canvasRef.current.firstChild) {
+        canvasRef.current.removeChild(canvasRef.current.firstChild);
+      }
+
+      new window.QRCode(canvasRef.current, {
+        text: url,
+        width: 223,
+        height: 223,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+      });
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [url]);
+
+  return (
+    <div className="fixed bottom-6 right-72 bg-white rounded-lg shadow-lg p-4 w-[calc(100%-48px)] max-w-md z-50">
+      <div className="flex flex-col items-center gap-2">
+        <div ref={canvasRef} className="w-[223px] h-[223px]" />
+        <p className="text-sm text-gray-600">Scan to view this design</p>
+      </div>
+    </div>
+  );
+};
 
 function ModuleBuilder() {
   // Replace all state declarations with these:
@@ -1219,6 +1256,8 @@ function ModuleBuilder() {
   const [draggingContextId, setDraggingContextId] = React.useState(null);
   const dragStartRef = React.useRef({ x: 0, y: 0 });
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const [showQR, setShowQR] = React.useState(false);
+  const [buttonState, setButtonState] = React.useState('initial');
 
   React.useEffect(() => {
     const loadFromHash = async () => {
@@ -1501,6 +1540,11 @@ function ModuleBuilder() {
       console.error(err);
     }
   };
+
+  React.useEffect(() => {
+    setShowQR(false);
+    setButtonState('initial');
+  }, [placedPieces, placedContextFigures, selectedTheme]);
 
   React.useEffect(() => {
     updateZoom();
@@ -1984,7 +2028,13 @@ function ModuleBuilder() {
             </span>
             <span className="text-sm text-gray-500 ml-2">(VAT inclusive)</span>
           </div>
-
+          {/* Add this line for the QR panel */}
+          {showQR && (
+            <QRPanel
+              url={`https://framework.co.ke/designer#${encodeURIComponent(configCode)};${selectedTheme}`}
+              onClose={() => setShowQR(false)}
+            />
+          )}
           {/* Action Buttons */}
           <div className="mt-4 space-y-2">
             <a
@@ -2027,20 +2077,40 @@ function ModuleBuilder() {
             <button
               onClick={async (e) => {
                 const shareableURL = `https://framework.co.ke/designer#${encodeURIComponent(configCode)};${selectedTheme}`;
+
+                if (buttonState === 'copied') {
+                  setShowQR(true);
+                  setButtonState('qr');
+                  return;
+                }
+
+                if (buttonState === 'qr') {
+                  setShowQR(false);
+                  setButtonState('initial');
+                  return;
+                }
+
                 try {
                   await navigator.clipboard.writeText(shareableURL);
+                  setButtonState('copied');
                   const button = e.target;
-                  button.textContent = 'Link Copied!';
+                  button.textContent = 'Click again for QR Code';
+
                   setTimeout(() => {
-                    button.textContent = 'Share Your Design';
-                  }, 2000);
+                    if (buttonState === 'copied') {
+                      setButtonState('initial');
+                      button.textContent = 'Share Your Design';
+                    }
+                  }, 5000);
                 } catch (err) {
                   console.error('Failed to copy URL:', err);
                 }
               }}
               className="block w-full bg-indigo-600 text-white text-center px-2.5 py-1 rounded-md text-xs font-medium"
             >
-              Share Your Design
+              {buttonState === 'initial' ? 'Share Your Design' :
+                buttonState === 'copied' ? 'Link copied! Click again for QR Code' :
+                  'Close QR Code'}
             </button>
           </div>
         </div>
