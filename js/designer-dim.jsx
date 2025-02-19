@@ -259,9 +259,9 @@ const moduleFilenames = [
 
 
   {
-    id: 'adapter-unit-NE',
+    id: 'wide-adapter-NE',
     filename: 'adapter-unit-NE.svg',
-    product: 'Adapter Unit',
+    product: 'Wide Adapter',
     anchors: [
       { type: "FWNE", x: 124.221766, y: 139.173491 },
       { type: "HSNE", x: 142.889358, y: 98.805885 }
@@ -272,9 +272,9 @@ const moduleFilenames = [
     dim_height: 300
   },
   {
-    id: 'adapter-unit-SE',
+    id: 'wide-adapter-SE',
     filename: 'adapter-unit-SE.svg',
-    product: 'Adapter Unit',
+    product: 'Wide Adapter',
     anchors: [
       { type: "FWNW", x: 114.817492, y: 137.652845 },
       { type: "HSNW", x: 133.485138, y: 118.840748 }
@@ -285,9 +285,9 @@ const moduleFilenames = [
     dim_height: 300
   },
   {
-    id: 'adapter-unit-SW',
+    id: 'wide-adapter-SW',
     filename: 'adapter-unit-SW.svg',
-    product: 'Adapter Unit',
+    product: 'Wide Adapter',
     anchors: [
       { type: "HSNE", x: 104.70945, y: 125.640295 },
       { type: "FWNE", x: 123.377096, y: 144.452392 },
@@ -298,9 +298,9 @@ const moduleFilenames = [
     dim_height: 300
   },
   {
-    id: 'adapter-unit-NW',
+    id: 'wide-adapter-NW',
     filename: 'adapter-unit-NW.svg',
-    product: 'Adapter Unit',
+    product: 'Wide Adapter',
     anchors: [
       { type: "HSNW", x: 106.253397, y: 96.103436 },
       { type: "FWNW", x: 124.920989, y: 136.471043 }
@@ -429,7 +429,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNW", x: 129.210985, y: 146.854794 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NW: 720,
     dim_NE: 280,
     dim_height: 760
@@ -441,7 +441,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNE", x: 129.210985, y: 146.854794 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NE: 720,
     dim_NW: 280,
     dim_height: 760
@@ -453,7 +453,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNW", x: 106.750408, y: 147.351661 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NW: 720,
     dim_NE: 280,
     dim_height: 760
@@ -465,7 +465,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNE", x: 133.249592, y: 147.351661 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NE: 720,
     dim_NW: 280,
     dim_height: 760
@@ -477,7 +477,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNW", x: 117.580133, y: 154.714673 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NW: 720,
     dim_NE: 280,
     dim_height: 760
@@ -489,7 +489,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNE", x: 101.616181, y: 146.826659 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NE: 720,
     dim_NW: 280,
     dim_height: 760
@@ -501,7 +501,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNW", x: 109.947308, y: 165.795899 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NW: 720,
     dim_NE: 280,
     dim_height: 760
@@ -513,7 +513,7 @@ const moduleFilenames = [
     anchors: [
       { type: "FSNE", x: 138.180926, y: 142.876599 }
     ],
-    price: 2500,
+    price: 4500,
     dim_NE: 720,
     dim_NW: 280,
     dim_height: 760
@@ -622,6 +622,174 @@ function findConnections(piece, placedPieces) {
   );
 }
 
+function getVirtualAnchorPoint(piece, anchorType) {
+  if (!piece.piece.id.includes('corner-')) return null;
+
+  const pairTypeMap = {
+    'NE': 'SW',
+    'SW': 'NE',
+    'NW': 'SE',
+    'SE': 'NW'
+  };
+  const pairType = pairTypeMap[anchorType];
+  if (!pairType) return null;
+
+  // Count occurrences of anchor types
+  const anchorCounts = piece.piece.anchors.reduce((acc, a) => {
+    acc[a.type] = (acc[a.type] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Identify orphan anchor (if any)
+  const isOrphan = anchorCounts[anchorType] === 1 && !anchorCounts[pairType];
+  if (!isOrphan) return null;
+
+  const anchor = piece.piece.anchors.find(a => a.type === anchorType);
+  if (!anchor) return null;
+
+  const dx = 105.531011;
+  const dy = 60.928358;
+
+  let virtualX, virtualY;
+
+  // Compute virtual position based on anchor type
+  switch (anchorType) {
+    case 'NE':
+      virtualX = anchor.x - dx;
+      virtualY = anchor.y + dy;
+      break;
+    case 'SW':
+      virtualX = anchor.x + dx;
+      virtualY = anchor.y - dy;
+      break;
+    case 'NW':
+      virtualX = anchor.x + dx;
+      virtualY = anchor.y + dy;
+      break;
+    case 'SE':
+      virtualX = anchor.x - dx;
+      virtualY = anchor.y - dy;
+      break;
+    default:
+      return null;
+  }
+  return { type: pairType, x: virtualX, y: virtualY, isVirtual: true };
+}
+
+function calculateLateralDimensions(piece, placedPieces, processedPairs = new Set()) {
+  const dimensions = [];
+
+  // Helper to get unique pair identifier
+  const getPairId = (p1, a1, p2, a2) => {
+    const points = [`${p1.piece.id}-${a1.type}`, `${p2.piece.id}-${a2.type}`].sort();
+    return points.join('->');
+  };
+
+  // Process each lateral anchor
+  piece.piece.anchors.forEach(anchor => {
+    console.log('Processing anchor:', {
+      pieceId: piece.piece.id,
+      anchorType: anchor.type,
+      coords: { x: anchor.x, y: anchor.y }
+    });
+
+    // Only process lateral anchors that aren't in use
+    if (!anchor.type.match(/^(NE|NW|SE|SW)$/) ||
+      findConnections(piece, placedPieces).some(conn => conn.pieceAnchor === anchor)) {
+      console.log('Skipping anchor:', { reason: !anchor.type.match(/^(NE|NW|SE|SW)$/) ? 'not lateral' : 'in use' });
+      return;
+    }
+
+    // Check for virtual anchor point if this is a corner unit
+    const virtualAnchor = getVirtualAnchorPoint(piece, anchor.type);
+    if (virtualAnchor) {
+      // Add dimension for this virtual pair
+      const dimKey = anchor.type.includes('NE') || anchor.type.includes('SW') ? 'dim_NE' : 'dim_NW';
+
+      dimensions.push({
+        startPoint: {
+          x: piece.x + anchor.x,
+          y: piece.y + anchor.y
+        },
+        endPoint: {
+          x: piece.x + virtualAnchor.x,
+          y: piece.y + virtualAnchor.y
+        },
+        dimension: piece.piece[dimKey],
+        chain: [{ piece, anchor }, { piece, anchor: virtualAnchor }]
+      });
+      return;
+    }
+
+
+    let currentPiece = piece;
+    let currentAnchor = anchor;
+    let totalDimension = 0;
+    let chain = [{ piece: currentPiece, anchor: currentAnchor }];
+
+    // Find opposing anchor by following connections
+    while (currentPiece) {
+      // Get the opposite anchor type
+      const oppositeType = compatibilityMap[currentAnchor.type];
+
+      // Find opposite anchor on current piece
+      const oppositeAnchor = currentPiece.piece.anchors.find(a => a.type === oppositeType);
+
+      if (!oppositeAnchor) break;
+
+      // If opposite anchor is unused, we've found our pair
+      if (!findConnections(currentPiece, placedPieces).some(conn => conn.pieceAnchor === oppositeAnchor)) {
+        // Create unique identifier for this anchor pair
+        const pairId = getPairId(piece, anchor, currentPiece, oppositeAnchor);
+
+        // Skip if we've already processed this pair
+        if (processedPairs.has(pairId)) return;
+        processedPairs.add(pairId);
+
+        // Add the final dimension
+        const dimKey = anchor.type.includes('NE') || anchor.type.includes('SW') ? 'dim_NE' : 'dim_NW';
+        totalDimension += currentPiece.piece[dimKey];
+
+        chain.push({ piece: currentPiece, anchor: oppositeAnchor });
+
+        // Calculate visual points for dimension line
+        const startPoint = {
+          x: piece.x + anchor.x,
+          y: piece.y + anchor.y
+        };
+        const endPoint = {
+          x: currentPiece.x + oppositeAnchor.x,
+          y: currentPiece.y + oppositeAnchor.y
+        };
+
+        dimensions.push({
+          startPoint,
+          endPoint,
+          dimension: totalDimension,
+          chain
+        });
+        break;
+      }
+
+      // If opposite anchor is in use, follow the connection
+      const connection = findConnections(currentPiece, placedPieces)
+        .find(conn => conn.pieceAnchor === oppositeAnchor);
+
+      if (!connection) break;
+
+      // Add dimension for current piece
+      const dimKey = anchor.type.includes('NE') || anchor.type.includes('SW') ? 'dim_NE' : 'dim_NW';
+      totalDimension += currentPiece.piece[dimKey];
+
+      // Move to next piece
+      currentPiece = connection.piece;
+      currentAnchor = connection.otherAnchor;
+      chain.push({ piece: currentPiece, anchor: currentAnchor });
+    }
+  });
+
+  return dimensions;
+}
 function isRoot(piece, placedPieces) {
   const footAnchors = piece.piece.anchors.filter(a => a.type.startsWith('F'));
   return footAnchors.length === 0 || !placedPieces.some(other =>
@@ -1197,123 +1365,135 @@ function applySVGTheme(svgDoc, theme) {
     }
   });
 }
-const DimensionArrow = ({ type }) => {
-  const getArrowPath = () => {
-    switch (type) {
-      case 'height':
-        return 'M 10,0 L 10,20 M 7,3 L 10,0 L 13,3 M 7,17 L 10,20 L 13,17';
-      case 'width':
-        return 'M 0,10 L 20,0 M 2,8 L 0,10 L 2,12 M 18,-2 L 20,0 L 18,2';
-      case 'depth':
-        return 'M 0,0 L 20,10 M 2,-2 L 0,0 L 2,2 M 18,8 L 20,10 L 18,12';
-      default:
-        return '';
-    }
-  };
+
+
+const QRPanel = ({ url, onClose }) => {
+  const canvasRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!canvasRef.current || !url) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    script.onload = () => {
+      // Clear any existing content
+      while (canvasRef.current.firstChild) {
+        canvasRef.current.removeChild(canvasRef.current.firstChild);
+      }
+
+      new window.QRCode(canvasRef.current, {
+        text: url,
+        width: 223,
+        height: 223,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+      });
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [url]);
 
   return (
-    <svg 
-      width="24" 
-      height="24" 
-      viewBox="-2 -2 24 24" 
-      className="inline-block ml-1"
-      stroke="currentColor" 
-      fill="none" 
-      strokeWidth="1.5"
-    >
-      <path d={getArrowPath()} />
-    </svg>
+    <div className="fixed bottom-6 right-72 bg-white rounded-lg shadow-lg p-4 w-[calc(100%-48px)] max-w-md z-50">
+      <div className="flex flex-col items-center gap-2">
+        <div ref={canvasRef} className="w-[223px] h-[223px]" />
+        <p className="text-sm text-gray-600">Scan to view this design</p>
+      </div>
+    </div>
   );
 };
 
-function calculateDimensions(placedPieces) {
-  if (placedPieces.length === 0) return { width: 0, depth: 0, height: 0 };
-  
-  // Handle single piece case
-  if (placedPieces.length === 1) {
-    const piece = placedPieces[0];
-    return {
-      width: piece.piece.dim_NE,
-      depth: piece.piece.dim_NW,
-      height: piece.piece.dim_height
-    };
-  }
+const DimensionLine = ({ startPoint, endPoint, dimension, scale }) => {
+  const dx = endPoint.x - startPoint.x;
+  const dy = endPoint.y - startPoint.y;
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
-  let height = 0;
-  let ne_total = 0, nw_total = 0;
-  let max_ne = 0, min_ne = 0, max_nw = 0, min_nw = 0;
+  // Constants for dimension line appearance
+  const extensionLength = -45;
+  const arrowSize = 4;
 
-  // First handle height by finding vertical groups
-  const roots = placedPieces.filter(p => isRoot(p, placedPieces));
-  roots.forEach(root => {
-    const group = findGroupFromRoot(root, placedPieces);
-    const groupHeight = group.reduce((sum, p) => sum + p.piece.dim_height, 0);
-    height = Math.max(height, groupHeight);
-  });
-
-  // Initialize with first piece
-  ne_total = placedPieces[0].piece.dim_NE;
-  nw_total = placedPieces[0].piece.dim_NW;
-  max_ne = ne_total;
-  min_ne = ne_total;
-  max_nw = nw_total;
-  min_nw = nw_total;
-
-  // Track processed connections to avoid double-counting
-  const processedConnections = new Set();
-
-  // Then handle width/depth by analyzing actual connections
-  placedPieces.forEach(piece => {
-    const connections = findConnections(piece, placedPieces);
-    
-    connections.forEach(conn => {
-      // Create unique connection identifier
-      const connId = [piece.uniqueId, conn.piece.uniqueId].sort().join('-');
-      if (processedConnections.has(connId)) return;
-      processedConnections.add(connId);
-
-      const isCornerPiece = piece.piece.id.startsWith('corner-base-');
-      const cornerSuffix = isCornerPiece ? piece.piece.id.slice(-2) : null;
-
-      if (conn.pieceAnchor.type === 'NE' || conn.pieceAnchor.type === 'SW') {
-        if (isCornerPiece) {
-          // Handle corner piece connected via NE/SW
-          ne_total += 280; // Short dimension
-          // Add long dimension minus overlap in perpendicular direction based on suffix
-          if (cornerSuffix === 'NW') nw_total += 980;
-          else if (cornerSuffix === 'SE') nw_total -= 980;
-        } else {
-          // Normal piece
-          ne_total += piece.piece.dim_NE;
-        }
-      } else if (conn.pieceAnchor.type === 'NW' || conn.pieceAnchor.type === 'SE') {
-        if (isCornerPiece) {
-          // Handle corner piece connected via NW/SE
-          nw_total += 280; // Short dimension
-          // Add long dimension minus overlap in perpendicular direction based on suffix
-          if (cornerSuffix === 'NE') ne_total += 980;
-          else if (cornerSuffix === 'SW') ne_total -= 980;
-        } else {
-          // Normal piece
-          nw_total += piece.piece.dim_NW;
-        }
-      }
-
-      // Update running extremes
-      max_ne = Math.max(max_ne, ne_total);
-      min_ne = Math.min(min_ne, ne_total);
-      max_nw = Math.max(max_nw, nw_total);
-      min_nw = Math.min(min_nw, nw_total);
-    });
-  });
-
-  return {
-    width: Math.abs(max_ne - min_ne),
-    depth: Math.abs(max_nw - min_nw),
-    height: height
+  // Calculate extension line endpoints (30 degrees up from anchor points)
+  const startExtension = {
+    y: startPoint.y - extensionLength, 
+    x: startPoint.x
   };
-}
+  const endExtension = {
+    y: endPoint.y - extensionLength , 
+    x: endPoint.x
+  };
 
+  // Text position
+  const textX = (startExtension.x + endExtension.x) / 2;
+  const textY = (startExtension.y + endExtension.y) / 2 - (8);
+
+  return (
+    <g>
+      {/* Extension lines */}
+      <line
+        x1={startPoint.x}
+        y1={startPoint.y}
+        x2={startExtension.x}
+        y2={startExtension.y}
+        stroke="rgba(0,0,0,0.6)"
+        strokeWidth={1}
+      />
+      <line
+        x1={endPoint.x}
+        y1={endPoint.y}
+        x2={endExtension.x}
+        y2={endExtension.y}
+        stroke="rgba(0,0,0,0.6)"
+        strokeWidth={1}
+      />
+
+      {/* Dimension line */}
+      <line
+        x1={startExtension.x}
+        y1={startExtension.y}
+        x2={endExtension.x}
+        y2={endExtension.y}
+        stroke="rgba(0,0,0,0.6)"
+        strokeWidth={1}
+      />
+
+      {/* Arrows */}
+      <path
+        d={`M${startExtension.x},${startExtension.y} l${arrowSize},${arrowSize / 2} v${-arrowSize} z`}
+        fill="rgba(0,0,0,0.6)"
+        transform={`rotate(${angle}, ${startExtension.x}, ${startExtension.y})`}
+      />
+      <path
+        d={`M${endExtension.x},${endExtension.y} l${-arrowSize},${arrowSize / 2} v${-arrowSize} z`}
+        fill="rgba(0,0,0,0.6)"
+        transform={`rotate(${angle}, ${endExtension.x}, ${endExtension.y})`}
+      />
+
+      {/* Text with background bubble */}
+      <rect
+        x={textX - (20)}
+        y={textY - (12)}
+        width={40}
+        height={16}
+        rx={4}
+        fill="white"
+        fillOpacity="0.9"
+      />
+      <text
+        x={textX}
+        y={textY}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="rgba(0,0,0,0.8)"
+        fontSize={10}
+      >
+        {dimension}mm
+      </text>
+    </g>
+  );
+};
 function ModuleBuilder() {
   // Replace all state declarations with these:
   const [placedPieces, setPlacedPieces] = React.useState([]);
@@ -1332,6 +1512,9 @@ function ModuleBuilder() {
   const [draggingContextId, setDraggingContextId] = React.useState(null);
   const dragStartRef = React.useRef({ x: 0, y: 0 });
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const [showQR, setShowQR] = React.useState(false);
+  const [buttonState, setButtonState] = React.useState('initial');
+  const [showDimensions, setShowDimensions] = React.useState(false);
 
   React.useEffect(() => {
     const loadFromHash = async () => {
@@ -1616,6 +1799,11 @@ function ModuleBuilder() {
   };
 
   React.useEffect(() => {
+    setShowQR(false);
+    setButtonState('initial');
+  }, [placedPieces, placedContextFigures, selectedTheme]);
+
+  React.useEffect(() => {
     updateZoom();
     window.addEventListener('resize', updateZoom);
     return () => window.removeEventListener('resize', updateZoom);
@@ -1779,12 +1967,22 @@ function ModuleBuilder() {
               ))}
             </select>
           </div>
-          <button
-            onClick={onAddContext}
-            className={`w-full bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm sm:text-xs md:text-sm ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
-          >
-            Add Context
-          </button>
+          <div className="relative">
+            <button
+              onClick={onAddContext}
+              className={`w-full bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm sm:text-xs md:text-sm ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
+            >
+              Add Context
+            </button>
+            {isContextPlacementMode && (
+              <div className="absolute top-full left-0 right-0 mt-5">
+                <div className="bg-white rounded-lg shadow-lg p-2 text-xs text-gray-600 relative">
+                  Click anywhere to add objects or people.
+                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-t border-l border-gray-200"></div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1809,6 +2007,14 @@ function ModuleBuilder() {
               className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 sm:text-xs md:text-sm"
             >
               {showButtons ? 'Hide Controls' : 'Show Controls'}
+            </button>
+
+            <div className="w-px bg-gray-200"></div>
+            <button
+              onClick={() => setShowDimensions(!showDimensions)}
+              className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 sm:text-xs md:text-sm"
+            >
+              {showDimensions ? 'Hide Dimensions' : 'Show Dimensions'}
             </button>
           </div>
           {/* Move HelpDisplay here */}
@@ -1841,7 +2047,13 @@ function ModuleBuilder() {
 
   return (
     <div ref={containerRef}
-      className="relative w-full h-screen bg-gray-100 overflow-hidden"
+      className="relative w-full h-screen bg-gray-100 overflow-hidden touch-none"
+      style={{
+        touchAction: 'none',
+        WebkitOverflowScrolling: 'touch',
+        position: 'fixed',
+        inset: 0
+      }}
       onClick={isContextPlacementMode ? handleContextPlace : undefined}
       onMouseMove={handleDragMove}
       onTouchMove={handleDragMove}
@@ -2002,7 +2214,41 @@ function ModuleBuilder() {
         </div>
       </div>
 
+      {/* Dimensions Layer - Now outside the transformed container */}
+      {showDimensions && (
+        <svg
+          className="absolute inset-0 pointer-events-none"
+          style={{ zIndex: 15000 }}
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${containerRef.current?.clientWidth || 1000} ${containerRef.current?.clientHeight || 1000}`}
+        >
+          {placedPieces.flatMap((piece, pieceIndex) => {
+            const dims = calculateLateralDimensions(piece, placedPieces);
+            return dims.map((dim, dimIndex) => {
+              // Calculate screen coordinates
+              const screenStart = {
+                x: dim.startPoint.x * scale + offset.x,
+                y: dim.startPoint.y * scale + offset.y
+              };
+              const screenEnd = {
+                x: dim.endPoint.x * scale + offset.x,
+                y: dim.endPoint.y * scale + offset.y
+              };
 
+              return (
+                <DimensionLine
+                  key={`dim-${pieceIndex}-${dimIndex}`}
+                  startPoint={screenStart}
+                  endPoint={screenEnd}
+                  dimension={dim.dimension}
+                  scale={scale}
+                />
+              );
+            });
+          })}
+        </svg>
+      )}
 
 
       {/* Editor Controls */}
@@ -2043,24 +2289,6 @@ function ModuleBuilder() {
 
       {placedPieces.length > 0 && (
         <div className="fixed bottom-6 right-6 bg-white rounded-lg shadow-lg p-4 max-w-md z-50">
-          {/* Dimensions Section - Add this before the Product List */}
-          <div className="mb-4 pb-4 border-b border-gray-200">
-            <div className="text-sm font-medium text-gray-500 mb-2">Dimensions</div>
-            <div className="grid grid-cols-3 gap-2 text-sm">
-              <div className="flex items-center">
-                <span>Width: {calculateDimensions(placedPieces).width}mm</span>
-                <DimensionArrow type="width" />
-              </div>
-              <div className="flex items-center">
-                <span>Depth: {calculateDimensions(placedPieces).depth}mm</span>
-                <DimensionArrow type="depth" />
-              </div>
-              <div className="flex items-center">
-                <span>Height: {calculateDimensions(placedPieces).height}mm</span>
-                <DimensionArrow type="height" />
-              </div>
-            </div>
-          </div>
           {/* Product List */}
           {Object.entries(
             placedPieces.reduce((acc, { piece }) => {
@@ -2075,7 +2303,7 @@ function ModuleBuilder() {
                 'corner-base': 3,
                 'corner-extension': 4,
                 'wide-base': 5,
-                'adapter-unit': 6,
+                'wide-adapter': 6,
                 'wide-extension': 7,
                 'lamp': 8
               };
@@ -2099,7 +2327,13 @@ function ModuleBuilder() {
             </span>
             <span className="text-sm text-gray-500 ml-2">(VAT inclusive)</span>
           </div>
-
+          {/* Add this line for the QR panel */}
+          {showQR && (
+            <QRPanel
+              url={`https://framework.co.ke/designer#${encodeURIComponent(configCode)};${selectedTheme}`}
+              onClose={() => setShowQR(false)}
+            />
+          )}
           {/* Action Buttons */}
           <div className="mt-4 space-y-2">
             <a
@@ -2117,7 +2351,7 @@ function ModuleBuilder() {
                       'corner-base': 3,
                       'corner-extension': 4,
                       'wide-base': 5,
-                      'adapter-unit': 6,
+                      'wide-adapter': 6,
                       'wide-extension': 7,
                       'lamp': 8
                     };
@@ -2142,20 +2376,40 @@ function ModuleBuilder() {
             <button
               onClick={async (e) => {
                 const shareableURL = `https://framework.co.ke/designer#${encodeURIComponent(configCode)};${selectedTheme}`;
+
+                if (buttonState === 'copied') {
+                  setShowQR(true);
+                  setButtonState('qr');
+                  return;
+                }
+
+                if (buttonState === 'qr') {
+                  setShowQR(false);
+                  setButtonState('initial');
+                  return;
+                }
+
                 try {
                   await navigator.clipboard.writeText(shareableURL);
+                  setButtonState('copied');
                   const button = e.target;
-                  button.textContent = 'Link Copied!';
+                  button.textContent = 'Click again for QR Code';
+
                   setTimeout(() => {
-                    button.textContent = 'Share Your Design';
-                  }, 2000);
+                    if (buttonState === 'copied') {
+                      setButtonState('initial');
+                      button.textContent = 'Share Your Design';
+                    }
+                  }, 5000);
                 } catch (err) {
                   console.error('Failed to copy URL:', err);
                 }
               }}
               className="block w-full bg-indigo-600 text-white text-center px-2.5 py-1 rounded-md text-xs font-medium"
             >
-              Share Your Design
+              {buttonState === 'initial' ? 'Share Your Design' :
+                buttonState === 'copied' ? 'Link copied! Click again for QR Code' :
+                  'Close QR Code'}
             </button>
           </div>
         </div>
