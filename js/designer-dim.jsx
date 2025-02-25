@@ -876,7 +876,7 @@ function calculateLateralDimensions(piece, placedPieces, processedPairs = new Se
   return dimensions;
 }
 
-// Add this function to calculate vertical dimensions
+// Update the getVerticalDimensions function to handle lamp mounts differently
 function getVerticalDimensions(placedPieces) {
   // Find all root pieces
   const roots = placedPieces.filter(p => isRoot(p, placedPieces));
@@ -906,40 +906,60 @@ function getVerticalDimensions(placedPieces) {
 
     // Get the topmost piece
     const topPiece = sortedPieces[0];
+    const isLamp = topPiece.piece.id.includes('lamp-');
 
-    // Get the first anchor point of the topmost piece - preferably a head anchor
-    const anchor = topPiece.piece.anchors.find(a => a.type.startsWith('H')) ||
-      topPiece.piece.anchors[0];
+    if (isLamp) {
+      // For lamps, use their foot anchor point, but move the dimension arrow up by 100 units
+      const lampAnchor = topPiece.piece.anchors[0]; // Lamp mount has only one anchor
 
-    // Calculate start point (top anchor)
-    const startPoint = {
-      x: topPiece.x + anchor.x,
-      y: topPiece.y + anchor.y
-    };
+      // Calculate start point with vertical offset of 100 units up from the anchor
+      const startPoint = {
+        x: topPiece.x + lampAnchor.x,
+        y: topPiece.y + lampAnchor.y - 80 // Move 100 units up from the anchor point
+      };
 
-    dimensions.push({
-      startPoint,
-      dimension: totalHeight,
-      isVertical: true
-    });
+      dimensions.push({
+        startPoint,
+        dimension: totalHeight,
+        isVertical: true,
+        isLamp: true // Add a flag to identify lamp dimensions
+      });
+    } else {
+      // Regular case for non-lamp pieces
+      // Find a suitable anchor for the dimension arrow - prefer head anchors
+      const anchor = topPiece.piece.anchors.find(a => a.type.startsWith('H')) ||
+        topPiece.piece.anchors[0];
+
+      // Calculate start point (top anchor)
+      const startPoint = {
+        x: topPiece.x + anchor.x,
+        y: topPiece.y + anchor.y
+      };
+
+      dimensions.push({
+        startPoint,
+        dimension: totalHeight,
+        isVertical: true
+      });
+    }
   });
 
   return dimensions;
 }
 
-// Updated vertical dimension line with larger arrow
-const VerticalDimensionLine = ({ startPoint, dimension, scale }) => {
+// Update the VerticalDimensionLine component to handle lamp dimensions
+const VerticalDimensionLine = ({ startPoint, dimension, scale, isLamp = false }) => {
   // Constants for dimension line appearance
-  const arrowLength = 40;
+  const arrowLength = isLamp ? 100 : 40; // Longer arrow for lamps
   const labelOffset = 8;
-  const arrowSize = 6; // Increased arrow size (1.5x)
-  
+  const arrowSize = 6;
+
   // Calculate arrow start point (above the anchor point)
   const arrowStart = {
     x: startPoint.x,
     y: startPoint.y - arrowLength
   };
-  
+
   // Calculate text position (centered above the arrow start)
   const textX = startPoint.x;
   const textY = arrowStart.y - labelOffset;
@@ -955,15 +975,13 @@ const VerticalDimensionLine = ({ startPoint, dimension, scale }) => {
         stroke="rgba(0,0,0,0.6)"
         strokeWidth={1}
       />
-      
-      {/* Larger arrow head - at the anchor point, pointing down */}
+
+      {/* Arrow head - at the anchor point, pointing down */}
       <path
-        d={`M${startPoint.x},${startPoint.y} l${arrowSize/2},${-arrowSize} h${-arrowSize} z`}
+        d={`M${startPoint.x},${startPoint.y} l${arrowSize / 2},${-arrowSize} h${-arrowSize} z`}
         fill="rgba(0,0,0,0.6)"
       />
-      
 
-      
       {/* Text - centered directly above the arrow */}
       <text
         x={textX}
@@ -1745,7 +1763,7 @@ const DimensionLine = ({ startPoint, endPoint, dimension, scale }) => {
         transform={`rotate(${angle}, ${endDim.x}, ${endDim.y})`}
       />
 
-      
+
       {/* Flat text - no rotation */}
       <text
         x={midX}
@@ -2531,30 +2549,38 @@ function ModuleBuilder() {
           {/* Product List */}
           {Object.entries(
             placedPieces.reduce((acc, { piece }) => {
-              acc[piece.id] = (acc[piece.id] || 0) + 1;
+              // Extract the base product type without direction suffix
+              const baseProductType = piece.product;
+
+              // Group by product name instead of ID
+              if (!acc[baseProductType]) {
+                acc[baseProductType] = {
+                  count: 0,
+                  price: piece.price
+                };
+              }
+              acc[baseProductType].count += 1;
               return acc;
             }, {})
           )
-            .sort(([idA], [idB]) => {
+            .sort(([productA], [productB]) => {
               const order = {
-                'standard-base': 1,
-                'standard-extension': 2,
-                'corner-base': 3,
-                'corner-extension': 4,
-                'wide-base': 5,
-                'wide-adapter': 6,
-                'wide-extension': 7,
-                'lamp': 8
+                'Standard Base': 1,
+                'Standard Extension': 2,
+                'Corner Base': 3,
+                'Corner Extension': 4,
+                'Wide Base': 5,
+                'Wide Adapter': 6,
+                'Wide Extension': 7,
+                'Lamp (left)': 8,
+                'Lamp (right)': 8
               };
-              const baseA = Object.keys(order).find(key => idA.startsWith(key)) || idA;
-              const baseB = Object.keys(order).find(key => idB.startsWith(key)) || idB;
-              return (order[baseA] || 999) - (order[baseB] || 999);
+              return (order[productA] || 999) - (order[productB] || 999);
             })
-            .map(([id, count], index, array) => {
-              const piece = testPieces.find(p => p.id === id);
+            .map(([product, { count, price }], index, array) => {
               return (
-                <div key={id} className="text-sm text-gray-600">
-                  {`${count} x ${piece.product} @ Ksh ${piece.price.toLocaleString()}${index !== array.length - 1 ? ' +' : ''}`}
+                <div key={product} className="text-sm text-gray-600">
+                  {`${count} x ${product} @ Ksh ${price.toLocaleString()}${index !== array.length - 1 ? ' +' : ''}`}
                 </div>
               );
             })}
@@ -2579,28 +2605,36 @@ function ModuleBuilder() {
               href={`https://wa.me/254783891005?text=${encodeURIComponent(
                 `I'd like to place an order for:\n${Object.entries(
                   placedPieces.reduce((acc, { piece }) => {
-                    acc[piece.id] = (acc[piece.id] || 0) + 1;
+                    // Extract the base product type without direction suffix
+                    const baseProductType = piece.product;
+
+                    // Group by product name instead of ID
+                    if (!acc[baseProductType]) {
+                      acc[baseProductType] = {
+                        count: 0,
+                        price: piece.price
+                      };
+                    }
+                    acc[baseProductType].count += 1;
                     return acc;
                   }, {})
                 )
-                  .sort(([idA], [idB]) => {
+                  .sort(([productA], [productB]) => {
                     const order = {
-                      'standard-base': 1,
-                      'standard-extension': 2,
-                      'corner-base': 3,
-                      'corner-extension': 4,
-                      'wide-base': 5,
-                      'wide-adapter': 6,
-                      'wide-extension': 7,
-                      'lamp': 8
+                      'Standard Base': 1,
+                      'Standard Extension': 2,
+                      'Corner Base': 3,
+                      'Corner Extension': 4,
+                      'Wide Base': 5,
+                      'Wide Adapter': 6,
+                      'Wide Extension': 7,
+                      'Lamp (left)': 8,
+                      'Lamp (right)': 8
                     };
-                    const baseA = Object.keys(order).find(key => idA.startsWith(key)) || idA;
-                    const baseB = Object.keys(order).find(key => idB.startsWith(key)) || idB;
-                    return (order[baseA] || 999) - (order[baseB] || 999);
+                    return (order[productA] || 999) - (order[productB] || 999);
                   })
-                  .map(([id, count]) => {
-                    const piece = testPieces.find(p => p.id === id);
-                    return `${count} x ${piece.product} @ Ksh ${piece.price.toLocaleString()}`;
+                  .map(([product, { count, price }]) => {
+                    return `${count} x ${product} @ Ksh ${price.toLocaleString()}`;
                   })
                   .join('\n')
                 }\nAll in ${colorThemes[selectedTheme].displayName}\nTotal Cost: Ksh ${placedPieces.reduce((sum, { piece }) => sum + piece.price, 0).toLocaleString()
