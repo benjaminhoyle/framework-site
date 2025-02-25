@@ -622,6 +622,380 @@ function findConnections(piece, placedPieces) {
   );
 }
 
+function getVirtualAnchorPoint(piece, anchorType) {
+  if (!piece.piece.id.includes('corner-')) return null;
+
+  const pairTypeMap = {
+    'NE': 'SW',
+    'SW': 'NE',
+    'NW': 'SE',
+    'SE': 'NW'
+  };
+  const pairType = pairTypeMap[anchorType];
+  if (!pairType) return null;
+
+  // Count occurrences of anchor types
+  const anchorCounts = piece.piece.anchors.reduce((acc, a) => {
+    acc[a.type] = (acc[a.type] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Identify orphan anchor (if any)
+  const isOrphan = anchorCounts[anchorType] === 1 && !anchorCounts[pairType];
+  if (!isOrphan) return null;
+
+  const anchor = piece.piece.anchors.find(a => a.type === anchorType);
+  if (!anchor) return null;
+
+  const dx = 105.531011;
+  const dy = 60.928358;
+
+  let virtualX, virtualY;
+
+  // Compute virtual position based on anchor type
+  switch (anchorType) {
+    case 'NE':
+      virtualX = anchor.x - dx;
+      virtualY = anchor.y + dy;
+      break;
+    case 'SW':
+      virtualX = anchor.x + dx;
+      virtualY = anchor.y - dy;
+      break;
+    case 'NW':
+      virtualX = anchor.x + dx;
+      virtualY = anchor.y + dy;
+      break;
+    case 'SE':
+      virtualX = anchor.x - dx;
+      virtualY = anchor.y - dy;
+      break;
+    default:
+      return null;
+  }
+  return { type: pairType, x: virtualX, y: virtualY, isVirtual: true };
+}
+
+function calculateLateralDimensions(piece, placedPieces, processedPairs = new Set()) {
+  const dimensions = [];
+
+  // Helper to get unique pair identifier
+  const getPairId = (p1, a1, p2, a2) => {
+    const points = [`${p1.piece.id}-${a1.type}`, `${p2.piece.id}-${a2.type}`].sort();
+    return points.join('->');
+  };
+
+  // Process each lateral anchor
+  piece.piece.anchors.forEach(anchor => {
+    console.log('Processing anchor:', {
+      pieceId: piece.piece.id,
+      anchorType: anchor.type,
+      coords: { x: anchor.x, y: anchor.y }
+    });
+
+    // Only process lateral anchors
+    if (!anchor.type.match(/^(NE|NW|SE|SW)$/)) {
+      console.log('Skipping anchor:', { reason: 'not lateral' });
+      return;
+    }
+
+    // For corner units - handle virtual anchors and their connections
+    if (piece.piece.id.includes('corner-')) {
+      const virtualAnchor = getVirtualAnchorPoint(piece, anchor.type);
+      if (virtualAnchor) {
+        // Check if the real anchor is connected to other pieces
+        const connection = findConnections(piece, placedPieces).find(conn => conn.pieceAnchor === anchor);
+
+        // If there's a connection, we need to find the end of the chain and create a dimension to the virtual anchor
+        if (connection) {
+          // Start from the connected piece and follow chain to find the last open anchor
+          let currentPiece = connection.piece;
+          let currentAnchor = connection.otherAnchor;
+          let lastOpenPiece = null;
+          let lastOpenAnchor = null;
+          let totalDimension = piece.piece[anchor.type.includes('NE') || anchor.type.includes('SW') ? 'dim_NE' : 'dim_NW'];
+          let chain = [{ piece, anchor }, { piece: connection.piece, anchor: connection.otherAnchor }];
+
+          // Find the end of the chain (furthest piece with an open anchor)
+          while (currentPiece) {
+            // Get the opposite anchor type
+            const oppositeType = compatibilityMap[currentAnchor.type];
+
+            // Find opposite anchor on current piece
+            const oppositeAnchor = currentPiece.piece.anchors.find(a => a.type === oppositeType);
+            if (!oppositeAnchor) break;
+
+            // Add dimension for current piece
+            const dimKey = oppositeAnchor.type.includes('NE') || oppositeAnchor.type.includes('SW') ? 'dim_NE' : 'dim_NW';
+            totalDimension += currentPiece.piece[dimKey];
+
+            // If opposite anchor is unused, we've found our end point
+            if (!findConnections(currentPiece, placedPieces).some(conn => conn.pieceAnchor === oppositeAnchor)) {
+              lastOpenPiece = currentPiece;
+              lastOpenAnchor = oppositeAnchor;
+              chain.push({ piece: currentPiece, anchor: oppositeAnchor });
+              break;
+            }
+
+            // Follow the connection
+            const nextConnection = findConnections(currentPiece, placedPieces)
+              .find(conn => conn.pieceAnchor === oppositeAnchor);
+
+            if (!nextConnection) {
+              lastOpenPiece = currentPiece;
+              lastOpenAnchor = oppositeAnchor;
+              chain.push({ piece: currentPiece, anchor: oppositeAnchor });
+              break;
+            }
+
+            // Move to next piece
+            chain.push({ piece: nextConnection.piece, anchor: nextConnection.otherAnchor });
+            currentPiece = nextConnection.piece;
+            currentAnchor = nextConnection.otherAnchor;
+          }
+
+          // If we found an end point, create a dimension from it to the virtual anchor
+          if (lastOpenPiece && lastOpenAnchor) {
+            const chainKey = `chain-${lastOpenPiece.piece.id}-${lastOpenAnchor.type}-to-${piece.piece.id}-virtual-${virtualAnchor.type}`;
+
+            if (!processedPairs.has(chainKey)) {
+              processedPairs.add(chainKey);
+
+              dimensions.push({
+                startPoint: {
+                  x: lastOpenPiece.x + lastOpenAnchor.x,
+                  y: lastOpenPiece.y + lastOpenAnchor.y
+                },
+                endPoint: {
+                  x: piece.x + virtualAnchor.x,
+                  y: piece.y + virtualAnchor.y
+                },
+                dimension: totalDimension,
+                chain: chain.concat([{ piece, anchor: virtualAnchor }])
+              });
+            }
+          }
+        } else {
+          // For a standalone corner unit, create dimension between real and virtual anchor
+          const dimKey = anchor.type.includes('NE') || anchor.type.includes('SW') ? 'dim_NE' : 'dim_NW';
+          const virtualPairId = `${piece.piece.id}-${anchor.type}-virtual-${virtualAnchor.type}`;
+
+          if (!processedPairs.has(virtualPairId)) {
+            processedPairs.add(virtualPairId);
+
+            dimensions.push({
+              startPoint: {
+                x: piece.x + anchor.x,
+                y: piece.y + anchor.y
+              },
+              endPoint: {
+                x: piece.x + virtualAnchor.x,
+                y: piece.y + virtualAnchor.y
+              },
+              dimension: piece.piece[dimKey],
+              chain: [{ piece, anchor }, { piece, anchor: virtualAnchor }]
+            });
+          }
+        }
+      }
+    }
+
+    // If the anchor is in use, skip regular dimension calculation for it
+    if (findConnections(piece, placedPieces).some(conn => conn.pieceAnchor === anchor)) {
+      console.log('Skipping regular dimension for anchor:', { reason: 'in use' });
+      return;
+    }
+
+    // The rest of the function remains unchanged for normal dimension calculations
+    let currentPiece = piece;
+    let currentAnchor = anchor;
+    let totalDimension = 0;
+    let chain = [{ piece: currentPiece, anchor: currentAnchor }];
+
+    // Find opposing anchor by following connections
+    while (currentPiece) {
+      // Get the opposite anchor type
+      const oppositeType = compatibilityMap[currentAnchor.type];
+
+      // Find opposite anchor on current piece
+      const oppositeAnchor = currentPiece.piece.anchors.find(a => a.type === oppositeType);
+
+      if (!oppositeAnchor) break;
+
+      // If opposite anchor is unused, we've found our pair
+      if (!findConnections(currentPiece, placedPieces).some(conn => conn.pieceAnchor === oppositeAnchor)) {
+        // Create unique identifier for this anchor pair
+        const pairId = getPairId(piece, anchor, currentPiece, oppositeAnchor);
+
+        // Skip if we've already processed this pair
+        if (processedPairs.has(pairId)) return;
+        processedPairs.add(pairId);
+
+        // Add the final dimension
+        const dimKey = anchor.type.includes('NE') || anchor.type.includes('SW') ? 'dim_NE' : 'dim_NW';
+        totalDimension += currentPiece.piece[dimKey];
+
+        chain.push({ piece: currentPiece, anchor: oppositeAnchor });
+
+        // Calculate visual points for dimension line
+        const startPoint = {
+          x: piece.x + anchor.x,
+          y: piece.y + anchor.y
+        };
+        const endPoint = {
+          x: currentPiece.x + oppositeAnchor.x,
+          y: currentPiece.y + oppositeAnchor.y
+        };
+
+        dimensions.push({
+          startPoint,
+          endPoint,
+          dimension: totalDimension,
+          chain
+        });
+        break;
+      }
+
+      // If opposite anchor is in use, follow the connection
+      const connection = findConnections(currentPiece, placedPieces)
+        .find(conn => conn.pieceAnchor === oppositeAnchor);
+
+      if (!connection) break;
+
+      // Add dimension for current piece
+      const dimKey = anchor.type.includes('NE') || anchor.type.includes('SW') ? 'dim_NE' : 'dim_NW';
+      totalDimension += currentPiece.piece[dimKey];
+
+      // Move to next piece
+      currentPiece = connection.piece;
+      currentAnchor = connection.otherAnchor;
+      chain.push({ piece: currentPiece, anchor: currentAnchor });
+    }
+  });
+
+  return dimensions;
+}
+
+// Update the getVerticalDimensions function to handle lamp mounts differently
+function getVerticalDimensions(placedPieces) {
+  // Find all root pieces
+  const roots = placedPieces.filter(p => isRoot(p, placedPieces));
+  const groups = roots.map(root => ({
+    root,
+    pieces: findGroupFromRoot(root, placedPieces)
+  }));
+
+  const dimensions = [];
+  const processedHeights = new Set();
+
+  groups.forEach(group => {
+    if (group.pieces.length === 0) return;
+
+    // Sort pieces by y-coordinate (ascending)
+    const sortedPieces = [...group.pieces].sort((a, b) => a.y - b.y);
+
+    // Calculate total height of the group
+    let totalHeight = 0;
+    sortedPieces.forEach(piece => {
+      totalHeight += piece.piece.dim_height || 0;
+    });
+
+    // Only add one dimension per unique height
+    if (processedHeights.has(totalHeight)) return;
+    processedHeights.add(totalHeight);
+
+    // Get the topmost piece
+    const topPiece = sortedPieces[0];
+    const isLamp = topPiece.piece.id.includes('lamp-');
+
+    if (isLamp) {
+      // For lamps, use their foot anchor point, but move the dimension arrow up by 100 units
+      const lampAnchor = topPiece.piece.anchors[0]; // Lamp mount has only one anchor
+
+      // Calculate start point with vertical offset of 100 units up from the anchor
+      const startPoint = {
+        x: topPiece.x + lampAnchor.x,
+        y: topPiece.y + lampAnchor.y - 80 // Move 100 units up from the anchor point
+      };
+
+      dimensions.push({
+        startPoint,
+        dimension: totalHeight,
+        isVertical: true,
+        isLamp: true // Add a flag to identify lamp dimensions
+      });
+    } else {
+      // Regular case for non-lamp pieces
+      // Find a suitable anchor for the dimension arrow - prefer head anchors
+      const anchor = topPiece.piece.anchors.find(a => a.type.startsWith('H')) ||
+        topPiece.piece.anchors[0];
+
+      // Calculate start point (top anchor)
+      const startPoint = {
+        x: topPiece.x + anchor.x,
+        y: topPiece.y + anchor.y
+      };
+
+      dimensions.push({
+        startPoint,
+        dimension: totalHeight,
+        isVertical: true
+      });
+    }
+  });
+
+  return dimensions;
+}
+
+// Update the VerticalDimensionLine component to handle lamp dimensions
+const VerticalDimensionLine = ({ startPoint, dimension, scale, isLamp = false }) => {
+  // Constants for dimension line appearance
+  const arrowLength = isLamp ? 100 : 40; // Longer arrow for lamps
+  const labelOffset = 8;
+  const arrowSize = 6;
+
+  // Calculate arrow start point (above the anchor point)
+  const arrowStart = {
+    x: startPoint.x,
+    y: startPoint.y - arrowLength
+  };
+
+  // Calculate text position (centered above the arrow start)
+  const textX = startPoint.x;
+  const textY = arrowStart.y - labelOffset;
+
+  return (
+    <g>
+      {/* Dimension arrow - pointing DOWN to the anchor point */}
+      <line
+        x1={arrowStart.x}
+        y1={arrowStart.y}
+        x2={startPoint.x}
+        y2={startPoint.y}
+        stroke="rgba(0,0,0,0.6)"
+        strokeWidth={1}
+      />
+
+      {/* Arrow head - at the anchor point, pointing down */}
+      <path
+        d={`M${startPoint.x},${startPoint.y} l${arrowSize / 2},${-arrowSize} h${-arrowSize} z`}
+        fill="rgba(0,0,0,0.6)"
+      />
+
+      {/* Text - centered directly above the arrow */}
+      <text
+        x={textX}
+        y={textY}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="rgba(0,0,0,0.8)"
+        fontSize={10}
+      >
+        {dimension}mm
+      </text>
+    </g>
+  );
+};
 function isRoot(piece, placedPieces) {
   const footAnchors = piece.piece.anchors.filter(a => a.type.startsWith('F'));
   return footAnchors.length === 0 || !placedPieces.some(other =>
@@ -1237,7 +1611,173 @@ const QRPanel = ({ url, onClose }) => {
     </div>
   );
 };
+// Update the DimensionLines component to include vertical dimensions
+const DimensionLines = ({ placedPieces, scale, offset, containerRef }) => {
+  // Create a unique key for each dimension
+  const createDimensionKey = (dim) => {
+    if (dim.isVertical) {
+      // For vertical dimensions, use only the start point
+      const [x, y] = [Math.round(dim.startPoint.x * 100) / 100, Math.round(dim.startPoint.y * 100) / 100];
+      return `v-${x},${y}-${dim.dimension}`;
+    } else {
+      // For horizontal dimensions, use both points
+      const [x1, y1] = [Math.round(dim.startPoint.x * 100) / 100, Math.round(dim.startPoint.y * 100) / 100];
+      const [x2, y2] = [Math.round(dim.endPoint.x * 100) / 100, Math.round(dim.endPoint.y * 100) / 100];
+      return `h-${x1 < x2 ? `${x1},${y1}-${x2},${y2}` : `${x2},${y2}-${x1},${y1}`}`;
+    }
+  };
 
+  // Get unique dimensions
+  const getDimensions = () => {
+    const dimensionsMap = new Map();
+
+    // Add horizontal dimensions
+    placedPieces.forEach(piece => {
+      const dimensions = calculateLateralDimensions(piece, placedPieces);
+
+      dimensions.forEach(dim => {
+        const key = createDimensionKey(dim);
+        if (!dimensionsMap.has(key)) {
+          dimensionsMap.set(key, dim);
+        }
+      });
+    });
+
+    // Add vertical dimensions
+    const verticalDimensions = getVerticalDimensions(placedPieces);
+    verticalDimensions.forEach(dim => {
+      const key = createDimensionKey(dim);
+      if (!dimensionsMap.has(key)) {
+        dimensionsMap.set(key, dim);
+      }
+    });
+
+    return Array.from(dimensionsMap.values());
+  };
+
+  const uniqueDimensions = getDimensions();
+
+  return (
+    <svg
+      className="absolute inset-0 pointer-events-none"
+      style={{ zIndex: 15000 }}
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${containerRef.current?.clientWidth || 1000} ${containerRef.current?.clientHeight || 1000}`}
+    >
+      {uniqueDimensions.map((dim, index) => {
+        // Calculate screen coordinates
+        const screenStart = {
+          x: dim.startPoint.x * scale + offset.x,
+          y: dim.startPoint.y * scale + offset.y
+        };
+
+        if (dim.isVertical) {
+          return (
+            <VerticalDimensionLine
+              key={`vdim-${index}-${dim.startPoint.x}-${dim.startPoint.y}`}
+              startPoint={screenStart}
+              dimension={dim.dimension}
+              scale={scale}
+            />
+          );
+        } else {
+          const screenEnd = {
+            x: dim.endPoint.x * scale + offset.x,
+            y: dim.endPoint.y * scale + offset.y
+          };
+
+          return (
+            <DimensionLine
+              key={`dim-${index}-${dim.startPoint.x},${dim.startPoint.y}-${dim.endPoint.x},${dim.endPoint.y}`}
+              startPoint={screenStart}
+              endPoint={screenEnd}
+              dimension={dim.dimension}
+              scale={scale}
+            />
+          );
+        }
+      })}
+    </svg>
+  );
+};
+// Updated horizontal dimension line with no extension lines and larger arrows
+const DimensionLine = ({ startPoint, endPoint, dimension, scale }) => {
+  const dx = endPoint.x - startPoint.x;
+  const dy = endPoint.y - startPoint.y;
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  const lineLength = Math.sqrt(dx * dx + dy * dy);
+
+  // Constants for dimension line appearance
+  const extensionOffset = 130; // Distance below anchor points for the dimension line
+  const arrowSize = 6; // Increased arrow size (1.5x)
+  const textGapSize = 40; // Size of gap in line for text
+
+  // Calculate dimension line endpoints directly
+  const startDim = {
+    x: startPoint.x,
+    y: startPoint.y + extensionOffset
+  };
+  const endDim = {
+    x: endPoint.x,
+    y: endPoint.y + extensionOffset
+  };
+
+  // Calculate midpoint for text
+  const midX = (startDim.x + endDim.x) / 2;
+  const midY = (startDim.y + endDim.y) / 2;
+
+  // Calculate points for split line with gap
+  const gapStart = 0.5 - (textGapSize / lineLength / 2);
+  const gapEnd = 0.5 + (textGapSize / lineLength / 2);
+
+  return (
+    <g>
+      {/* Dimension line segments - directly between points, no extension lines */}
+      <line
+        x1={startDim.x}
+        y1={startDim.y}
+        x2={startDim.x + dx * gapStart}
+        y2={startDim.y + dy * gapStart}
+        stroke="rgba(0,0,0,0.6)"
+        strokeWidth={1}
+      />
+      <line
+        x1={startDim.x + dx * gapEnd}
+        y1={startDim.y + dy * gapEnd}
+        x2={endDim.x}
+        y2={endDim.y}
+        stroke="rgba(0,0,0,0.6)"
+        strokeWidth={1}
+      />
+
+      {/* Larger arrows */}
+      <path
+        d={`M${startDim.x},${startDim.y} l${arrowSize},${arrowSize / 2} v${-arrowSize} z`}
+        fill="rgba(0,0,0,0.6)"
+        transform={`rotate(${angle}, ${startDim.x}, ${startDim.y})`}
+      />
+      <path
+        d={`M${endDim.x},${endDim.y} l${-arrowSize},${arrowSize / 2} v${-arrowSize} z`}
+        fill="rgba(0,0,0,0.6)"
+        transform={`rotate(${angle}, ${endDim.x}, ${endDim.y})`}
+      />
+
+
+      {/* Flat text - no rotation */}
+      <text
+        x={midX}
+        y={midY}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="rgba(0,0,0,0.8)"
+        fontSize={10}
+      >
+        {dimension}mm
+      </text>
+    </g>
+  );
+};
 function ModuleBuilder() {
   // Replace all state declarations with these:
   const [placedPieces, setPlacedPieces] = React.useState([]);
@@ -1258,6 +1798,7 @@ function ModuleBuilder() {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showQR, setShowQR] = React.useState(false);
   const [buttonState, setButtonState] = React.useState('initial');
+  const [showDimensions, setShowDimensions] = React.useState(false);
 
   React.useEffect(() => {
     const loadFromHash = async () => {
@@ -1751,6 +2292,14 @@ function ModuleBuilder() {
             >
               {showButtons ? 'Hide Controls' : 'Show Controls'}
             </button>
+
+            <div className="w-px bg-gray-200"></div>
+            <button
+              onClick={() => setShowDimensions(!showDimensions)}
+              className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 sm:text-xs md:text-sm"
+            >
+              {showDimensions ? 'Hide Dimensions' : 'Show Dimensions'}
+            </button>
           </div>
           {/* Move HelpDisplay here */}
           {isExpanded && (
@@ -1949,7 +2498,14 @@ function ModuleBuilder() {
         </div>
       </div>
 
-
+      {showDimensions && (
+        <DimensionLines
+          placedPieces={placedPieces}
+          scale={scale}
+          offset={offset}
+          containerRef={containerRef}
+        />
+      )}
 
 
       {/* Editor Controls */}
@@ -1993,30 +2549,38 @@ function ModuleBuilder() {
           {/* Product List */}
           {Object.entries(
             placedPieces.reduce((acc, { piece }) => {
-              acc[piece.id] = (acc[piece.id] || 0) + 1;
+              // Extract the base product type without direction suffix
+              const baseProductType = piece.product;
+
+              // Group by product name instead of ID
+              if (!acc[baseProductType]) {
+                acc[baseProductType] = {
+                  count: 0,
+                  price: piece.price
+                };
+              }
+              acc[baseProductType].count += 1;
               return acc;
             }, {})
           )
-            .sort(([idA], [idB]) => {
+            .sort(([productA], [productB]) => {
               const order = {
-                'standard-base': 1,
-                'standard-extension': 2,
-                'corner-base': 3,
-                'corner-extension': 4,
-                'wide-base': 5,
-                'wide-adapter': 6,
-                'wide-extension': 7,
-                'lamp': 8
+                'Standard Base': 1,
+                'Standard Extension': 2,
+                'Corner Base': 3,
+                'Corner Extension': 4,
+                'Wide Base': 5,
+                'Wide Adapter': 6,
+                'Wide Extension': 7,
+                'Lamp (left)': 8,
+                'Lamp (right)': 8
               };
-              const baseA = Object.keys(order).find(key => idA.startsWith(key)) || idA;
-              const baseB = Object.keys(order).find(key => idB.startsWith(key)) || idB;
-              return (order[baseA] || 999) - (order[baseB] || 999);
+              return (order[productA] || 999) - (order[productB] || 999);
             })
-            .map(([id, count], index, array) => {
-              const piece = testPieces.find(p => p.id === id);
+            .map(([product, { count, price }], index, array) => {
               return (
-                <div key={id} className="text-sm text-gray-600">
-                  {`${count} x ${piece.product} @ Ksh ${piece.price.toLocaleString()}${index !== array.length - 1 ? ' +' : ''}`}
+                <div key={product} className="text-sm text-gray-600">
+                  {`${count} x ${product} @ Ksh ${price.toLocaleString()}${index !== array.length - 1 ? ' +' : ''}`}
                 </div>
               );
             })}
@@ -2041,28 +2605,36 @@ function ModuleBuilder() {
               href={`https://wa.me/254783891005?text=${encodeURIComponent(
                 `I'd like to place an order for:\n${Object.entries(
                   placedPieces.reduce((acc, { piece }) => {
-                    acc[piece.id] = (acc[piece.id] || 0) + 1;
+                    // Extract the base product type without direction suffix
+                    const baseProductType = piece.product;
+
+                    // Group by product name instead of ID
+                    if (!acc[baseProductType]) {
+                      acc[baseProductType] = {
+                        count: 0,
+                        price: piece.price
+                      };
+                    }
+                    acc[baseProductType].count += 1;
                     return acc;
                   }, {})
                 )
-                  .sort(([idA], [idB]) => {
+                  .sort(([productA], [productB]) => {
                     const order = {
-                      'standard-base': 1,
-                      'standard-extension': 2,
-                      'corner-base': 3,
-                      'corner-extension': 4,
-                      'wide-base': 5,
-                      'wide-adapter': 6,
-                      'wide-extension': 7,
-                      'lamp': 8
+                      'Standard Base': 1,
+                      'Standard Extension': 2,
+                      'Corner Base': 3,
+                      'Corner Extension': 4,
+                      'Wide Base': 5,
+                      'Wide Adapter': 6,
+                      'Wide Extension': 7,
+                      'Lamp (left)': 8,
+                      'Lamp (right)': 8
                     };
-                    const baseA = Object.keys(order).find(key => idA.startsWith(key)) || idA;
-                    const baseB = Object.keys(order).find(key => idB.startsWith(key)) || idB;
-                    return (order[baseA] || 999) - (order[baseB] || 999);
+                    return (order[productA] || 999) - (order[productB] || 999);
                   })
-                  .map(([id, count]) => {
-                    const piece = testPieces.find(p => p.id === id);
-                    return `${count} x ${piece.product} @ Ksh ${piece.price.toLocaleString()}`;
+                  .map(([product, { count, price }]) => {
+                    return `${count} x ${product} @ Ksh ${price.toLocaleString()}`;
                   })
                   .join('\n')
                 }\nAll in ${colorThemes[selectedTheme].displayName}\nTotal Cost: Ksh ${placedPieces.reduce((sum, { piece }) => sum + piece.price, 0).toLocaleString()
