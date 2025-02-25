@@ -927,13 +927,12 @@ function getVerticalDimensions(placedPieces) {
   return dimensions;
 }
 
-// Add a VerticalDimensionLine component
-// Updated VerticalDimensionLine component with simplified styling
+// Updated vertical dimension line with larger arrow
 const VerticalDimensionLine = ({ startPoint, dimension, scale }) => {
   // Constants for dimension line appearance
   const arrowLength = 40;
   const labelOffset = 8;
-  const arrowSize = 4;
+  const arrowSize = 6; // Increased arrow size (1.5x)
   
   // Calculate arrow start point (above the anchor point)
   const arrowStart = {
@@ -957,11 +956,13 @@ const VerticalDimensionLine = ({ startPoint, dimension, scale }) => {
         strokeWidth={1}
       />
       
-      {/* Arrow head - at the anchor point, pointing down */}
+      {/* Larger arrow head - at the anchor point, pointing down */}
       <path
         d={`M${startPoint.x},${startPoint.y} l${arrowSize/2},${-arrowSize} h${-arrowSize} z`}
         fill="rgba(0,0,0,0.6)"
       />
+      
+
       
       {/* Text - centered directly above the arrow */}
       <text
@@ -1682,6 +1683,7 @@ const DimensionLines = ({ placedPieces, scale, offset, containerRef }) => {
     </svg>
   );
 };
+// Updated horizontal dimension line with no extension lines and larger arrows
 const DimensionLine = ({ startPoint, endPoint, dimension, scale }) => {
   const dx = endPoint.x - startPoint.x;
   const dy = endPoint.y - startPoint.y;
@@ -1689,24 +1691,23 @@ const DimensionLine = ({ startPoint, endPoint, dimension, scale }) => {
   const lineLength = Math.sqrt(dx * dx + dy * dy);
 
   // Constants for dimension line appearance
-  const extensionLength = 150;
-  const extensionOffset = 130;
-  const arrowSize = 4;
+  const extensionOffset = 130; // Distance below anchor points for the dimension line
+  const arrowSize = 6; // Increased arrow size (1.5x)
   const textGapSize = 40; // Size of gap in line for text
 
-  // Calculate extension line endpoints
-  const startExtension = {
+  // Calculate dimension line endpoints directly
+  const startDim = {
     x: startPoint.x,
     y: startPoint.y + extensionOffset
   };
-  const endExtension = {
+  const endDim = {
     x: endPoint.x,
     y: endPoint.y + extensionOffset
   };
 
   // Calculate midpoint for text
-  const midX = (startExtension.x + endExtension.x) / 2;
-  const midY = (startExtension.y + endExtension.y) / 2;
+  const midX = (startDim.x + endDim.x) / 2;
+  const midY = (startDim.y + endDim.y) / 2;
 
   // Calculate points for split line with gap
   const gapStart = 0.5 - (textGapSize / lineLength / 2);
@@ -1714,52 +1715,34 @@ const DimensionLine = ({ startPoint, endPoint, dimension, scale }) => {
 
   return (
     <g>
-      {/* Extension lines */}
+      {/* Dimension line segments - directly between points, no extension lines */}
       <line
-        x1={startPoint.x}
-        y1={startPoint.y}
-        x2={startExtension.x}
-        y2={startExtension.y}
+        x1={startDim.x}
+        y1={startDim.y}
+        x2={startDim.x + dx * gapStart}
+        y2={startDim.y + dy * gapStart}
         stroke="rgba(0,0,0,0.6)"
         strokeWidth={1}
       />
       <line
-        x1={endPoint.x}
-        y1={endPoint.y}
-        x2={endExtension.x}
-        y2={endExtension.y}
-        stroke="rgba(0,0,0,0.6)"
-        strokeWidth={1}
-      />
-
-      {/* Dimension line segments */}
-      <line
-        x1={startExtension.x}
-        y1={startExtension.y}
-        x2={startExtension.x + dx * gapStart}
-        y2={startExtension.y + dy * gapStart}
-        stroke="rgba(0,0,0,0.6)"
-        strokeWidth={1}
-      />
-      <line
-        x1={startExtension.x + dx * gapEnd}
-        y1={startExtension.y + dy * gapEnd}
-        x2={endExtension.x}
-        y2={endExtension.y}
+        x1={startDim.x + dx * gapEnd}
+        y1={startDim.y + dy * gapEnd}
+        x2={endDim.x}
+        y2={endDim.y}
         stroke="rgba(0,0,0,0.6)"
         strokeWidth={1}
       />
 
-      {/* Arrows */}
+      {/* Larger arrows */}
       <path
-        d={`M${startExtension.x},${startExtension.y} l${arrowSize},${arrowSize / 2} v${-arrowSize} z`}
+        d={`M${startDim.x},${startDim.y} l${arrowSize},${arrowSize / 2} v${-arrowSize} z`}
         fill="rgba(0,0,0,0.6)"
-        transform={`rotate(${angle}, ${startExtension.x}, ${startExtension.y})`}
+        transform={`rotate(${angle}, ${startDim.x}, ${startDim.y})`}
       />
       <path
-        d={`M${endExtension.x},${endExtension.y} l${-arrowSize},${arrowSize / 2} v${-arrowSize} z`}
+        d={`M${endDim.x},${endDim.y} l${-arrowSize},${arrowSize / 2} v${-arrowSize} z`}
         fill="rgba(0,0,0,0.6)"
-        transform={`rotate(${angle}, ${endExtension.x}, ${endExtension.y})`}
+        transform={`rotate(${angle}, ${endDim.x}, ${endDim.y})`}
       />
 
       
