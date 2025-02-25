@@ -1972,12 +1972,19 @@ function ModuleBuilder() {
 
       obj.style.visibility = 'hidden';
 
-      // Cache handling - now works for both types
-      if (!svgCache.current.has(id)) {
+      // Extract the SVG filename from the data URL
+      const svgPath = obj.data;
+      const filename = svgPath.split('/').pop();
+
+      // Use the filename as cache key instead of just the id
+      const cacheKey = `${type === 'context' ? 'context-' : ''}${filename}`;
+
+      // Cache handling
+      if (!svgCache.current.has(cacheKey)) {
         const originalSvg = svgDoc.documentElement.cloneNode(true);
-        svgCache.current.set(id, originalSvg);
+        svgCache.current.set(cacheKey, originalSvg);
       } else {
-        const cachedSvg = svgCache.current.get(id);
+        const cachedSvg = svgCache.current.get(cacheKey);
         const freshSvg = cachedSvg.cloneNode(true);
         svgDoc.documentElement.replaceWith(freshSvg);
       }
@@ -2511,15 +2518,22 @@ function ModuleBuilder() {
       {/* Editor Controls */}
       <EditorControls
         selectedTheme={selectedTheme}
+        // And also update the onThemeChange method in the EditorControls component:
         onThemeChange={(newTheme) => {
           setSelectedTheme(newTheme);
           document.querySelectorAll('object[type="image/svg+xml"]').forEach(obj => {
             const svgDoc = obj.contentDocument;
             if (!svgDoc?.documentElement) return;
+
             obj.style.visibility = 'hidden';
+
+            // Extract filename from the path to use as cache key
             const svgPath = obj.data;
-            const baseId = svgPath.split('/').pop().replace('.svg', '');
-            const cachedSvg = svgCache.current.get(baseId);
+            const filename = svgPath.split('/').pop();
+            const isContext = svgPath.includes('/context/');
+            const cacheKey = `${isContext ? 'context-' : ''}${filename}`;
+
+            const cachedSvg = svgCache.current.get(cacheKey);
             if (cachedSvg) {
               const freshSvg = cachedSvg.cloneNode(true);
               svgDoc.documentElement.replaceWith(freshSvg);
@@ -2527,6 +2541,7 @@ function ModuleBuilder() {
             } else {
               applySVGTheme(svgDoc, newTheme);
             }
+
             obj.style.visibility = 'visible';
           });
         }}
