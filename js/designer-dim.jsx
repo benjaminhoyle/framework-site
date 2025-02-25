@@ -693,35 +693,120 @@ function calculateLateralDimensions(piece, placedPieces, processedPairs = new Se
       coords: { x: anchor.x, y: anchor.y }
     });
 
-    // Only process lateral anchors that aren't in use
-    if (!anchor.type.match(/^(NE|NW|SE|SW)$/) ||
-      findConnections(piece, placedPieces).some(conn => conn.pieceAnchor === anchor)) {
-      console.log('Skipping anchor:', { reason: !anchor.type.match(/^(NE|NW|SE|SW)$/) ? 'not lateral' : 'in use' });
+    // Only process lateral anchors
+    if (!anchor.type.match(/^(NE|NW|SE|SW)$/)) {
+      console.log('Skipping anchor:', { reason: 'not lateral' });
       return;
     }
 
-    // Check for virtual anchor point if this is a corner unit
-    const virtualAnchor = getVirtualAnchorPoint(piece, anchor.type);
-    if (virtualAnchor) {
-      // Add dimension for this virtual pair
-      const dimKey = anchor.type.includes('NE') || anchor.type.includes('SW') ? 'dim_NE' : 'dim_NW';
+    // For corner units - handle virtual anchors and their connections
+    if (piece.piece.id.includes('corner-')) {
+      const virtualAnchor = getVirtualAnchorPoint(piece, anchor.type);
+      if (virtualAnchor) {
+        // Check if the real anchor is connected to other pieces
+        const connection = findConnections(piece, placedPieces).find(conn => conn.pieceAnchor === anchor);
 
-      dimensions.push({
-        startPoint: {
-          x: piece.x + anchor.x,
-          y: piece.y + anchor.y
-        },
-        endPoint: {
-          x: piece.x + virtualAnchor.x,
-          y: piece.y + virtualAnchor.y
-        },
-        dimension: piece.piece[dimKey],
-        chain: [{ piece, anchor }, { piece, anchor: virtualAnchor }]
-      });
+        // If there's a connection, we need to find the end of the chain and create a dimension to the virtual anchor
+        if (connection) {
+          // Start from the connected piece and follow chain to find the last open anchor
+          let currentPiece = connection.piece;
+          let currentAnchor = connection.otherAnchor;
+          let lastOpenPiece = null;
+          let lastOpenAnchor = null;
+          let totalDimension = piece.piece[anchor.type.includes('NE') || anchor.type.includes('SW') ? 'dim_NE' : 'dim_NW'];
+          let chain = [{ piece, anchor }, { piece: connection.piece, anchor: connection.otherAnchor }];
+
+          // Find the end of the chain (furthest piece with an open anchor)
+          while (currentPiece) {
+            // Get the opposite anchor type
+            const oppositeType = compatibilityMap[currentAnchor.type];
+
+            // Find opposite anchor on current piece
+            const oppositeAnchor = currentPiece.piece.anchors.find(a => a.type === oppositeType);
+            if (!oppositeAnchor) break;
+
+            // Add dimension for current piece
+            const dimKey = oppositeAnchor.type.includes('NE') || oppositeAnchor.type.includes('SW') ? 'dim_NE' : 'dim_NW';
+            totalDimension += currentPiece.piece[dimKey];
+
+            // If opposite anchor is unused, we've found our end point
+            if (!findConnections(currentPiece, placedPieces).some(conn => conn.pieceAnchor === oppositeAnchor)) {
+              lastOpenPiece = currentPiece;
+              lastOpenAnchor = oppositeAnchor;
+              chain.push({ piece: currentPiece, anchor: oppositeAnchor });
+              break;
+            }
+
+            // Follow the connection
+            const nextConnection = findConnections(currentPiece, placedPieces)
+              .find(conn => conn.pieceAnchor === oppositeAnchor);
+
+            if (!nextConnection) {
+              lastOpenPiece = currentPiece;
+              lastOpenAnchor = oppositeAnchor;
+              chain.push({ piece: currentPiece, anchor: oppositeAnchor });
+              break;
+            }
+
+            // Move to next piece
+            chain.push({ piece: nextConnection.piece, anchor: nextConnection.otherAnchor });
+            currentPiece = nextConnection.piece;
+            currentAnchor = nextConnection.otherAnchor;
+          }
+
+          // If we found an end point, create a dimension from it to the virtual anchor
+          if (lastOpenPiece && lastOpenAnchor) {
+            const chainKey = `chain-${lastOpenPiece.piece.id}-${lastOpenAnchor.type}-to-${piece.piece.id}-virtual-${virtualAnchor.type}`;
+
+            if (!processedPairs.has(chainKey)) {
+              processedPairs.add(chainKey);
+
+              dimensions.push({
+                startPoint: {
+                  x: lastOpenPiece.x + lastOpenAnchor.x,
+                  y: lastOpenPiece.y + lastOpenAnchor.y
+                },
+                endPoint: {
+                  x: piece.x + virtualAnchor.x,
+                  y: piece.y + virtualAnchor.y
+                },
+                dimension: totalDimension,
+                chain: chain.concat([{ piece, anchor: virtualAnchor }])
+              });
+            }
+          }
+        } else {
+          // For a standalone corner unit, create dimension between real and virtual anchor
+          const dimKey = anchor.type.includes('NE') || anchor.type.includes('SW') ? 'dim_NE' : 'dim_NW';
+          const virtualPairId = `${piece.piece.id}-${anchor.type}-virtual-${virtualAnchor.type}`;
+
+          if (!processedPairs.has(virtualPairId)) {
+            processedPairs.add(virtualPairId);
+
+            dimensions.push({
+              startPoint: {
+                x: piece.x + anchor.x,
+                y: piece.y + anchor.y
+              },
+              endPoint: {
+                x: piece.x + virtualAnchor.x,
+                y: piece.y + virtualAnchor.y
+              },
+              dimension: piece.piece[dimKey],
+              chain: [{ piece, anchor }, { piece, anchor: virtualAnchor }]
+            });
+          }
+        }
+      }
+    }
+
+    // If the anchor is in use, skip regular dimension calculation for it
+    if (findConnections(piece, placedPieces).some(conn => conn.pieceAnchor === anchor)) {
+      console.log('Skipping regular dimension for anchor:', { reason: 'in use' });
       return;
     }
 
-
+    // The rest of the function remains unchanged for normal dimension calculations
     let currentPiece = piece;
     let currentAnchor = anchor;
     let totalDimension = 0;
@@ -790,6 +875,108 @@ function calculateLateralDimensions(piece, placedPieces, processedPairs = new Se
 
   return dimensions;
 }
+
+// Add this function to calculate vertical dimensions
+function getVerticalDimensions(placedPieces) {
+  // Find all root pieces
+  const roots = placedPieces.filter(p => isRoot(p, placedPieces));
+  const groups = roots.map(root => ({
+    root,
+    pieces: findGroupFromRoot(root, placedPieces)
+  }));
+
+  const dimensions = [];
+  const processedHeights = new Set();
+
+  groups.forEach(group => {
+    if (group.pieces.length === 0) return;
+
+    // Sort pieces by y-coordinate (ascending)
+    const sortedPieces = [...group.pieces].sort((a, b) => a.y - b.y);
+
+    // Calculate total height of the group
+    let totalHeight = 0;
+    sortedPieces.forEach(piece => {
+      totalHeight += piece.piece.dim_height || 0;
+    });
+
+    // Only add one dimension per unique height
+    if (processedHeights.has(totalHeight)) return;
+    processedHeights.add(totalHeight);
+
+    // Get the topmost piece
+    const topPiece = sortedPieces[0];
+
+    // Get the first anchor point of the topmost piece - preferably a head anchor
+    const anchor = topPiece.piece.anchors.find(a => a.type.startsWith('H')) ||
+      topPiece.piece.anchors[0];
+
+    // Calculate start point (top anchor)
+    const startPoint = {
+      x: topPiece.x + anchor.x,
+      y: topPiece.y + anchor.y
+    };
+
+    dimensions.push({
+      startPoint,
+      dimension: totalHeight,
+      isVertical: true
+    });
+  });
+
+  return dimensions;
+}
+
+// Add a VerticalDimensionLine component
+// Updated VerticalDimensionLine component with simplified styling
+const VerticalDimensionLine = ({ startPoint, dimension, scale }) => {
+  // Constants for dimension line appearance
+  const arrowLength = 40;
+  const labelOffset = 8;
+  const arrowSize = 4;
+  
+  // Calculate arrow start point (above the anchor point)
+  const arrowStart = {
+    x: startPoint.x,
+    y: startPoint.y - arrowLength
+  };
+  
+  // Calculate text position (centered above the arrow start)
+  const textX = startPoint.x;
+  const textY = arrowStart.y - labelOffset;
+
+  return (
+    <g>
+      {/* Dimension arrow - pointing DOWN to the anchor point */}
+      <line
+        x1={arrowStart.x}
+        y1={arrowStart.y}
+        x2={startPoint.x}
+        y2={startPoint.y}
+        stroke="rgba(0,0,0,0.6)"
+        strokeWidth={1}
+      />
+      
+      {/* Arrow head - at the anchor point, pointing down */}
+      <path
+        d={`M${startPoint.x},${startPoint.y} l${arrowSize/2},${-arrowSize} h${-arrowSize} z`}
+        fill="rgba(0,0,0,0.6)"
+      />
+      
+      {/* Text - centered directly above the arrow */}
+      <text
+        x={textX}
+        y={textY}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="rgba(0,0,0,0.8)"
+        fontSize={10}
+      >
+        {dimension}mm
+      </text>
+    </g>
+  );
+};
 function isRoot(piece, placedPieces) {
   const footAnchors = piece.piece.anchors.filter(a => a.type.startsWith('F'));
   return footAnchors.length === 0 || !placedPieces.some(other =>
@@ -1405,29 +1592,125 @@ const QRPanel = ({ url, onClose }) => {
     </div>
   );
 };
+// Update the DimensionLines component to include vertical dimensions
+const DimensionLines = ({ placedPieces, scale, offset, containerRef }) => {
+  // Create a unique key for each dimension
+  const createDimensionKey = (dim) => {
+    if (dim.isVertical) {
+      // For vertical dimensions, use only the start point
+      const [x, y] = [Math.round(dim.startPoint.x * 100) / 100, Math.round(dim.startPoint.y * 100) / 100];
+      return `v-${x},${y}-${dim.dimension}`;
+    } else {
+      // For horizontal dimensions, use both points
+      const [x1, y1] = [Math.round(dim.startPoint.x * 100) / 100, Math.round(dim.startPoint.y * 100) / 100];
+      const [x2, y2] = [Math.round(dim.endPoint.x * 100) / 100, Math.round(dim.endPoint.y * 100) / 100];
+      return `h-${x1 < x2 ? `${x1},${y1}-${x2},${y2}` : `${x2},${y2}-${x1},${y1}`}`;
+    }
+  };
 
+  // Get unique dimensions
+  const getDimensions = () => {
+    const dimensionsMap = new Map();
+
+    // Add horizontal dimensions
+    placedPieces.forEach(piece => {
+      const dimensions = calculateLateralDimensions(piece, placedPieces);
+
+      dimensions.forEach(dim => {
+        const key = createDimensionKey(dim);
+        if (!dimensionsMap.has(key)) {
+          dimensionsMap.set(key, dim);
+        }
+      });
+    });
+
+    // Add vertical dimensions
+    const verticalDimensions = getVerticalDimensions(placedPieces);
+    verticalDimensions.forEach(dim => {
+      const key = createDimensionKey(dim);
+      if (!dimensionsMap.has(key)) {
+        dimensionsMap.set(key, dim);
+      }
+    });
+
+    return Array.from(dimensionsMap.values());
+  };
+
+  const uniqueDimensions = getDimensions();
+
+  return (
+    <svg
+      className="absolute inset-0 pointer-events-none"
+      style={{ zIndex: 15000 }}
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${containerRef.current?.clientWidth || 1000} ${containerRef.current?.clientHeight || 1000}`}
+    >
+      {uniqueDimensions.map((dim, index) => {
+        // Calculate screen coordinates
+        const screenStart = {
+          x: dim.startPoint.x * scale + offset.x,
+          y: dim.startPoint.y * scale + offset.y
+        };
+
+        if (dim.isVertical) {
+          return (
+            <VerticalDimensionLine
+              key={`vdim-${index}-${dim.startPoint.x}-${dim.startPoint.y}`}
+              startPoint={screenStart}
+              dimension={dim.dimension}
+              scale={scale}
+            />
+          );
+        } else {
+          const screenEnd = {
+            x: dim.endPoint.x * scale + offset.x,
+            y: dim.endPoint.y * scale + offset.y
+          };
+
+          return (
+            <DimensionLine
+              key={`dim-${index}-${dim.startPoint.x},${dim.startPoint.y}-${dim.endPoint.x},${dim.endPoint.y}`}
+              startPoint={screenStart}
+              endPoint={screenEnd}
+              dimension={dim.dimension}
+              scale={scale}
+            />
+          );
+        }
+      })}
+    </svg>
+  );
+};
 const DimensionLine = ({ startPoint, endPoint, dimension, scale }) => {
   const dx = endPoint.x - startPoint.x;
   const dy = endPoint.y - startPoint.y;
   const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  const lineLength = Math.sqrt(dx * dx + dy * dy);
 
   // Constants for dimension line appearance
-  const extensionLength = -45;
+  const extensionLength = 150;
+  const extensionOffset = 130;
   const arrowSize = 4;
+  const textGapSize = 40; // Size of gap in line for text
 
-  // Calculate extension line endpoints (30 degrees up from anchor points)
+  // Calculate extension line endpoints
   const startExtension = {
-    y: startPoint.y - extensionLength, 
-    x: startPoint.x
+    x: startPoint.x,
+    y: startPoint.y + extensionOffset
   };
   const endExtension = {
-    y: endPoint.y - extensionLength , 
-    x: endPoint.x
+    x: endPoint.x,
+    y: endPoint.y + extensionOffset
   };
 
-  // Text position
-  const textX = (startExtension.x + endExtension.x) / 2;
-  const textY = (startExtension.y + endExtension.y) / 2 - (8);
+  // Calculate midpoint for text
+  const midX = (startExtension.x + endExtension.x) / 2;
+  const midY = (startExtension.y + endExtension.y) / 2;
+
+  // Calculate points for split line with gap
+  const gapStart = 0.5 - (textGapSize / lineLength / 2);
+  const gapEnd = 0.5 + (textGapSize / lineLength / 2);
 
   return (
     <g>
@@ -1449,10 +1732,18 @@ const DimensionLine = ({ startPoint, endPoint, dimension, scale }) => {
         strokeWidth={1}
       />
 
-      {/* Dimension line */}
+      {/* Dimension line segments */}
       <line
         x1={startExtension.x}
         y1={startExtension.y}
+        x2={startExtension.x + dx * gapStart}
+        y2={startExtension.y + dy * gapStart}
+        stroke="rgba(0,0,0,0.6)"
+        strokeWidth={1}
+      />
+      <line
+        x1={startExtension.x + dx * gapEnd}
+        y1={startExtension.y + dy * gapEnd}
         x2={endExtension.x}
         y2={endExtension.y}
         stroke="rgba(0,0,0,0.6)"
@@ -1471,19 +1762,11 @@ const DimensionLine = ({ startPoint, endPoint, dimension, scale }) => {
         transform={`rotate(${angle}, ${endExtension.x}, ${endExtension.y})`}
       />
 
-      {/* Text with background bubble */}
-      <rect
-        x={textX - (20)}
-        y={textY - (12)}
-        width={40}
-        height={16}
-        rx={4}
-        fill="white"
-        fillOpacity="0.9"
-      />
+      
+      {/* Flat text - no rotation */}
       <text
-        x={textX}
-        y={textY}
+        x={midX}
+        y={midY}
         textAnchor="middle"
         dominantBaseline="middle"
         fill="rgba(0,0,0,0.8)"
@@ -2214,40 +2497,13 @@ function ModuleBuilder() {
         </div>
       </div>
 
-      {/* Dimensions Layer - Now outside the transformed container */}
       {showDimensions && (
-        <svg
-          className="absolute inset-0 pointer-events-none"
-          style={{ zIndex: 15000 }}
-          width="100%"
-          height="100%"
-          viewBox={`0 0 ${containerRef.current?.clientWidth || 1000} ${containerRef.current?.clientHeight || 1000}`}
-        >
-          {placedPieces.flatMap((piece, pieceIndex) => {
-            const dims = calculateLateralDimensions(piece, placedPieces);
-            return dims.map((dim, dimIndex) => {
-              // Calculate screen coordinates
-              const screenStart = {
-                x: dim.startPoint.x * scale + offset.x,
-                y: dim.startPoint.y * scale + offset.y
-              };
-              const screenEnd = {
-                x: dim.endPoint.x * scale + offset.x,
-                y: dim.endPoint.y * scale + offset.y
-              };
-
-              return (
-                <DimensionLine
-                  key={`dim-${pieceIndex}-${dimIndex}`}
-                  startPoint={screenStart}
-                  endPoint={screenEnd}
-                  dimension={dim.dimension}
-                  scale={scale}
-                />
-              );
-            });
-          })}
-        </svg>
+        <DimensionLines
+          placedPieces={placedPieces}
+          scale={scale}
+          offset={offset}
+          containerRef={containerRef}
+        />
       )}
 
 

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Framework Shelving - Kiosk Display</title>
+    <script src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        .fade-enter {
+            opacity: 0;
+        }
+        .fade-enter-active {
+            opacity: 1;
+            transition: opacity 500ms ease-in;
+        }
+        .fade-exit {
+            opacity: 1;
+        }
+        .fade-exit-active {
+            opacity: 0;
+            transition: opacity 500ms ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const mediaItems = [
+            {
+                id: 'shelf-00',
+                path: 'images/shelving/shelf (00).jpg',
+                caption: 'Our shelves are available in green, black and blue',
+                action: {
+                    text: 'See color options',
+                    href: 'index.html#product-list'
+                }
+            },
+            {
+                id: 'shelf-01',
+                path: 'images/shelving/shelf (01).jpg',
+                caption: 'The Standard Base comes with two tiers and is fully functional on its own.',
+                action: {
+                    text: 'Order this design',
+                    href: 'index.html#product-list'
+                }
+            },
+            {
+                id: 'shelf-03',
+                path: 'images/shelving/shelf (03).jpg',
+                caption: 'Standard Base + two Standard Extensions grows into a multi-functional shelving system.',
+                action: {
+                    text: 'Order this design',
+                    href: 'index.html#product-list'
+                }
+            },
+            {
+                id: 'shelf-video',
+                path: 'images/shelving/designer-tutorial.gif',
+                caption: 'Design a shelf that is perfect for your space with our online design tool.',
+                action: {
+                    text: 'Design your shelf',
+                    href: 'designer.html'
+                }
+            }
+        ];
+
+        function KioskDisplay() {
+            const [currentIndex, setCurrentIndex] = React.useState(0);
+
+            React.useEffect(() => {
+                const timer = setInterval(() => {
+                    setCurrentIndex((prev) => (prev + 1) % mediaItems.length);
+                }, 8000); // Change slide every 8 seconds
+
+                return () => clearInterval(timer);
+            }, []);
+
+            const currentItem = mediaItems[currentIndex];
+
+            return (
+                <div className="h-screen w-screen bg-black relative">
+                    {/* Media Display */}
+                    <img
+                        src={currentItem.path}
+                        alt={currentItem.caption}
+                        className="w-full h-full object-contain"
+                    />
+
+                    {/* Info Overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-8">
+                        <p className="text-2xl mb-4">{currentItem.caption}</p>
+                        <a
+                            href={currentItem.action.href}
+                            className="inline-block bg-white text-black px-6 py-3 rounded-lg text-xl 
+                                     hover:bg-gray-100 transition-colors duration-200"
+                        >
+                            {currentItem.action.text}
+                        </a>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<KioskDisplay />, document.getElementById('root'));
+    </script>
+</body>
+</html>
