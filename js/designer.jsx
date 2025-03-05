@@ -211,7 +211,7 @@ const moduleFilenames = [
       { type: "SW", x: 62.67575, y: 151.612438 },
       { type: "NE", x: 184.205976, y: 81.446929 }
     ],
-    price: 7500,
+    price: 8000,
     dim_NE: 1420,
     dim_NW: 280,
     dim_height: 430
@@ -225,7 +225,7 @@ const moduleFilenames = [
       { type: "SE", x: 182.277019, y: 151.612438 },
       { type: "HWNW", x: 121.511852, y: 99.040327 }
     ],
-    price: 7500,
+    price: 8000,
     dim_NW: 1420,
     dim_NE: 280,
     dim_height: 430
@@ -238,7 +238,7 @@ const moduleFilenames = [
       { type: "HWNE", x: 118.950485, y: 105.604582 },
       { type: "FWNE", x: 118.950485, y: 135.194418 }
     ],
-    price: 6500,
+    price: 7000,
     dim_NE: 1420,
     dim_NW: 280,
     dim_height: 300
@@ -251,7 +251,7 @@ const moduleFilenames = [
       { type: "FWNW", x: 118.105399, y: 135.194418 },
       { type: "HWNW", x: 118.105399, y: 105.604582 }
     ],
-    price: 6500,
+    price: 7000,
     dim_NW: 1420,
     dim_NE: 280,
     dim_height: 300
