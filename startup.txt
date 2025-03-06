@@ -12,7 +12,8 @@ cd C:\Users\Ben Hoyle\Dropbox (Personal)\01_Current-Projects\Framework\05_Market
 then run
 python -m http.server 8000
 
-If python not running: C:\ProgramData\Miniconda3\Scripts\activate
+If python not running: 
+C:\ProgramData\Miniconda3\Scripts\activate
 
 and go here on chrome
 http://localhost:8000

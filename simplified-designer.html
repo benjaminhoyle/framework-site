@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simplified Designer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/simplified-designer.css">
+</head>
+<body>
+    <div class="simplified-designer">
+        <h1>Simplified Shelf Designer</h1>
+        
+        <div class="designer-container">
+            <div class="product-display">
+                <div class="top-controls">
+                    <div class="dropdown-control">
+                        <select id="config-mode" class="dropdown-select">
+                            <option value="standard">Standard Configuration</option>
+                            <option value="wide">Wide Configuration</option>
+                            <option value="corner">Corner Configuration</option>
+                        </select>
+                    </div>
+                    <div class="dropdown-control">
+                        <select id="theme-select" class="dropdown-select">
+                            <option value="THEME_1">Blue</option>
+                            <option value="THEME_2">Green</option>
+                            <option value="THEME_3">Black</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="designer-container"></div>
+                
+                <!-- Removed dimension display as it's now integrated in the controls -->
+                
+                <div class="product-controls">
+                    <div class="control-group">
+                        <div class="dimension-row">
+                            <label class="control-label">Width</label>
+                            <div class="dimension-value-control">
+                                <span id="width-value-control" class="dimension-value">980 mm</span>
+                                <div class="dimension-buttons">
+                                    <button class="dimension-button minus" id="decrease-width">–</button>
+                                    <button class="dimension-button plus" id="increase-width">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="dimension-row">
+                            <label class="control-label">Height</label>
+                            <div class="dimension-value-control">
+                                <span id="height-value-control" class="dimension-value">430 mm</span>
+                                <div class="dimension-buttons">
+                                    <button class="dimension-button minus" id="decrease-height">–</button>
+                                    <button class="dimension-button plus" id="increase-height">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="dimension-row">
+                            <label class="control-label">Depth</label>
+                            <div class="dimension-value-control">
+                                <span id="depth-value-control" class="dimension-value">280 mm</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="options-group">
+                    <div class="option-checkbox" id="lamp-option-container">
+                        <input type="checkbox" id="lamp-toggle" />
+                        <label for="lamp-toggle">Add Lamp</label>
+                    </div>
+                    
+                    <div class="bookend-control">
+                        <label class="control-label">Bookends</label>
+                        <div class="dimension-value-control">
+                            <span id="bookend-count" class="dimension-value">0</span>
+                            <div class="dimension-buttons">
+                                <button class="dimension-button minus" id="decrease-bookend">–</button>
+                                <button class="dimension-button plus" id="increase-bookend">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="summary-actions">
+                    <div class="price-container">
+                        <span class="price">$<span id="total-price">0</span></span>
+                        <span class="price-note">estimated total</span>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="order-button">Add to Cart</button>
+                        <button class="share-button">Share Design</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/simplified-designer.js"></script>
+    <script>
+        // Initialize designer
+        const designer = new SimplifiedDesigner('designer-container', {
+            size: 500
+        });
+
+        // State management
+        let columns = 1;
+        let extensions = 0;
+        let bookends = 0;
+        let hasLamp = false;
+        let configMode = 'standard'; // 'standard', 'wide', or 'corner'
+        let bookendPrice = 1500; // Price per bookend in cents
+
+        // DOM references
+        const bookendCount = document.getElementById('bookend-count');
+        const configModeSelect = document.getElementById('config-mode');
+        const themeSelect = document.getElementById('theme-select');
+        const lampToggle = document.getElementById('lamp-toggle');
+        const lampOptionContainer = document.getElementById('lamp-option-container');
+        const dimensionElements = {
+            width: document.getElementById('width-value-control'),
+            height: document.getElementById('height-value-control'),
+            depth: document.getElementById('depth-value-control')
+        };
+        const priceElement = document.getElementById('total-price');
+
+        // Add event listeners
+        document.getElementById('increase-width').addEventListener('click', increaseWidth);
+        document.getElementById('decrease-width').addEventListener('click', decreaseWidth);
+        document.getElementById('increase-height').addEventListener('click', increaseHeight);
+        document.getElementById('decrease-height').addEventListener('click', decreaseHeight);
+        document.getElementById('increase-bookend').addEventListener('click', addBookend);
+        document.getElementById('decrease-bookend').addEventListener('click', removeBookend);
+        lampToggle.addEventListener('change', toggleLamp);
+        configModeSelect.addEventListener('change', changeConfigMode);
+        themeSelect.addEventListener('change', changeTheme);
+
+        // Update displays
+        function updateCounts() {
+            bookendCount.textContent = bookends;
+        }
+
+        // Update dimensions display
+        function updateDimensions(dimensions) {
+            dimensionElements.width.textContent = `${dimensions.width} mm`;
+            dimensionElements.height.textContent = `${dimensions.height} mm`;
+            dimensionElements.depth.textContent = `${dimensions.depth} mm`;
+        }
+        
+        // Update lamp visibility based on config mode
+        function updateLampVisibility() {
+            if (configMode === 'standard' || configMode === 'corner') {
+                lampOptionContainer.style.display = 'flex';
+            } else {
+                lampOptionContainer.style.display = 'none';
+                if (hasLamp) {
+                    hasLamp = false;
+                    lampToggle.checked = false;
+                }
+            }
+        }
+
+        // Calculate total price based on configuration
+        function calculateTotalPrice(code) {
+            let totalPrice = 0;
+            
+            // Extract all module IDs from the configuration
+            const moduleIds = [...code.matchAll(/\{([^}]+)\}/g)].map(match => match[1]);
+            
+            // Get price for each module
+            for (const moduleId of moduleIds) {
+                const moduleInfo = designer.getModuleInfo(moduleId);
+                if (moduleInfo && moduleInfo.price) {
+                    totalPrice += moduleInfo.price;
+                }
+            }
+            
+            // Add cost of bookends
+            totalPrice += bookends * bookendPrice;
+            
+            // Convert from cents to dollars
+            return (totalPrice / 100).toFixed(2);
+        }
+
+        // Generate configuration code based on settings and config mode
+        function generateConfig() {
+            let config = '';
+            
+            if (configMode === 'standard') {
+                // Standard configuration logic
+                for (let i = 0; i < columns; i++) {
+                    // Open group
+                    config += '(';
+                    
+                    // Add base
+                    config += '{standard-base-NE}';
+                    
+                    // Add extensions if any
+                    for (let j = 0; j < extensions; j++) {
+                        config += 'HSNE-FSNE{standard-extension-NE}';
+                    }
+                    
+                    // Add lamp if enabled and this is the first column
+                    if (hasLamp && i === 0) {
+                        config += 'HSNE-FSNE{lamp-SW-2}';
+                    }
+                    
+                    // Close group
+                    config += ')';
+                    
+                    // Add connection to next group if not the last one
+                    if (i < columns - 1) {
+                        config += 'NE-SW'; // Connect NE to SW
+                    }
+                }
+            } else if (configMode === 'wide') {
+                // Wide configuration logic - same structure but using wide modules
+                for (let i = 0; i < columns; i++) {
+                    config += '(';
+                    
+                    // Add wide base
+                    config += '{wide-base-NE}';
+                    
+                    // Add wide extensions
+                    for (let j = 0; j < extensions; j++) {
+                        config += 'HWNE-FWNE{wide-extension-NE}';
+                    }
+                    
+                    // Add lamp if enabled
+                    if (hasLamp && extensions > 0 && i === columns - 1) {
+                        config += 'HWNE-FWNE{lamp-NE}';
+                    }
+                    
+                    config += ')';
+                    
+                    if (i < columns - 1) {
+                        config += 'NE-SW';
+                    }
+                }
+            } else if (configMode === 'corner') {
+                // Corner configuration logic
+                
+                // First element is always a corner base
+                config += '({corner-base-NE}';
+                
+                // Add extensions to the corner base
+                for (let j = 0; j < extensions; j++) {
+                    config += 'HSNE-FSNE{corner-extension-NE}';
+                }
+                
+                // Add lamp if enabled to the first column
+                if (hasLamp) {
+                    config += 'HSNE-FSNE{lamp-SW-2}';
+                }
+                
+                config += ')';
+                
+                // If more than one column, add standard units connected to the corner's SE anchor
+                if (columns > 1) {
+                    config += 'SE-NW';
+                    
+                    // Add the first standard unit
+                    config += '({standard-base-NW}';
+                    
+                    // Add extensions to the standard unit
+                    for (let j = 0; j < extensions; j++) {
+                        config += 'HSNW-FSNW{standard-extension-NW}';
+                    }
+                    
+                    config += ')';
+                    
+                    // Add additional standard units if needed
+                    for (let i = 2; i < columns; i++) {
+                        config += 'SE-NW({standard-base-NW}';
+                        
+                        for (let j = 0; j < extensions; j++) {
+                            config += 'HSNW-FSNW{standard-extension-NW}';
+                        }
+                        
+                        config += ')';
+                    }
+                }
+            }
+            
+            // Add bookends as context figures if needed
+            if (bookends > 0) {
+                // In corner mode, place bookends differently
+                if (configMode === 'corner') {
+                    // Place bookends at appropriate positions
+                    for (let i = 0; i < Math.min(bookends, columns); i++) {
+                        let xPos = i === 0 ? 120 : 220 + ((i-1) * 240);
+                        let yPos = 150;
+                        config += `_[cxt_book_man_1.svg,${xPos},${yPos}]`;
+                    }
+                } else {
+                    // Standard bookend placement
+                    for (let i = 0; i < Math.min(bookends, columns); i++) {
+                        const xPos = 220 + (i * 240);
+                        config += `_[cxt_book_man_1.svg,${xPos},150]`;
+                    }
+                }
+            }
+            
+            // Store the configuration
+            lastConfig = config;
+            
+            // Load configuration
+            console.log(`Generated config: ${config}`);
+            designer.loadConfiguration(config, true);
+            
+            // Calculate and update dimensions
+            const dimensions = designer.calculateDimensions(config, configMode);
+            updateDimensions(dimensions);
+            
+            // Calculate and update price
+            const totalPrice = calculateTotalPrice(config);
+            priceElement.textContent = totalPrice;
+            
+            // Update controls
+            updateCounts();
+        }
+
+        // Control functions
+        function increaseWidth() {
+            columns++;
+            generateConfig();
+        }
+
+        function decreaseWidth() {
+            if (columns > 1) {
+                columns--;
+                if (bookends > columns) bookends = columns;
+                generateConfig();
+            }
+        }
+
+        function increaseHeight() {
+            extensions++;
+            generateConfig();
+        }
+
+        function decreaseHeight() {
+            if (extensions > 0) {
+                extensions--;
+                generateConfig();
+            }
+        }
+
+        function addBookend() {
+            if (bookends < columns) {
+                bookends++;
+                // Update counts and price, but don't regenerate the full configuration
+                updateCounts();
+                const totalPrice = calculateTotalPrice(lastConfig);
+                priceElement.textContent = totalPrice;
+            }
+        }
+
+        function removeBookend() {
+            if (bookends > 0) {
+                bookends--;
+                // Update counts and price, but don't regenerate the full configuration
+                updateCounts();
+                const totalPrice = calculateTotalPrice(lastConfig);
+                priceElement.textContent = totalPrice;
+            }
+        }
+        
+        // Store the last generated configuration
+        let lastConfig = '';
+
+        function toggleLamp() {
+            hasLamp = lampToggle.checked;
+            generateConfig();
+        }
+
+        function changeConfigMode() {
+            configMode = configModeSelect.value;
+            // Reset some values when changing modes
+            if (configMode === 'corner') {
+                // In corner mode, we start with at least one column
+                columns = Math.max(1, columns);
+            }
+            // Update lamp visibility based on config mode
+            updateLampVisibility();
+            generateConfig();
+        }
+
+        function changeTheme() {
+            designer.setTheme(themeSelect.value);
+            // Regenerate the configuration to apply theme changes
+            generateConfig();
+        }
+
+        // Initial setup
+        updateLampVisibility();
+        generateConfig();
+    </script>
+</body>
+</html>
