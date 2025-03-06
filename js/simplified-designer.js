@@ -21,12 +21,15 @@ class SimplifiedDesigner {
     initialize() {
       // Create iframe to load the full designer
       this.designerFrame = document.createElement('iframe');
-      this.designerFrame.style.width = `${this.options.size}px`;
-      this.designerFrame.style.height = `${this.options.size}px`;
+      
+      // Use 100% width and height to fill container
+      this.designerFrame.style.width = '100%';
+      this.designerFrame.style.height = '100%';
       this.designerFrame.style.border = 'none';
       this.designerFrame.style.overflow = 'hidden';
       
-      this.designerFrame.src = 'designer.html';
+      // Add the simplified mode parameter to the URL to ensure it's detected by the designer
+      this.designerFrame.src = 'designer.html?mode=simplified';
       
       this.container.appendChild(this.designerFrame);
       
@@ -52,6 +55,9 @@ class SimplifiedDesigner {
         const doc = this.designerFrame.contentDocument;
         if (!doc) return;
         
+        // Add simplified-mode class to body to trigger existing CSS rules
+        doc.body.classList.add('simplified-mode');
+        
         const style = doc.createElement('style');
         style.textContent = `
           /* Hide menu controls */
@@ -60,6 +66,22 @@ class SimplifiedDesigner {
           .fixed.bottom-6.right-6,
           .dimensions-svg {
             display: none !important;
+          }
+          
+          /* Hide mobile control panel - specifically target this class */
+          .mobile-control-panel,
+          .fixed.bottom-0.left-0.right-0.z-50,
+          .fixed.bottom-0 {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+          }
+          
+          /* Hide pricing panel */
+          .pricing-panel {
+            display: none !important;
+            visibility: hidden !important;
           }
           
           /* Hide anchor point buttons (green + buttons) */
@@ -76,6 +98,18 @@ class SimplifiedDesigner {
             opacity: 0 !important;
             pointer-events: none !important;
           }
+          
+          /* Higher specificity rule to ensure mobile controls stay hidden */
+          html body .mobile-control-panel,
+          html body.simplified-mode .mobile-control-panel {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            z-index: -1 !important;
+            position: absolute !important;
+            top: -9999px !important;
+            left: -9999px !important;
+          }
         `;
         doc.head.appendChild(style);
         
@@ -84,6 +118,39 @@ class SimplifiedDesigner {
           if (this.designerFrame.contentWindow.DesignerAPI) {
             this.designerFrame.contentWindow.DesignerAPI.setHideControls(true);
             this.designerFrame.contentWindow.DesignerAPI.setShowDimensions(false);
+            
+            // Set isSimplifiedMode to true directly if possible
+            if (this.designerFrame.contentWindow.setIsSimplifiedMode) {
+              this.designerFrame.contentWindow.setIsSimplifiedMode(true);
+            }
+            
+            // Add another attempt after a slight delay to ensure React has updated
+            setTimeout(() => {
+              // Execute script in iframe context to hide controls
+              const script = doc.createElement('script');
+              script.textContent = `
+                try {
+                  // Find and remove the mobile control panel if it exists
+                  document.querySelectorAll('.mobile-control-panel').forEach(el => {
+                    el.style.display = 'none';
+                    el.style.visibility = 'hidden';
+                    el.parentNode.removeChild(el);
+                  });
+                  
+                  // Set isSimplifiedMode via window property
+                  window.isSimplifiedMode = true;
+                  
+                  // Try to access React components if they're available
+                  if (window.DesignerAPI) {
+                    window.DesignerAPI.setHideControls(true);
+                  }
+                } catch (err) {
+                  console.error('Error in script:', err);
+                }
+              `;
+              doc.body.appendChild(script);
+              setTimeout(() => doc.body.removeChild(script), 200);
+            }, 300);
           }
         }, 300);
       } catch (err) {
@@ -122,11 +189,17 @@ class SimplifiedDesigner {
               
               // Update zoom to fit the configuration
               setTimeout(() => win.DesignerAPI.updateZoom(), 100);
+              
+              // Force hide mobile controls again after loading configuration
+              setTimeout(() => this.hideControls(), 200);
             } catch (e) {
               console.error("Failed to load without animation, falling back to animated", e);
               win.DesignerAPI.animateConfiguration(code);
             }
           }
+          
+          // Ensure the controls stay hidden
+          setTimeout(() => this.hideControls(), 500);
         } else {
           // Fall back to postMessage
           this.designerFrame.contentWindow.postMessage({
@@ -147,6 +220,9 @@ class SimplifiedDesigner {
       try {
         if (this.designerFrame.contentWindow.DesignerAPI) {
           this.designerFrame.contentWindow.DesignerAPI.setSelectedTheme(theme);
+          
+          // Re-apply hide controls after theme change
+          setTimeout(() => this.hideControls(), 200);
         } else {
           this.designerFrame.contentWindow.postMessage({
             type: 'setTheme',

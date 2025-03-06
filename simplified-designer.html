@@ -10,92 +10,98 @@
         <h1>Simplified Shelf Designer</h1>
         
         <div class="designer-container">
-            <div class="product-display">
-                <div class="top-controls">
-                    <div class="dropdown-control">
-                        <select id="config-mode" class="dropdown-select">
-                            <option value="standard">Standard Configuration</option>
-                            <option value="wide">Wide Configuration</option>
-                            <option value="corner">Corner Configuration</option>
-                        </select>
-                    </div>
-                    <div class="dropdown-control">
-                        <select id="theme-select" class="dropdown-select">
-                            <option value="THEME_1">Blue</option>
-                            <option value="THEME_2">Green</option>
-                            <option value="THEME_3">Black</option>
-                        </select>
-                    </div>
-                </div>
-                
+            <div class="image-container">
                 <div id="designer-container"></div>
-                
-                <!-- Removed dimension display as it's now integrated in the controls -->
-                
-                <div class="product-controls">
-                    <div class="control-group">
-                        <div class="dimension-row">
-                            <label class="control-label">Width</label>
-                            <div class="dimension-value-control">
-                                <span id="width-value-control" class="dimension-value">980 mm</span>
-                                <div class="dimension-buttons">
-                                    <button class="dimension-button minus" id="decrease-width">–</button>
-                                    <button class="dimension-button plus" id="increase-width">+</button>
+            </div>
+            <div class="controls-container">
+                <div class="product-display">
+                    <div class="top-controls">
+                        <div class="dropdown-control">
+                            <select id="config-mode" class="dropdown-select">
+                                <option value="standard">Standard Configuration</option>
+                                <option value="wide">Wide Configuration</option>
+                                <option value="corner">Corner Configuration</option>
+                            </select>
+                        </div>
+                        <div class="dropdown-control">
+                            <select id="theme-select" class="dropdown-select">
+                                <option value="THEME_1">Marine</option>
+                                <option value="THEME_2">Sage</option>
+                                <option value="THEME_3">Coral</option>
+                                <!-- 4th option not working? <option value="THEME_4">Charcoal</option>-->
+
+                                
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Removed dimension display as it's now integrated in the controls -->
+                    
+                    <div class="product-controls">
+                        <div class="control-group">
+                            <div class="dimension-row">
+                                <label class="control-label">Width</label>
+                                <div class="dimension-value-control">
+                                    <span id="width-value-control" class="dimension-value">980 mm</span>
+                                    <div class="dimension-buttons">
+                                        <button class="dimension-button minus" id="decrease-width">−</button>
+                                        <button class="dimension-button plus" id="increase-width">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="dimension-row">
+                                <label class="control-label">Height</label>
+                                <div class="dimension-value-control">
+                                    <span id="height-value-control" class="dimension-value">430 mm</span>
+                                    <div class="dimension-buttons">
+                                        <button class="dimension-button minus" id="decrease-height">−</button>
+                                        <button class="dimension-button plus" id="increase-height">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="dimension-row">
+                                <label class="control-label">Depth</label>
+                                <div class="dimension-value-control">
+                                    <span id="depth-value-control" class="dimension-value">280 mm</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="control-group">
-                        <div class="dimension-row">
-                            <label class="control-label">Height</label>
+                    <div class="options-group">
+                        <div class="option-checkbox" id="lamp-option-container">
+                            <input type="checkbox" id="lamp-toggle" />
+                            <label for="lamp-toggle">Add Lamp (stem and cable only)</label>
+                        </div>
+                        
+                        <div class="bookend-control">
+                            <label class="control-label">Bookends</label>
                             <div class="dimension-value-control">
-                                <span id="height-value-control" class="dimension-value">430 mm</span>
+                                <span id="bookend-count" class="dimension-value">0</span>
                                 <div class="dimension-buttons">
-                                    <button class="dimension-button minus" id="decrease-height">–</button>
-                                    <button class="dimension-button plus" id="increase-height">+</button>
+                                    <button class="dimension-button minus" id="decrease-bookend">−</button>
+                                    <button class="dimension-button plus" id="increase-bookend">+</button>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="control-group">
-                        <div class="dimension-row">
-                            <label class="control-label">Depth</label>
-                            <div class="dimension-value-control">
-                                <span id="depth-value-control" class="dimension-value">280 mm</span>
-                            </div>
+                    <div class="summary-actions">
+                        <div class="price-container">
+                            <span class="price">Ksh <span id="total-price">0</span></span>
+                            <span class="price-note">estimated total</span>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="options-group">
-                    <div class="option-checkbox" id="lamp-option-container">
-                        <input type="checkbox" id="lamp-toggle" />
-                        <label for="lamp-toggle">Add Lamp</label>
-                    </div>
-                    
-                    <div class="bookend-control">
-                        <label class="control-label">Bookends</label>
-                        <div class="dimension-value-control">
-                            <span id="bookend-count" class="dimension-value">0</span>
-                            <div class="dimension-buttons">
-                                <button class="dimension-button minus" id="decrease-bookend">–</button>
-                                <button class="dimension-button plus" id="increase-bookend">+</button>
-                            </div>
+                        
+                        <div class="action-buttons">
+                            <button class="order-button">Add to Cart</button>
+                            <button class="share-button">Share Design</button>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="summary-actions">
-                    <div class="price-container">
-                        <span class="price">$<span id="total-price">0</span></span>
-                        <span class="price-note">estimated total</span>
-                    </div>
-                    
-                    <div class="action-buttons">
-                        <button class="order-button">Add to Cart</button>
-                        <button class="share-button">Share Design</button>
                     </div>
                 </div>
             </div>
@@ -106,7 +112,7 @@
     <script>
         // Initialize designer
         const designer = new SimplifiedDesigner('designer-container', {
-            size: 500
+            size: '100%'
         });
 
         // State management
@@ -173,7 +179,7 @@
             // Extract all module IDs from the configuration
             const moduleIds = [...code.matchAll(/\{([^}]+)\}/g)].map(match => match[1]);
             
-            // Get price for each module
+            // Get price for each module from designer-engine
             for (const moduleId of moduleIds) {
                 const moduleInfo = designer.getModuleInfo(moduleId);
                 if (moduleInfo && moduleInfo.price) {
@@ -184,8 +190,8 @@
             // Add cost of bookends
             totalPrice += bookends * bookendPrice;
             
-            // Convert from cents to dollars
-            return (totalPrice / 100).toFixed(2);
+            // Return as Kenyan Shillings (already in correct format, no conversion needed)
+            return totalPrice.toLocaleString();
         }
 
         // Generate configuration code based on settings and config mode

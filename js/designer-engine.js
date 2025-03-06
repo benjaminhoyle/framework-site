@@ -86,7 +86,7 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
   
   DesignerEngine.colorThemes = {
     THEME_1: {
-      displayName: 'Blue',
+      displayName: 'Marine',
       parameterMappings: {
         SET_1: { fill: '#ACD1E7', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         SET_2: { fill: '#94BDD5', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
@@ -108,7 +108,7 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       }
     },
     THEME_2: {
-      displayName: 'Green',
+      displayName: 'Sage',
       parameterMappings: {
         SET_1: { fill: '#E0F0D2', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Light sage
         SET_2: { fill: '#A8BFA2', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Medium sage
@@ -129,7 +129,7 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       }
     },
     THEME_3: {
-      displayName: 'Black',
+      displayName: 'Charcoal',
       parameterMappings: {
         SET_1: { fill: '#E5E7EB', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         SET_2: { fill: '#D1D5DB', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
@@ -138,6 +138,27 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
         SET_5: { fill: '#374151', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         SET_6: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.2' },
         SET_7: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0' },
+        //context colors; same from set to set
+        CONTEXT_BLUE: { fill: '#5394BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        CONTEXT_PURPLE: { fill: '#8B75BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        CONTEXT_GREEN: { fill: '#6C946C', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        CONTEXT_BEIGE: { fill: '#9EAAAE', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        CONTEXT_DARK_BROWN: { fill: '#483933', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        CONTEXT_LIGHT_BROWN: { fill: '#BD7C54', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        CONTEXT_LINE_LIGHT: { fill: 'none', fillOpacity: '0', stroke: '#FFFFFF', strokeWidth: '.01' },
+        CONTEXT_LINE_DARK: { fill: 'none', fillOpacity: '0', stroke: '#FFFFFF', strokeWidth: '0.2' }
+      }
+    },
+    THEME_3: {
+      displayName: 'Coral',
+      parameterMappings: {
+        SET_1: { fill: '#FAD7C3', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        SET_2: { fill: '#F4A988', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        SET_3: { fill: '#fcbfa9', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        SET_4: { fill: '#D15339', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        SET_5: { fill: '#A93E26', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        SET_6: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.2' },
+        SET_7: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0' },        
         //context colors; same from set to set
         CONTEXT_BLUE: { fill: '#5394BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_PURPLE: { fill: '#8B75BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },

@@ -1,7 +1,5 @@
 //designer.jsx
 
-
-
 export function ModuleBuilder() {
   // Replace all state declarations with these:
   const [placedPieces, setPlacedPieces] = React.useState([]);
@@ -25,9 +23,265 @@ export function ModuleBuilder() {
   const [showDimensions, setShowDimensions] = React.useState(false);
   const [hideControls, setHideControls] = React.useState(false);
   const [isSimplifiedMode, setIsSimplifiedMode] = React.useState(false);
+  const MobileControlPanel = ({
+    showButtons,
+    onToggleButtons,
+    showDimensions,
+    setShowDimensions,
+    isExpanded,
+    setIsExpanded,
+    selectedTheme,
+    onThemeChange,
+    onAddContext,
+    isContextPlacementMode,
+    configCode,
+    placedPieces,
+    setShowQR,
+    buttonState,
+    setButtonState,
+    isSimplifiedMode
+  }) => {
+    // Only show on mobile devices
+    const [isMobile, setIsMobile] = React.useState(false);
+    const [showThemeSelector, setShowThemeSelector] = React.useState(false);
+  
+    React.useEffect(() => {
+      const checkMobile = () => {
+        setIsMobile(window.innerWidth <= 768);
+      };
+  
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+  
+    // Enhanced check for simplified mode - don't render if in simplified mode or not on mobile
+    // Check multiple conditions to make sure this component is properly hidden
+    if (!isMobile || isSimplifiedMode || 
+        document.body.classList.contains('simplified-mode') || 
+        window.location.search.includes('mode=simplified')) {
+      return null;
+    }
+  
+    return (
+      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-3 z-50 mobile-control-panel" style={{ borderTop: '1px solid #e5e7eb' }}>
+        <div className="flex flex-wrap justify-center gap-2">
+          {/* Current theme indicator and toggle */}
+          <button
+            onClick={() => setShowThemeSelector(!showThemeSelector)}
+            className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-sm shadow-sm designer-btn"
+          >
+            {DesignerEngine.colorThemes[selectedTheme].displayName} ▾
+          </button>
+  
+          {/* Add Context */}
+          <button
+            onClick={onAddContext}
+            className={`flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-sm shadow-sm designer-btn ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
+          >
+            Add Context
+          </button>
+  
+          {/* Show/Hide dimensions */}
+          <button
+            onClick={() => setShowDimensions(!showDimensions)}
+            className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-sm shadow-sm designer-btn"
+          >
+            {showDimensions ? 'Hide Sizes' : 'Show Sizes'}
+          </button>
+  
+          {/* Toggle Controls */}
+          <button
+            onClick={onToggleButtons}
+            className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-sm shadow-sm designer-btn"
+          >
+            {showButtons ? 'Hide Buttons' : 'Show Buttons'}
+          </button>
+        </div>
+  
+        {/* Theme selector dropdown */}
+        {showThemeSelector && (
+          <div className="mt-2 pb-1 border-t border-gray-200 pt-2">
+            <div className="flex flex-wrap gap-2 justify-center">
+              {Object.entries(DesignerEngine.colorThemes).map(([themeKey, theme]) => (
+                <button
+                  key={themeKey}
+                  onClick={() => {
+                    onThemeChange(themeKey);
+                    setShowThemeSelector(false);
+                  }}
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${selectedTheme === themeKey
+                    ? 'bg-blue-100 border border-blue-300'
+                    : 'bg-white border border-gray-200'
+                    }`}
+                >
+                  {theme.displayName}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+  
+        {/* WhatsApp and Share buttons, only show when pieces are placed */}
+        {placedPieces.length > 0 && (
+          <div className="mt-2 flex gap-2 border-t border-gray-200 pt-2">
+            <a
+              href={`https://wa.me/254783891005?text=${encodeURIComponent(
+                `I'd like to place an order for:\n${Object.entries(
+                  placedPieces.reduce((acc, { piece }) => {
+                    const baseProductType = piece.product;
+                    if (!acc[baseProductType]) {
+                      acc[baseProductType] = {
+                        count: 0,
+                        price: piece.price
+                      };
+                    }
+                    acc[baseProductType].count += 1;
+                    return acc;
+                  }, {})
+                )
+                  .map(([product, { count, price }]) => {
+                    return `${count} x ${product} @ Ksh ${price.toLocaleString()}`;
+                  })
+                  .join('\n')
+                }\nAll in ${DesignerEngine.colorThemes[selectedTheme].displayName}\nTotal Cost: Ksh ${placedPieces.reduce((sum, { piece }) => sum + piece.price, 0).toLocaleString()
+                } (VAT inclusive)`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 bg-green-600 text-white text-center px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Order via WhatsApp
+            </a>
+            <button
+              onClick={async (e) => {
+                const shareableURL = `https://framework.co.ke/designer#${encodeURIComponent(configCode)};${selectedTheme}`;
+  
+                if (buttonState === 'copied') {
+                  setShowQR(true);
+                  setButtonState('qr');
+                  return;
+                }
+  
+                if (buttonState === 'qr') {
+                  setShowQR(false);
+                  setButtonState('initial');
+                  return;
+                }
+  
+                try {
+                  await navigator.clipboard.writeText(shareableURL);
+                  setButtonState('copied');
+                  setTimeout(() => {
+                    if (buttonState === 'copied') {
+                      setButtonState('initial');
+                    }
+                  }, 5000);
+                } catch (err) {
+                  console.error('Failed to copy URL:', err);
+                }
+              }}
+              className="flex-1 bg-indigo-600 text-white text-center px-3 py-2 rounded-md text-sm font-medium"
+            >
+              {buttonState === 'initial' ? 'Share Design' :
+                buttonState === 'copied' ? 'Link Copied!' :
+                  'Close QR Code'}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
-  // Add these dimension calculation and rendering functions directly to ModuleBuilder component
-  // Before the return statement in the ModuleBuilder function
+
+  React.useEffect(() => {
+    // Create style element for mobile adjustments
+    const mobileStyle = document.createElement('style');
+    mobileStyle.textContent = `
+    @media (max-width: 768px) {
+      /* Make buttons larger on mobile */
+      .designer-btn {
+        font-size: 16px !important;
+        padding: 8px 12px !important;
+        min-height: 44px !important;
+      }
+      
+      /* Hide desktop controls on mobile */
+      .desktop-only-controls {
+        display: none !important;
+      }
+      
+      /* Make anchor buttons larger on mobile */
+      .anchor-control-btn {
+        width: 34px !important;
+        height: 34px !important;
+        font-size: 16px !important;
+      }
+      
+      /* Standardize other control buttons size */
+      .module-control-btn, .context-control-btn {
+        width: 22px !important;
+        height: 22px !important;
+        font-size: 16px !important;
+        margin: 2px !important;
+      }
+      
+      /* Make pricing more compact */
+      .pricing-panel {
+        position: fixed !important;
+        top: 10px !important; /* Position at top instead of bottom */
+        right: 10px !important;
+        max-width: 160px !important;
+        padding: 8px !important;
+        border-radius: 8px !important;
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        z-index: 1000 !important;
+      }
+      
+      .pricing-panel .breakdown {
+        font-size: 10px !important;
+        line-height: 1.2 !important;
+        max-height: 80px !important;
+        overflow-y: auto !important;
+      }
+      
+      .pricing-panel .total {
+        font-size: 14px !important;
+        font-weight: bold !important;
+        margin-top: 4px !important;
+      }
+      
+      /* Make text more legible */
+      .control-text {
+        font-size: 16px !important;
+      }
+      
+      /* Add bottom padding to container for mobile control panel */
+      .designer-container {
+        padding-bottom: 120px !important;
+      }
+    }
+    
+    /* Hide mobile pricing in desktop view */
+    @media (min-width: 769px) {
+      .pricing-panel {
+        display: none !important;
+      }
+    }
+    
+    /* Hide mobile elements in simplified mode */
+    .simplified-mode .pricing-panel,
+    .simplified-mode .mobile-control-panel {
+      display: none !important;
+    }
+  `;
+    document.head.appendChild(mobileStyle);
+
+    // Cleanup on unmount
+    return () => {
+      document.head.removeChild(mobileStyle);
+    };
+  }, []);
 
   // Move QRPanel inside the function
   const QRPanel = ({ url, onClose }) => {
@@ -636,7 +890,6 @@ export function ModuleBuilder() {
   }, []);
 
 
-  // Update handleDragStart to store the initial click position
   const handleDragStart = (figureId, e) => {
     e.stopPropagation();
     const rect = containerRef.current.getBoundingClientRect();
@@ -947,22 +1200,56 @@ export function ModuleBuilder() {
     const mode = urlParams.get('mode');
 
     if (mode === 'simplified') {
-      // Set simplified mode states
+      // Set state variables
       setIsSimplifiedMode(true);
       setShowButtons(false);
       setHideControls(true);
       setShowDimensions(false);
-      setIsExpanded(false); // Hide help panel
+      setIsExpanded(false);
 
-      // Ensure zoom updates after all states are set
-      requestAnimationFrame(() => {
-        updateZoom();
-      });
+      // Add a class to the body element for more global CSS control
+      document.body.classList.add('simplified-mode');
 
-      // Add a second update after content loads
+      // Create a style element with high-specificity rules
+      const styleElement = document.createElement('style');
+      styleElement.textContent = `
+        /* Force hide all controls in simplified mode with high specificity */
+        body.simplified-mode .pricing-panel, 
+        body.simplified-mode .mobile-control-panel,
+        body.simplified-mode .desktop-only-controls,
+        body.simplified-mode .fixed.bottom-0.left-0.right-0,
+        body.simplified-mode .helper-controls,
+        body.simplified-mode .editor-controls {
+          display: none !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+        }
+      `;
+      document.head.appendChild(styleElement);
+
+      // Direct manipulation of elements as a fallback
       setTimeout(() => {
-        updateZoom();
-      }, 500);
+        document.querySelectorAll('.pricing-panel, .mobile-control-panel, .desktop-only-controls, .fixed.bottom-0').forEach(el => {
+          el.style.display = 'none';
+          el.style.visibility = 'hidden';
+        });
+      }, 100);
+
+      // Store references for cleanup
+      const simplifiedStyleElement = styleElement;
+
+      // Ensure zoom updates
+      requestAnimationFrame(() => updateZoom());
+      setTimeout(() => updateZoom(), 500);
+
+      return () => {
+        // Cleanup when component unmounts or simplified mode changes
+        document.body.classList.remove('simplified-mode');
+        if (simplifiedStyleElement && simplifiedStyleElement.parentNode) {
+          simplifiedStyleElement.parentNode.removeChild(simplifiedStyleElement);
+        }
+      };
     }
   }, [updateZoom]);
 
@@ -1109,14 +1396,14 @@ export function ModuleBuilder() {
 
   const EditorControls = ({ selectedTheme, onThemeChange, onAddContext, showButtons, isContextPlacementMode }) => {
     return (
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-4 right-4 z-50 desktop-only-controls">
         <div className="bg-white rounded-lg shadow-lg p-3 space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600">Shelf color:</span>
+            <span className="text-xs text-gray-600 control-text">Shelf color:</span>
             <select
               value={selectedTheme}
               onChange={(e) => onThemeChange(e.target.value)}
-              className="bg-white border border-gray-200 rounded-md shadow-sm px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:border-gray-300 transition-colors duration-200 sm:text-xs md:text-sm"
+              className="bg-white border border-gray-200 rounded-md shadow-sm px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:border-gray-300 transition-colors duration-200 sm:text-xs md:text-sm theme-select"
             >
               {Object.entries(DesignerEngine.colorThemes).map(([themeKey, theme]) => (
                 <option key={themeKey} value={themeKey}>
@@ -1128,13 +1415,13 @@ export function ModuleBuilder() {
           <div className="relative">
             <button
               onClick={onAddContext}
-              className={`w-full bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm sm:text-xs md:text-sm ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
+              className={`w-full bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm sm:text-xs md:text-sm designer-btn ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
             >
               Add Context
             </button>
             {isContextPlacementMode && (
               <div className="absolute top-full left-0 right-0 mt-5">
-                <div className="bg-white rounded-lg shadow-lg p-2 text-xs text-gray-600 relative">
+                <div className="bg-white rounded-lg shadow-lg p-2 text-xs text-gray-600 relative control-text">
                   Click anywhere to add objects or people.
                   <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-t border-l border-gray-200"></div>
                 </div>
@@ -1148,13 +1435,13 @@ export function ModuleBuilder() {
 
   const HelperControls = ({ showButtons, onToggleButtons, isExpanded, setIsExpanded }) => {
     return (
-      <div className="fixed bottom-6 left-6 z-50">
-        <div className="relative"> {/* Add this wrapper */}
+      <div className="fixed bottom-6 left-6 z-50 desktop-only-controls">
+        <div className="relative">
           <div className="bg-white rounded-lg shadow-lg p-1.5 flex gap-2">
             <div className="relative">
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 sm:text-xs md:text-sm"
+                className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 sm:text-xs md:text-sm designer-btn"
               >
                 {isExpanded ? 'Hide Help' : 'Show Help'}
               </button>
@@ -1162,7 +1449,7 @@ export function ModuleBuilder() {
             <div className="w-px bg-gray-200"></div>
             <button
               onClick={onToggleButtons}
-              className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 sm:text-xs md:text-sm"
+              className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 sm:text-xs md:text-sm designer-btn"
             >
               {showButtons ? 'Hide Controls' : 'Show Controls'}
             </button>
@@ -1170,12 +1457,11 @@ export function ModuleBuilder() {
             <div className="w-px bg-gray-200"></div>
             <button
               onClick={() => setShowDimensions(!showDimensions)}
-              className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 sm:text-xs md:text-sm"
+              className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 sm:text-xs md:text-sm designer-btn"
             >
               {showDimensions ? 'Hide Dimensions' : 'Show Dimensions'}
             </button>
           </div>
-          {/* Move HelpDisplay here */}
           {isExpanded && (
             <div className="absolute bottom-full mb-2 left-0 w-full">
               <div className="bg-white rounded-lg shadow-lg p-3">
@@ -1190,7 +1476,7 @@ export function ModuleBuilder() {
                       <div className={`${control.color} w-5 h-5 rounded-full flex items-center justify-center text-white text-xs shrink-0`}>
                         {control.symbol}
                       </div>
-                      <span className="text-xs text-gray-700">{control.description}</span>
+                      <span className="text-xs text-gray-700 control-text">{control.description}</span>
                     </div>
                   ))}
                 </div>
@@ -1236,7 +1522,7 @@ export function ModuleBuilder() {
 
   return (
     <div ref={containerRef}
-      className="relative w-full h-screen bg-gray-100 overflow-hidden touch-none"
+      className={`relative w-full h-screen bg-gray-100 overflow-hidden touch-none designer-container ${isSimplifiedMode ? 'simplified-mode' : ''}`}
       style={{
         touchAction: 'none',
         WebkitOverflowScrolling: 'touch',
@@ -1283,58 +1569,64 @@ export function ModuleBuilder() {
         ))}
 
         {/* Context Figures Layer */}
-        {placedContextFigures.map((figure) => (
-          <div
-            key={figure.uniqueId}
-            className="absolute"
-            style={{
-              left: `${figure.x}px`,
-              top: `${figure.y}px`,
-              zIndex: Math.floor(figure.y * 100)
-            }}
-          >
-            <object
-              data={`./images/designer/context/${figure.filename}`}
-              type="image/svg+xml"
-              className="absolute pointer-events-none"
-              style={{ width: '240px', height: '240px' }}
-              onLoad={(e) => handleSVGLoad(e.target, 'context', figure.filename)}
-            />
-            {showButtons && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: `${figure.anchorPoint.x}px`,
-                  top: `${figure.anchorPoint.y}px`,
-                  transform: `scale(${1 / scale})`,
-                  display: 'flex',
-                  gap: '4px',
-                  transformOrigin: 'center'
-                }}
-              >
-                <button
-                  className="bg-red-500 rounded-full w-6 h-6 text-white hover:bg-red-600 flex items-center justify-center"
-                  onClick={() => handleContextDelete(figure.uniqueId)}
-                >
-                  -
-                </button>
-                <button
-                  className="bg-blue-500 rounded-full w-6 h-6 text-white hover:bg-blue-600 flex items-center justify-center"
-                  onClick={() => handleContextCycle(figure)}
-                >
-                  ↻
-                </button>
-                <button
-                  className={`${draggingContextId === figure.uniqueId ? 'bg-green-600' : 'bg-green-500'} rounded-full w-6 h-6 text-white hover:bg-green-600 flex items-center justify-center`}
-                  onMouseDown={(e) => handleDragStart(figure.uniqueId, e)}
-                  onTouchStart={(e) => handleDragStart(figure.uniqueId, e)}
-                >
-                  ⇄
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+{placedContextFigures.map((figure) => (
+  <div
+    key={figure.uniqueId}
+    className="absolute"
+    style={{
+      left: `${figure.x}px`,
+      top: `${figure.y}px`,
+      zIndex: Math.floor(figure.y * 100)
+    }}
+  >
+    <object
+      data={`./images/designer/context/${figure.filename}`}
+      type="image/svg+xml"
+      className="absolute pointer-events-none"
+      style={{ width: '240px', height: '240px' }}
+      onLoad={(e) => handleSVGLoad(e.target, 'context', figure.filename)}
+    />
+    {showButtons && (
+      <div
+        style={{
+          position: 'absolute',
+          left: `${figure.anchorPoint.x}px`,
+          top: `${figure.anchorPoint.y - (60 / Math.max(1, scale))}px`, // Adjust by zoom level
+          transform: `scale(${1 / scale})`,
+          display: 'flex',
+          gap: '4px',
+          transformOrigin: 'center'
+        }}
+      >
+        <button
+          className="bg-red-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm context-control-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleContextDelete(figure.uniqueId);
+          }}
+        >
+          -
+        </button>
+        <button
+          className="bg-blue-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm context-control-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleContextCycle(figure);
+          }}
+        >
+          ↻
+        </button>
+        <button
+          className={`${draggingContextId === figure.uniqueId ? 'bg-green-600' : 'bg-green-500'} rounded-full w-6 h-6 text-white hover:bg-green-600 flex items-center justify-center context-control-btn`}
+          onMouseDown={(e) => handleDragStart(figure.uniqueId, e)}
+          onTouchStart={(e) => handleDragStart(figure.uniqueId, e)}
+        >
+          ⇄
+        </button>
+      </div>
+    )}
+  </div>
+))}
 
         {/* Controls Layer */}
         <div className="absolute inset-0" style={{ zIndex: 20000 }}>
@@ -1350,7 +1642,7 @@ export function ModuleBuilder() {
                         className="absolute flex flex-col gap-1 items-center"
                         style={{
                           left: `${placedPiece.x + placedPiece.piece.width / 2}px`,
-                          top: `${placedPiece.y + placedPiece.piece.height / 2}px`,
+                          top: `${placedPiece.y + placedPiece.piece.height / 2 - (20 / Math.max(1, scale))}px`, // Add vertical offset that adjusts with zoom
                           transform: `translate(-50%, -50%) scale(${1 / scale})`,
                           transformOrigin: 'center',
                           pointerEvents: 'auto'
@@ -1378,12 +1670,12 @@ export function ModuleBuilder() {
                   {placedPiece.piece.anchors?.map((anchor, anchorIndex) => !isAnchorInUse(placedPiece, anchor) && (
                     <button
                       key={anchorIndex}
-                      className="absolute bg-green-500 rounded-full flex items-center justify-center text-white text-xs shadow-sm"
+                      className="absolute bg-green-500 rounded-full flex items-center justify-center text-white text-xs shadow-sm anchor-control-btn"
                       style={{
                         left: `${placedPiece.x + anchor.x}px`,
-                        top: `${placedPiece.y + anchor.y}px`,
-                        width: '14px',
-                        height: '14px',
+                        top: `${placedPiece.y + anchor.y - (40 / Math.max(1, scale))}px`, // Vertical offset adjusted for zoom
+                        width: '22px', // Desktop size (smaller)
+                        height: '22px', // Desktop size (smaller)
                         transform: `translate(-50%, -50%) scale(${1 / scale})`,
                         transformOrigin: 'center',
                         pointerEvents: 'auto'
@@ -1403,7 +1695,7 @@ export function ModuleBuilder() {
         </div>
       </div>
 
-      {showDimensions && (
+      {showDimensions && !isSimplifiedMode && (
         <DimensionLines
           placedPieces={placedPieces}
           scale={scale}
@@ -1416,6 +1708,7 @@ export function ModuleBuilder() {
       {/* Editor Controls */}
       {!isSimplifiedMode && (
         <EditorControls
+          className="editor-controls"
           selectedTheme={selectedTheme}
           onThemeChange={(newTheme) => {
             setSelectedTheme(newTheme);
@@ -1449,25 +1742,21 @@ export function ModuleBuilder() {
         />
       )}
 
-      {/* Helper Controls */}
       {!isSimplifiedMode && (
         <HelperControls
+          className="helper-controls"
           showButtons={showButtons}
           onToggleButtons={() => setShowButtons(!showButtons)}
           isExpanded={isExpanded}
           setIsExpanded={setIsExpanded}
         />
       )}
-
       {placedPieces.length > 0 && !isSimplifiedMode && (
-        <div className="fixed bottom-6 right-6 bg-white rounded-lg shadow-lg p-4 max-w-md z-50">
-          {/* Product List */}
+        <div className="fixed bottom-6 right-6 bg-white rounded-lg shadow-lg p-4 max-w-md z-50 desktop-only-controls">
+          {/* Product List - Desktop version */}
           {Object.entries(
             placedPieces.reduce((acc, { piece }) => {
-              // Extract the base product type without direction suffix
               const baseProductType = piece.product;
-
-              // Group by product name instead of ID
               if (!acc[baseProductType]) {
                 acc[baseProductType] = {
                   count: 0,
@@ -1507,23 +1796,21 @@ export function ModuleBuilder() {
             </span>
             <span className="text-sm text-gray-500 ml-2">(VAT inclusive)</span>
           </div>
-          {/* Add this line for the QR panel */}
+
           {showQR && (
             <QRPanel
               url={`https://framework.co.ke/designer#${encodeURIComponent(configCode)};${selectedTheme}`}
               onClose={() => setShowQR(false)}
             />
           )}
+
           {/* Action Buttons */}
           <div className="mt-4 space-y-2">
             <a
               href={`https://wa.me/254783891005?text=${encodeURIComponent(
                 `I'd like to place an order for:\n${Object.entries(
                   placedPieces.reduce((acc, { piece }) => {
-                    // Extract the base product type without direction suffix
                     const baseProductType = piece.product;
-
-                    // Group by product name instead of ID
                     if (!acc[baseProductType]) {
                       acc[baseProductType] = {
                         count: 0,
@@ -1534,20 +1821,6 @@ export function ModuleBuilder() {
                     return acc;
                   }, {})
                 )
-                  .sort(([productA], [productB]) => {
-                    const order = {
-                      'Standard Base': 1,
-                      'Standard Extension': 2,
-                      'Corner Base': 3,
-                      'Corner Extension': 4,
-                      'Wide Base': 5,
-                      'Wide Adapter': 6,
-                      'Wide Extension': 7,
-                      'Lamp (left)': 8,
-                      'Lamp (right)': 8
-                    };
-                    return (order[productA] || 999) - (order[productB] || 999);
-                  })
                   .map(([product, { count, price }]) => {
                     return `${count} x ${product} @ Ksh ${price.toLocaleString()}`;
                   })
@@ -1580,13 +1853,9 @@ export function ModuleBuilder() {
                 try {
                   await navigator.clipboard.writeText(shareableURL);
                   setButtonState('copied');
-                  const button = e.target;
-                  button.textContent = 'Click again for QR Code';
-
                   setTimeout(() => {
                     if (buttonState === 'copied') {
                       setButtonState('initial');
-                      button.textContent = 'Share Your Design';
                     }
                   }, 5000);
                 } catch (err) {
@@ -1596,16 +1865,107 @@ export function ModuleBuilder() {
               className="block w-full bg-indigo-600 text-white text-center px-2.5 py-1 rounded-md text-xs font-medium"
             >
               {buttonState === 'initial' ? 'Share Your Design' :
-                buttonState === 'copied' ? 'Link copied! Click again for QR Code' :
+                buttonState === 'copied' ? 'Link copied! Click for QR' :
                   'Close QR Code'}
             </button>
           </div>
         </div>
       )}
 
+      {/* 3. Mobile-only pricing panel with simplified mode check */}
+      {placedPieces.length > 0 && !isSimplifiedMode && (
+        <div className="pricing-panel">
+          <div className="breakdown">
+            {Object.entries(
+              placedPieces.reduce((acc, { piece }) => {
+                const baseProductType = piece.product;
+                if (!acc[baseProductType]) {
+                  acc[baseProductType] = {
+                    count: 0,
+                    price: piece.price
+                  };
+                }
+                acc[baseProductType].count += 1;
+                return acc;
+              }, {})
+            )
+              .sort(([productA], [productB]) => {
+                const order = {
+                  'Standard Base': 1,
+                  'Standard Extension': 2,
+                  'Corner Base': 3,
+                  'Corner Extension': 4,
+                  'Wide Base': 5,
+                  'Wide Adapter': 6,
+                  'Wide Extension': 7,
+                  'Lamp (left)': 8,
+                  'Lamp (right)': 8
+                };
+                return (order[productA] || 999) - (order[productB] || 999);
+              })
+              .map(([product, { count }]) => {
+                // More compact format for mobile
+                return (
+                  <div key={product}>
+                    {`${count}x ${product.replace(' ', '')}`}
+                  </div>
+                );
+              })}
+          </div>
+          <div className="total border-t border-gray-200 pt-1 mt-1">
+            Ksh {placedPieces.reduce((sum, { piece }) => sum + piece.price, 0).toLocaleString()}
+          </div>
+        </div>
+      )}
 
 
+      {/* Add isSimplifiedMode prop to MobileControlPanel */}
+      <MobileControlPanel
+        showButtons={showButtons}
+        onToggleButtons={() => setShowButtons(!showButtons)}
+        showDimensions={showDimensions}
+        setShowDimensions={setShowDimensions}
+        isExpanded={isExpanded}
+        setIsExpanded={setIsExpanded}
+        selectedTheme={selectedTheme}
+        onThemeChange={(newTheme) => {
+          setSelectedTheme(newTheme);
+          document.querySelectorAll('object[type="image/svg+xml"]').forEach(obj => {
+            const svgDoc = obj.contentDocument;
+            if (!svgDoc?.documentElement) return;
+
+            obj.style.visibility = 'hidden';
+
+            // Extract filename from the path to use as cache key
+            const svgPath = obj.data;
+            const filename = svgPath.split('/').pop();
+            const isContext = svgPath.includes('/context/');
+            const cacheKey = `${isContext ? 'context-' : ''}${filename}`;
+
+            const cachedSvg = svgCache.current.get(cacheKey);
+            if (cachedSvg) {
+              const freshSvg = cachedSvg.cloneNode(true);
+              svgDoc.documentElement.replaceWith(freshSvg);
+              DesignerEngine.applySVGTheme(svgDoc, newTheme);
+            } else {
+              DesignerEngine.applySVGTheme(svgDoc, newTheme);
+            }
+
+            obj.style.visibility = 'visible';
+          });
+        }}
+        onAddContext={handleAddContext}
+        isContextPlacementMode={isContextPlacementMode}
+        configCode={configCode}
+        placedPieces={placedPieces}
+        setShowQR={setShowQR}
+        buttonState={buttonState}
+        setButtonState={setButtonState}
+        isSimplifiedMode={isSimplifiedMode}
+      />
     </div>
+
+
 
   );
 }
