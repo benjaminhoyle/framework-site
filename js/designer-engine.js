@@ -149,7 +149,7 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
         CONTEXT_LINE_DARK: { fill: 'none', fillOpacity: '0', stroke: '#FFFFFF', strokeWidth: '0.2' }
       }
     },
-    THEME_3: {
+    THEME_4: {
       displayName: 'Coral',
       parameterMappings: {
         SET_1: { fill: '#FAD7C3', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
@@ -1108,6 +1108,7 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       }
     }
   }
+  
   
   DesignerEngine.canPieceReplace = function(originalPiece, newPieceTemplate, placedPieces) {
     const connections = DesignerEngine.findConnections(originalPiece, placedPieces);

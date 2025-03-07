@@ -1,3 +1,5 @@
+//site.js
+
 document.addEventListener('DOMContentLoaded', function() {
     loadHeaderAndFooter();
     setupMobileMenu();
