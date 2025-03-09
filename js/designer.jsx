@@ -1133,17 +1133,23 @@ export function ModuleBuilder() {
     const bounds = calculateBounds();
     if (!bounds) return;
 
-    const padding = 40;
+    // Asymmetric padding to account for UI elements - more moderate values
+    const paddingLeft = 40;
+    const paddingRight = 150;  // Extra space for right panel
+    const paddingTop = 40;
+    const paddingBottom = 100; // Extra space for bottom controls
+    
     const container = containerRef.current;
-    const contentWidth = bounds.maxX - bounds.minX + (padding * 2);
-    const contentHeight = bounds.maxY - bounds.minY + (padding * 2);
+    const contentWidth = bounds.maxX - bounds.minX + paddingLeft + paddingRight;
+    const contentHeight = bounds.maxY - bounds.minY + paddingTop + paddingBottom;
 
     const scaleX = container.clientWidth / contentWidth;
     const scaleY = container.clientHeight / contentHeight;
     const newScale = Math.min(scaleX, scaleY);
 
-    const centerX = (bounds.minX + bounds.maxX) / 2;
-    const centerY = (bounds.minY + bounds.maxY) / 2;
+    // Adjust center calculation to account for asymmetric padding
+    const centerX = bounds.minX + (bounds.maxX - bounds.minX) / 2;
+    const centerY = bounds.minY + (bounds.maxY - bounds.minY) / 2;
 
     requestAnimationFrame(() => {
       setScale(newScale);
