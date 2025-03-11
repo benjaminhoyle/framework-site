@@ -1180,39 +1180,39 @@ export function ModuleBuilder() {
   const updateZoom = React.useCallback(() => {
     // Don't update zoom if we're dragging
     if (draggingContextId) return;
-  
+
     if (!containerRef.current) return;
     const bounds = calculateBounds();
     if (!bounds) return;
-  
+
     // Check if we're on mobile
     const isMobile = window.innerWidth <= 768;
-  
+
     // Normal padding values
     const paddingLeft = 40;
     const paddingRight = 150;
     const paddingTop = 40;
     const paddingBottom = 100;
-  
+
     const container = containerRef.current;
     const contentWidth = bounds.maxX - bounds.minX + paddingLeft + paddingRight;
     const contentHeight = bounds.maxY - bounds.minY + paddingTop + paddingBottom;
-  
+
     const scaleX = container.clientWidth / contentWidth;
     const scaleY = container.clientHeight / contentHeight;
     const newScale = Math.min(scaleX, scaleY);
-  
+
     // Calculate center points
     const centerX = bounds.minX + (bounds.maxX - bounds.minX) / 2;
     let centerY = bounds.minY + (bounds.maxY - bounds.minY) / 2;
-  
+
     // For mobile only, apply a much larger vertical offset to shift everything up
     let yOffset = 0;
     if (isMobile) {
       // Much larger fixed offset in pixels - moves content significantly up the screen
       yOffset = -100; // Increased from 100 to 200
     }
-  
+
     requestAnimationFrame(() => {
       setScale(newScale);
       setOffset({
@@ -1728,16 +1728,15 @@ export function ModuleBuilder() {
                           •••
                         </button>
 
-                        {/* Updated Mobile dropdown for controls with smart positioning */}
+                        {/* Mobile dropdown menu with increased z-index */}
                         {activeControlsModule === placedPiece.uniqueId && (
                           <div
-                            className="absolute bg-white rounded-lg shadow-lg p-2 w-32 z-50 dynamic-menu"
+                            className="absolute bg-white rounded-lg shadow-lg p-2 w-32 dynamic-menu"
                             style={{
-                              // Position above or below based on available space
-                              [menuPosition.pieceId === placedPiece.uniqueId && menuPosition.position === 'above' ? 'bottom' : 'top']:
-                                menuPosition.pieceId === placedPiece.uniqueId && menuPosition.position === 'above' ? 'calc(100% + 8px)' : 'calc(100% + 8px)',
+                              top: 'calc(50% + 8px)', // Position above the button
                               left: '50%',
-                              transform: 'translateX(-50%)'
+                              transform: 'translateX(-50%)',
+                              zIndex: 40000 // Increased z-index to display above other controls (which are at 30000)
                             }}
                           >
                             {/* Menu content remains the same */}
@@ -1813,7 +1812,7 @@ export function ModuleBuilder() {
                           className="absolute flex flex-col gap-1 items-center"
                           style={{
                             left: `${placedPiece.x + placedPiece.piece.width / 2}px`,
-                            top: `${placedPiece.y + placedPiece.piece.height / 2 - 20}px`,
+                            top: `${placedPiece.y + placedPiece.piece.height / 2}px`,
                             transform: `translate(-50%, -50%) scale(${1 / scale})`,
                             transformOrigin: 'center',
                             pointerEvents: 'auto'
@@ -1844,7 +1843,7 @@ export function ModuleBuilder() {
                         className="absolute bg-green-500 rounded-full flex items-center justify-center text-white text-xs shadow-sm anchor-control-btn"
                         style={{
                           left: `${placedPiece.x + anchor.x}px`,
-                          top: `${placedPiece.y + anchor.y - 40}px`,
+                          top: `${placedPiece.y + anchor.y}px`,
                           width: '22px',
                           height: '22px',
                           transform: `translate(-50%, -50%) scale(${1 / scale})`,
