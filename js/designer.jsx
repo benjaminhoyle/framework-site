@@ -24,6 +24,8 @@ export function ModuleBuilder() {
   const [hideControls, setHideControls] = React.useState(false);
   const [isSimplifiedMode, setIsSimplifiedMode] = React.useState(false);
   const [activeControlsModule, setActiveControlsModule] = React.useState(null);
+  const [menuPosition, setMenuPosition] = React.useState({});
+
 
 
   const MobileControlPanel = ({
@@ -196,6 +198,29 @@ export function ModuleBuilder() {
     );
   };
 
+  React.useEffect(() => {
+    if (!activeControlsModule) return;
+
+    // Find the active piece
+    const activePiece = placedPieces.find(p => p.uniqueId === activeControlsModule);
+    if (!activePiece) return;
+
+    // Calculate position in viewport coordinates
+    const viewportY = activePiece.y * scale + offset.y;
+
+    // Check if there's enough space below (200px is approximate menu height)
+    const spaceBelow = window.innerHeight - viewportY - 180;
+    const spaceAbove = viewportY - 50; // 50px buffer from top
+
+    // Determine whether to show above or below
+    const showAbove = spaceBelow < 200 && spaceAbove > 200;
+
+    setMenuPosition({
+      position: showAbove ? 'above' : 'below',
+      pieceId: activeControlsModule
+    });
+
+  }, [activeControlsModule, placedPieces, scale, offset]);
 
   React.useEffect(() => {
     // Create style element for mobile adjustments
@@ -1155,34 +1180,44 @@ export function ModuleBuilder() {
   const updateZoom = React.useCallback(() => {
     // Don't update zoom if we're dragging
     if (draggingContextId) return;
-
+  
     if (!containerRef.current) return;
     const bounds = calculateBounds();
     if (!bounds) return;
-
-    // Asymmetric padding to account for UI elements - more moderate values
+  
+    // Check if we're on mobile
+    const isMobile = window.innerWidth <= 768;
+  
+    // Normal padding values
     const paddingLeft = 40;
-    const paddingRight = 150;  // Extra space for right panel
+    const paddingRight = 150;
     const paddingTop = 40;
-    const paddingBottom = 100; // Extra space for bottom controls
-
+    const paddingBottom = 100;
+  
     const container = containerRef.current;
     const contentWidth = bounds.maxX - bounds.minX + paddingLeft + paddingRight;
     const contentHeight = bounds.maxY - bounds.minY + paddingTop + paddingBottom;
-
+  
     const scaleX = container.clientWidth / contentWidth;
     const scaleY = container.clientHeight / contentHeight;
     const newScale = Math.min(scaleX, scaleY);
-
-    // Adjust center calculation to account for asymmetric padding
+  
+    // Calculate center points
     const centerX = bounds.minX + (bounds.maxX - bounds.minX) / 2;
-    const centerY = bounds.minY + (bounds.maxY - bounds.minY) / 2;
-
+    let centerY = bounds.minY + (bounds.maxY - bounds.minY) / 2;
+  
+    // For mobile only, apply a much larger vertical offset to shift everything up
+    let yOffset = 0;
+    if (isMobile) {
+      // Much larger fixed offset in pixels - moves content significantly up the screen
+      yOffset = -100; // Increased from 100 to 200
+    }
+  
     requestAnimationFrame(() => {
       setScale(newScale);
       setOffset({
         x: (container.clientWidth / 2) - (centerX * newScale),
-        y: (container.clientHeight / 2) - (centerY * newScale)
+        y: (container.clientHeight / 2) - (centerY * newScale) + yOffset
       });
     });
   }, [calculateBounds, draggingContextId]);
@@ -1667,7 +1702,7 @@ export function ModuleBuilder() {
             <React.Fragment key={`controls-${placedPiece.uniqueId}`}>
               {showButtons && !hideControls && (
                 <>
-                  {/* Mobile Controls */}
+                  {/* Mobile Controls - with dynamic positioning */}
                   {(
                     (DesignerEngine.getCompatibleReplacements(placedPiece, placedPieces).length > 0 &&
                       DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
@@ -1693,9 +1728,19 @@ export function ModuleBuilder() {
                           •••
                         </button>
 
-                        {/* Mobile dropdown for controls */}
+                        {/* Updated Mobile dropdown for controls with smart positioning */}
                         {activeControlsModule === placedPiece.uniqueId && (
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-lg shadow-lg p-2 w-32 z-50">
+                          <div
+                            className="absolute bg-white rounded-lg shadow-lg p-2 w-32 z-50 dynamic-menu"
+                            style={{
+                              // Position above or below based on available space
+                              [menuPosition.pieceId === placedPiece.uniqueId && menuPosition.position === 'above' ? 'bottom' : 'top']:
+                                menuPosition.pieceId === placedPiece.uniqueId && menuPosition.position === 'above' ? 'calc(100% + 8px)' : 'calc(100% + 8px)',
+                              left: '50%',
+                              transform: 'translateX(-50%)'
+                            }}
+                          >
+                            {/* Menu content remains the same */}
                             {DesignerEngine.getCompatibleReplacements(placedPiece, placedPieces).length > 0 &&
                               DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
                               !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces) && (
