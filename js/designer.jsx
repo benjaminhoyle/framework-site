@@ -28,6 +28,7 @@ export function ModuleBuilder() {
 
 
 
+  // For the MobileControlPanel component, let's update the button text size
   const MobileControlPanel = ({
     showButtons,
     onToggleButtons,
@@ -71,34 +72,34 @@ export function ModuleBuilder() {
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-3 z-50 mobile-control-panel" style={{ borderTop: '1px solid #e5e7eb' }}>
         <div className="flex flex-wrap justify-center gap-2">
-          {/* Current theme indicator and toggle */}
+          {/* Current theme indicator and toggle - REDUCED TEXT SIZE */}
           <button
             onClick={() => setShowThemeSelector(!showThemeSelector)}
-            className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-sm shadow-sm designer-btn"
+            className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-xs shadow-sm designer-btn"
           >
-            {DesignerEngine.colorThemes[selectedTheme].displayName} ▾
+            Color: {DesignerEngine.colorThemes[selectedTheme].displayName} ▾
           </button>
 
-          {/* Add Context */}
+          {/* Add Context - REDUCED TEXT SIZE */}
           <button
             onClick={onAddContext}
-            className={`flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-sm shadow-sm designer-btn ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
+            className={`flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-xs shadow-sm designer-btn ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
           >
             Add Context
           </button>
 
-          {/* Show/Hide dimensions */}
+          {/* Show/Hide dimensions - REDUCED TEXT SIZE */}
           <button
             onClick={() => setShowDimensions(!showDimensions)}
-            className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-sm shadow-sm designer-btn"
+            className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-xs shadow-sm designer-btn"
           >
             {showDimensions ? 'Hide Sizes' : 'Show Sizes'}
           </button>
 
-          {/* Toggle Controls */}
+          {/* Toggle Controls - REDUCED TEXT SIZE */}
           <button
             onClick={onToggleButtons}
-            className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-sm shadow-sm designer-btn"
+            className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-xs shadow-sm designer-btn"
           >
             {showButtons ? 'Hide Buttons' : 'Show Buttons'}
           </button>
@@ -115,7 +116,7 @@ export function ModuleBuilder() {
                     onThemeChange(themeKey);
                     setShowThemeSelector(false);
                   }}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${selectedTheme === themeKey
+                  className={`px-3 py-1.5 text-xs rounded-md transition-colors ${selectedTheme === themeKey
                     ? 'bg-blue-100 border border-blue-300'
                     : 'bg-white border border-gray-200'
                     }`}
@@ -224,98 +225,108 @@ export function ModuleBuilder() {
 
   React.useEffect(() => {
     // Create style element for mobile adjustments
-    // Create style element for mobile adjustments
     const mobileStyle = document.createElement('style');
     mobileStyle.textContent = `
-@media (max-width: 768px) {
-  /* Make buttons larger on mobile */
-  .designer-btn {
-    font-size: 16px !important;
-    padding: 8px 12px !important;
-    min-height: 44px !important;
+  @media (max-width: 768px) {
+    /* Make buttons larger on mobile */
+    .designer-btn {
+      font-size: 14px !important; /* Reduced from 16px */
+      padding: 8px 10px !important; /* Reduced horizontal padding */
+      min-height: 40px !important; /* Reduced from 44px */
+    }
+    
+    /* Hide desktop controls on mobile */
+    .desktop-only-controls, .desktop-controls {
+      display: none !important;
+    }
+    
+    /* Show mobile controls */
+    .mobile-control-toggle {
+      display: block !important;
+    }
+    
+    /* Button sizes - smaller control button */
+    .module-control-btn, .context-control-btn {
+      width: 28px !important;
+      height: 28px !important;
+      font-size: 12px !important;
+      margin: 2px !important;
+      transform: none !important; /* No scale transformation */
+    }
+    
+    /* Make anchor buttons same size as other controls */
+    .anchor-control-btn {
+      width: 22px !important;
+      height: 22px !important;
+      font-size: 12px !important;
+      margin: 2px !important;
+    }
+    
+    /* Make pricing more compact */
+    .pricing-panel {
+      position: fixed !important;
+      top: 10px !important;
+      right: 10px !important;
+      max-width: 160px !important;
+      padding: 8px !important;
+      border-radius: 8px !important;
+      background-color: rgba(255, 255, 255, 0.9) !important;
+      z-index: 1000 !important;
+    }
+    
+    .pricing-panel .breakdown {
+      font-size: 10px !important;
+      line-height: 1.2 !important;
+      max-height: 80px !important;
+      overflow-y: auto !important;
+    }
+    
+    .pricing-panel .total {
+      font-size: 14px !important;
+      font-weight: bold !important;
+      margin-top: 4px !important;
+    }
+    
+    /* Make text more legible */
+    .control-text {
+      font-size: 16px !important;
+    }
+    
+    /* Add bottom padding to container for mobile control panel */
+    .designer-container {
+      padding-bottom: 120px !important;
+    }
+    
+    /* Ensure the three dots dropdown menu appears on top of everything */
+    .dynamic-menu {
+      z-index: 99999 !important; /* Super high z-index to ensure it's on top */
+    }
+    
+    /* First row of buttons with smaller text */
+    .mobile-control-panel .designer-btn {
+      font-size: 12px !important;
+      line-height: 1.2 !important;
+    }
   }
   
-  /* Hide desktop controls on mobile */
-  .desktop-only-controls, .desktop-controls {
+  /* Hide mobile pricing in desktop view */
+  @media (min-width: 769px) {
+    .pricing-panel {
+      display: none !important;
+    }
+    
+    .mobile-control-toggle {
+      display: none !important;
+    }
+  }
+  
+  /* Hide mobile elements in simplified mode */
+  .simplified-mode .pricing-panel,
+  .simplified-mode .mobile-control-panel,
+  .simplified-mode .mobile-control-toggle {
     display: none !important;
   }
-  
-  /* Show mobile controls */
-  .mobile-control-toggle {
-    display: block !important;
-  }
-  
-  /* Button sizes - smaller control button */
-  .module-control-btn, .context-control-btn {
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 12px !important;
-    margin: 2px !important;
-    transform: none !important; /* No scale transformation */
-  }
-  
-  /* Make anchor buttons same size as other controls */
-  .anchor-control-btn {
-    width: 22px !important;
-    height: 22px !important;
-    font-size: 12px !important;
-    margin: 2px !important;
-  }
-  
-  /* Make pricing more compact */
-  .pricing-panel {
-    position: fixed !important;
-    top: 10px !important;
-    right: 10px !important;
-    max-width: 160px !important;
-    padding: 8px !important;
-    border-radius: 8px !important;
-    background-color: rgba(255, 255, 255, 0.9) !important;
-    z-index: 1000 !important;
-  }
-  
-  .pricing-panel .breakdown {
-    font-size: 10px !important;
-    line-height: 1.2 !important;
-    max-height: 80px !important;
-    overflow-y: auto !important;
-  }
-  
-  .pricing-panel .total {
-    font-size: 14px !important;
-    font-weight: bold !important;
-    margin-top: 4px !important;
-  }
-  
-  /* Make text more legible */
-  .control-text {
-    font-size: 16px !important;
-  }
-  
-  /* Add bottom padding to container for mobile control panel */
-  .designer-container {
-    padding-bottom: 120px !important;
-  }
-}
-
-/* Hide mobile pricing in desktop view */
-@media (min-width: 769px) {
-  .pricing-panel {
-    display: none !important;
-  }
-  
-  .mobile-control-toggle {
-    display: none !important;
-  }
-}
-
-/* Hide mobile elements in simplified mode */
-.simplified-mode .pricing-panel,
-.simplified-mode .mobile-control-panel,
-.simplified-mode .mobile-control-toggle {
-  display: none !important;
-}
-`;
+  `;
     document.head.appendChild(mobileStyle);
 
     // Handle outside clicks to close active controls
@@ -1733,10 +1744,11 @@ export function ModuleBuilder() {
                           <div
                             className="absolute bg-white rounded-lg shadow-lg p-2 w-32 dynamic-menu"
                             style={{
-                              top: 'calc(50% + 8px)', // Position above the button
+                              top: menuPosition.position === 'above' ? 'auto' : 'calc(50% + 8px)',
+                              bottom: menuPosition.position === 'above' ? 'calc(50% + 8px)' : 'auto',
                               left: '50%',
                               transform: 'translateX(-50%)',
-                              zIndex: 40000 // Increased z-index to display above other controls (which are at 30000)
+                              zIndex: 99999 // Ultra-high z-index to display above everything
                             }}
                           >
                             {/* Menu content remains the same */}
