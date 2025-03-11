@@ -23,6 +23,9 @@ export function ModuleBuilder() {
   const [showDimensions, setShowDimensions] = React.useState(false);
   const [hideControls, setHideControls] = React.useState(false);
   const [isSimplifiedMode, setIsSimplifiedMode] = React.useState(false);
+  const [activeControlsModule, setActiveControlsModule] = React.useState(null);
+
+
   const MobileControlPanel = ({
     showButtons,
     onToggleButtons,
@@ -44,25 +47,25 @@ export function ModuleBuilder() {
     // Only show on mobile devices
     const [isMobile, setIsMobile] = React.useState(false);
     const [showThemeSelector, setShowThemeSelector] = React.useState(false);
-  
+
     React.useEffect(() => {
       const checkMobile = () => {
         setIsMobile(window.innerWidth <= 768);
       };
-  
+
       checkMobile();
       window.addEventListener('resize', checkMobile);
       return () => window.removeEventListener('resize', checkMobile);
     }, []);
-  
+
     // Enhanced check for simplified mode - don't render if in simplified mode or not on mobile
     // Check multiple conditions to make sure this component is properly hidden
-    if (!isMobile || isSimplifiedMode || 
-        document.body.classList.contains('simplified-mode') || 
-        window.location.search.includes('mode=simplified')) {
+    if (!isMobile || isSimplifiedMode ||
+      document.body.classList.contains('simplified-mode') ||
+      window.location.search.includes('mode=simplified')) {
       return null;
     }
-  
+
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-3 z-50 mobile-control-panel" style={{ borderTop: '1px solid #e5e7eb' }}>
         <div className="flex flex-wrap justify-center gap-2">
@@ -73,7 +76,7 @@ export function ModuleBuilder() {
           >
             {DesignerEngine.colorThemes[selectedTheme].displayName} ▾
           </button>
-  
+
           {/* Add Context */}
           <button
             onClick={onAddContext}
@@ -81,7 +84,7 @@ export function ModuleBuilder() {
           >
             Add Context
           </button>
-  
+
           {/* Show/Hide dimensions */}
           <button
             onClick={() => setShowDimensions(!showDimensions)}
@@ -89,7 +92,7 @@ export function ModuleBuilder() {
           >
             {showDimensions ? 'Hide Sizes' : 'Show Sizes'}
           </button>
-  
+
           {/* Toggle Controls */}
           <button
             onClick={onToggleButtons}
@@ -98,7 +101,7 @@ export function ModuleBuilder() {
             {showButtons ? 'Hide Buttons' : 'Show Buttons'}
           </button>
         </div>
-  
+
         {/* Theme selector dropdown */}
         {showThemeSelector && (
           <div className="mt-2 pb-1 border-t border-gray-200 pt-2">
@@ -121,7 +124,7 @@ export function ModuleBuilder() {
             </div>
           </div>
         )}
-  
+
         {/* WhatsApp and Share buttons, only show when pieces are placed */}
         {placedPieces.length > 0 && (
           <div className="mt-2 flex gap-2 border-t border-gray-200 pt-2">
@@ -156,19 +159,19 @@ export function ModuleBuilder() {
             <button
               onClick={async (e) => {
                 const shareableURL = `https://framework.co.ke/designer#${encodeURIComponent(configCode)};${selectedTheme}`;
-  
+
                 if (buttonState === 'copied') {
                   setShowQR(true);
                   setButtonState('qr');
                   return;
                 }
-  
+
                 if (buttonState === 'qr') {
                   setShowQR(false);
                   setButtonState('initial');
                   return;
                 }
-  
+
                 try {
                   await navigator.clipboard.writeText(shareableURL);
                   setButtonState('copied');
@@ -194,88 +197,118 @@ export function ModuleBuilder() {
   };
 
 
- // Update the mobile-specific CSS to make the plus buttons the same size as other control buttons
-React.useEffect(() => {
-  // Create style element for mobile adjustments
-  const mobileStyle = document.createElement('style');
-  mobileStyle.textContent = `
-  @media (max-width: 768px) {
-    /* Make buttons larger on mobile */
-    .designer-btn {
-      font-size: 16px !important;
-      padding: 8px 12px !important;
-      min-height: 44px !important;
-    }
-    
-    /* Hide desktop controls on mobile */
-    .desktop-only-controls {
-      display: none !important;
-    }
-    
-    /* Make ALL control buttons the same size */
-    .anchor-control-btn, .module-control-btn, .context-control-btn {
-      width: 22px !important;
-      height: 22px !important;
-      font-size: 16px !important;
-      margin: 2px !important;
-    }
-    
-    /* Make pricing more compact */
-    .pricing-panel {
-      position: fixed !important;
-      top: 10px !important; /* Position at top instead of bottom */
-      right: 10px !important;
-      max-width: 160px !important;
-      padding: 8px !important;
-      border-radius: 8px !important;
-      background-color: rgba(255, 255, 255, 0.9) !important;
-      z-index: 1000 !important;
-    }
-    
-    .pricing-panel .breakdown {
-      font-size: 10px !important;
-      line-height: 1.2 !important;
-      max-height: 80px !important;
-      overflow-y: auto !important;
-    }
-    
-    .pricing-panel .total {
-      font-size: 14px !important;
-      font-weight: bold !important;
-      margin-top: 4px !important;
-    }
-    
-    /* Make text more legible */
-    .control-text {
-      font-size: 16px !important;
-    }
-    
-    /* Add bottom padding to container for mobile control panel */
-    .designer-container {
-      padding-bottom: 120px !important;
-    }
+  React.useEffect(() => {
+    // Create style element for mobile adjustments
+    // Create style element for mobile adjustments
+    const mobileStyle = document.createElement('style');
+    mobileStyle.textContent = `
+@media (max-width: 768px) {
+  /* Make buttons larger on mobile */
+  .designer-btn {
+    font-size: 16px !important;
+    padding: 8px 12px !important;
+    min-height: 44px !important;
   }
   
-  /* Hide mobile pricing in desktop view */
-  @media (min-width: 769px) {
-    .pricing-panel {
-      display: none !important;
-    }
-  }
-  
-  /* Hide mobile elements in simplified mode */
-  .simplified-mode .pricing-panel,
-  .simplified-mode .mobile-control-panel {
+  /* Hide desktop controls on mobile */
+  .desktop-only-controls, .desktop-controls {
     display: none !important;
   }
-`;
-  document.head.appendChild(mobileStyle);
+  
+  /* Show mobile controls */
+  .mobile-control-toggle {
+    display: block !important;
+  }
+  
+  /* Button sizes - smaller control button */
+  .module-control-btn, .context-control-btn {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+    margin: 2px !important;
+    transform: none !important; /* No scale transformation */
+  }
+  
+  /* Make anchor buttons same size as other controls */
+  .anchor-control-btn {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 12px !important;
+    margin: 2px !important;
+  }
+  
+  /* Make pricing more compact */
+  .pricing-panel {
+    position: fixed !important;
+    top: 10px !important;
+    right: 10px !important;
+    max-width: 160px !important;
+    padding: 8px !important;
+    border-radius: 8px !important;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    z-index: 1000 !important;
+  }
+  
+  .pricing-panel .breakdown {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    max-height: 80px !important;
+    overflow-y: auto !important;
+  }
+  
+  .pricing-panel .total {
+    font-size: 14px !important;
+    font-weight: bold !important;
+    margin-top: 4px !important;
+  }
+  
+  /* Make text more legible */
+  .control-text {
+    font-size: 16px !important;
+  }
+  
+  /* Add bottom padding to container for mobile control panel */
+  .designer-container {
+    padding-bottom: 120px !important;
+  }
+}
 
-  // Cleanup on unmount
-  return () => {
-    document.head.removeChild(mobileStyle);
-  };
-}, []);
+/* Hide mobile pricing in desktop view */
+@media (min-width: 769px) {
+  .pricing-panel {
+    display: none !important;
+  }
+  
+  .mobile-control-toggle {
+    display: none !important;
+  }
+}
+
+/* Hide mobile elements in simplified mode */
+.simplified-mode .pricing-panel,
+.simplified-mode .mobile-control-panel,
+.simplified-mode .mobile-control-toggle {
+  display: none !important;
+}
+`;
+    document.head.appendChild(mobileStyle);
+
+    // Handle outside clicks to close active controls
+    const handleClickOutside = (e) => {
+      // Check if click is outside of any control
+      if (activeControlsModule && !e.target.closest('.mobile-control-toggle')) {
+        setActiveControlsModule(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+
+    // Cleanup on unmount
+    return () => {
+      document.head.removeChild(mobileStyle);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [activeControlsModule]);
 
   // Move QRPanel inside the function
   const QRPanel = ({ url, onClose }) => {
@@ -1132,7 +1165,7 @@ React.useEffect(() => {
     const paddingRight = 150;  // Extra space for right panel
     const paddingTop = 40;
     const paddingBottom = 100; // Extra space for bottom controls
-    
+
     const container = containerRef.current;
     const contentWidth = bounds.maxX - bounds.minX + paddingLeft + paddingRight;
     const contentHeight = bounds.maxY - bounds.minY + paddingTop + paddingBottom;
@@ -1569,64 +1602,64 @@ React.useEffect(() => {
         ))}
 
         {/* Context Figures Layer */}
-{placedContextFigures.map((figure) => (
-  <div
-    key={figure.uniqueId}
-    className="absolute"
-    style={{
-      left: `${figure.x}px`,
-      top: `${figure.y}px`,
-      zIndex: Math.floor(figure.y * 100)
-    }}
-  >
-    <object
-      data={`./images/designer/context/${figure.filename}`}
-      type="image/svg+xml"
-      className="absolute pointer-events-none"
-      style={{ width: '240px', height: '240px' }}
-      onLoad={(e) => handleSVGLoad(e.target, 'context', figure.filename)}
-    />
-    {showButtons && (
-      <div
-        style={{
-          position: 'absolute',
-          left: `${figure.anchorPoint.x}px`,
-          top: `${figure.anchorPoint.y - (60 / Math.max(1, scale))}px`, // Adjust by zoom level
-          transform: `scale(${1 / scale})`,
-          display: 'flex',
-          gap: '4px',
-          transformOrigin: 'center'
-        }}
-      >
-        <button
-          className="bg-red-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm context-control-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleContextDelete(figure.uniqueId);
-          }}
-        >
-          -
-        </button>
-        <button
-          className="bg-blue-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm context-control-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleContextCycle(figure);
-          }}
-        >
-          ↻
-        </button>
-        <button
-          className={`${draggingContextId === figure.uniqueId ? 'bg-green-600' : 'bg-green-500'} rounded-full w-6 h-6 text-white hover:bg-green-600 flex items-center justify-center context-control-btn`}
-          onMouseDown={(e) => handleDragStart(figure.uniqueId, e)}
-          onTouchStart={(e) => handleDragStart(figure.uniqueId, e)}
-        >
-          ⇄
-        </button>
-      </div>
-    )}
-  </div>
-))}
+        {placedContextFigures.map((figure) => (
+          <div
+            key={figure.uniqueId}
+            className="absolute"
+            style={{
+              left: `${figure.x}px`,
+              top: `${figure.y}px`,
+              zIndex: Math.floor(figure.y * 100)
+            }}
+          >
+            <object
+              data={`./images/designer/context/${figure.filename}`}
+              type="image/svg+xml"
+              className="absolute pointer-events-none"
+              style={{ width: '240px', height: '240px' }}
+              onLoad={(e) => handleSVGLoad(e.target, 'context', figure.filename)}
+            />
+            {showButtons && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `${figure.anchorPoint.x}px`,
+                  top: `${figure.anchorPoint.y - (60 / Math.max(1, scale))}px`, // Adjust by zoom level
+                  transform: `scale(${1 / scale})`,
+                  display: 'flex',
+                  gap: '4px',
+                  transformOrigin: 'center'
+                }}
+              >
+                <button
+                  className="bg-red-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm context-control-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContextDelete(figure.uniqueId);
+                  }}
+                >
+                  -
+                </button>
+                <button
+                  className="bg-blue-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm context-control-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContextCycle(figure);
+                  }}
+                >
+                  ↻
+                </button>
+                <button
+                  className={`${draggingContextId === figure.uniqueId ? 'bg-green-600' : 'bg-green-500'} rounded-full w-6 h-6 text-white hover:bg-green-600 flex items-center justify-center context-control-btn`}
+                  onMouseDown={(e) => handleDragStart(figure.uniqueId, e)}
+                  onTouchStart={(e) => handleDragStart(figure.uniqueId, e)}
+                >
+                  ⇄
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
 
         {/* Controls Layer */}
         <div className="absolute inset-0" style={{ zIndex: 20000 }}>
@@ -1634,60 +1667,154 @@ React.useEffect(() => {
             <React.Fragment key={`controls-${placedPiece.uniqueId}`}>
               {showButtons && !hideControls && (
                 <>
-                  {/* Control Buttons Group */}
-                  {DesignerEngine.getCompatibleReplacements(placedPiece, placedPieces).length > 0 &&
-                    DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
-                    !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces) && (
+                  {/* Mobile Controls */}
+                  {(
+                    (DesignerEngine.getCompatibleReplacements(placedPiece, placedPieces).length > 0 &&
+                      DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
+                      !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces)) ||
+                    placedPiece.piece.anchors?.some(anchor => !isAnchorInUse(placedPiece, anchor))
+                  ) && (
                       <div
-                        className="absolute flex flex-col gap-1 items-center"
+                        className="absolute mobile-control-toggle"
                         style={{
                           left: `${placedPiece.x + placedPiece.piece.width / 2}px`,
-                          top: `${placedPiece.y + placedPiece.piece.height / 2 - (20 / Math.max(1, scale))}px`, // Add vertical offset that adjusts with zoom
+                          top: `${placedPiece.y + placedPiece.piece.height / 2}px`,
+                          zIndex: 30000,
+                          display: 'none' // Hidden by default, shown via CSS media query
+                        }}
+                      >
+                        <button
+                          className="bg-blue-500 rounded-full flex items-center justify-center text-white w-7 h-7 text-sm shadow-md module-control-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveControlsModule(activeControlsModule === placedPiece.uniqueId ? null : placedPiece.uniqueId);
+                          }}
+                        >
+                          •••
+                        </button>
+
+                        {/* Mobile dropdown for controls */}
+                        {activeControlsModule === placedPiece.uniqueId && (
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-lg shadow-lg p-2 w-32 z-50">
+                            {DesignerEngine.getCompatibleReplacements(placedPiece, placedPieces).length > 0 &&
+                              DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
+                              !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces) && (
+                                <>
+                                  <button
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCyclePiece(placedPiece, e);
+                                      setActiveControlsModule(null);
+                                    }}
+                                  >
+                                    Cycle Module
+                                  </button>
+                                  <button
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded text-red-600"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPlacedPieces(pieces => pieces.filter(p => p !== placedPiece));
+                                      setActiveControlsModule(null);
+                                    }}
+                                  >
+                                    Remove
+                                  </button>
+                                  <div className="border-t border-gray-200 my-1"></div>
+                                </>
+                              )
+                            }
+
+                            {/* Available anchor points with simplified labels */}
+                            {placedPiece.piece.anchors?.filter(anchor => !isAnchorInUse(placedPiece, anchor)).map((anchor, anchorIndex) => {
+                              // Simplified directional labels
+                              let anchorLabel = "Add";
+                              if (anchor.type.includes('H')) {
+                                anchorLabel = "Add above";
+                              } else if (anchor.type.includes('F')) {
+                                anchorLabel = "Add below";
+                              } else if (anchor.type.includes('NE') || anchor.type.includes('SE')) {
+                                anchorLabel = "Add right";
+                              } else if (anchor.type.includes('NW') || anchor.type.includes('SW')) {
+                                anchorLabel = "Add left";
+                              }
+
+                              return (
+                                <button
+                                  key={anchorIndex}
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded text-green-600"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAnchorClick(placedPiece, anchor);
+                                    setActiveControlsModule(null);
+                                  }}
+                                >
+                                  {anchorLabel}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                  {/* Desktop controls */}
+                  <div className="desktop-controls">
+                    {/* Control Buttons Group */}
+                    {DesignerEngine.getCompatibleReplacements(placedPiece, placedPieces).length > 0 &&
+                      DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
+                      !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces) && (
+                        <div
+                          className="absolute flex flex-col gap-1 items-center"
+                          style={{
+                            left: `${placedPiece.x + placedPiece.piece.width / 2}px`,
+                            top: `${placedPiece.y + placedPiece.piece.height / 2 - 20}px`,
+                            transform: `translate(-50%, -50%) scale(${1 / scale})`,
+                            transformOrigin: 'center',
+                            pointerEvents: 'auto'
+                          }}
+                        >
+                          <button
+                            className="bg-blue-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
+                            onClick={(e) => handleCyclePiece(placedPiece, e)}
+                          >
+                            ↻
+                          </button>
+                          <button
+                            className="bg-red-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPlacedPieces(pieces => pieces.filter(p => p !== placedPiece));
+                            }}
+                          >
+                            -
+                          </button>
+                        </div>
+                      )}
+
+                    {/* Anchor Points */}
+                    {placedPiece.piece.anchors?.map((anchor, anchorIndex) => !isAnchorInUse(placedPiece, anchor) && (
+                      <button
+                        key={anchorIndex}
+                        className="absolute bg-green-500 rounded-full flex items-center justify-center text-white text-xs shadow-sm anchor-control-btn"
+                        style={{
+                          left: `${placedPiece.x + anchor.x}px`,
+                          top: `${placedPiece.y + anchor.y - 40}px`,
+                          width: '22px',
+                          height: '22px',
                           transform: `translate(-50%, -50%) scale(${1 / scale})`,
                           transformOrigin: 'center',
                           pointerEvents: 'auto'
                         }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAnchorClick(placedPiece, anchor);
+                        }}
                       >
-                        <button
-                          className="bg-blue-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
-                          onClick={(e) => handleCyclePiece(placedPiece, e)}
-                        >
-                          ↻
-                        </button>
-                        <button
-                          className="bg-red-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPlacedPieces(pieces => pieces.filter(p => p !== placedPiece));
-                          }}
-                        >
-                          -
-                        </button>
-                      </div>
-                    )}
-
-                  {/* Anchor Points */}
-                  {placedPiece.piece.anchors?.map((anchor, anchorIndex) => !isAnchorInUse(placedPiece, anchor) && (
-                    <button
-                      key={anchorIndex}
-                      className="absolute bg-green-500 rounded-full flex items-center justify-center text-white text-xs shadow-sm anchor-control-btn"
-                      style={{
-                        left: `${placedPiece.x + anchor.x}px`,
-                        top: `${placedPiece.y + anchor.y - (40 / Math.max(1, scale))}px`, // Vertical offset adjusted for zoom
-                        width: '22px', // Desktop size (smaller)
-                        height: '22px', // Desktop size (smaller)
-                        transform: `translate(-50%, -50%) scale(${1 / scale})`,
-                        transformOrigin: 'center',
-                        pointerEvents: 'auto'
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAnchorClick(placedPiece, anchor);
-                      }}
-                    >
-                      +
-                    </button>
-                  ))}
+                        +
+                      </button>
+                    ))}
+                  </div>
                 </>
               )}
             </React.Fragment>
