@@ -24,7 +24,9 @@ export function ModuleBuilder() {
   const [hideControls, setHideControls] = React.useState(false);
   const [isSimplifiedMode, setIsSimplifiedMode] = React.useState(false);
   const [activeControlsModule, setActiveControlsModule] = React.useState(null);
-  const [menuPosition, setMenuPosition] = React.useState({});
+  const [menuPosition, setMenuPosition] = React.useState({ x: 0, y: 0 });
+  const [menuButtonPosition, setMenuButtonPosition] = React.useState({ x: 0, y: 0 });
+
 
 
 
@@ -1733,22 +1735,30 @@ export function ModuleBuilder() {
                           className="bg-blue-500 rounded-full flex items-center justify-center text-white w-7 h-7 text-sm shadow-md module-control-btn"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setActiveControlsModule(activeControlsModule === placedPiece.uniqueId ? null : placedPiece.uniqueId);
+                            if (activeControlsModule === placedPiece.uniqueId) {
+                              setActiveControlsModule(null);
+                            } else {
+                              // Get button position when clicked
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const x = rect.left + rect.width / 2;
+                              const y = rect.top + rect.height / 2;
+                              setMenuPosition({ x, y });
+                              setActiveControlsModule(placedPiece.uniqueId);
+                            }
                           }}
                         >
                           •••
                         </button>
 
-                        {/* Mobile dropdown menu with increased z-index */}
                         {activeControlsModule === placedPiece.uniqueId && (
                           <div
                             className="absolute bg-white rounded-lg shadow-lg p-2 w-32 dynamic-menu"
                             style={{
-                              top: menuPosition.position === 'above' ? 'auto' : 'calc(50% + 8px)',
-                              bottom: menuPosition.position === 'above' ? 'calc(50% + 8px)' : 'auto',
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              zIndex: 99999 // Ultra-high z-index to display above everything
+                              position: 'absolute',
+                              left: '0',
+                              top: '0',
+                              transform: 'translate(-40%, -50%)',
+                              zIndex: 999999
                             }}
                           >
                             {/* Menu content remains the same */}
