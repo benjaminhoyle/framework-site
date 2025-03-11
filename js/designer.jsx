@@ -194,94 +194,88 @@ export function ModuleBuilder() {
   };
 
 
-  React.useEffect(() => {
-    // Create style element for mobile adjustments
-    const mobileStyle = document.createElement('style');
-    mobileStyle.textContent = `
-    @media (max-width: 768px) {
-      /* Make buttons larger on mobile */
-      .designer-btn {
-        font-size: 16px !important;
-        padding: 8px 12px !important;
-        min-height: 44px !important;
-      }
-      
-      /* Hide desktop controls on mobile */
-      .desktop-only-controls {
-        display: none !important;
-      }
-      
-      /* Make anchor buttons larger on mobile */
-      .anchor-control-btn {
-        width: 34px !important;
-        height: 34px !important;
-        font-size: 16px !important;
-      }
-      
-      /* Standardize other control buttons size */
-      .module-control-btn, .context-control-btn {
-        width: 22px !important;
-        height: 22px !important;
-        font-size: 16px !important;
-        margin: 2px !important;
-      }
-      
-      /* Make pricing more compact */
-      .pricing-panel {
-        position: fixed !important;
-        top: 10px !important; /* Position at top instead of bottom */
-        right: 10px !important;
-        max-width: 160px !important;
-        padding: 8px !important;
-        border-radius: 8px !important;
-        background-color: rgba(255, 255, 255, 0.9) !important;
-        z-index: 1000 !important;
-      }
-      
-      .pricing-panel .breakdown {
-        font-size: 10px !important;
-        line-height: 1.2 !important;
-        max-height: 80px !important;
-        overflow-y: auto !important;
-      }
-      
-      .pricing-panel .total {
-        font-size: 14px !important;
-        font-weight: bold !important;
-        margin-top: 4px !important;
-      }
-      
-      /* Make text more legible */
-      .control-text {
-        font-size: 16px !important;
-      }
-      
-      /* Add bottom padding to container for mobile control panel */
-      .designer-container {
-        padding-bottom: 120px !important;
-      }
+ // Update the mobile-specific CSS to make the plus buttons the same size as other control buttons
+React.useEffect(() => {
+  // Create style element for mobile adjustments
+  const mobileStyle = document.createElement('style');
+  mobileStyle.textContent = `
+  @media (max-width: 768px) {
+    /* Make buttons larger on mobile */
+    .designer-btn {
+      font-size: 16px !important;
+      padding: 8px 12px !important;
+      min-height: 44px !important;
     }
     
-    /* Hide mobile pricing in desktop view */
-    @media (min-width: 769px) {
-      .pricing-panel {
-        display: none !important;
-      }
-    }
-    
-    /* Hide mobile elements in simplified mode */
-    .simplified-mode .pricing-panel,
-    .simplified-mode .mobile-control-panel {
+    /* Hide desktop controls on mobile */
+    .desktop-only-controls {
       display: none !important;
     }
-  `;
-    document.head.appendChild(mobileStyle);
+    
+    /* Make ALL control buttons the same size */
+    .anchor-control-btn, .module-control-btn, .context-control-btn {
+      width: 22px !important;
+      height: 22px !important;
+      font-size: 16px !important;
+      margin: 2px !important;
+    }
+    
+    /* Make pricing more compact */
+    .pricing-panel {
+      position: fixed !important;
+      top: 10px !important; /* Position at top instead of bottom */
+      right: 10px !important;
+      max-width: 160px !important;
+      padding: 8px !important;
+      border-radius: 8px !important;
+      background-color: rgba(255, 255, 255, 0.9) !important;
+      z-index: 1000 !important;
+    }
+    
+    .pricing-panel .breakdown {
+      font-size: 10px !important;
+      line-height: 1.2 !important;
+      max-height: 80px !important;
+      overflow-y: auto !important;
+    }
+    
+    .pricing-panel .total {
+      font-size: 14px !important;
+      font-weight: bold !important;
+      margin-top: 4px !important;
+    }
+    
+    /* Make text more legible */
+    .control-text {
+      font-size: 16px !important;
+    }
+    
+    /* Add bottom padding to container for mobile control panel */
+    .designer-container {
+      padding-bottom: 120px !important;
+    }
+  }
+  
+  /* Hide mobile pricing in desktop view */
+  @media (min-width: 769px) {
+    .pricing-panel {
+      display: none !important;
+    }
+  }
+  
+  /* Hide mobile elements in simplified mode */
+  .simplified-mode .pricing-panel,
+  .simplified-mode .mobile-control-panel {
+    display: none !important;
+  }
+`;
+  document.head.appendChild(mobileStyle);
 
-    // Cleanup on unmount
-    return () => {
-      document.head.removeChild(mobileStyle);
-    };
-  }, []);
+  // Cleanup on unmount
+  return () => {
+    document.head.removeChild(mobileStyle);
+  };
+}, []);
 
   // Move QRPanel inside the function
   const QRPanel = ({ url, onClose }) => {
