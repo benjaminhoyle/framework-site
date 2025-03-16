@@ -1,6 +1,8 @@
 //designer.jsx
 
-export function ModuleBuilder() {
+// At the very beginning of the file:
+window.ModuleBuilder = function ModuleBuilder() {
+  // Rest of your code remains the same
   // Replace all state declarations with these:
   const [placedPieces, setPlacedPieces] = React.useState([]);
   const [scale, setScale] = React.useState(1);
@@ -1223,7 +1225,15 @@ export function ModuleBuilder() {
     let yOffset = 0;
     if (isMobile) {
       // Much larger fixed offset in pixels - moves content significantly up the screen
-      yOffset = -100; // Increased from 100 to 200
+      yOffset = -100;
+    }
+
+    // Add this code right after the above block:
+    // Check if we're in simplified mode (via URL or class)
+    const isSimplifiedMode = window.location.search.includes('mode=simplified') ||
+      document.body.classList.contains('simplified-mode');
+    if (isSimplifiedMode) {
+      yOffset += 100; // Move down by 50px (positive value moves down)
     }
 
     requestAnimationFrame(() => {

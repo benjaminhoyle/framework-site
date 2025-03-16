@@ -9,25 +9,52 @@
         gtag('js', new Date());
         gtag('config', 'G-HXHT6KGZT3');
     </script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <title>Shelving Designer</title>
     <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- React CDN Links - Standard, tried-and-true approach -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
+
 <body>
     <div id="root"></div>
     
-    <!-- First load the engine -->
+    <!-- Load engine and components -->
     <script src="js/designer-engine.js"></script>
-    
-    <!-- Then load the React components -->
     <script type="text/babel" src="js/designer.jsx"></script>
     
-    <script type="text/babel">
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(ModuleBuilder));
+    <!-- Simple initialization that waits for everything to load -->
+    <script>
+        function initDesigner() {
+            try {
+                if (window.ModuleBuilder && window.ReactDOM) {
+                    const root = ReactDOM.createRoot(document.getElementById('root'));
+                    root.render(React.createElement(window.ModuleBuilder));
+                    console.log('Designer initialized successfully!');
+                } else {
+                    // Not loaded yet, wait a bit more
+                    console.log('Waiting for scripts to load...');
+                    setTimeout(initDesigner, 500);
+                }
+            } catch (err) {
+                console.error('Error initializing designer:', err);
+                document.getElementById('root').innerHTML = 
+                    '<div style="padding: 20px; background-color: #f8d7da; color: #721c24; border-radius: 4px;">' +
+                    '<h3>Failed to load designer</h3>' +
+                    '<p>Please refresh the page. If the problem persists, contact support.</p>' +
+                    '</div>';
+            }
+        }
+        
+        // Wait for page to fully load before initializing
+        window.onload = function() {
+            // Give Babel time to process everything
+            setTimeout(initDesigner, 1000);
+        };
     </script>
 </body>
 </html>
