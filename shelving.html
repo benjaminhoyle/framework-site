@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+<script src="js/structured-data.js"></script>
 
 <head>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-HXHT6KGZT3"></script>
+    <script src="js/image-loading.js"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
@@ -32,9 +34,12 @@
             });
         });
     </script>
+    <script src="js/faq-schema.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modular Shelving - Framework Designs</title>
+    <title>Modular Steel Shelving Systems | Framework Designs Nairobi</title>
+    <meta name="description"
+        content="Premium space-saving shelving solutions made in Kenya. Our steel modular shelves are customizable, expandable, and perfect for any space in Nairobi.">
     <link rel="stylesheet" href="css/styles.css">
 
     <!-- Load React -->
@@ -117,11 +122,12 @@
             height: 300px;
             object-fit: cover;
         }
-        
+
         @media (max-width: 768px) {
             .section-card {
                 flex-direction: column;
             }
+
             .section-image {
                 width: 100%;
                 height: 200px;
@@ -138,7 +144,7 @@
             padding-bottom: 8px;
             margin-bottom: 16px;
         }
-        
+
         /* Elegant link style */
         .elegant-link {
             color: #4a6c8a;
@@ -148,26 +154,30 @@
             transition: all 0.2s ease;
             padding-bottom: 2px;
         }
-        
+
         .elegant-link:hover {
             color: #2c4b6e;
             border-bottom-color: #4a6c8a;
         }
     </style>
+    <link rel="canonical" href="https://www.framework.co.ke/shelving.html">
 </head>
 
 <body class="bg-white">
+
     <!-- Header bar -->
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap">
     <link rel="stylesheet" href="css/styles.css">
     <script src="js/site.js"></script>
-    
+
     <div class="gallery-container" role="main">
         <p class="gallery-intro max-w-4xl mx-auto px-4 pt-8 pb-2 text-center">
             Kenya's first modular shelf system. Infinitely expandable with no tools necessary. Start small and add more
-            shelves as you need them. Scroll down to learn more or <a href="simplified-designer.html" class="elegant-link">click here to start your order</a>.
+            shelves as you need them. Scroll down to learn more or <a href="simplified-designer.html"
+                class="elegant-link">click here to start your order</a>.
         </p>
+
     </div>
     <div id="root"></div>
 
@@ -177,17 +187,17 @@
             {
                 id: 'shelf-00',
                 path: 'images/shelving/shelf (18).jpg',
-                caption: '<strong>Infinitely Expandable</strong><br>Our modular system grows in any direction – stack it vertically, extend it horizontally, and turn corners. Create a storage solution perfectly suited to your space.'
+                caption: '<strong>Infinitely Expandable</strong><br>Our modular shelving system grows in any direction – stack it vertically, extend it horizontally, and turn corners. Perfect for Nairobi\'s diverse living spaces, these space-saving solutions adapt to apartments, homes, and offices throughout Kenya.'
             },
             {
                 id: 'shelf-01',
                 path: 'images/shelving/shelf (14).jpg',
-                caption: '<strong>Made in Kenya</strong><br>The slim proportions of our shelves are made possible thanks to a mild steel frame, engineered wood surface, and exceptional craftsmanship. No pile of books will be too much for them to bear, so don&apos;t hesitate to load them up.'
+                caption: '<strong>Made in Kenya</strong><br>Crafted in our Nairobi workshop, these steel shelving units combine slim proportions with exceptional durability. The precision-engineered steel frame and quality wood surfaces create furniture that\'s both beautiful and built to last, supporting even the heaviest collections.'
             },
             {
                 id: 'shelf-03',
                 path: 'images/shelving/shelf (00).jpg',
-                caption: '<strong>Ready to Accessorize</strong><br>Choose from our carefully curated palette of vibrant color options, and customize your shelf further with our add-on lamps and bookends.'
+                caption: '<strong>Colorful & Customizable</strong><br>Choose from our curated palette of vibrant colors to match any Kenyan interior design scheme. Further customize your shelving with our range of accessories, including integrated lamps and bookends, creating a truly bespoke storage solution.'
             },
             {
                 id: 'shelf-04',
@@ -293,8 +303,8 @@
                             className="w-full h-full object-cover rounded-lg shadow-md"
                         />
                     </div>
-                    <p 
-                        className="mt-3 text-gray-700" 
+                    <p
+                        className="mt-3 text-gray-700"
                         dangerouslySetInnerHTML={{ __html: image.caption }}
                     ></p>
                 </div>
@@ -317,7 +327,7 @@
                     document.removeEventListener('keydown', handleKeyDown);
                     document.body.style.overflow = '';
                 }
-                
+
                 return () => {
                     document.removeEventListener('keydown', handleKeyDown);
                     document.body.style.overflow = '';
@@ -332,7 +342,7 @@
                 <div className={`lightbox-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}>
                     <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
                         <div className="relative bg-white rounded-lg overflow-hidden">
-                            <button 
+                            <button
                                 onClick={onClose}
                                 className="absolute top-2 right-2 z-10 bg-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold shadow hover:bg-gray-100"
                                 aria-label="Close lightbox"
@@ -341,30 +351,30 @@
                             </button>
 
                             <div className="flex items-center justify-center bg-black p-2">
-                                <img 
-                                    src={image.path} 
-                                    alt={image.caption.replace(/<\/?[^>]+(>|$)/g, "")} 
+                                <img
+                                    src={image.path}
+                                    alt={image.caption.replace(/<\/?[^>]+(>|$)/g, "")}
                                     className="lightbox-image"
                                 />
                             </div>
-                            
+
                             <div className="p-4">
                                 <p className="text-gray-800" dangerouslySetInnerHTML={{ __html: image.caption }}></p>
-                                
+
                                 <div className="mt-4 flex justify-between items-center">
-                                    <button 
+                                    <button
                                         onClick={onPrev}
                                         className="bg-gray-200 hover:bg-gray-300 rounded-md px-4 py-2 transition-colors"
                                         aria-label="Previous image"
                                     >
                                         ← Previous
                                     </button>
-                                    
+
                                     <span className="text-sm text-gray-500">
                                         {currentIndex + 1} / {images.length}
                                     </span>
-                                    
-                                    <button 
+
+                                    <button
                                         onClick={onNext}
                                         className="bg-gray-200 hover:bg-gray-300 rounded-md px-4 py-2 transition-colors"
                                         aria-label="Next image"
@@ -372,10 +382,10 @@
                                         Next →
                                     </button>
                                 </div>
-                                
+
                                 <div className="mt-6 flex justify-center">
-                                    <a 
-                                        href="simplified-designer.html" 
+                                    <a
+                                        href="simplified-designer.html"
                                         className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors"
                                         onClick={() => {
                                             gtag('event', 'click', {
@@ -421,11 +431,11 @@
         function App() {
             const [lightboxOpen, setLightboxOpen] = React.useState(false);
             const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
-            
+
             // Initialize scroll tracking
             React.useEffect(() => {
                 trackScrollDepth();
-                
+
                 // Check for gallery parameter in URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const galleryParam = urlParams.get('gallery');
@@ -440,13 +450,13 @@
             const openLightbox = (index) => {
                 setCurrentImageIndex(index);
                 setLightboxOpen(true);
-                
+
                 // Update URL without refreshing page
                 const url = new URL(window.location);
                 url.searchParams.set('gallery', 'open');
                 url.searchParams.set('image', index);
                 window.history.pushState({}, '', url);
-                
+
                 gtag('event', 'open_gallery', {
                     event_category: 'engagement',
                     image_index: index
@@ -456,7 +466,7 @@
             // Handle closing the lightbox
             const closeLightbox = () => {
                 setLightboxOpen(false);
-                
+
                 // Remove parameters from URL
                 const url = new URL(window.location);
                 url.searchParams.delete('gallery');
@@ -468,7 +478,7 @@
             const nextImage = () => {
                 const newIndex = (currentImageIndex + 1) % galleryImages.length;
                 setCurrentImageIndex(newIndex);
-                
+
                 // Update URL parameter
                 const url = new URL(window.location);
                 url.searchParams.set('image', newIndex);
@@ -478,7 +488,7 @@
             const prevImage = () => {
                 const newIndex = currentImageIndex === 0 ? galleryImages.length - 1 : currentImageIndex - 1;
                 setCurrentImageIndex(newIndex);
-                
+
                 // Update URL parameter
                 const url = new URL(window.location);
                 url.searchParams.set('image', newIndex);
@@ -493,9 +503,9 @@
                     {/* Featured Gallery Section */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
                         {featuredImages.map((image, index) => (
-                            <FeaturedGalleryItem 
-                                key={image.id} 
-                                image={image} 
+                            <FeaturedGalleryItem
+                                key={image.id}
+                                image={image}
                                 index={index}
                                 onImageClick={openLightbox}
                             />
@@ -504,8 +514,8 @@
 
                     {/* See More Photos Link */}
                     <div className="text-center mb-16">
-                        <a 
-                            href="#" 
+                        <a
+                            href="#"
                             onClick={(e) => {
                                 e.preventDefault();
                                 openLightbox(0);
@@ -526,9 +536,9 @@
                         <div className="bg-white rounded-lg overflow-hidden shadow-md">
                             <div className="md:flex">
                                 <div className="md:w-1/2">
-                                    <img 
-                                        src="images/shelving/shelf (03).jpg" 
-                                        alt="Simple modular shelf configuration" 
+                                    <img
+                                        src="images/shelving/shelf (03).jpg"
+                                        alt="Simple modular shelf configuration"
                                         className="w-full h-auto object-cover"
                                     />
                                 </div>
@@ -537,8 +547,8 @@
                                     <div className="bg-white p-4 rounded-lg shadow-sm md:shadow-none">
                                         <p className="text-gray-700 mb-6">If you want a great shelf without needing to overthink it, our simplified ordering tool will help you get exactly what you need.</p>
                                         <div>
-                                            <a 
-                                                href="simplified-designer.html" 
+                                            <a
+                                                href="simplified-designer.html"
                                                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
                                                 onClick={() => {
                                                     gtag('event', 'click', {
@@ -561,21 +571,21 @@
                         <div className="bg-white rounded-lg overflow-hidden shadow-md">
                             <div className="md:flex">
                                 <div className="md:w-1/2 bg-gray-50">
-                                    <img 
-                                        src="images/shelving/designer-tutorial.gif" 
-                                        alt="Custom shelving design tool" 
+                                    <img
+                                        src="images/shelving/designer-tutorial.gif"
+                                        alt="Custom shelving design tool"
                                         className="w-full h-64 md:h-full object-cover object-center"
                                     />
                                 </div>
                                 <div className="p-6 md:w-1/2 flex flex-col justify-center">
                                     <h2 className="text-2xl section-title mb-4">Looking for a Unique Shelf?</h2>
                                     <p className="text-gray-600 mb-6">If you want to leverage the full potential of our shelving system, we can chat on WhatsApp to find a perfect setup for your space, or you can try out our full shelf designer app.</p>
-                                    
+
                                     <div className="space-y-4">
                                         <div className="bg-gray-50 p-4 rounded-lg">
                                             <h3 className="font-bold text-lg mb-2">Want guidance on a perfect design?</h3>
-                                            <a 
-                                                href="https://wa.me/254783891005" 
+                                            <a
+                                                href="https://wa.me/254783891005"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
@@ -589,11 +599,11 @@
                                                 Contact Us on WhatsApp
                                             </a>
                                         </div>
-                                        
+
                                         <div className="bg-gray-50 p-4 rounded-lg">
                                             <h3 className="font-bold text-lg mb-2">Interested in customizing your own?</h3>
-                                            <a 
-                                                href="/designer" 
+                                            <a
+                                                href="/designer"
                                                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
                                                 onClick={() => {
                                                     gtag('event', 'click', {
@@ -612,7 +622,7 @@
                     </div>
 
                     {/* Lightbox Component */}
-                    <Lightbox 
+                    <Lightbox
                         isOpen={lightboxOpen}
                         currentIndex={currentImageIndex}
                         images={galleryImages}
@@ -629,6 +639,46 @@
         // Render the app
         ReactDOM.render(React.createElement(App), document.getElementById('root'));
     </script>
+
+    <section class="max-w-6xl mx-auto px-4 py-8 mb-12">
+        <h2 class="text-2xl mb-6 font-light text-center section-title">Frequently Asked Questions</h2>
+        <div class="space-y-6">
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="font-medium text-lg mb-2">What makes Framework's shelving unique in Nairobi?</h3>
+                <p class="text-gray-700">Our shelving systems are designed and manufactured in Kenya using premium steel
+                    and expert craftsmanship. Unlike imported furniture, our modular shelving is specifically designed
+                    for Nairobi homes and businesses, with adjustable features that make it adaptable to any space. The
+                    space-saving design maximizes storage while maintaining an elegant aesthetic that complements
+                    contemporary Kenyan interiors.</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="font-medium text-lg mb-2">How customizable are your shelving solutions?</h3>
+                <p class="text-gray-700">Our modular shelving systems are infinitely customizable. You can choose
+                    colors, dimensions, and configurations to match your exact needs. Our online designer tool lets you
+                    visualize your custom shelving before ordering, ensuring a perfect fit for your Nairobi home or
+                    office. From colorful furniture options to minimalist designs, we offer steel shelving solutions
+                    that adapt to every style preference and spatial requirement.</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="font-medium text-lg mb-2">Do you deliver and install in Nairobi?</h3>
+                <p class="text-gray-700">Yes, we offer delivery throughout Nairobi and surrounding areas. Installation
+                    services are also available for an additional fee. Our team ensures your shelving is properly set up
+                    and stable, with adjustable feet that adapt to uneven floors commonly found in Nairobi buildings. We
+                    serve clients across all neighborhoods, from Kilimani and Westlands to Karen and beyond.</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="font-medium text-lg mb-2">What is the price range for Framework shelving?</h3>
+                <p class="text-gray-700">Our shelving starts at KSh 6,500 for a standard base unit, with extension units
+                    available from KSh 5,500. Custom configurations vary in price based on size and features. Being
+                    Kenyan-made, our shelving offers exceptional value compared to imported options of similar quality.
+                    For architects, interior designers, and business owners looking for commercial shelving solutions,
+                    we also offer competitive pricing for bulk orders.</p>
+            </div>
+        </div>
+    </section>
 </body>
 
 </html>

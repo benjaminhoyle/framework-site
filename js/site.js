@@ -1,6 +1,6 @@
 //site.js
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     loadHeaderAndFooter();
     setupMobileMenu();
     highlightActivePage();
@@ -29,8 +29,18 @@ function loadHeaderAndFooter() {
     `;
 
     const footerContent = `
-        <p>© ${new Date().getFullYear()} Framework Designs Limited / info@framework.co.ke</p>
-    `;
+    <div class="footer-content">
+        <div class="footer-info">
+            <p>© ${new Date().getFullYear()} Framework Designs Limited</p>
+            <p>Premium Steel Shelving Solutions in Nairobi, Kenya</p>
+            <p>Email: <a href="mailto:info@framework.co.ke">info@framework.co.ke</a></p>
+            <p>WhatsApp: <a href="https://wa.me/254783891005">+254 783 891 005</a></p>
+        </div>
+        <div class="footer-keywords">
+            <p class="footer-tags">Custom Steel Shelving | Modular Furniture Kenya | Space-Saving Solutions | Kenyan-Made Furniture</p>
+        </div>
+    </div>
+`;
 
     const header = document.createElement('header');
     header.innerHTML = headerContent;
@@ -54,7 +64,7 @@ function setupMobileMenu() {
     toggle.addEventListener('click', toggleMobileMenu);
 
     // Close menu when clicking outside
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         const isClickInsideMenu = menu.contains(event.target);
         const isClickOnToggle = toggle.contains(event.target);
         if (!isClickInsideMenu && !isClickOnToggle && menu.classList.contains('show')) {

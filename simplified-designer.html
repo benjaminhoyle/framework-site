@@ -1,19 +1,24 @@
 <!DOCTYPE html>
 <html>
+<script src="js/structured-data.js"></script>
 
 <head>
-    <title>Simplified Designer - Framework Designs</title>
+    <title>Custom Shelf Designer | Create Your Perfect Shelving | Framework Designs Kenya</title>
+    <meta name="description"
+        content="Design your own custom steel shelving unit with our easy-to-use tool. Choose dimensions, colors, and accessories for the perfect shelving solution in Nairobi.">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="css/simplified-designer.css">
     <link rel="stylesheet" href="css/styles.css">
     <script src="js/site.js"></script>
     <!-- Tailwind for the post-designer sections -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/image-loading.js"></script>
+
     <style>
         body {
             background-color: white;
         }
-        
+
         /* Additional CSS to fix layout issues */
         .dimension-buttons {
             display: flex;
@@ -72,22 +77,24 @@
 
         /* Mobile layout adjustments with allowance for header */
         @media (max-width: 768px) {
+
             /* Set up the fixed layout structure */
-            html, body {
+            html,
+            body {
                 height: 100%;
                 margin: 0;
                 padding: 0;
                 overflow: auto;
                 background-color: white;
             }
-            
+
             /* Main container structure for mobile */
             .page-content {
                 display: flex;
                 flex-direction: column;
                 position: relative;
             }
-            
+
             header {
                 position: fixed;
                 top: 0;
@@ -96,12 +103,13 @@
                 z-index: 100;
                 background-color: white;
             }
-            
+
             .simplified-designer {
-                margin-top: 60px; /* Space for header */
+                margin-top: 60px;
+                /* Space for header */
                 overflow: visible;
             }
-            
+
             .designer-container {
                 flex-direction: column;
                 position: relative;
@@ -109,16 +117,19 @@
 
             .image-container {
                 position: fixed;
-                top: 60px; /* Align with header */
+                top: 60px;
+                /* Align with header */
                 left: 10px;
                 right: 10px;
                 height: 40vh;
                 z-index: 10;
                 background-color: #f8fafc;
                 border-radius: 8px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-                max-width: calc(100% - 20px); /* Ensure it doesn't overflow */
-                overflow: hidden; /* Prevent content from spilling out */
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+                max-width: calc(100% - 20px);
+                /* Ensure it doesn't overflow */
+                overflow: hidden;
+                /* Prevent content from spilling out */
             }
 
             #designer-container {
@@ -133,22 +144,23 @@
                 z-index: 5;
                 position: relative;
             }
-            
+
             /* Handle scrolling for the post-designer content */
             .post-designer-content {
                 position: relative;
-                z-index: 20; /* Higher z-index to scroll over designer */
+                z-index: 20;
+                /* Higher z-index to scroll over designer */
                 background: white;
                 padding-top: 20px;
             }
-            
+
             /* Hide heading on mobile to save space */
             .simplified-designer h1 {
                 font-size: 18px;
                 margin-bottom: 8px;
                 padding: 0 15px;
             }
-            
+
             /* Make the unique shelf section scroll over the designer */
             .unique-shelf-section {
                 background: white;
@@ -267,609 +279,588 @@
             margin-bottom: 16px;
         }
     </style>
+    <link rel="canonical" href="https://www.framework.co.ke/simplified-designer.html">
 </head>
 
 <body>
     <!-- Header will be added by site.js -->
     <div class="page-content">
         <div class="simplified-designer">
-        <h1>Simplified Shelf Designer</h1>
+            <h1>Simplified Shelf Designer</h1>
 
-        <div class="designer-container">
-            <div class="image-container">
-                <div id="designer-container"></div>
-            </div>
-            <div class="controls-container">
-                <div class="product-display">
-                    <div class="top-controls">
-                        <div class="dropdown-with-label">
-                            <label class="dropdown-label">I'd like a shelf made of...</label>
-                            <select id="config-mode" class="dropdown-select">
-                                <option value="standard">Standard units</option>
-                                <option value="wide">Wide units</option>
-                                <option value="corner">Corner units</option>
-                            </select>
+            <div class="designer-container">
+                <div class="image-container">
+                    <div id="designer-container"></div>
+                </div>
+                <div class="controls-container">
+                    <div class="product-display">
+                        <div class="top-controls">
+                            <div class="dropdown-with-label">
+                                <label class="dropdown-label">I'd like a shelf made of...</label>
+                                <select id="config-mode" class="dropdown-select">
+                                    <option value="standard">Standard units</option>
+                                    <option value="wide">Wide units</option>
+                                    <option value="corner">Corner units</option>
+                                </select>
+                            </div>
+                            <div class="dropdown-with-label">
+                                <label class="dropdown-label">Color:</label>
+                                <select id="theme-select" class="dropdown-select">
+                                    <option value="THEME_1">Marine</option>
+                                    <option value="THEME_2">Sage</option>
+                                    <option value="THEME_3">Charcoal</option>
+                                    <option value="THEME_4">Coral</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="dropdown-with-label">
-                            <label class="dropdown-label">Color:</label>
-                            <select id="theme-select" class="dropdown-select">
-                                <option value="THEME_1">Marine</option>
-                                <option value="THEME_2">Sage</option>
-                                <option value="THEME_3">Charcoal</option>
-                                <option value="THEME_4">Coral</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    <div class="product-controls">
-                        <div class="control-group">
-                            <div class="dimension-row">
-                                <label class="control-label">Width</label>
-                                <div class="dimension-value-control">
-                                    <span id="width-value-control" class="dimension-value">980 mm</span>
-                                    <div class="dimension-buttons">
-                                        <button class="dimension-button minus" id="decrease-width">-</button>
-                                        <button class="dimension-button plus" id="increase-width">+</button>
+                        <div class="product-controls">
+                            <div class="control-group">
+                                <div class="dimension-row">
+                                    <label class="control-label">Width</label>
+                                    <div class="dimension-value-control">
+                                        <span id="width-value-control" class="dimension-value">980 mm</span>
+                                        <div class="dimension-buttons">
+                                            <button class="dimension-button minus" id="decrease-width">-</button>
+                                            <button class="dimension-button plus" id="increase-width">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="dimension-row">
+                                    <label class="control-label">Height</label>
+                                    <div class="dimension-value-control">
+                                        <span id="height-value-control" class="dimension-value">430 mm</span>
+                                        <div class="dimension-buttons">
+                                            <button class="dimension-button minus" id="decrease-height">-</button>
+                                            <button class="dimension-button plus" id="increase-height">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="dimension-row">
+                                    <label class="control-label">Depth</label>
+                                    <div class="dimension-value-control">
+                                        <span id="depth-value-control" class="dimension-value">280 mm</span>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="dimension-row">
-                                <label class="control-label">Height</label>
+                        <div class="options-group">
+                            <div class="option-checkbox" id="lamp-option-container">
+                                <input type="checkbox" id="lamp-toggle" />
+                                <label for="lamp-toggle">Add Lamp (excl. shade and bulb)</label>
+                            </div>
+
+                            <div class="bookend-control dimension-row">
+                                <label class="control-label">Bookends</label>
                                 <div class="dimension-value-control">
-                                    <span id="height-value-control" class="dimension-value">430 mm</span>
+                                    <span id="bookend-count" class="dimension-value">0</span>
                                     <div class="dimension-buttons">
-                                        <button class="dimension-button minus" id="decrease-height">-</button>
-                                        <button class="dimension-button plus" id="increase-height">+</button>
+                                        <button class="dimension-button minus" id="decrease-bookend">-</button>
+                                        <button class="dimension-button plus" id="increase-bookend">+</button>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="dimension-row">
-                                <label class="control-label">Depth</label>
-                                <div class="dimension-value-control">
-                                    <span id="depth-value-control" class="dimension-value">280 mm</span>
-                                </div>
+                        <div class="summary-actions">
+                            <div class="price-container">
+                                <span class="price">Ksh <span id="total-price">0</span></span>
+                                <span class="price-note">VAT Inclusive</span>
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="options-group">
-                        <div class="option-checkbox" id="lamp-option-container">
-                            <input type="checkbox" id="lamp-toggle" />
-                            <label for="lamp-toggle">Add Lamp (excl. shade and bulb)</label>
-                        </div>
-
-                        <div class="bookend-control dimension-row">
-                            <label class="control-label">Bookends</label>
-                            <div class="dimension-value-control">
-                                <span id="bookend-count" class="dimension-value">0</span>
-                                <div class="dimension-buttons">
-                                    <button class="dimension-button minus" id="decrease-bookend">-</button>
-                                    <button class="dimension-button plus" id="increase-bookend">+</button>
-                                </div>
+                            <div class="action-buttons">
+                                <a id="whatsapp-order-button" href="#" target="_blank" rel="noopener noreferrer">Order
+                                    on
+                                    WhatsApp</a>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="summary-actions">
-                        <div class="price-container">
-                            <span class="price">Ksh <span id="total-price">0</span></span>
-                            <span class="price-note">VAT Inclusive</span>
-                        </div>
-
-                        <div class="action-buttons">
-                            <a id="whatsapp-order-button" href="#" target="_blank" rel="noopener noreferrer">Order on
-                                WhatsApp</a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Post-designer content -->
-    <div class="post-designer-content">
-        <!-- Looking for a Unique Shelf Section -->
-        <div class="unique-shelf-section max-w-6xl mx-auto px-4 py-8 mt-8">
-        <div class="bg-white rounded-lg overflow-hidden shadow-md">
-            <div class="md:flex">
-                <div class="md:w-1/2 bg-gray-50">
-                    <img 
-                        src="images/shelving/designer-tutorial.gif" 
-                        alt="Custom shelving design tool" 
-                        class="w-full h-64 md:h-full object-cover object-center"
-                    />
-                </div>
-                <div class="p-6 md:w-1/2 flex flex-col justify-center">
-                    <h2 class="text-2xl section-title mb-4">Looking for a a more customized design?</h2>
-                    <p class="text-gray-600 mb-6">If you want to leverage the full potential of our shelving system, we can chat on WhatsApp to find a perfect setup for your space, or you can try out our full shelf designer app.</p>
-                    
-                    <div class="space-y-4">
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <h3 class="font-bold text-lg mb-2">Want guidance on that custom design?</h3>
-                            <a 
-                                href="https://wa.me/254783891005" 
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                                onclick="gtag('event', 'click', {
+        <!-- Post-designer content -->
+        <div class="post-designer-content">
+            <!-- Looking for a Unique Shelf Section -->
+            <div class="unique-shelf-section max-w-6xl mx-auto px-4 py-8 mt-8">
+                <div class="bg-white rounded-lg overflow-hidden shadow-md">
+                    <div class="md:flex">
+                        <div class="md:w-1/2 bg-gray-50">
+                            <img src="images/shelving/designer-tutorial.gif" alt="Custom shelving design tool"
+                                class="w-full h-64 md:h-full object-cover object-center" />
+                        </div>
+                        <div class="p-6 md:w-1/2 flex flex-col justify-center">
+                            <h2 class="text-2xl section-title mb-4">Looking for a a more customized design?</h2>
+                            <p class="text-gray-600 mb-6">If you want to leverage the full potential of our shelving
+                                system, we can chat on WhatsApp to find a perfect setup for your space, or you can try
+                                out our full shelf designer app.</p>
+
+                            <div class="space-y-4">
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h3 class="font-bold text-lg mb-2">Want guidance on that custom design?</h3>
+                                    <a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer"
+                                        class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
+                                        onclick="gtag('event', 'click', {
                                     event_category: 'navigation',
                                     event_label: 'whatsapp_guidance'
-                                });"
-                            >
-                                Contact Us on WhatsApp
-                            </a>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <h3 class="font-bold text-lg mb-2">Tech savvy and interested in developing the idea yourself?</h3>
-                            <a 
-                                href="/designer" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                                onclick="gtag('event', 'click', {
+                                });">
+                                        Contact Us on WhatsApp
+                                    </a>
+                                </div>
+
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h3 class="font-bold text-lg mb-2">Tech savvy and interested in developing the idea
+                                        yourself?</h3>
+                                    <a href="/designer"
+                                        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
+                                        onclick="gtag('event', 'click', {
                                     event_category: 'navigation',
                                     event_label: 'full_designer'
-                                });"
-                            >
-                                Go to Advanced Designer
-                            </a>
+                                });">
+                                        Go to Advanced Designer
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- See More Photos Button -->
+                <div class="text-center mt-6 mb-12">
+                    <a href="shelving.html?gallery=open&image=0" class="see-more-photos" onclick="gtag('event', 'click', {
+                    event_category: 'navigation',
+                    event_label: 'see_more_photos'
+                });">
+                        See More Photos
+                    </a>
                 </div>
             </div>
         </div>
 
-        <!-- See More Photos Button -->
-        <div class="text-center mt-6 mb-12">
-            <a 
-                href="shelving.html?gallery=open&image=0" 
-                class="see-more-photos"
-                onclick="gtag('event', 'click', {
-                    event_category: 'navigation',
-                    event_label: 'see_more_photos'
-                });"
-            >
-                See More Photos
-            </a>
-        </div>
-    </div>
-    </div>
+        <script src="js/simplified-designer.js"></script>
+        <script>
+            // Initialize designer
+            const designer = new SimplifiedDesigner('designer-container', {
+                size: '100%'
+            });
 
-    <script src="js/simplified-designer.js"></script>
-    <script>
-        // Initialize designer
-        const designer = new SimplifiedDesigner('designer-container', {
-            size: '100%'
-        });
+            // State management
+            let columns = 1;
+            let extensions = 0;
+            let bookends = 0;
+            let hasLamp = false;
+            let configMode = 'standard'; // 'standard', 'wide', or 'corner'
+            let bookendPrice = 700; // Price per bookend in cents
 
-        // State management
-        let columns = 1;
-        let extensions = 0;
-        let bookends = 0;
-        let hasLamp = false;
-        let configMode = 'standard'; // 'standard', 'wide', or 'corner'
-        let bookendPrice = 700; // Price per bookend in cents
+            // DOM references
+            const bookendCount = document.getElementById('bookend-count');
+            const configModeSelect = document.getElementById('config-mode');
+            const themeSelect = document.getElementById('theme-select');
+            const lampToggle = document.getElementById('lamp-toggle');
+            const lampOptionContainer = document.getElementById('lamp-option-container');
+            const dimensionElements = {
+                width: document.getElementById('width-value-control'),
+                height: document.getElementById('height-value-control'),
+                depth: document.getElementById('depth-value-control')
+            };
+            const priceElement = document.getElementById('total-price');
+            const whatsAppOrderButton = document.getElementById('whatsapp-order-button');
 
-        // DOM references
-        const bookendCount = document.getElementById('bookend-count');
-        const configModeSelect = document.getElementById('config-mode');
-        const themeSelect = document.getElementById('theme-select');
-        const lampToggle = document.getElementById('lamp-toggle');
-        const lampOptionContainer = document.getElementById('lamp-option-container');
-        const dimensionElements = {
-            width: document.getElementById('width-value-control'),
-            height: document.getElementById('height-value-control'),
-            depth: document.getElementById('depth-value-control')
-        };
-        const priceElement = document.getElementById('total-price');
-        const whatsAppOrderButton = document.getElementById('whatsapp-order-button');
+            // Add event listeners
+            document.getElementById('increase-width').addEventListener('click', increaseWidth);
+            document.getElementById('decrease-width').addEventListener('click', decreaseWidth);
+            document.getElementById('increase-height').addEventListener('click', increaseHeight);
+            document.getElementById('decrease-height').addEventListener('click', decreaseHeight);
+            document.getElementById('increase-bookend').addEventListener('click', addBookend);
+            document.getElementById('decrease-bookend').addEventListener('click', removeBookend);
+            lampToggle.addEventListener('change', toggleLamp);
+            configModeSelect.addEventListener('change', changeConfigMode);
+            themeSelect.addEventListener('change', changeTheme);
 
-        // Add event listeners
-        document.getElementById('increase-width').addEventListener('click', increaseWidth);
-        document.getElementById('decrease-width').addEventListener('click', decreaseWidth);
-        document.getElementById('increase-height').addEventListener('click', increaseHeight);
-        document.getElementById('decrease-height').addEventListener('click', decreaseHeight);
-        document.getElementById('increase-bookend').addEventListener('click', addBookend);
-        document.getElementById('decrease-bookend').addEventListener('click', removeBookend);
-        lampToggle.addEventListener('change', toggleLamp);
-        configModeSelect.addEventListener('change', changeConfigMode);
-        themeSelect.addEventListener('change', changeTheme);
+            // Update the WhatsApp button with the current configuration
+            function updateWhatsAppButton() {
+                // Get theme display name first so it's available throughout the function
+                const themeDisplayName = themeSelect.options[themeSelect.selectedIndex].text;
 
-        // Update the WhatsApp button with the current configuration
-        function updateWhatsAppButton() {
-            // Get theme display name first so it's available throughout the function
-            const themeDisplayName = themeSelect.options[themeSelect.selectedIndex].text;
+                // Create the shareable URL
+                const shareableURL = `https://framework.co.ke/designer#${encodeURIComponent(lastConfig)};${themeSelect.value}`;
 
-            // Create the shareable URL
-            const shareableURL = `https://framework.co.ke/designer#${encodeURIComponent(lastConfig)};${themeSelect.value}`;
+                // Build order message
+                let orderMessage = `I'd like to place an order for a shelf made of ${configMode} units in ${themeDisplayName}. Make it ${columns} units wide and ${extensions + 1} units tall`;
 
-            // Build order message
-            let orderMessage = `I'd like to place an order for a shelf made of ${configMode} units in ${themeDisplayName}. Make it ${columns} units wide and ${extensions + 1} units tall`;
+                if (hasLamp || bookends > 0) {
+                    orderMessage += ` with`;
 
-            if (hasLamp || bookends > 0) {
-                orderMessage += ` with`;
+                    if (hasLamp) {
+                        orderMessage += ` a lamp`;
+                    }
+                    if (hasLamp && bookends > 0) {
+                        orderMessage += ` and`;
+                    }
+                    if (bookends > 0) {
+                        orderMessage += ` ${bookends} bookend${bookends > 1 ? 's' : ''}`;
+                    }
+                    orderMessage += `.`;
 
-                if (hasLamp) {
-                    orderMessage += ` a lamp`;
                 }
-                if (hasLamp && bookends > 0) {
-                    orderMessage += ` and`;
-                }
-                if (bookends > 0) {
-                    orderMessage += ` ${bookends} bookend${bookends > 1 ? 's' : ''}`;
-                }
-                orderMessage += `.`;
 
+                // Add price details
+                orderMessage += `\nTotal Cost: Ksh ${priceElement.textContent}`;
+
+                // Add the design link
+                orderMessage += `\nThis is the design: ${shareableURL}`;
+
+                // Set the WhatsApp href with the phone number and message
+                whatsAppOrderButton.href = `https://wa.me/254783891005?text=${encodeURIComponent(orderMessage)}`;
             }
 
-            // Add price details
-            orderMessage += `\nTotal Cost: Ksh ${priceElement.textContent}`;
+            // Replace the setupColorIndicators function with this improved version
+            function setupColorDropdown() {
+                const themeSelect = document.getElementById('theme-select');
+                const selectWrapper = document.createElement('div');
+                selectWrapper.className = 'custom-dropdown-wrapper';
 
-            // Add the design link
-            orderMessage += `\nThis is the design: ${shareableURL}`;
+                // Create the custom dropdown
+                const customDropdown = document.createElement('div');
+                customDropdown.className = 'custom-dropdown';
 
-            // Set the WhatsApp href with the phone number and message
-            whatsAppOrderButton.href = `https://wa.me/254783891005?text=${encodeURIComponent(orderMessage)}`;
-        }
+                // Create the selected display
+                const selectedDisplay = document.createElement('div');
+                selectedDisplay.className = 'selected-option';
 
-        // Replace the setupColorIndicators function with this improved version
-        function setupColorDropdown() {
-            const themeSelect = document.getElementById('theme-select');
-            const selectWrapper = document.createElement('div');
-            selectWrapper.className = 'custom-dropdown-wrapper';
+                // Create the options container
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = 'dropdown-options';
 
-            // Create the custom dropdown
-            const customDropdown = document.createElement('div');
-            customDropdown.className = 'custom-dropdown';
+                // Add color options
+                const colorOptions = [
+                    { value: 'THEME_1', color: 'color-marine', label: 'Marine' },
+                    { value: 'THEME_2', color: 'color-sage', label: 'Sage' },
+                    { value: 'THEME_3', color: 'color-charcoal', label: 'Charcoal' },
+                    { value: 'THEME_4', color: 'color-coral', label: 'Coral' }
+                ];
 
-            // Create the selected display
-            const selectedDisplay = document.createElement('div');
-            selectedDisplay.className = 'selected-option';
+                // Add selected option display
+                const initialColorClass = colorOptions.find(opt => opt.value === themeSelect.value)?.color || colorOptions[0].color;
+                const initialLabel = colorOptions.find(opt => opt.value === themeSelect.value)?.label || colorOptions[0].label;
 
-            // Create the options container
-            const optionsContainer = document.createElement('div');
-            optionsContainer.className = 'dropdown-options';
-
-            // Add color options
-            const colorOptions = [
-                { value: 'THEME_1', color: 'color-marine', label: 'Marine' },
-                { value: 'THEME_2', color: 'color-sage', label: 'Sage' },
-                { value: 'THEME_3', color: 'color-charcoal', label: 'Charcoal' },
-                { value: 'THEME_4', color: 'color-coral', label: 'Coral' }
-            ];
-
-            // Add selected option display
-            const initialColorClass = colorOptions.find(opt => opt.value === themeSelect.value)?.color || colorOptions[0].color;
-            const initialLabel = colorOptions.find(opt => opt.value === themeSelect.value)?.label || colorOptions[0].label;
-
-            selectedDisplay.innerHTML = `
+                selectedDisplay.innerHTML = `
         <span class="color-circle ${initialColorClass}"></span>
         <span class="option-label">${initialLabel}</span>
         <span class="dropdown-arrow">&#9662;</span>
     `;
 
-            // Create each option in the dropdown
-            colorOptions.forEach(option => {
-                const optionElement = document.createElement('div');
-                optionElement.className = 'dropdown-option';
-                optionElement.dataset.value = option.value;
-                optionElement.innerHTML = `
+                // Create each option in the dropdown
+                colorOptions.forEach(option => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'dropdown-option';
+                    optionElement.dataset.value = option.value;
+                    optionElement.innerHTML = `
             <span class="color-circle ${option.color}"></span>
             <span class="option-label">${option.label}</span>
         `;
 
-                // When option is clicked
-                optionElement.addEventListener('click', () => {
-                    // Update the hidden select
-                    themeSelect.value = option.value;
+                    // When option is clicked
+                    optionElement.addEventListener('click', () => {
+                        // Update the hidden select
+                        themeSelect.value = option.value;
 
-                    // Trigger change event on the original select
-                    const event = new Event('change', { bubbles: true });
-                    themeSelect.dispatchEvent(event);
+                        // Trigger change event on the original select
+                        const event = new Event('change', { bubbles: true });
+                        themeSelect.dispatchEvent(event);
 
-                    // Update the display
-                    selectedDisplay.innerHTML = `
+                        // Update the display
+                        selectedDisplay.innerHTML = `
                 <span class="color-circle ${option.color}"></span>
                 <span class="option-label">${option.label}</span>
                 <span class="dropdown-arrow">&#9662;</span>
             `;
 
-                    // Close the dropdown
+                        // Close the dropdown
+                        optionsContainer.classList.remove('show');
+                    });
+
+                    optionsContainer.appendChild(optionElement);
+                });
+
+                // Toggle dropdown on click
+                selectedDisplay.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    optionsContainer.classList.toggle('show');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', () => {
                     optionsContainer.classList.remove('show');
                 });
 
-                optionsContainer.appendChild(optionElement);
-            });
+                // Add elements to DOM
+                customDropdown.appendChild(selectedDisplay);
+                customDropdown.appendChild(optionsContainer);
+                selectWrapper.appendChild(customDropdown);
 
-            // Toggle dropdown on click
-            selectedDisplay.addEventListener('click', (e) => {
-                e.stopPropagation();
-                optionsContainer.classList.toggle('show');
-            });
+                // Hide the original select
+                themeSelect.style.display = 'none';
 
-            // Close dropdown when clicking outside
-            document.addEventListener('click', () => {
-                optionsContainer.classList.remove('show');
-            });
+                // Insert our custom dropdown after the select
+                themeSelect.parentNode.insertBefore(selectWrapper, themeSelect.nextSibling);
 
-            // Add elements to DOM
-            customDropdown.appendChild(selectedDisplay);
-            customDropdown.appendChild(optionsContainer);
-            selectWrapper.appendChild(customDropdown);
-
-            // Hide the original select
-            themeSelect.style.display = 'none';
-
-            // Insert our custom dropdown after the select
-            themeSelect.parentNode.insertBefore(selectWrapper, themeSelect.nextSibling);
-
-            // Ensure the original select's change event updates our custom display
-            themeSelect.addEventListener('change', () => {
-                const selectedOption = colorOptions.find(opt => opt.value === themeSelect.value);
-                if (selectedOption) {
-                    selectedDisplay.innerHTML = `
+                // Ensure the original select's change event updates our custom display
+                themeSelect.addEventListener('change', () => {
+                    const selectedOption = colorOptions.find(opt => opt.value === themeSelect.value);
+                    if (selectedOption) {
+                        selectedDisplay.innerHTML = `
                 <span class="color-circle ${selectedOption.color}"></span>
                 <span class="option-label">${selectedOption.label}</span>
                 <span class="dropdown-arrow">&#9662;</span>
             `;
-                }
+                    }
+                });
+            }
+
+            // Call the function when the page loads
+            document.addEventListener('DOMContentLoaded', () => {
+                setupColorDropdown();
             });
-        }
 
-        // Call the function when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            setupColorDropdown();
-        });
-
-        // Update displays
-        function updateCounts() {
-            bookendCount.textContent = bookends;
-        }
-
-        // Update dimensions display
-        function updateDimensions(dimensions) {
-            dimensionElements.width.textContent = `${dimensions.width} mm`;
-            dimensionElements.height.textContent = `${dimensions.height} mm`;
-            dimensionElements.depth.textContent = `${dimensions.depth} mm`;
-        }
-
-        // Update lamp visibility based on config mode
-        function updateLampVisibility() {
-            if (configMode === 'standard' || configMode === 'corner') {
-                lampOptionContainer.style.display = 'flex';
-            } else {
-                lampOptionContainer.style.display = 'none';
-                if (hasLamp) {
-                    hasLamp = false;
-                    lampToggle.checked = false;
-                }
+            // Update displays
+            function updateCounts() {
+                bookendCount.textContent = bookends;
             }
-        }
 
-        // Calculate total price based on configuration
-        function calculateTotalPrice(code) {
-            let totalPrice = 0;
+            // Update dimensions display
+            function updateDimensions(dimensions) {
+                dimensionElements.width.textContent = `${dimensions.width} mm`;
+                dimensionElements.height.textContent = `${dimensions.height} mm`;
+                dimensionElements.depth.textContent = `${dimensions.depth} mm`;
+            }
 
-            // Extract all module IDs from the configuration
-            const moduleIds = [...code.matchAll(/\{([^}]+)\}/g)].map(match => match[1]);
-
-            // Get price for each module from designer-engine
-            for (const moduleId of moduleIds) {
-                const moduleInfo = designer.getModuleInfo(moduleId);
-                if (moduleInfo && moduleInfo.price) {
-                    totalPrice += moduleInfo.price;
+            // Update lamp visibility based on config mode
+            function updateLampVisibility() {
+                if (configMode === 'standard' || configMode === 'corner') {
+                    lampOptionContainer.style.display = 'flex';
+                } else {
+                    lampOptionContainer.style.display = 'none';
+                    if (hasLamp) {
+                        hasLamp = false;
+                        lampToggle.checked = false;
+                    }
                 }
             }
 
-            // Add cost of bookends
-            totalPrice += bookends * bookendPrice;
+            // Calculate total price based on configuration
+            function calculateTotalPrice(code) {
+                let totalPrice = 0;
 
-            // Return as Kenyan Shillings (already in correct format, no conversion needed)
-            return totalPrice.toLocaleString();
-        }
+                // Extract all module IDs from the configuration
+                const moduleIds = [...code.matchAll(/\{([^}]+)\}/g)].map(match => match[1]);
 
-        // Generate configuration code based on settings and config mode
-        function generateConfig() {
-            let config = '';
+                // Get price for each module from designer-engine
+                for (const moduleId of moduleIds) {
+                    const moduleInfo = designer.getModuleInfo(moduleId);
+                    if (moduleInfo && moduleInfo.price) {
+                        totalPrice += moduleInfo.price;
+                    }
+                }
 
-            if (configMode === 'standard') {
-                // Standard configuration logic
-                for (let i = 0; i < columns; i++) {
-                    // Open group
-                    config += '(';
+                // Add cost of bookends
+                totalPrice += bookends * bookendPrice;
 
-                    // Add base
-                    config += '{standard-base-NE}';
+                // Return as Kenyan Shillings (already in correct format, no conversion needed)
+                return totalPrice.toLocaleString();
+            }
 
-                    // Add extensions if any
+            // Generate configuration code based on settings and config mode
+            function generateConfig() {
+                let config = '';
+
+                if (configMode === 'standard') {
+                    // Standard configuration logic
+                    for (let i = 0; i < columns; i++) {
+                        // Open group
+                        config += '(';
+
+                        // Add base
+                        config += '{standard-base-NE}';
+
+                        // Add extensions if any
+                        for (let j = 0; j < extensions; j++) {
+                            config += 'HSNE-FSNE{standard-extension-NE}';
+                        }
+
+                        // Add lamp if enabled and this is the first column
+                        if (hasLamp && i === 0) {
+                            config += 'HSNE-FSNE{lamp-SW-2}';
+                        }
+
+                        // Close group
+                        config += ')';
+
+                        // Add connection to next group if not the last one
+                        if (i < columns - 1) {
+                            config += 'NE-SW'; // Connect NE to SW
+                        }
+                    }
+                } else if (configMode === 'wide') {
+                    // Wide configuration logic - same structure but using wide modules
+                    for (let i = 0; i < columns; i++) {
+                        config += '(';
+
+                        // Add wide base
+                        config += '{wide-base-NE}';
+
+                        // Add wide extensions
+                        for (let j = 0; j < extensions; j++) {
+                            config += 'HWNE-FWNE{wide-extension-NE}';
+                        }
+
+                        // Add lamp if enabled
+                        if (hasLamp && extensions > 0 && i === columns - 1) {
+                            config += 'HWNE-FWNE{lamp-NE}';
+                        }
+
+                        config += ')';
+
+                        if (i < columns - 1) {
+                            config += 'NE-SW';
+                        }
+                    }
+                } else if (configMode === 'corner') {
+                    // Corner configuration logic
+
+                    // First element is always a corner base
+                    config += '({corner-base-NE}';
+
+                    // Add extensions to the corner base
                     for (let j = 0; j < extensions; j++) {
-                        config += 'HSNE-FSNE{standard-extension-NE}';
+                        config += 'HSNE-FSNE{corner-extension-NE}';
                     }
 
-                    // Add lamp if enabled and this is the first column
-                    if (hasLamp && i === 0) {
+                    // Add lamp if enabled to the first column
+                    if (hasLamp) {
                         config += 'HSNE-FSNE{lamp-SW-2}';
                     }
 
-                    // Close group
                     config += ')';
 
-                    // Add connection to next group if not the last one
-                    if (i < columns - 1) {
-                        config += 'NE-SW'; // Connect NE to SW
-                    }
-                }
-            } else if (configMode === 'wide') {
-                // Wide configuration logic - same structure but using wide modules
-                for (let i = 0; i < columns; i++) {
-                    config += '(';
+                    // If more than one column, add standard units connected to the corner's SE anchor
+                    if (columns > 1) {
+                        config += 'SE-NW';
 
-                    // Add wide base
-                    config += '{wide-base-NE}';
+                        // Add the first standard unit
+                        config += '({standard-base-NW}';
 
-                    // Add wide extensions
-                    for (let j = 0; j < extensions; j++) {
-                        config += 'HWNE-FWNE{wide-extension-NE}';
-                    }
-
-                    // Add lamp if enabled
-                    if (hasLamp && extensions > 0 && i === columns - 1) {
-                        config += 'HWNE-FWNE{lamp-NE}';
-                    }
-
-                    config += ')';
-
-                    if (i < columns - 1) {
-                        config += 'NE-SW';
-                    }
-                }
-            } else if (configMode === 'corner') {
-                // Corner configuration logic
-
-                // First element is always a corner base
-                config += '({corner-base-NE}';
-
-                // Add extensions to the corner base
-                for (let j = 0; j < extensions; j++) {
-                    config += 'HSNE-FSNE{corner-extension-NE}';
-                }
-
-                // Add lamp if enabled to the first column
-                if (hasLamp) {
-                    config += 'HSNE-FSNE{lamp-SW-2}';
-                }
-
-                config += ')';
-
-                // If more than one column, add standard units connected to the corner's SE anchor
-                if (columns > 1) {
-                    config += 'SE-NW';
-
-                    // Add the first standard unit
-                    config += '({standard-base-NW}';
-
-                    // Add extensions to the standard unit
-                    for (let j = 0; j < extensions; j++) {
-                        config += 'HSNW-FSNW{standard-extension-NW}';
-                    }
-
-                    config += ')';
-
-                    // Add additional standard units if needed
-                    for (let i = 2; i < columns; i++) {
-                        config += 'SE-NW({standard-base-NW}';
-
+                        // Add extensions to the standard unit
                         for (let j = 0; j < extensions; j++) {
                             config += 'HSNW-FSNW{standard-extension-NW}';
                         }
 
                         config += ')';
-                    }
-                }
-            }
 
-            // Add bookends as context figures if needed - modified to visualize all bookends
-            if (bookends > 0) {
-                // In corner mode, place bookends differently
-                if (configMode === 'corner') {
-                    // Calculate number of bookends to show (up to a reasonable limit)
-                    const visibleBookends = Math.min(bookends, 8);
+                        // Add additional standard units if needed
+                        for (let i = 2; i < columns; i++) {
+                            config += 'SE-NW({standard-base-NW}';
 
-                    // Place bookends at appropriate positions
-                    for (let i = 0; i < visibleBookends; i++) {
-                        // First 2 bookends go on the corner units
-                        if (i < 2) {
-                            let xPos = i === 0 ? 120 : 220;
-                            let yPos = 150;
-                            config += `_[cxt_book_man_1.svg,${xPos},${yPos}]`;
-                        } else {
-                            // Additional bookends spread across the standard units
-                            let xPos = 220 + ((i - 1) * 120);
-                            let yPos = 150;
-                            config += `_[cxt_book_man_1.svg,${xPos},${yPos}]`;
+                            for (let j = 0; j < extensions; j++) {
+                                config += 'HSNW-FSNW{standard-extension-NW}';
+                            }
+
+                            config += ')';
                         }
                     }
-                } else {
-                    // Standard/wide bookend placement
-                    // Calculate number of bookends to show (up to a reasonable limit)
-                    const visibleBookends = Math.min(bookends, 8);
+                }
 
-                    // Place bookends evenly across the shelf
-                    for (let i = 0; i < visibleBookends; i++) {
-                        // Calculate position to spread bookends evenly
-                        const xPos = 120 + Math.floor(i * 480 / visibleBookends);
-                        config += `_[cxt_book_man_1.svg,${xPos},150]`;
+                // Add bookends as context figures if needed - modified to visualize all bookends
+                if (bookends > 0) {
+                    // In corner mode, place bookends differently
+                    if (configMode === 'corner') {
+                        // Calculate number of bookends to show (up to a reasonable limit)
+                        const visibleBookends = Math.min(bookends, 8);
+
+                        // Place bookends at appropriate positions
+                        for (let i = 0; i < visibleBookends; i++) {
+                            // First 2 bookends go on the corner units
+                            if (i < 2) {
+                                let xPos = i === 0 ? 120 : 220;
+                                let yPos = 150;
+                                config += `_[cxt_book_man_1.svg,${xPos},${yPos}]`;
+                            } else {
+                                // Additional bookends spread across the standard units
+                                let xPos = 220 + ((i - 1) * 120);
+                                let yPos = 150;
+                                config += `_[cxt_book_man_1.svg,${xPos},${yPos}]`;
+                            }
+                        }
+                    } else {
+                        // Standard/wide bookend placement
+                        // Calculate number of bookends to show (up to a reasonable limit)
+                        const visibleBookends = Math.min(bookends, 8);
+
+                        // Place bookends evenly across the shelf
+                        for (let i = 0; i < visibleBookends; i++) {
+                            // Calculate position to spread bookends evenly
+                            const xPos = 120 + Math.floor(i * 480 / visibleBookends);
+                            config += `_[cxt_book_man_1.svg,${xPos},150]`;
+                        }
                     }
+                }
+
+                // Store the configuration
+                lastConfig = config;
+
+                // Load configuration
+                console.log(`Generated config: ${config}`);
+                designer.loadConfiguration(config, true);
+
+                // Calculate and update dimensions
+                const dimensions = designer.calculateDimensions(config, configMode);
+                updateDimensions(dimensions);
+
+                // Calculate and update price
+                const totalPrice = calculateTotalPrice(config);
+                priceElement.textContent = totalPrice;
+
+                // Update controls
+                updateCounts();
+
+                // Update WhatsApp button
+                updateWhatsAppButton();
+            }
+
+            // Control functions
+            function increaseWidth() {
+                columns++;
+                generateConfig();
+            }
+
+            function decreaseWidth() {
+                // For corner mode, minimum is 2 columns, for others it's 1
+                const minColumns = configMode === 'corner' ? 2 : 1;
+
+                if (columns > minColumns) {
+                    columns--;
+                    generateConfig();
                 }
             }
 
-            // Store the configuration
-            lastConfig = config;
-
-            // Load configuration
-            console.log(`Generated config: ${config}`);
-            designer.loadConfiguration(config, true);
-
-            // Calculate and update dimensions
-            const dimensions = designer.calculateDimensions(config, configMode);
-            updateDimensions(dimensions);
-
-            // Calculate and update price
-            const totalPrice = calculateTotalPrice(config);
-            priceElement.textContent = totalPrice;
-
-            // Update controls
-            updateCounts();
-
-            // Update WhatsApp button
-            updateWhatsAppButton();
-        }
-
-        // Control functions
-        function increaseWidth() {
-            columns++;
-            generateConfig();
-        }
-
-        function decreaseWidth() {
-            // For corner mode, minimum is 2 columns, for others it's 1
-            const minColumns = configMode === 'corner' ? 2 : 1;
-
-            if (columns > minColumns) {
-                columns--;
+            function increaseHeight() {
+                extensions++;
                 generateConfig();
             }
-        }
 
-        function increaseHeight() {
-            extensions++;
-            generateConfig();
-        }
-
-        function decreaseHeight() {
-            if (extensions > 0) {
-                extensions--;
-                generateConfig();
+            function decreaseHeight() {
+                if (extensions > 0) {
+                    extensions--;
+                    generateConfig();
+                }
             }
-        }
 
-        function addBookend() {
-            // Remove the column count check - allow any number of bookends
-            bookends++;
-
-            // Update counts and price, but don't regenerate the full configuration
-            updateCounts();
-            const totalPrice = calculateTotalPrice(lastConfig);
-            priceElement.textContent = totalPrice;
-
-            // Update WhatsApp button
-            updateWhatsAppButton();
-        }
-
-        function removeBookend() {
-            if (bookends > 0) {
-                bookends--;
+            function addBookend() {
+                // Remove the column count check - allow any number of bookends
+                bookends++;
 
                 // Update counts and price, but don't regenerate the full configuration
                 updateCounts();
@@ -879,181 +870,194 @@
                 // Update WhatsApp button
                 updateWhatsAppButton();
             }
-        }
 
-        // Store the last generated configuration
-        let lastConfig = '';
+            function removeBookend() {
+                if (bookends > 0) {
+                    bookends--;
 
-        function toggleLamp() {
-            hasLamp = lampToggle.checked;
-            generateConfig();
-        }
+                    // Update counts and price, but don't regenerate the full configuration
+                    updateCounts();
+                    const totalPrice = calculateTotalPrice(lastConfig);
+                    priceElement.textContent = totalPrice;
 
-        function changeConfigMode() {
-            const oldConfigMode = configMode;
-            configMode = configModeSelect.value;
-
-            // Reset width and other parameters when changing modes
-            if (oldConfigMode !== configMode) {
-                // Set appropriate default columns based on mode
-                if (configMode === 'corner') {
-                    // Corner mode requires at least 2 columns
-                    columns = 2;
-                } else {
-                    // For other modes, reset to 1 column
-                    columns = 1;
-                }
-
-                // Reset other parameters
-                extensions = 0;
-                bookends = 0;
-                hasLamp = false;
-                lampToggle.checked = false;
-            }
-
-            // Update lamp visibility based on config mode
-            updateLampVisibility();
-            generateConfig();
-        }
-
-        function changeTheme() {
-            designer.setTheme(themeSelect.value);
-            // Regenerate the configuration to apply theme changes
-            generateConfig();
-        }
-
-        // Fix for bookend minus button not working
-        function setupColorIndicators() {
-            // Implementation remains the same
-            const themeOptions = themeSelect.options;
-
-            if (window.customElements) {
-                const selectWrapper = document.createElement('div');
-                selectWrapper.className = 'select-wrapper';
-
-                const currentSelect = themeSelect.parentNode;
-                currentSelect.appendChild(selectWrapper);
-
-                for (let i = 0; i < themeOptions.length; i++) {
-                    const option = themeOptions[i];
-                    const colorClass =
-                        option.value === 'THEME_1' ? 'color-marine' :
-                            option.value === 'THEME_2' ? 'color-sage' :
-                                option.value === 'THEME_3' ? 'color-charcoal' :
-                                    option.value === 'THEME_4' ? 'color-coral' :
-                                        '';
-
-                                    option.setAttribute('data-color-class', colorClass);
+                    // Update WhatsApp button
+                    updateWhatsAppButton();
                 }
             }
-        }
 
-        // Replace the existing initializeWithDefaults function
-        function initializeWithDefaults() {
-            // Skip animation for initial loading to avoid flickering
-            const animate = false;
+            // Store the last generated configuration
+            let lastConfig = '';
 
-            // Generate config first
-            generateConfig();
-
-            // Force an update of price and dimensions if lastConfig exists
-            if (lastConfig) {
-                // Calculate dimensions
-                const dimensions = designer.calculateDimensions(lastConfig, configMode);
-                updateDimensions(dimensions);
-
-                // Calculate price
-                const totalPrice = calculateTotalPrice(lastConfig);
-                priceElement.textContent = totalPrice;
-
-                // Update WhatsApp button
-                updateWhatsAppButton();
+            function toggleLamp() {
+                hasLamp = lampToggle.checked;
+                generateConfig();
             }
-        }
 
-        // Initial setup
-        setupColorIndicators();
-        updateLampVisibility();
-        generateConfig();
-        initializeWithDefaults();
-        
-        // Handle mobile scrolling behavior
-        if (window.innerWidth <= 768) {
-            setupMobileScrolling();
-        }
-        
-        // Set up correct mobile scrolling behavior
-        function setupMobileScrolling() {
-            const controlsContainer = document.querySelector('.controls-container');
-            const postDesignerContent = document.querySelector('.post-designer-content');
-            const imageContainer = document.querySelector('.image-container');
-            const header = document.querySelector('header');
-            const headerHeight = header ? header.offsetHeight : 60;
-            
-            // Fix heading position for mobile
-            const heading = document.querySelector('.simplified-designer h1');
-            const topControls = document.querySelector('.top-controls');
-            
-            if (heading && topControls) {
-                // Insert heading right before the first dropdown
-                topControls.insertAdjacentElement('beforebegin', heading);
-            }
-            
-            // Determine when the "Looking for a unique shelf" section should start appearing
-            // This should be when the user has scrolled through most of the controls
-            const uniqueShelfTriggerPoint = () => {
-                return imageContainer.offsetHeight + headerHeight + controlsContainer.offsetHeight - window.innerHeight/2;
-            };
-            
-            // Update on scroll
-            window.addEventListener('scroll', function() {
-                const scrollY = window.scrollY;
-                
-                // Header behavior - hide when scrolling down
-                if (header) {
-                    if (scrollY > 20) {
-                        header.style.transform = 'translateY(-100%)';
-                        header.style.transition = 'transform 0.3s ease-in-out';
+            function changeConfigMode() {
+                const oldConfigMode = configMode;
+                configMode = configModeSelect.value;
+
+                // Reset width and other parameters when changing modes
+                if (oldConfigMode !== configMode) {
+                    // Set appropriate default columns based on mode
+                    if (configMode === 'corner') {
+                        // Corner mode requires at least 2 columns
+                        columns = 2;
                     } else {
-                        header.style.transform = 'translateY(0)';
+                        // For other modes, reset to 1 column
+                        columns = 1;
+                    }
+
+                    // Reset other parameters
+                    extensions = 0;
+                    bookends = 0;
+                    hasLamp = false;
+                    lampToggle.checked = false;
+                }
+
+                // Update lamp visibility based on config mode
+                updateLampVisibility();
+                generateConfig();
+            }
+
+            function changeTheme() {
+                designer.setTheme(themeSelect.value);
+                // Regenerate the configuration to apply theme changes
+                generateConfig();
+            }
+
+            // Fix for bookend minus button not working
+            function setupColorIndicators() {
+                // Implementation remains the same
+                const themeOptions = themeSelect.options;
+
+                if (window.customElements) {
+                    const selectWrapper = document.createElement('div');
+                    selectWrapper.className = 'select-wrapper';
+
+                    const currentSelect = themeSelect.parentNode;
+                    currentSelect.appendChild(selectWrapper);
+
+                    for (let i = 0; i < themeOptions.length; i++) {
+                        const option = themeOptions[i];
+                        const colorClass =
+                            option.value === 'THEME_1' ? 'color-marine' :
+                                option.value === 'THEME_2' ? 'color-sage' :
+                                    option.value === 'THEME_3' ? 'color-charcoal' :
+                                        option.value === 'THEME_4' ? 'color-coral' :
+                                            '';
+
+                        option.setAttribute('data-color-class', colorClass);
                     }
                 }
-                
-                // Keep the image fixed at the top (under header initially)
-                if (scrollY >= headerHeight) {
-                    imageContainer.style.position = 'fixed';
-                    imageContainer.style.top = '0';
-                } else {
-                    imageContainer.style.position = 'fixed';
-                    imageContainer.style.top = (headerHeight - scrollY) + 'px';
-                }
-                
-                // Manage visibility and z-index of the "Looking for a unique shelf" section
-                // Only show it when we've scrolled far enough
-                if (scrollY > uniqueShelfTriggerPoint()) {
-                    postDesignerContent.style.position = 'relative';
-                    postDesignerContent.style.zIndex = '20';
-                    postDesignerContent.style.background = 'white';
-                    postDesignerContent.style.display = 'block';
-                }
-            });
-        }
-        
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            if (window.innerWidth <= 768) {
-                setupMobileScrolling();
-            } else {
-                // Reset styles when returning to desktop
-                document.querySelector('.image-container').style = '';
-                document.querySelector('.controls-container').style = '';
-                document.querySelector('.post-designer-content').style = '';
-                if (document.querySelector('header')) {
-                    document.querySelector('header').style = '';
+            }
+
+            // Replace the existing initializeWithDefaults function
+            function initializeWithDefaults() {
+                // Skip animation for initial loading to avoid flickering
+                const animate = false;
+
+                // Generate config first
+                generateConfig();
+
+                // Force an update of price and dimensions if lastConfig exists
+                if (lastConfig) {
+                    // Calculate dimensions
+                    const dimensions = designer.calculateDimensions(lastConfig, configMode);
+                    updateDimensions(dimensions);
+
+                    // Calculate price
+                    const totalPrice = calculateTotalPrice(lastConfig);
+                    priceElement.textContent = totalPrice;
+
+                    // Update WhatsApp button
+                    updateWhatsAppButton();
                 }
             }
-        });
-    </script>
+
+            // Initial setup
+            setupColorIndicators();
+            updateLampVisibility();
+            generateConfig();
+            initializeWithDefaults();
+
+            // Handle mobile scrolling behavior
+            if (window.innerWidth <= 768) {
+                setupMobileScrolling();
+            }
+
+            // Set up correct mobile scrolling behavior
+            function setupMobileScrolling() {
+                const controlsContainer = document.querySelector('.controls-container');
+                const postDesignerContent = document.querySelector('.post-designer-content');
+                const imageContainer = document.querySelector('.image-container');
+                const header = document.querySelector('header');
+                const headerHeight = header ? header.offsetHeight : 60;
+
+                // Fix heading position for mobile
+                const heading = document.querySelector('.simplified-designer h1');
+                const topControls = document.querySelector('.top-controls');
+
+                if (heading && topControls) {
+                    // Insert heading right before the first dropdown
+                    topControls.insertAdjacentElement('beforebegin', heading);
+                }
+
+                // Determine when the "Looking for a unique shelf" section should start appearing
+                // This should be when the user has scrolled through most of the controls
+                const uniqueShelfTriggerPoint = () => {
+                    return imageContainer.offsetHeight + headerHeight + controlsContainer.offsetHeight - window.innerHeight / 2;
+                };
+
+                // Update on scroll
+                window.addEventListener('scroll', function () {
+                    const scrollY = window.scrollY;
+
+                    // Header behavior - hide when scrolling down
+                    if (header) {
+                        if (scrollY > 20) {
+                            header.style.transform = 'translateY(-100%)';
+                            header.style.transition = 'transform 0.3s ease-in-out';
+                        } else {
+                            header.style.transform = 'translateY(0)';
+                        }
+                    }
+
+                    // Keep the image fixed at the top (under header initially)
+                    if (scrollY >= headerHeight) {
+                        imageContainer.style.position = 'fixed';
+                        imageContainer.style.top = '0';
+                    } else {
+                        imageContainer.style.position = 'fixed';
+                        imageContainer.style.top = (headerHeight - scrollY) + 'px';
+                    }
+
+                    // Manage visibility and z-index of the "Looking for a unique shelf" section
+                    // Only show it when we've scrolled far enough
+                    if (scrollY > uniqueShelfTriggerPoint()) {
+                        postDesignerContent.style.position = 'relative';
+                        postDesignerContent.style.zIndex = '20';
+                        postDesignerContent.style.background = 'white';
+                        postDesignerContent.style.display = 'block';
+                    }
+                });
+            }
+
+            // Handle window resize
+            window.addEventListener('resize', function () {
+                if (window.innerWidth <= 768) {
+                    setupMobileScrolling();
+                } else {
+                    // Reset styles when returning to desktop
+                    document.querySelector('.image-container').style = '';
+                    document.querySelector('.controls-container').style = '';
+                    document.querySelector('.post-designer-content').style = '';
+                    if (document.querySelector('header')) {
+                        document.querySelector('header').style = '';
+                    }
+                }
+            });
+        </script>
 </body>
 
 </html>
