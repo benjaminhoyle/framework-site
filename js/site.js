@@ -1,5 +1,3 @@
-//site.js
-
 document.addEventListener('DOMContentLoaded', function () {
     loadHeaderAndFooter();
     setupMobileMenu();
@@ -32,9 +30,10 @@ function loadHeaderAndFooter() {
     <div class="footer-content">
         <div class="footer-info">
             <p>© ${new Date().getFullYear()} Framework Designs Limited</p>
-            <p>Premium Steel Shelving Solutions in Nairobi, Kenya</p>
-            <p>Email: <a href="mailto:info@framework.co.ke">info@framework.co.ke</a></p>
-            <p>WhatsApp: <a href="https://wa.me/254783891005">+254 783 891 005</a></p>
+            <p>Email: <a href="mailto:info@framework.co.ke" class="text-link">info@framework.co.ke</a></p>
+            <p>WhatsApp: <a href="https://wa.me/254783891005" class="text-link">+254 783 891 005</a></p>
+            <p>Instagram: <a href="https://www.instagram.com/framework_nairobi/" class="text-link">framework_nairobi</a></p>
+
         </div>
         <div class="footer-keywords">
             <p class="footer-tags">Custom Steel Shelving | Modular Furniture Kenya | Space-Saving Solutions | Kenyan-Made Furniture</p>
