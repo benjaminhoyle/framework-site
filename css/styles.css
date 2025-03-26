@@ -756,3 +756,55 @@ footer {
     }
 }
 
+/* Enhanced shadow for the image container to make it more obvious it's floating on top */
+@media (max-width: 768px) {
+    .image-container {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Deeper shadow */
+        border: 1px solid #e2e8f0; /* Subtle border */
+    }
+    
+    /* Remove border from controls container */
+    .controls-container {
+        padding: 20px;
+        margin-top: 40vh;
+        background: white;
+        z-index: 5;
+    }
+    
+    /* Remove border from simplified-designer h1 */
+    .simplified-designer h1 {
+        border-bottom: none;
+    }
+    
+    /* Add a scroll indicator at the bottom of the page */
+    .page-content:after {
+        content: '';
+        position: fixed;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 15px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 13l5 5 5-5'/%3E%3Cpath d='M7 7l5 5 5-5'/%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        opacity: 0.7;
+        pointer-events: none;
+        z-index: 100;
+        animation: bounce 1.5s infinite;
+    }
+    
+    /* Animation for the scroll indicator */
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {
+            transform: translateX(-50%) translateY(0);
+        }
+        40% {
+            transform: translateX(-50%) translateY(-5px);
+        }
+        60% {
+            transform: translateX(-50%) translateY(-3px);
+        }
+    }
+}
