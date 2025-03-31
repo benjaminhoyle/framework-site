@@ -7,6 +7,23 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-HXHT6KGZT3"></script>
     <script src="js/image-loading.js"></script>
     <script>
+        console.log('Page loading diagnostics:');
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOM fully loaded');
+
+            // Check if React loaded
+            if (window.React) {
+                console.log('React loaded successfully');
+            } else {
+                console.log('React failed to load');
+            }
+
+            // Check root element
+            const root = document.getElementById('root');
+            console.log('Root element:', root ? 'Found' : 'Not found');
+        });
+    </script>
+    <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
@@ -312,136 +329,136 @@
         }
 
         // Lightbox Component
-     // Replace the existing Lightbox component with this Instagram-style version
-function Lightbox({ isOpen, currentIndex, images, onClose, onNext, onPrev }) {
-    const handleKeyDown = React.useCallback((e) => {
-        if (e.key === 'Escape') onClose();
-        if (e.key === 'ArrowRight') onNext();
-        if (e.key === 'ArrowLeft') onPrev();
-    }, [onClose, onNext, onPrev]);
+        // Replace the existing Lightbox component with this Instagram-style version
+        function Lightbox({ isOpen, currentIndex, images, onClose, onNext, onPrev }) {
+            const handleKeyDown = React.useCallback((e) => {
+                if (e.key === 'Escape') onClose();
+                if (e.key === 'ArrowRight') onNext();
+                if (e.key === 'ArrowLeft') onPrev();
+            }, [onClose, onNext, onPrev]);
 
-    React.useEffect(() => {
-        if (isOpen) {
-            document.addEventListener('keydown', handleKeyDown);
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.removeEventListener('keydown', handleKeyDown);
-            document.body.style.overflow = '';
-        }
+            React.useEffect(() => {
+                if (isOpen) {
+                    document.addEventListener('keydown', handleKeyDown);
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    document.removeEventListener('keydown', handleKeyDown);
+                    document.body.style.overflow = '';
+                }
 
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-            document.body.style.overflow = '';
-        };
-    }, [isOpen, handleKeyDown]);
+                return () => {
+                    document.removeEventListener('keydown', handleKeyDown);
+                    document.body.style.overflow = '';
+                };
+            }, [isOpen, handleKeyDown]);
 
-    if (!isOpen) return null;
+            if (!isOpen) return null;
 
-    const image = images[currentIndex];
+            const image = images[currentIndex];
 
-    return (
-        <div className={`lightbox-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}>
-            <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-                {/* Close button */}
-                <button
-                    onClick={onClose}
-                    className="close-button"
-                    aria-label="Close lightbox"
-                >
-                    ×
-                </button>
-                
-                {/* Image container with arrow navigation */}
-                <div 
-                    className="image-container"
-                    onTouchStart={(e) => {
-                        // Store the starting touch position
-                        this.touchStartX = e.touches[0].clientX;
-                    }}
-                    onTouchEnd={(e) => {
-                        // Get the ending touch position
-                        const touchEndX = e.changedTouches[0].clientX;
-                        // Calculate the difference
-                        const diffX = touchEndX - this.touchStartX;
-                        
-                        // If the swipe was significant enough (more than 50px)
-                        if (diffX > 50) {
-                            // Swiped right, go to previous image
-                            onPrev();
-                        } else if (diffX < -50) {
-                            // Swiped left, go to next image
-                            onNext();
-                        }
-                    }}
-                >
-                    <button className="nav-button prev-button" onClick={(e) => {
-                        e.stopPropagation();
-                        onPrev();
-                    }} aria-label="Previous image">
-                        ‹
-                    </button>
-                    <img
-                        src={image.path}
-                        alt={image.caption.replace(/<\/?[^>]+(>|$)/g, "")}
-                        className="lightbox-image"
-                    />
-                    <button className="nav-button next-button" onClick={(e) => {
-                        e.stopPropagation();
-                        onNext();
-                    }} aria-label="Next image">
-                        ›
-                    </button>
-                    
-                    {/* Dots indicator at bottom of image */}
-                    <div className="dots-container">
-                        {images.map((_, index) => (
-                            <span 
-                                key={index} 
-                                className={`dot ${index === currentIndex ? 'active' : ''}`}
+            return (
+                <div className={`lightbox-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}>
+                    <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+                        {/* Close button */}
+                        <button
+                            onClick={onClose}
+                            className="close-button"
+                            aria-label="Close lightbox"
+                        >
+                            ×
+                        </button>
+
+                        {/* Image container with arrow navigation */}
+                        <div
+                            className="image-container"
+                            onTouchStart={(e) => {
+                                // Store the starting touch position
+                                this.touchStartX = e.touches[0].clientX;
+                            }}
+                            onTouchEnd={(e) => {
+                                // Get the ending touch position
+                                const touchEndX = e.changedTouches[0].clientX;
+                                // Calculate the difference
+                                const diffX = touchEndX - this.touchStartX;
+
+                                // If the swipe was significant enough (more than 50px)
+                                if (diffX > 50) {
+                                    // Swiped right, go to previous image
+                                    onPrev();
+                                } else if (diffX < -50) {
+                                    // Swiped left, go to next image
+                                    onNext();
+                                }
+                            }}
+                        >
+                            <button className="nav-button prev-button" onClick={(e) => {
+                                e.stopPropagation();
+                                onPrev();
+                            }} aria-label="Previous image">
+                                ‹
+                            </button>
+                            <img
+                                src={image.path}
+                                alt={image.caption.replace(/<\/?[^>]+(>|$)/g, "")}
+                                className="lightbox-image"
+                            />
+                            <button className="nav-button next-button" onClick={(e) => {
+                                e.stopPropagation();
+                                onNext();
+                            }} aria-label="Next image">
+                                ›
+                            </button>
+
+                            {/* Dots indicator at bottom of image */}
+                            <div className="dots-container">
+                                {images.map((_, index) => (
+                                    <span
+                                        key={index}
+                                        className={`dot ${index === currentIndex ? 'active' : ''}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (index !== currentIndex) {
+                                                // Direct navigation to the clicked dot
+                                                const imagesCopy = [...images];
+                                                while (currentIndex !== index) {
+                                                    if (currentIndex < index) {
+                                                        onNext();
+                                                    } else {
+                                                        onPrev();
+                                                    }
+                                                }
+                                            }
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Caption container */}
+                        <div className="caption-container">
+                            <p dangerouslySetInnerHTML={{ __html: image.caption }}></p>
+                        </div>
+
+                        {/* CTA button */}
+                        <div className="cta-container">
+                            <a
+                                href="simplified-designer.html"
+                                className="cta-button"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (index !== currentIndex) {
-                                        // Direct navigation to the clicked dot
-                                        const imagesCopy = [...images];
-                                        while (currentIndex !== index) {
-                                            if (currentIndex < index) {
-                                                onNext();
-                                            } else {
-                                                onPrev();
-                                            }
-                                        }
-                                    }
+                                    gtag('event', 'click', {
+                                        event_category: 'navigation',
+                                        event_label: 'lightbox_order_button'
+                                    });
                                 }}
-                            />
-                        ))}
+                            >
+                                Build Your Shelf
+                            </a>
+                        </div>
                     </div>
                 </div>
-                
-                {/* Caption container */}
-                <div className="caption-container">
-                    <p dangerouslySetInnerHTML={{ __html: image.caption }}></p>
-                </div>
-                
-                {/* CTA button */}
-                <div className="cta-container">
-                    <a
-                        href="simplified-designer.html"
-                        className="cta-button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            gtag('event', 'click', {
-                                event_category: 'navigation',
-                                event_label: 'lightbox_order_button'
-                            });
-                        }}
-                    >
-                        Build Your Shelf
-                    </a>
-                </div>
-            </div>
-        </div>
-    );
-}
+            );
+        }
 
         // WhatsApp Button Component
         function WhatsAppButton() {
@@ -570,105 +587,105 @@ function Lightbox({ isOpen, currentIndex, images, onClose, onNext, onPrev }) {
                         </a>
                     </div>
 
-                   {/* Simple Shelf Section with Image */}
-<div className="mb-12">
-    <div className="bg-white rounded-lg overflow-hidden shadow-md">
-        {/* Mobile-only title with custom background color and no bottom margin */}
-        <h2 className="text-2xl text-center md:hidden p-4 pb-6 font-bold bg-[#F2F3F6] mb-0">
-            Looking for a<br/>Simple Shelf?
-        </h2>
-        <div className="md:flex">
-            <div className="md:w-2/5">
-                <img
-                    src="images/shelving/shelf (03).jpg"
-                    alt="Simple modular shelf configuration"
-                    className="w-full h-auto object-cover"
-                />
-            </div>
-            <div className="p-6 md:w-3/5 flex flex-col justify-center bg-gray-50 md:bg-white">
-                {/* Desktop-only title */}
-                <h2 className="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Simple Shelf?</h2>
-                <div className="bg-white p-4 rounded-lg shadow-sm md:shadow-none">
-                    <p className="text-gray-700 mb-6">If you want a great shelf without needing to overthink it, our simplified ordering tool will help you get exactly what you need.</p>
-                    <div>
-                        <a
-                            href="simplified-designer.html"
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                            onClick={() => {
-                                gtag('event', 'click', {
-                                    event_category: 'navigation',
-                                    event_label: 'simple_shelf_designer'
-                                });
-                            }}
-                        >
-                            Start Here
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-{/* Custom Shelf Section with GIF */}
-<div className="mb-16">
-    <div className="bg-white rounded-lg overflow-hidden shadow-md">
-        {/* Mobile-only title with custom background color and no bottom margin */}
-        <h2 className="text-2xl text-center md:hidden p-4 pb-6 font-bold bg-[#F2F3F6] mb-0">
-            Looking for a<br/>Unique Shelf?
-        </h2>
-        <div className="md:flex">
-            <div className="md:w-2/5 bg-gray-50">
-                <img
-                    src="images/shelving/designer-tutorial.gif"
-                    alt="Custom shelving design tool"
-                    className="w-full h-64 md:h-full object-cover object-center"
-                />
-            </div>
-            <div className="p-6 md:w-3/5 flex flex-col justify-center">
-                {/* Desktop-only title */}
-                <h2 className="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Unique Shelf?</h2>
-                <p className="text-gray-600 mb-6">If you want to leverage the full potential of our shelving system, we can chat on WhatsApp to find a perfect setup for your space, or you can try out our full shelf designer app.</p>
-
-                <div className="space-y-4">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="font-bold text-lg mb-2">Get guidance on a perfect design</h3>
-                        <a
-                            href="https://wa.me/254783891005"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                            onClick={() => {
-                                gtag('event', 'click', {
-                                    event_category: 'navigation',
-                                    event_label: 'whatsapp_guidance'
-                                });
-                            }}
-                        >
-                            Contact Us on WhatsApp
-                        </a>
+                    {/* Simple Shelf Section with Image */}
+                    <div className="mb-12">
+                        <div className="bg-white rounded-lg overflow-hidden shadow-md">
+                            {/* Mobile-only title with custom background color and no bottom margin */}
+                            <h2 className="text-2xl text-center md:hidden p-4 pb-6 font-bold bg-[#F2F3F6] mb-0">
+                                Looking for a<br />Simple Shelf?
+                            </h2>
+                            <div className="md:flex">
+                                <div className="md:w-2/5">
+                                    <img
+                                        src="images/shelving/shelf (03).jpg"
+                                        alt="Simple modular shelf configuration"
+                                        className="w-full h-auto object-cover"
+                                    />
+                                </div>
+                                <div className="p-6 md:w-3/5 flex flex-col justify-center bg-gray-50 md:bg-white">
+                                    {/* Desktop-only title */}
+                                    <h2 className="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Simple Shelf?</h2>
+                                    <div className="bg-white p-4 rounded-lg shadow-sm md:shadow-none">
+                                        <p className="text-gray-700 mb-6">If you want a great shelf without needing to overthink it, our simplified ordering tool will help you get exactly what you need.</p>
+                                        <div>
+                                            <a
+                                                href="simplified-designer.html"
+                                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
+                                                onClick={() => {
+                                                    gtag('event', 'click', {
+                                                        event_category: 'navigation',
+                                                        event_label: 'simple_shelf_designer'
+                                                    });
+                                                }}
+                                            >
+                                                Start Here
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="font-bold text-lg mb-2">Customize a shelf on your own</h3>
-                        <a
-                            href="/designer"
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                            onClick={() => {
-                                gtag('event', 'click', {
-                                    event_category: 'navigation',
-                                    event_label: 'full_designer'
-                                });
-                            }}
-                        >
-                            Go to Advanced Designer
-                        </a>
+                    {/* Custom Shelf Section with GIF */}
+                    <div className="mb-16">
+                        <div className="bg-white rounded-lg overflow-hidden shadow-md">
+                            {/* Mobile-only title with custom background color and no bottom margin */}
+                            <h2 className="text-2xl text-center md:hidden p-4 pb-6 font-bold bg-[#F2F3F6] mb-0">
+                                Looking for a<br />Unique Shelf?
+                            </h2>
+                            <div className="md:flex">
+                                <div className="md:w-2/5 bg-gray-50">
+                                    <img
+                                        src="images/shelving/designer-tutorial.gif"
+                                        alt="Custom shelving design tool"
+                                        className="w-full h-64 md:h-full object-cover object-center"
+                                    />
+                                </div>
+                                <div className="p-6 md:w-3/5 flex flex-col justify-center">
+                                    {/* Desktop-only title */}
+                                    <h2 className="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Unique Shelf?</h2>
+                                    <p className="text-gray-600 mb-6">If you want to leverage the full potential of our shelving system, we can chat on WhatsApp to find a perfect setup for your space, or you can try out our full shelf designer app.</p>
+
+                                    <div className="space-y-4">
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h3 className="font-bold text-lg mb-2">Get guidance on a perfect design</h3>
+                                            <a
+                                                href="https://wa.me/254783891005"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
+                                                onClick={() => {
+                                                    gtag('event', 'click', {
+                                                        event_category: 'navigation',
+                                                        event_label: 'whatsapp_guidance'
+                                                    });
+                                                }}
+                                            >
+                                                Contact Us on WhatsApp
+                                            </a>
+                                        </div>
+
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h3 className="font-bold text-lg mb-2">Customize a shelf on your own</h3>
+                                            <a
+                                                href="/designer"
+                                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
+                                                onClick={() => {
+                                                    gtag('event', 'click', {
+                                                        event_category: 'navigation',
+                                                        event_label: 'full_designer'
+                                                    });
+                                                }}
+                                            >
+                                                Go to Advanced Designer
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
                     {/* Lightbox Component */}
                     <Lightbox
