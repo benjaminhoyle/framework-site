@@ -5,6 +5,13 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function loadHeaderAndFooter() {
+    // Add favicon dynamically
+    if (!document.querySelector('link[rel="icon"]')) {
+        const favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.href = 'images/global/fwk-icon-lg.png';
+        document.head.appendChild(favicon);
+    }
     const headerContent = `
         <div class="logo">
             <a href="index.html">
