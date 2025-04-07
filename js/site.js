@@ -15,7 +15,7 @@ function loadHeaderAndFooter() {
     const headerContent = `
         <div class="logo">
             <a href="index.html">
-                <img src="images/global/fwk-icon.png" alt="Framework Designs Logo">
+                <img src="/images/global/fwk-icon.png" alt="Framework Designs Logo">
             </a>
         </div>
         <nav>

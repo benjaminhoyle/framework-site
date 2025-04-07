@@ -1,0 +1,60 @@
+/* Update these styles in your blog.css file */
+
+/* Blog post specific styles - modified for better layout */
+.blog-post {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.blog-post-header {
+    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+}
+
+.blog-post-title {
+    font-weight: 300;
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    color: #333;
+    line-height: 1.2;
+    width: 100%;
+}
+
+.blog-post-meta {
+    color: #777;
+    font-size: 0.9em;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.blog-post-featured-image {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    order: 3;
+}
+
+/* Media query for desktop to ensure clean vertical layout */
+@media (min-width: 768px) {
+    .blog-post-header {
+        flex-direction: column;
+    }
+    
+    .blog-post-title {
+        width: 100%;
+    }
+    
+    .blog-post-meta {
+        width: 100%;
+    }
+    
+    .blog-post-featured-image {
+        width: 100%;
+    }
+}
