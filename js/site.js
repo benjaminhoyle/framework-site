@@ -23,7 +23,7 @@ function loadHeaderAndFooter() {
                 <li><a href="index.html">Home</a></li>
                 <li><a href="shelving.html">Shelving</a></li>
                 <li><a href="products-services.html">Products and Services</a></li>
-                <li><a href="https://wa.me/254783891005">Contact</a></li>
+                <li><a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" onclick="if(typeof gtag==='function'){gtag('event','click_chat',{'event_category':'engagement','event_label':'header_contact'});}window.open(this.href, '_blank'); return false;">Contact</a></li>
             </ul>
         </nav>
         <button id="mobile-menu-toggle" aria-label="Toggle mobile menu">
@@ -38,9 +38,8 @@ function loadHeaderAndFooter() {
         <div class="footer-info">
             <p>© ${new Date().getFullYear()} Framework Designs Limited</p>
             <p>Email: <a href="mailto:info@framework.co.ke" class="text-link">info@framework.co.ke</a></p>
-            <p>WhatsApp: <a href="https://wa.me/254783891005" class="text-link">+254 783 891 005</a></p>
-            <p>Instagram: <a href="https://www.instagram.com/framework_nairobi/" class="text-link">framework_nairobi</a></p>
-
+            <p>WhatsApp: <a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" class="text-link" onclick="if(typeof gtag==='function'){gtag('event','click_chat',{'event_category':'engagement','event_label':'footer_whatsapp'});}window.open(this.href, '_blank'); return false;">+254 783 891 005</a></p>
+            <p>Instagram: <a href="https://www.instagram.com/framework_nairobi/" target="_blank" rel="noopener noreferrer" class="text-link">framework_nairobi</a></p>
         </div>
         <div class="footer-keywords">
             <p class="footer-tags">Custom Steel Shelving | Modular Furniture Kenya | Space-Saving Solutions | Kenyan-Made Furniture</p>
