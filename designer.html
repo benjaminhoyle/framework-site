@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+    <!-- Google Tag Manager -->
+    <script>(function (w, d, s, l, i) {
+            w[l] = w[l] || []; w[l].push({
+                'gtm.start':
+                    new Date().getTime(), event: 'gtm.js'
+            }); var f = d.getElementsByTagName(s)[0],
+                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', 'GTM-NNSS73RJ');</script>
+    <!-- End Google Tag Manager -->
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-HXHT6KGZT3"></script>
     <script>
@@ -9,23 +20,28 @@
         gtag('js', new Date());
         gtag('config', 'G-HXHT6KGZT3');
     </script>
-    
+
     <title>Shelving Designer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <link rel="icon" href="images/global/fwk-icon-lg.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"
+        crossorigin></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.21.4/babel.min.js" crossorigin></script>
 </head>
 
 <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NNSS73RJ" height="0" width="0"
+            style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
     <div id="root"></div>
-    
+
     <!-- Load engine and components -->
     <script src="js/designer-engine.js"></script>
     <script type="text/babel" src="js/designer.jsx"></script>
-    
+
     <!-- Simple initialization that waits for everything to load -->
     <script>
         function initDesigner() {
@@ -41,19 +57,20 @@
                 }
             } catch (err) {
                 console.error('Error initializing designer:', err);
-                document.getElementById('root').innerHTML = 
+                document.getElementById('root').innerHTML =
                     '<div style="padding: 20px; background-color: #f8d7da; color: #721c24; border-radius: 4px;">' +
                     '<h3>Failed to load designer</h3>' +
                     '<p>Please refresh the page. If the problem persists, contact support.</p>' +
                     '</div>';
             }
         }
-        
+
         // Wait for page to fully load before initializing
-        window.onload = function() {
+        window.onload = function () {
             // Give Babel time to process everything
             setTimeout(initDesigner, 1000);
         };
     </script>
 </body>
+
 </html>
