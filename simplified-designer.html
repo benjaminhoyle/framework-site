@@ -403,9 +403,9 @@
                                     <h3 class="font-bold text-lg mb-2">Want guidance on that custom design?</h3>
                                     <a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer"
                                         class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                                        onclick="gtag('event', 'click', {
-                                    event_category: 'navigation',
-                                    event_label: 'whatsapp_guidance'
+                                        onclick="gtag('event', 'click_chat', {
+                                    event_category: 'engagement',
+                                    event_label: 'whatsapp_chat'
                                 });">
                                         Contact Us on WhatsApp
                                     </a>
@@ -516,7 +516,21 @@
                 // Set the WhatsApp href with the phone number and message
                 whatsAppOrderButton.href = `https://wa.me/254783891005?text=${encodeURIComponent(orderMessage)}`;
             }
-
+            // Add GA4 conversion tracking for WhatsApp order button
+            document.getElementById('whatsapp-order-button').addEventListener('click', function () {
+                // Trigger the begin_checkout event for GA4
+                gtag('event', 'begin_checkout', {
+                    'currency': 'KES',
+                    'value': parseFloat(document.getElementById('total-price').textContent.replace(/,/g, '')),
+                    'items': [
+                        {
+                            'item_name': 'Modular Shelving',
+                            'quantity': 1,
+                            'price': parseFloat(document.getElementById('total-price').textContent.replace(/,/g, ''))
+                        }
+                    ]
+                });
+            });
             // Replace the setupColorIndicators function with this improved version
             function setupColorDropdown() {
                 const themeSelect = document.getElementById('theme-select');
