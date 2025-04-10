@@ -565,9 +565,9 @@
                 whatsAppOrderButton.href = `https://wa.me/254783891005?text=${encodeURIComponent(orderMessage)}`;
             }
             // Add GA4 conversion tracking for WhatsApp order button
-            document.getElementById('whatsapp-order-button').addEventListener('click', function () {
-                // Trigger the begin_checkout event for GA4
-                gtag('event', 'begin_checkout', {
+            document.getElementById('whatsapp-order-button').addEventListener('click', function (e) {
+                e.preventDefault();
+                return trackCheckoutConversion(this.href, {
                     'currency': 'KES',
                     'value': parseFloat(document.getElementById('total-price').textContent.replace(/,/g, '')),
                     'items': [

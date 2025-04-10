@@ -2043,9 +2043,9 @@ window.ModuleBuilder = function ModuleBuilder() {
                 }\nAll in ${DesignerEngine.colorThemes[selectedTheme].displayName}\nTotal Cost: Ksh ${placedPieces.reduce((sum, { piece }) => sum + piece.price, 0).toLocaleString()
                 } (VAT inclusive)`
               )}`}
-              onClick={() => {
-                // Trigger the begin_checkout event for GA4
-                gtag('event', 'begin_checkout', {
+              onClick={(e) => {
+                e.preventDefault();
+                return trackCheckoutConversion(e.currentTarget.href, {
                   'currency': 'KES',
                   'value': placedPieces.reduce((sum, { piece }) => sum + piece.price, 0),
                   'items': placedPieces.map(({ piece }) => ({
@@ -2055,7 +2055,6 @@ window.ModuleBuilder = function ModuleBuilder() {
                   }))
                 });
               }}
-              target="_blank"
               rel="noopener noreferrer"
               className="block w-full bg-green-600 text-white text-center px-2.5 py-1 rounded-md text-xs font-medium"
             >

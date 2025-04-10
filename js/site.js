@@ -1,4 +1,46 @@
-document.addEventListener('DOMContentLoaded', function () {
+//site.js
+
+/// Add our conversion tracking functions
+window.trackCheckoutConversion = function(url, eventParams = {}) {
+    // First track the GA4 event
+    gtag('event', 'begin_checkout', eventParams);
+    
+    // Then track the Google Ads conversion
+    var callback = function () {
+        if (typeof url === 'string') {
+            window.open(url, '_blank');
+        }
+    };
+    
+    gtag('event', 'conversion_event_begin_checkout', {
+        'event_callback': callback,
+        'event_timeout': 2000
+    });
+    
+    return false;
+}
+
+window.trackContactConversion = function(url, eventParams = {}) {
+    // First track the GA4 event
+    gtag('event', 'click_chat', eventParams);
+    
+    // Then track the Google Ads conversion
+    var callback = function () {
+        if (typeof url === 'string') {
+            window.open(url, '_blank');
+        }
+    };
+    
+    gtag('event', 'conversion_event_contact_1', {
+        'event_callback': callback,
+        'event_timeout': 2000
+    });
+    
+    return false;
+}
+
+// Use window.load instead of DOMContentLoaded for better style loading
+window.addEventListener('load', function() {
     loadHeaderAndFooter();
     setupMobileMenu();
     highlightActivePage();
@@ -23,8 +65,7 @@ function loadHeaderAndFooter() {
                 <li><a href="index.html">Home</a></li>
                 <li><a href="shelving.html">Shelving</a></li>
                 <li><a href="products-services.html">Products and Services</a></li>
-                <li><a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" onclick="if(typeof gtag==='function'){gtag('event','click_chat',{'event_category':'engagement','event_label':'header_contact'});}window.open(this.href, '_blank'); return false;">Contact</a></li>
-            </ul>
+<li><a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" onclick="return trackContactConversion(this.href, {'event_category':'engagement','event_label':'header_contact'});">Contact</a></li>            </ul>
         </nav>
         <button id="mobile-menu-toggle" aria-label="Toggle mobile menu">
             <span></span>
@@ -38,8 +79,7 @@ function loadHeaderAndFooter() {
         <div class="footer-info">
             <p>© ${new Date().getFullYear()} Framework Designs Limited</p>
             <p>Email: <a href="mailto:info@framework.co.ke" class="text-link">info@framework.co.ke</a></p>
-            <p>WhatsApp: <a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" class="text-link" onclick="if(typeof gtag==='function'){gtag('event','click_chat',{'event_category':'engagement','event_label':'footer_whatsapp'});}window.open(this.href, '_blank'); return false;">+254 783 891 005</a></p>
-            <p>Instagram: <a href="https://www.instagram.com/framework_nairobi/" target="_blank" rel="noopener noreferrer" class="text-link">framework_nairobi</a></p>
+<p>WhatsApp: <a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" class="text-link" onclick="return trackContactConversion(this.href, {'event_category':'engagement','event_label':'footer_whatsapp'});">+254 783 891 005</a></p>            <p>Instagram: <a href="https://www.instagram.com/framework_nairobi/" target="_blank" rel="noopener noreferrer" class="text-link">framework_nairobi</a></p>
         </div>
         <div class="footer-keywords">
             <p class="footer-tags">Custom Steel Shelving | Modular Furniture Kenya | Space-Saving Solutions | Kenyan-Made Furniture</p>
