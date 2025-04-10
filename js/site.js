@@ -1,18 +1,20 @@
 //site.js
 
-/// Add our conversion tracking functions
 window.trackCheckoutConversion = function(url, eventParams = {}) {
-    // First track the GA4 event
+    // First track the GA4 event (keep your existing GA4 tracking)
     gtag('event', 'begin_checkout', eventParams);
     
-    // Then track the Google Ads conversion
+    // Add the Google Ads conversion tracking
     var callback = function () {
         if (typeof url === 'string') {
-            window.open(url, '_blank');
+            window.open(url, '_blank'); // Using window.open to open in new tab
         }
     };
     
-    gtag('event', 'conversion_event_begin_checkout', {
+    gtag('event', 'conversion', {
+        'send_to': 'AW-16875113878/CZhpCJXg0bYaEJab1-4-',
+        'value': eventParams.value || 1.0,
+        'currency': 'KES', // Changed to KES to match your existing code
         'event_callback': callback,
         'event_timeout': 2000
     });
@@ -21,17 +23,20 @@ window.trackCheckoutConversion = function(url, eventParams = {}) {
 }
 
 window.trackContactConversion = function(url, eventParams = {}) {
-    // First track the GA4 event
+    // First track the GA4 event (keep your existing GA4 tracking)
     gtag('event', 'click_chat', eventParams);
     
-    // Then track the Google Ads conversion
+    // Add the Google Ads conversion tracking
     var callback = function () {
         if (typeof url === 'string') {
-            window.open(url, '_blank');
+            window.open(url, '_blank'); // Using window.open to open in new tab
         }
     };
     
-    gtag('event', 'conversion_event_contact_1', {
+    gtag('event', 'conversion', {
+        'send_to': 'AW-16875113878/1BgKCJjg0bYaEJab1-4-',
+        'value': eventParams.value || 1.0,
+        'currency': 'KES', // Changed to KES to match your existing code
         'event_callback': callback,
         'event_timeout': 2000
     });
