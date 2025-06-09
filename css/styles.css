@@ -7,7 +7,8 @@
     box-sizing: border-box;
 }
 
-body, html {
+body,
+html {
     font-family: 'Red Hat Display', sans-serif;
     height: 100%;
     margin: 0;
@@ -91,9 +92,18 @@ header nav ul li a.active {
     transition: transform 0.3s ease-in-out;
 }
 
-#mobile-menu-toggle span:nth-child(1) { top: 0; }
-#mobile-menu-toggle span:nth-child(2) { top: 50%; transform: translateY(-50%); }
-#mobile-menu-toggle span:nth-child(3) { bottom: 0; }
+#mobile-menu-toggle span:nth-child(1) {
+    top: 0;
+}
+
+#mobile-menu-toggle span:nth-child(2) {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+#mobile-menu-toggle span:nth-child(3) {
+    bottom: 0;
+}
 
 footer {
     text-align: center;
@@ -305,6 +315,7 @@ footer {
 .gallery-container a:focus {
     opacity: 0.7;
 }
+
 .gallery-container {
     padding: 20px;
     max-width: 1200px;
@@ -444,7 +455,7 @@ footer {
         justify-content: center;
         padding: 10px 0;
     }
-    
+
     .module-arrow img {
         width: 50px;
         height: auto;
@@ -539,6 +550,7 @@ footer {
 .cta-button:hover {
     background-color: #2c4b6e;
 }
+
 /* Add these styles to your existing CSS */
 
 /* Lightbox overlay */
@@ -591,7 +603,7 @@ footer {
     font-size: 20px;
     line-height: 1;
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -723,46 +735,58 @@ footer {
         width: 95%;
         max-height: 85vh;
     }
-    
+
     .lightbox-image {
         max-height: 50vh;
     }
-    
+
     .nav-button {
         width: 30px;
         height: 30px;
         font-size: 16px;
     }
-    
+
     .caption-container {
         max-height: 100px;
     }
-    
+
     .dot {
         width: 6px;
         height: 6px;
     }
-    
+
     .dots-container {
         bottom: 25px;
     }
-    
+
     .prev-button {
         left: 15px;
     }
-    
+
     .next-button {
         right: 15px;
     }
 }
 
+
+/* Hide header content until properly loaded */
+header:not(.loaded) {
+    visibility: hidden;
+}
+
+header.loaded {
+    visibility: visible;
+}
+
 /* Enhanced shadow for the image container to make it more obvious it's floating on top */
 @media (max-width: 768px) {
     .image-container {
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Deeper shadow */
-        border: 1px solid #e2e8f0; /* Subtle border */
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        /* Deeper shadow */
+        border: 1px solid #e2e8f0;
+        /* Subtle border */
     }
-    
+
     /* Remove border from controls container */
     .controls-container {
         padding: 20px;
@@ -770,12 +794,12 @@ footer {
         background: white;
         z-index: 5;
     }
-    
+
     /* Remove border from simplified-designer h1 */
     .simplified-designer h1 {
         border-bottom: none;
     }
-    
+
     /* Add a scroll indicator at the bottom of the page */
     .page-content:after {
         content: '';
@@ -794,15 +818,22 @@ footer {
         z-index: 100;
         animation: bounce 1.5s infinite;
     }
-    
+
     /* Animation for the scroll indicator */
     @keyframes bounce {
-        0%, 20%, 50%, 80%, 100% {
+
+        0%,
+        20%,
+        50%,
+        80%,
+        100% {
             transform: translateX(-50%) translateY(0);
         }
+
         40% {
             transform: translateX(-50%) translateY(-5px);
         }
+
         60% {
             transform: translateX(-50%) translateY(-3px);
         }
