@@ -356,6 +356,7 @@
                                 <select id="config-mode" class="dropdown-select">
                                     <option value="standard">Standard units</option>
                                     <option value="wide">Wide units</option>
+                                    <option value="deep">Deep units</option>
                                     <option value="corner">Corner units</option>
                                 </select>
                             </div>
@@ -509,7 +510,7 @@
             let bookends = 0;
             let hasLamp = false;
             let configMode = 'standard'; // 'standard', 'wide', or 'corner'
-            let bookendPrice = 700; // Price per bookend in cents
+            let bookendPrice = 1000; // Price per bookend in cents
 
             // DOM references
             const bookendCount = document.getElementById('bookend-count');
@@ -798,6 +799,25 @@
                             config += 'NE-SW';
                         }
                     }
+                } else if (configMode === 'deep') {
+                    // Deep configuration logic - same structure as wide but using deep modules
+                    for (let i = 0; i < columns; i++) {
+                        config += '(';
+
+                        // Add deep base
+                        config += '{deep-base-NE}';
+
+                        // Add deep extensions
+                        for (let j = 0; j < extensions; j++) {
+                            config += 'HDNE-FDNE{deep-extension-NE}';
+                        }
+
+                        config += ')';
+
+                        if (i < columns - 1) {
+                            config += 'NE-SW';
+                        }
+                    }
                 } else if (configMode === 'corner') {
                     // Corner configuration logic
 
@@ -865,7 +885,7 @@
                             }
                         }
                     } else {
-                        // Standard/wide bookend placement
+                        // Standard/wide/deep bookend placement
                         // Calculate number of bookends to show (up to a reasonable limit)
                         const visibleBookends = Math.min(bookends, 8);
 

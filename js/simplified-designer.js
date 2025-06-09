@@ -306,20 +306,20 @@ class SimplifiedDesigner {
         let height = 0;
         let depth = 0;
 
-        if (mode === 'standard' || mode === 'wide') {
-            // For standard/wide mode: width = sum of NE dimensions, depth = single NW dimension
+        if (mode === 'standard' || mode === 'wide' || mode === 'deep') {
+            // For standard/wide/deep mode: width = sum of NE dimensions, depth = single NW dimension
             const baseModules = stacks.map(stack => stack[0]); // Get first module from each stack
-
+        
             // Calculate width (sum of all base modules' NE dimension)
             width = baseModules.reduce((sum, moduleId) => {
                 const module = moduleFilenames.find(m => m.id === moduleId);
                 return sum + (module ? module.dim_NE : 0);
             }, 0);
-
+        
             // Get depth from first base module NW dimension
             const firstModule = moduleFilenames.find(m => m.id === baseModules[0]);
             depth = firstModule ? firstModule.dim_NW : 0;
-
+        
             // Calculate height from first stack
             if (stacks.length > 0) {
                 height = stacks[0].reduce((sum, moduleId) => {

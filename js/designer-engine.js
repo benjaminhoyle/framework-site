@@ -13,6 +13,10 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
     'HWNW': 'FWNW',  //'head-wide-NE': 'foot-wide-NE',
     'FWNE': 'HWNE',
     'FWNW': 'HWNW',
+    'HDNE': 'FDNE',  //'head-deep-NE': 'foot-deep-NE',
+    'HDNW': 'FDNW',  //'head-deep-NE': 'foot-deep-NE',
+    'FDNE': 'HDNE',
+    'FDNW': 'HDNW',
     'SW': 'NE',
     'NE': 'SW',
     'NW': 'SE',
@@ -88,15 +92,14 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
     THEME_1: {
       displayName: 'Marine',
       parameterMappings: {
-        SET_1: { fill: '#ACD1E7', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_2: { fill: '#94BDD5', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_3: { fill: '#C7E2F2', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_4: { fill: '#285596', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_5: { fill: '#2A528D', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        SET_1: { fill: '#A4CBE3', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Light blue top
+        SET_2: { fill: '#89B4D2', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Blue edge
+        SET_3: { fill: '#C0DDF1', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Lighter blue surface
+        SET_4: { fill: '#264F94', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Blue post
+        SET_5: { fill: '#1D4A84', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Dark blue post base
         SET_6: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.2' },
         SET_7: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0' },
-        //context colors; same from set to set
-        CONTEXT_BLUE: { fill: '#5394BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        CONTEXT_BLUE: { fill: '#4A87B5', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_PURPLE: { fill: '#8B75BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_GREEN: { fill: '#6C946C', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_BEIGE: { fill: '#9EAAAE', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
@@ -104,21 +107,19 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
         CONTEXT_LIGHT_BROWN: { fill: '#BD7C54', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_LINE_LIGHT: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.1' },
         CONTEXT_LINE_DARK: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0.2' }
-  
       }
     },
     THEME_2: {
       displayName: 'Sage',
       parameterMappings: {
-        SET_1: { fill: '#E0F0D2', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Light sage
-        SET_2: { fill: '#A8BFA2', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Medium sage
-        SET_3: { fill: '#DAE4D6', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Lightest sage
-        SET_4: { fill: '#445E3D', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Dark sage
-        SET_5: { fill: '#374E32', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },  // Darker sage
+        SET_1: { fill: '#C5DCC1', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Light sage top
+        SET_2: { fill: '#9DBB95', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Mid sage edge
+        SET_3: { fill: '#D8E6D4', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Lightest sage surface
+        SET_4: { fill: '#709169', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Dark sage post
+        SET_5: { fill: '#567050', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Darker sage base
         SET_6: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.2' },
         SET_7: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0' },
-        //context colors; same from set to set
-        CONTEXT_BLUE: { fill: '#5394BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        CONTEXT_BLUE: { fill: '#4A87B5', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_PURPLE: { fill: '#8B75BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_GREEN: { fill: '#6C946C', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_BEIGE: { fill: '#9EAAAE', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
@@ -131,15 +132,14 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
     THEME_3: {
       displayName: 'Charcoal',
       parameterMappings: {
-        SET_1: { fill: '#E5E7EB', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_2: { fill: '#D1D5DB', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_3: { fill: '#9CA3AF', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_4: { fill: '#4B5563', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_5: { fill: '#374151', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        SET_1: { fill: '#bec2cc', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // top-facing shelf surface
+        SET_2: { fill: '#9EA3B2', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // edge – cooler, darker grey-blue
+        SET_3: { fill: '#CCD1DD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // surface light
+        SET_4: { fill: '#4a4a47', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // post – softened charcoal
+        SET_5: { fill: '#2F312D', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // post base – just a bit deeper
         SET_6: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.2' },
         SET_7: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0' },
-        //context colors; same from set to set
-        CONTEXT_BLUE: { fill: '#5394BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        CONTEXT_BLUE: { fill: '#4A87B5', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_PURPLE: { fill: '#8B75BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_GREEN: { fill: '#6C946C', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_BEIGE: { fill: '#9EAAAE', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
@@ -149,18 +149,19 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
         CONTEXT_LINE_DARK: { fill: 'none', fillOpacity: '0', stroke: '#FFFFFF', strokeWidth: '0.2' }
       }
     },
+    
+    
     THEME_4: {
       displayName: 'Coral',
       parameterMappings: {
-        SET_1: { fill: '#FAD7C3', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_2: { fill: '#F4A988', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_3: { fill: '#fcbfa9', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_4: { fill: '#D15339', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
-        SET_5: { fill: '#A93E26', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        SET_1: { fill: '#F5C6B2', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Light coral top
+        SET_2: { fill: '#EA9273', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Mid coral edge
+        SET_3: { fill: '#FFD1BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Lightest coral surface
+        SET_4: { fill: '#C04E39', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Coral post
+        SET_5: { fill: '#A03D2C', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Dark coral base
         SET_6: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.2' },
-        SET_7: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0' },        
-        //context colors; same from set to set
-        CONTEXT_BLUE: { fill: '#5394BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
+        SET_7: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0' },
+        CONTEXT_BLUE: { fill: '#4A87B5', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_PURPLE: { fill: '#8B75BD', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_GREEN: { fill: '#6C946C', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
         CONTEXT_BEIGE: { fill: '#9EAAAE', fillOpacity: '1', stroke: 'none', strokeWidth: '0' },
@@ -171,6 +172,7 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       }
     }
   };
+  
   
   
   DesignerEngine.moduleFilenames = [
@@ -282,8 +284,6 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       dim_NE: 280,
       dim_height: 300
     },
-  
-  
     {
       id: 'wide-adapter-NE',
       filename: 'adapter-unit-NE.svg',
@@ -446,6 +446,60 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       price: 6000,
       dim_NE: 1220,
       dim_NW: 280,
+      dim_height: 300
+    },
+    {
+      id: 'deep-base-NW',
+      product: 'Deep Base',
+      filename: 'deep-base-NW.svg',
+      anchors: [
+        { type: "NW", x: 60.746793, y: 81.446929 },
+        { type: "SE", x: 182.277019, y: 151.612438 },
+        { type: "HDNW", x: 121.511852, y: 99.040327 }
+      ],
+      price: 14500,
+      dim_NW: 1420,
+      dim_NE: 450,
+      dim_height: 430
+    },
+    {
+      id: 'deep-extension-NW',
+      filename: 'deep-extension-NW.svg',
+      product: 'Deep Extension',
+      anchors: [
+        { type: "FDNW", x: 118.105399, y: 135.194418 },
+        { type: "HDNW", x: 118.105399, y: 105.604582 }
+      ],
+      price: 9500,
+      dim_NW: 1420,
+      dim_NE: 450,
+      dim_height: 300
+    },
+    {
+      id: 'deep-base-NE',
+      product: 'Deep Base',
+      filename: 'deep-base-NE.svg',
+      anchors: [
+        { type: "HDNE", x: 123.440863, y: 99.040327 },
+        { type: "SW", x: 62.67575, y: 151.612438 },
+        { type: "NE", x: 184.205976, y: 81.446929 }
+      ],
+      price: 14500,
+      dim_NE: 1420,
+      dim_NW: 450,
+      dim_height: 430
+    },
+    {
+      id: 'deep-extension-NE',
+      filename: 'deep-extension-NE.svg',
+      product: 'Deep Extension',
+      anchors: [
+        { type: "FDNE", x: 118.950485, y: 135.194418 },
+        { type: "HDNE", x: 118.950485, y: 105.604582 }
+      ],
+      price: 9500,
+      dim_NE: 1420,
+      dim_NW: 450,
       dim_height: 300
     },
     {
@@ -672,10 +726,11 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       if (!visited.has(piece) && root.piece.anchors.some(rootAnchor => {
         return piece.piece.anchors.some(pieceAnchor => {
           // Check for both standard and wide head-foot connections
-          const isHeadToFoot = ((rootAnchor.type.startsWith('HS') || rootAnchor.type.startsWith('HW')) &&
-            (pieceAnchor.type.startsWith('FS') || pieceAnchor.type.startsWith('FW')));
-          const isFootToHead = ((rootAnchor.type.startsWith('FS') || rootAnchor.type.startsWith('FW')) &&
-            (pieceAnchor.type.startsWith('HS') || pieceAnchor.type.startsWith('HW')));
+          // Check for standard, wide, and deep head-foot connections
+          const isHeadToFoot = ((rootAnchor.type.startsWith('HS') || rootAnchor.type.startsWith('HW') || rootAnchor.type.startsWith('HD')) &&
+  (pieceAnchor.type.startsWith('FS') || pieceAnchor.type.startsWith('FW') || pieceAnchor.type.startsWith('FD')));
+          const isFootToHead = ((rootAnchor.type.startsWith('FS') || rootAnchor.type.startsWith('FW') || rootAnchor.type.startsWith('FD')) &&
+  (pieceAnchor.type.startsWith('HS') || pieceAnchor.type.startsWith('HW') || pieceAnchor.type.startsWith('HD')));
           if (!isHeadToFoot && !isFootToHead) return false;
   
           const [x1, y1] = [root.x + rootAnchor.x, root.y + rootAnchor.y];
@@ -728,12 +783,12 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
         if (i < sortedPieces.length - 1) {
           const nextPiece = sortedPieces[i + 1];
           const verticalConn = DesignerEngine.findConnections(piece, [nextPiece])
-            .find(conn =>
-              ((conn.pieceAnchor.type.startsWith('FS') || conn.pieceAnchor.type.startsWith('FW')) &&
-                (conn.otherAnchor.type.startsWith('HS') || conn.otherAnchor.type.startsWith('HW'))) ||
-              ((conn.pieceAnchor.type.startsWith('HS') || conn.pieceAnchor.type.startsWith('HW')) &&
-                (conn.otherAnchor.type.startsWith('FS') || conn.otherAnchor.type.startsWith('FW')))
-            );
+          .find(conn =>
+            ((conn.pieceAnchor.type.startsWith('FS') || conn.pieceAnchor.type.startsWith('FW') || conn.pieceAnchor.type.startsWith('FD')) &&
+              (conn.otherAnchor.type.startsWith('HS') || conn.otherAnchor.type.startsWith('HW') || conn.otherAnchor.type.startsWith('HD'))) ||
+            ((conn.pieceAnchor.type.startsWith('HS') || conn.pieceAnchor.type.startsWith('HW') || conn.pieceAnchor.type.startsWith('HD')) &&
+              (conn.otherAnchor.type.startsWith('FS') || conn.otherAnchor.type.startsWith('FW') || conn.otherAnchor.type.startsWith('FD')))
+          );
   
           if (verticalConn) {
             code += verticalConn.pieceAnchor.type + '-' + verticalConn.otherAnchor.type;
@@ -959,8 +1014,8 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       let pendingConnection = null;
   
       function isVerticalConnection(token) {
-        // Updated to include both standard and wide variants
-        return /^(HS|FS|HW|FW)(NE|NW)-(HS|FS|HW|FW)(NE|NW)$/.test(token);
+        // Updated to include standard, wide, and deep variants
+        return /^(HS|FS|HW|FW|HD|FD)(NE|NW)-(HS|FS|HW|FW|HD|FD)(NE|NW)$/.test(token);
       }
   
       function analyzeConnection(token) {

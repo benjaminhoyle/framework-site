@@ -28,7 +28,140 @@ window.ModuleBuilder = function ModuleBuilder() {
   const [activeControlsModule, setActiveControlsModule] = React.useState(null);
   const [menuPosition, setMenuPosition] = React.useState({ x: 0, y: 0 });
   const [menuButtonPosition, setMenuButtonPosition] = React.useState({ x: 0, y: 0 });
+  const [isManualColorMode, setIsManualColorMode] = React.useState(false);
+  const [colorOverrides, setColorOverrides] = React.useState({});
+  // Handlers for manual color mode
+  const handleSetManualColors = () => {
+    setIsManualColorMode(true);
+    setShowButtons(false); // Hide regular buttons while in color mode
+  };
 
+  const handleDoneManualColors = () => {
+    setIsManualColorMode(false);
+    setShowButtons(true); // Show regular buttons again
+  };
+
+  const handleRemoveManualColors = () => {
+    // Store the pieces that had overrides so we can update them
+    const piecesWithOverrides = Object.keys(colorOverrides);
+
+    // Clear all overrides from state
+    setColorOverrides({});
+
+    // Update all SVGs that had overrides to use the global theme
+    setTimeout(() => {
+      piecesWithOverrides.forEach(pieceId => {
+        const pieceObj = document.querySelector(`[data-piece-id="${pieceId}"]`);
+        if (!pieceObj || !pieceObj.contentDocument) return;
+
+        // Get the cached SVG template
+        const svgPath = pieceObj.data;
+        const filename = svgPath.split('/').pop();
+        const cacheKey = `${filename}`;
+
+        // Get fresh SVG from cache and apply the global theme
+        if (svgCache.current.has(cacheKey)) {
+          const cachedSvg = svgCache.current.get(cacheKey);
+          const freshSvg = cachedSvg.cloneNode(true);
+
+          // Replace current SVG with fresh copy
+          pieceObj.contentDocument.documentElement.replaceWith(freshSvg);
+
+          // Apply the global theme
+          DesignerEngine.applySVGTheme(pieceObj.contentDocument, selectedTheme);
+
+          // Make visible after theme is applied
+          pieceObj.style.visibility = 'visible';
+        }
+      });
+    }, 0);
+
+    // If we're in manual color mode, exit it
+    if (isManualColorMode) {
+      handleDoneManualColors();
+    }
+  };
+
+
+  // Update to respect color overrides when changing theme
+  const handleThemeChange = (newTheme) => {
+    setSelectedTheme(newTheme);
+
+    document.querySelectorAll('object[type="image/svg+xml"]').forEach(obj => {
+      const svgDoc = obj.contentDocument;
+      if (!svgDoc?.documentElement) return;
+
+      obj.style.visibility = 'hidden';
+
+      // Extract piece ID from data attribute
+      const pieceId = obj.getAttribute('data-piece-id');
+
+      // Determine which theme to use (override or global)
+      const themeToUse = pieceId && colorOverrides[pieceId] ?
+        colorOverrides[pieceId] : newTheme;
+
+      // Extract filename and get from cache
+      const svgPath = obj.data;
+      const filename = svgPath.split('/').pop();
+      const isContext = svgPath.includes('/context/');
+      const cacheKey = `${isContext ? 'context-' : ''}${filename}`;
+
+      const cachedSvg = svgCache.current.get(cacheKey);
+      if (cachedSvg) {
+        const freshSvg = cachedSvg.cloneNode(true);
+        svgDoc.documentElement.replaceWith(freshSvg);
+        DesignerEngine.applySVGTheme(svgDoc, themeToUse);
+      } else {
+        DesignerEngine.applySVGTheme(svgDoc, themeToUse);
+      }
+
+      obj.style.visibility = 'visible';
+    });
+  };
+
+  const cycleModuleColor = (pieceId) => {
+    // Find the piece object from placed pieces
+    const piece = placedPieces.find(p => p.uniqueId === pieceId);
+    if (!piece) return;
+
+    // Get theme cycling logic
+    const themeKeys = Object.keys(DesignerEngine.colorThemes);
+    const currentOverrideTheme = colorOverrides[pieceId] || selectedTheme;
+    const currentIndex = themeKeys.indexOf(currentOverrideTheme);
+    const nextIndex = (currentIndex + 1) % themeKeys.length;
+    const newTheme = themeKeys[nextIndex];
+
+    // Update state
+    setColorOverrides(prev => ({
+      ...prev,
+      [pieceId]: newTheme
+    }));
+
+    // Get the SVG object
+    const pieceObj = document.querySelector(`[data-piece-id="${pieceId}"]`);
+    if (!pieceObj || !pieceObj.contentDocument) return;
+
+    // Get the cached SVG template
+    const svgPath = pieceObj.data;
+    const filename = svgPath.split('/').pop();
+    const cacheKey = `${filename}`;
+
+    // Get fresh SVG from cache and apply the theme
+    if (svgCache.current.has(cacheKey)) {
+      // Get a fresh copy from cache
+      const cachedSvg = svgCache.current.get(cacheKey);
+      const freshSvg = cachedSvg.cloneNode(true);
+
+      // Replace current SVG with fresh copy
+      pieceObj.contentDocument.documentElement.replaceWith(freshSvg);
+
+      // Apply the new theme
+      DesignerEngine.applySVGTheme(pieceObj.contentDocument, newTheme);
+
+      // Make visible after theme is applied
+      pieceObj.style.visibility = 'visible';
+    }
+  };
 
 
 
@@ -49,7 +182,11 @@ window.ModuleBuilder = function ModuleBuilder() {
     setShowQR,
     buttonState,
     setButtonState,
-    isSimplifiedMode
+    isSimplifiedMode,
+    isManualColorMode,
+    onSetManualColors,
+    onRemoveManualColors,
+    colorOverrides
   }) => {
     // Only show on mobile devices
     const [isMobile, setIsMobile] = React.useState(false);
@@ -80,14 +217,26 @@ window.ModuleBuilder = function ModuleBuilder() {
           <button
             onClick={() => setShowThemeSelector(!showThemeSelector)}
             className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-xs shadow-sm designer-btn"
+            disabled={isManualColorMode}
           >
             Color: {DesignerEngine.colorThemes[selectedTheme].displayName} ▾
           </button>
+
+          {/* Add Manual Colors button - only show when not in manual color mode */}
+          {!isManualColorMode && (
+            <button
+              onClick={onSetManualColors}
+              className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-xs shadow-sm designer-btn"
+            >
+              Set Manual Colors
+            </button>
+          )}
 
           {/* Add Context - REDUCED TEXT SIZE */}
           <button
             onClick={onAddContext}
             className={`flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-xs shadow-sm designer-btn ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
+            disabled={isManualColorMode}
           >
             Add Context
           </button>
@@ -108,7 +257,6 @@ window.ModuleBuilder = function ModuleBuilder() {
             {showButtons ? 'Hide Buttons' : 'Show Buttons'}
           </button>
         </div>
-
         {/* Theme selector dropdown */}
         {showThemeSelector && (
           <div className="mt-2 pb-1 border-t border-gray-200 pt-2">
@@ -128,6 +276,32 @@ window.ModuleBuilder = function ModuleBuilder() {
                   {theme.displayName}
                 </button>
               ))}
+
+              {/* Set Manual Colors button */}
+              {!isManualColorMode && (
+                <button
+                  onClick={() => {
+                    onSetManualColors();
+                    setShowThemeSelector(false);
+                  }}
+                  className="px-3 py-1.5 text-xs rounded-md transition-colors bg-white border border-gray-200"
+                >
+                  Set Manual Colors
+                </button>
+              )}
+
+              {/* Remove Manual Colors button */}
+              {Object.keys(colorOverrides).length > 0 && !isManualColorMode && (
+                <button
+                  onClick={() => {
+                    onRemoveManualColors();
+                    setShowThemeSelector(false);
+                  }}
+                  className="px-3 py-1.5 text-xs rounded-md transition-colors bg-white border border-gray-200"
+                >
+                  Remove Manual Colors
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -1103,7 +1277,7 @@ window.ModuleBuilder = function ModuleBuilder() {
     );
   }, [placedPieces]);
 
-  const handleSVGLoad = async (obj, type, id) => {
+  const handleSVGLoad = async (obj, type, id, pieceUniqueId) => {
     try {
       const svgDoc = obj.contentDocument;
       if (!svgDoc?.documentElement) {
@@ -1113,6 +1287,13 @@ window.ModuleBuilder = function ModuleBuilder() {
 
       obj.style.visibility = 'hidden';
 
+      // Set a data attribute to easily find this object later
+      // Ensure data-piece-id is set properly
+      if (pieceUniqueId) {
+        obj.setAttribute('data-piece-id', pieceUniqueId);
+        // Also set an ID that we can reliably find
+        obj.id = `piece-svg-${pieceUniqueId}`;
+      }
       // Extract the SVG filename from the data URL
       const svgPath = obj.data;
       const filename = svgPath.split('/').pop();
@@ -1130,8 +1311,11 @@ window.ModuleBuilder = function ModuleBuilder() {
         svgDoc.documentElement.replaceWith(freshSvg);
       }
 
-      // Apply theme
-      DesignerEngine.applySVGTheme(svgDoc, selectedTheme);
+      // Apply theme with override if exists
+      const themeToUse = pieceUniqueId && colorOverrides[pieceUniqueId] ?
+        colorOverrides[pieceUniqueId] : selectedTheme;
+
+      DesignerEngine.applySVGTheme(svgDoc, themeToUse);
 
       // Handle anchor points only for furniture pieces
       if (type === 'furniture') {
@@ -1497,7 +1681,17 @@ window.ModuleBuilder = function ModuleBuilder() {
     );
   };
 
-  const EditorControls = ({ selectedTheme, onThemeChange, onAddContext, showButtons, isContextPlacementMode }) => {
+  const EditorControls = ({
+    selectedTheme,
+    onThemeChange,
+    onAddContext,
+    showButtons,
+    isContextPlacementMode,
+    isManualColorMode,
+    onSetManualColors,
+    onRemoveManualColors,
+    handleDoneManualColors
+  }) => {
     return (
       <div className="fixed top-4 right-4 z-50 desktop-only-controls">
         <div className="bg-white rounded-lg shadow-lg p-3 space-y-2">
@@ -1507,6 +1701,7 @@ window.ModuleBuilder = function ModuleBuilder() {
               value={selectedTheme}
               onChange={(e) => onThemeChange(e.target.value)}
               className="bg-white border border-gray-200 rounded-md shadow-sm px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:border-gray-300 transition-colors duration-200 sm:text-xs md:text-sm theme-select"
+              disabled={isManualColorMode}
             >
               {Object.entries(DesignerEngine.colorThemes).map(([themeKey, theme]) => (
                 <option key={themeKey} value={themeKey}>
@@ -1514,11 +1709,39 @@ window.ModuleBuilder = function ModuleBuilder() {
                 </option>
               ))}
             </select>
+
+            {/* Manual color buttons - toggle between Set and Done based on mode */}
+            {!isManualColorMode ? (
+              <button
+                onClick={onSetManualColors}
+                className="bg-white border border-gray-200 rounded-md px-2 py-1 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm"
+              >
+                Set Manual Colors
+              </button>
+            ) : (
+              <button
+                onClick={handleDoneManualColors}
+                className="bg-green-500 text-white rounded-md px-2 py-1 text-xs hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition-colors duration-200 shadow-sm"
+              >
+                Done Setting Colors
+              </button>
+            )}
+
+            {Object.keys(colorOverrides).length > 0 && !isManualColorMode && (
+              <button
+                onClick={onRemoveManualColors}
+                className="bg-white border border-gray-200 rounded-md px-2 py-1 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm"
+              >
+                Remove Manual Colors
+              </button>
+            )}
           </div>
+
           <div className="relative">
             <button
               onClick={onAddContext}
               className={`w-full bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm sm:text-xs md:text-sm designer-btn ${isContextPlacementMode ? 'bg-blue-50 border-blue-200' : ''}`}
+              disabled={isManualColorMode}
             >
               Add Context
             </button>
@@ -1646,30 +1869,85 @@ window.ModuleBuilder = function ModuleBuilder() {
 
         {/* SVG Layer */}
         {/* Furniture SVG Layer */}
-        {placedPieces.map((placedPiece, index) => (
-          <div
-            key={placedPiece.uniqueId}
-            className="absolute"
-            style={{
-              left: `${placedPiece.x}px`,
-              top: `${placedPiece.y}px`,
-              width: `${placedPiece.piece.width}px`,
-              height: `${placedPiece.piece.height}px`,
-              zIndex: 100 + (placedPieces.length - index),
-              transition: 'opacity 0.3s ease-out, transform 0.3s ease-out',
-              opacity: placedPiece.uniqueId === newPieceId ? 0 : 1,
-              transform: placedPiece.uniqueId === newPieceId ? 'translateY(-10px)' : 'none'
-            }}
-          >
-            <object
-              data={placedPiece.piece.imagePath}
-              type="image/svg+xml"
-              className="absolute w-full h-full pointer-events-none"
-              onLoad={(e) => handleSVGLoad(e.target, 'furniture', placedPiece.piece.id)}
-              style={{ willChange: 'transform', visibility: 'hidden' }}
-            />
-          </div>
-        ))}
+        {placedPieces.map((placedPiece, index) => {
+          const isTopPiece = index === 0; // Check if this is on top (might need to adjust based on your ordering)
+
+          return (
+            <div
+              key={placedPiece.uniqueId}
+              className="absolute"
+              style={{
+                left: `${placedPiece.x}px`,
+                top: `${placedPiece.y}px`,
+                width: `${placedPiece.piece.width}px`,
+                height: `${placedPiece.piece.height}px`,
+                zIndex: 100 + (placedPieces.length - index),
+                transition: 'opacity 0.3s ease-out, transform 0.3s ease-out',
+                opacity: placedPiece.uniqueId === newPieceId ? 0 : 1,
+                transform: placedPiece.uniqueId === newPieceId ? 'translateY(-10px)' : 'none',
+                // Force the containing div to allow click-through when in manual color mode
+                pointerEvents: isManualColorMode ? 'none' : 'auto'
+              }}
+            >
+              <object
+                data={placedPiece.piece.imagePath}
+                type="image/svg+xml"
+                className="absolute w-full h-full pointer-events-none"
+                onLoad={(e) => handleSVGLoad(e.target, 'furniture', placedPiece.piece.id, placedPiece.uniqueId)}
+                style={{ willChange: 'transform', visibility: 'hidden' }}
+              />
+
+              {/* Add color cycle button in manual color mode */}
+              {isManualColorMode && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{
+                    zIndex: 9999999,
+                    pointerEvents: 'none' // Let clicks pass through container
+                  }}
+                >
+                  <button
+                    className="bg-purple-500 hover:bg-purple-600 rounded-full flex items-center justify-center text-white w-8 h-8 text-base shadow-lg"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      cycleModuleColor(placedPiece.uniqueId);
+                    }}
+                    title={colorOverrides[placedPiece.uniqueId] ?
+                      `Current: ${DesignerEngine.colorThemes[colorOverrides[placedPiece.uniqueId]].displayName}` :
+                      'Click to set color'}
+                    style={{
+                      transform: `scale(${1 / scale})`,
+                      transformOrigin: 'center',
+                      boxShadow: '0 0 0 2px white, 0 2px 5px rgba(0,0,0,0.3)',
+                      pointerEvents: 'auto' // Make only the button clickable
+                    }}
+                  >
+                    🎨
+                  </button>
+
+                  {/* Position label to the right of the button */}
+                  {colorOverrides[placedPiece.uniqueId] && (
+                    <div
+                      className="absolute bg-white px-2 py-1 rounded-md text-xs shadow-md"
+                      style={{
+                        left: 'calc(50% + 20px)', // Position to the right of the button
+                        top: '50%', // Center vertically
+                        transform: `translateY(-50%) scale(${1 / scale})`,
+                        transformOrigin: 'left center',
+                        whiteSpace: 'nowrap',
+                        textShadow: '0 0 2px white',
+                        pointerEvents: 'none',
+                        zIndex: 9999999
+                      }}
+                    >
+                      {DesignerEngine.colorThemes[colorOverrides[placedPiece.uniqueId]].displayName}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {/* Context Figures Layer */}
         {placedContextFigures.map((figure) => (
@@ -1783,35 +2061,43 @@ window.ModuleBuilder = function ModuleBuilder() {
                               zIndex: 999999
                             }}
                           >
-                            {/* Menu content remains the same */}
+                            {/* Cycle Module - only show if replacements available */}
                             {DesignerEngine.getCompatibleReplacements(placedPiece, placedPieces).length > 0 &&
                               DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
                               !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces) && (
-                                <>
-                                  <button
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleCyclePiece(placedPiece, e);
-                                      setActiveControlsModule(null);
-                                    }}
-                                  >
-                                    Cycle Module
-                                  </button>
-                                  <button
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded text-red-600"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setPlacedPieces(pieces => pieces.filter(p => p !== placedPiece));
-                                      setActiveControlsModule(null);
-                                    }}
-                                  >
-                                    Remove
-                                  </button>
-                                  <div className="border-t border-gray-200 my-1"></div>
-                                </>
-                              )
-                            }
+                                <button
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCyclePiece(placedPiece, e);
+                                    setActiveControlsModule(null);
+                                  }}
+                                >
+                                  Cycle Module
+                                </button>
+                              )}
+
+                            {/* Remove - show if safe to remove */}
+                            {DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
+                              !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces) && (
+                                <button
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded text-red-600"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPlacedPieces(pieces => pieces.filter(p => p !== placedPiece));
+                                    setActiveControlsModule(null);
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                              )}
+
+                            {/* Divider - only show if we have cycle or remove buttons */}
+                            {(DesignerEngine.getCompatibleReplacements(placedPiece, placedPieces).length > 0 ||
+                              (DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
+                                !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces))) && (
+                                <div className="border-t border-gray-200 my-1"></div>
+                              )}
 
                             {/* Available anchor points with simplified labels */}
                             {placedPiece.piece.anchors?.filter(anchor => !isAnchorInUse(placedPiece, anchor)).map((anchor, anchorIndex) => {
@@ -1849,9 +2135,9 @@ window.ModuleBuilder = function ModuleBuilder() {
                   {/* Desktop controls */}
                   <div className="desktop-controls">
                     {/* Control Buttons Group */}
-                    {DesignerEngine.getCompatibleReplacements(placedPiece, placedPieces).length > 0 &&
-                      DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
-                      !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces) && (
+                    {(DesignerEngine.getCompatibleReplacements(placedPiece, placedPieces).length > 0 ||
+                      (DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
+                        !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces))) && (
                         <div
                           className="absolute flex flex-col gap-1 items-center"
                           style={{
@@ -1862,21 +2148,31 @@ window.ModuleBuilder = function ModuleBuilder() {
                             pointerEvents: 'auto'
                           }}
                         >
-                          <button
-                            className="bg-blue-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
-                            onClick={(e) => handleCyclePiece(placedPiece, e)}
-                          >
-                            ↻
-                          </button>
-                          <button
-                            className="bg-red-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPlacedPieces(pieces => pieces.filter(p => p !== placedPiece));
-                            }}
-                          >
-                            -
-                          </button>
+                          {/* Cycle button - only show if replacements available */}
+                          {DesignerEngine.getCompatibleReplacements(placedPiece, placedPieces).length > 0 &&
+                            DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
+                            !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces) && (
+                              <button
+                                className="bg-blue-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
+                                onClick={(e) => handleCyclePiece(placedPiece, e)}
+                              >
+                                ↻
+                              </button>
+                            )}
+
+                          {/* Remove button - show if safe to remove */}
+                          {DesignerEngine.countActiveConnections(placedPiece, placedPieces) <= 1 &&
+                            !DesignerEngine.hasActiveHeadAnchor(placedPiece, placedPieces) && (
+                              <button
+                                className="bg-red-500 rounded-full flex items-center justify-center text-white w-5 h-5 text-xs shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPlacedPieces(pieces => pieces.filter(p => p !== placedPiece));
+                                }}
+                              >
+                                -
+                              </button>
+                            )}
                         </div>
                       )}
 
@@ -1908,6 +2204,8 @@ window.ModuleBuilder = function ModuleBuilder() {
             </React.Fragment>
           ))}
         </div>
+        {/* Manual color mode instruction overlay */}
+
       </div>
 
       {showDimensions && !isSimplifiedMode && (
@@ -1925,35 +2223,15 @@ window.ModuleBuilder = function ModuleBuilder() {
         <EditorControls
           className="editor-controls"
           selectedTheme={selectedTheme}
-          onThemeChange={(newTheme) => {
-            setSelectedTheme(newTheme);
-            document.querySelectorAll('object[type="image/svg+xml"]').forEach(obj => {
-              const svgDoc = obj.contentDocument;
-              if (!svgDoc?.documentElement) return;
-
-              obj.style.visibility = 'hidden';
-
-              // Extract filename from the path to use as cache key
-              const svgPath = obj.data;
-              const filename = svgPath.split('/').pop();
-              const isContext = svgPath.includes('/context/');
-              const cacheKey = `${isContext ? 'context-' : ''}${filename}`;
-
-              const cachedSvg = svgCache.current.get(cacheKey);
-              if (cachedSvg) {
-                const freshSvg = cachedSvg.cloneNode(true);
-                svgDoc.documentElement.replaceWith(freshSvg);
-                DesignerEngine.applySVGTheme(svgDoc, newTheme);
-              } else {
-                DesignerEngine.applySVGTheme(svgDoc, newTheme);
-              }
-
-              obj.style.visibility = 'visible';
-            });
-          }}
+          onThemeChange={handleThemeChange}
           onAddContext={handleAddContext}
           showButtons={showButtons}
           isContextPlacementMode={isContextPlacementMode}
+          isManualColorMode={isManualColorMode}
+          onSetManualColors={handleSetManualColors}
+          onRemoveManualColors={handleRemoveManualColors}
+          handleDoneManualColors={handleDoneManualColors}
+          colorOverrides={colorOverrides}
         />
       )}
 
@@ -1992,7 +2270,8 @@ window.ModuleBuilder = function ModuleBuilder() {
                 'Wide Adapter': 6,
                 'Wide Extension': 7,
                 'Lamp (left)': 8,
-                'Lamp (right)': 8
+                'Lamp (right)': 8,
+                'Deep Extension': 9
               };
               return (order[productA] || 999) - (order[productB] || 999);
             })
@@ -2154,32 +2433,7 @@ window.ModuleBuilder = function ModuleBuilder() {
         isExpanded={isExpanded}
         setIsExpanded={setIsExpanded}
         selectedTheme={selectedTheme}
-        onThemeChange={(newTheme) => {
-          setSelectedTheme(newTheme);
-          document.querySelectorAll('object[type="image/svg+xml"]').forEach(obj => {
-            const svgDoc = obj.contentDocument;
-            if (!svgDoc?.documentElement) return;
-
-            obj.style.visibility = 'hidden';
-
-            // Extract filename from the path to use as cache key
-            const svgPath = obj.data;
-            const filename = svgPath.split('/').pop();
-            const isContext = svgPath.includes('/context/');
-            const cacheKey = `${isContext ? 'context-' : ''}${filename}`;
-
-            const cachedSvg = svgCache.current.get(cacheKey);
-            if (cachedSvg) {
-              const freshSvg = cachedSvg.cloneNode(true);
-              svgDoc.documentElement.replaceWith(freshSvg);
-              DesignerEngine.applySVGTheme(svgDoc, newTheme);
-            } else {
-              DesignerEngine.applySVGTheme(svgDoc, newTheme);
-            }
-
-            obj.style.visibility = 'visible';
-          });
-        }}
+        onThemeChange={handleThemeChange}  // Use the same handleThemeChange function here!
         onAddContext={handleAddContext}
         isContextPlacementMode={isContextPlacementMode}
         configCode={configCode}
@@ -2188,6 +2442,9 @@ window.ModuleBuilder = function ModuleBuilder() {
         buttonState={buttonState}
         setButtonState={setButtonState}
         isSimplifiedMode={isSimplifiedMode}
+        isManualColorMode={isManualColorMode}
+        onSetManualColors={handleSetManualColors}
+        onRemoveManualColors={handleRemoveManualColors}
       />
     </div>
 
