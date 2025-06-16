@@ -1710,18 +1710,18 @@ window.ModuleBuilder = function ModuleBuilder() {
               ))}
             </select>
 
-            {/* Manual color buttons - toggle between Set and Done based on mode */}
+            {/* Manual Colors button - toggle between Set and Done */}
             {!isManualColorMode ? (
               <button
                 onClick={onSetManualColors}
-                className="bg-white border border-gray-200 rounded-md px-2 py-1 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm"
+                className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-xs shadow-sm designer-btn"
               >
                 Set Manual Colors
               </button>
             ) : (
               <button
                 onClick={handleDoneManualColors}
-                className="bg-green-500 text-white rounded-md px-2 py-1 text-xs hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition-colors duration-200 shadow-sm"
+                className="flex-1 bg-green-500 text-white border border-green-500 rounded-md px-3 py-2 text-xs shadow-sm designer-btn"
               >
                 Done Setting Colors
               </button>
@@ -2445,6 +2445,7 @@ window.ModuleBuilder = function ModuleBuilder() {
         isManualColorMode={isManualColorMode}
         onSetManualColors={handleSetManualColors}
         onRemoveManualColors={handleRemoveManualColors}
+        colorOverrides={colorOverrides}
       />
     </div>
 
