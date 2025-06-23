@@ -95,7 +95,7 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
         SET_1: { fill: '#A4CBE3', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Light blue top
         SET_2: { fill: '#89B4D2', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Blue edge
         SET_3: { fill: '#C0DDF1', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Lighter blue surface
-        SET_4: { fill: '#264F94', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Blue post
+        SET_4: { fill: '#4A6E9C', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Blue post
         SET_5: { fill: '#1D4A84', fillOpacity: '1', stroke: 'none', strokeWidth: '0' }, // Dark blue post base
         SET_6: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '.2' },
         SET_7: { fill: 'none', fillOpacity: '0', stroke: 'White', strokeWidth: '0' },
@@ -231,6 +231,32 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       dim_height: 300
     },
     {
+      id: 'standard-spacer-NE',
+      filename: 'standard-spacer-NE.svg',
+      product: 'Standard Spacer',
+      anchors: [
+        { type: "FSNE", x: 109.113135, y: 139.408133 },
+        { type: "HSNE", x: 109.113135, y: 109.818297 }
+      ],
+      price: 4000,
+      dim_NE: 980,
+      dim_NW: 280,
+      dim_height: 300
+    },
+    {
+      id: 'standard-spacer-NW',
+      filename: 'standard-spacer-NW.svg',
+      product: 'Standard Spacer',
+      anchors: [
+        { type: "HSNW", x: 130.886865, y: 109.818297 },
+        { type: "FSNW", x: 130.886865, y: 139.408133 }
+      ],
+      price: 4000,
+      dim_NW: 980,
+      dim_NE: 280,
+      dim_height: 300
+    },
+    {
       id: 'wide-base-NE',
       filename: 'wide-base-NE.svg',
       product: 'Wide Base',
@@ -282,6 +308,32 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       price: 7000,
       dim_NW: 1420,
       dim_NE: 280,
+      dim_height: 300
+    },
+    {
+      id: 'wide-spacer-NW',
+      filename: 'wide-spacer-NW.svg',
+      product: 'Wide Spacer',
+      anchors: [
+        { type: "FWNW", x: 118.105399, y: 135.194418 },
+        { type: "HWNW", x: 118.105399, y: 105.604582 }
+      ],
+      price: 5000,
+      dim_NW: 1420,
+      dim_NE: 280,
+      dim_height: 300
+    },
+    {
+      id: 'wide-spacer-NE',
+      filename: 'wide-spacer-NE.svg',
+      product: 'Wide Spacer',
+      anchors: [
+        { type: "HWNE", x: 118.950485, y: 105.604582 },
+        { type: "FWNE", x: 118.950485, y: 135.194418 }
+      ],
+      price: 5000,
+      dim_NE: 1420,
+      dim_NW: 280,
       dim_height: 300
     },
     {
@@ -449,6 +501,20 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       dim_height: 300
     },
     {
+      id: 'deep-base-NE',
+      product: 'Deep Base',
+      filename: 'deep-base-NE.svg',
+      anchors: [
+        { type: "HDNE", x: 123.440863, y: 99.040327 },
+        { type: "SW", x: 62.67575, y: 151.612438 },
+        { type: "NE", x: 184.205976, y: 81.446929 }
+      ],
+      price: 14500,
+      dim_NE: 1420,
+      dim_NW: 450,
+      dim_height: 430
+    },
+    {
       id: 'deep-base-NW',
       product: 'Deep Base',
       filename: 'deep-base-NW.svg',
@@ -461,6 +527,19 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       dim_NW: 1420,
       dim_NE: 450,
       dim_height: 430
+    },
+    {
+      id: 'deep-extension-NE',
+      filename: 'deep-extension-NE.svg',
+      product: 'Deep Extension',
+      anchors: [
+        { type: "FDNE", x: 118.950485, y: 135.194418 },
+        { type: "HDNE", x: 118.950485, y: 105.604582 }
+      ],
+      price: 9500,
+      dim_NE: 1420,
+      dim_NW: 450,
+      dim_height: 300
     },
     {
       id: 'deep-extension-NW',
@@ -476,30 +555,29 @@ DesignerEngine.compatibilityMap = {    'HSNE': 'FSNE',  //'head-std-NE': 'foot-s
       dim_height: 300
     },
     {
-      id: 'deep-base-NE',
-      product: 'Deep Base',
-      filename: 'deep-base-NE.svg',
-      anchors: [
-        { type: "HDNE", x: 123.440863, y: 99.040327 },
-        { type: "SW", x: 62.67575, y: 151.612438 },
-        { type: "NE", x: 184.205976, y: 81.446929 }
-      ],
-      price: 14500,
-      dim_NE: 1420,
-      dim_NW: 450,
-      dim_height: 430
-    },
-    {
-      id: 'deep-extension-NE',
-      filename: 'deep-extension-NE.svg',
-      product: 'Deep Extension',
+      id: 'deep-spacer-NE',
+      filename: 'deep-spacer-NE.svg',
+      product: 'Deep Spacer',
       anchors: [
         { type: "FDNE", x: 118.950485, y: 135.194418 },
         { type: "HDNE", x: 118.950485, y: 105.604582 }
       ],
-      price: 9500,
+      price: 6000,
       dim_NE: 1420,
       dim_NW: 450,
+      dim_height: 300
+    },
+    {
+      id: 'deep-spacer-NW',
+      filename: 'deep-spacer-NW.svg',
+      product: 'Deep Spacer',
+      anchors: [
+        { type: "FDNW", x: 118.105399, y: 135.194418 },
+        { type: "HDNW", x: 118.105399, y: 105.604582 }
+      ],
+      price: 9500,
+      dim_NW: 1420,
+      dim_NE: 450,
       dim_height: 300
     },
     {
