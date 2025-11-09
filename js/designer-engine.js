@@ -394,6 +394,166 @@ DesignerEngine.moduleFilenames = [
     dim_height: 300
   },
   {
+    id: 'compact-base-NE',
+    product: 'Compact Base',
+    filename: 'compact-base-NE.svg',
+    anchors: [
+      { type: "HCNE", x: 114.476518, y: 95.933639 },
+      { type: "SW", x: 84.682628, y: 120.336618 },
+      { type: "NE", x: 129.845322, y: 94.261925 }
+    ],
+    price: 9500,
+    dim_NE: 520,
+    dim_NW: 450,
+    dim_height: 430
+  },
+  {
+    id: 'compact-base-NW',
+    product: 'Compact Base',
+    filename: 'compact-base-NW.svg',
+    anchors: [
+      { type: "NW", x: 99.107715, y: 94.261925 },
+      { type: "SE", x: 144.270408, y: 120.336618 },
+      { type: "HCNW", x: 114.476518, y: 95.933639 }
+    ],
+    price: 9500,
+    dim_NW: 520,
+    dim_NE: 450,
+    dim_height: 430
+  },
+  {
+    id: 'compact-extension-NE',
+    filename: 'compact-extension-NE.svg',
+    product: 'Compact Extension',
+    anchors: [
+      { type: "FCNE", x: 114.425775, y: 132.438223 },
+      { type: "HCNE", x: 114.425775, y: 102.848356 }
+    ],
+    price: 8500,
+    dim_NE: 520,
+    dim_NW: 450,
+    dim_height: 300
+  },
+  {
+    id: 'compact-extension-NW',
+    filename: 'compact-extension-NW.svg',
+    product: 'Compact Extension',
+    anchors: [
+      { type: "FCNW", x: 114.425775, y: 132.438223 },
+      { type: "HCNW", x: 114.425775, y: 102.848356 }
+    ],
+    price: 8500,
+    dim_NW: 520,
+    dim_NE: 450,
+    dim_height: 300
+  },
+  {
+    id: 'compact-spacer-NE',
+    filename: 'compact-spacer-NE.svg',
+    product: 'Compact Spacer',
+    anchors: [
+      { type: "FCNE", x: 114.425775, y: 132.438223 },
+      { type: "HCNE", x: 114.425775, y: 102.848356 }
+    ],
+    price: 5000,
+    dim_NE: 520,
+    dim_NW: 450,
+    dim_height: 300
+  },
+  {
+    id: 'compact-spacer-NW',
+    filename: 'compact-spacer-NW.svg',
+    product: 'Compact Spacer',
+    anchors: [
+      { type: "FCNW", x: 114.425775, y: 132.438223 },
+      { type: "HCNW", x: 114.425775, y: 102.848356 }
+    ],
+    price: 5000,
+    dim_NW: 520,
+    dim_NE: 450,
+    dim_height: 300
+  },
+  {
+    id: 'deep-base-NE',
+    product: 'Deep Base',
+    filename: 'deep-base-NE.svg',
+    anchors: [
+      { type: "HDNE", x: 123.440863, y: 99.040327 },
+      { type: "SW", x: 62.67575, y: 151.612438 },
+      { type: "NE", x: 184.205976, y: 81.446929 }
+    ],
+    price: 14500,
+    dim_NE: 1420,
+    dim_NW: 450,
+    dim_height: 430
+  },
+  {
+    id: 'deep-base-NW',
+    product: 'Deep Base',
+    filename: 'deep-base-NW.svg',
+    anchors: [
+      { type: "NW", x: 60.746793, y: 81.446929 },
+      { type: "SE", x: 182.277019, y: 151.612438 },
+      { type: "HDNW", x: 121.511852, y: 99.040327 }
+    ],
+    price: 14500,
+    dim_NW: 1420,
+    dim_NE: 450,
+    dim_height: 430
+  },
+  {
+    id: 'deep-extension-NE',
+    filename: 'deep-extension-NE.svg',
+    product: 'Deep Extension',
+    anchors: [
+      { type: "FDNE", x: 118.950485, y: 135.194418 },
+      { type: "HDNE", x: 118.950485, y: 105.604582 }
+    ],
+    price: 9500,
+    dim_NE: 1420,
+    dim_NW: 450,
+    dim_height: 300
+  },
+  {
+    id: 'deep-extension-NW',
+    filename: 'deep-extension-NW.svg',
+    product: 'Deep Extension',
+    anchors: [
+      { type: "FDNW", x: 118.105399, y: 135.194418 },
+      { type: "HDNW", x: 118.105399, y: 105.604582 }
+    ],
+    price: 9500,
+    dim_NW: 1420,
+    dim_NE: 450,
+    dim_height: 300
+  },
+  {
+    id: 'deep-spacer-NE',
+    filename: 'deep-spacer-NE.svg',
+    product: 'Deep Spacer',
+    anchors: [
+      { type: "FDNE", x: 118.950485, y: 135.194418 },
+      { type: "HDNE", x: 118.950485, y: 105.604582 }
+    ],
+    price: 6000,
+    dim_NE: 1420,
+    dim_NW: 450,
+    dim_height: 300
+  },
+  {
+    id: 'deep-spacer-NW',
+    filename: 'deep-spacer-NW.svg',
+    product: 'Deep Spacer',
+    anchors: [
+      { type: "FDNW", x: 118.105399, y: 135.194418 },
+      { type: "HDNW", x: 118.105399, y: 105.604582 }
+    ],
+    price: 6000,
+    dim_NW: 1420,
+    dim_NE: 450,
+    dim_height: 300
+  },
+  {
     id: 'corner-base-NE',
     filename: 'corner-base-NE.svg',
     product: 'Corner Base',
@@ -503,166 +663,6 @@ DesignerEngine.moduleFilenames = [
     price: 6000,
     dim_NE: 1220,
     dim_NW: 280,
-    dim_height: 300
-  },
-  {
-    id: 'deep-base-NE',
-    product: 'Deep Base',
-    filename: 'deep-base-NE.svg',
-    anchors: [
-      { type: "HDNE", x: 123.440863, y: 99.040327 },
-      { type: "SW", x: 62.67575, y: 151.612438 },
-      { type: "NE", x: 184.205976, y: 81.446929 }
-    ],
-    price: 14500,
-    dim_NE: 1420,
-    dim_NW: 450,
-    dim_height: 430
-  },
-  {
-    id: 'deep-base-NW',
-    product: 'Deep Base',
-    filename: 'deep-base-NW.svg',
-    anchors: [
-      { type: "NW", x: 60.746793, y: 81.446929 },
-      { type: "SE", x: 182.277019, y: 151.612438 },
-      { type: "HDNW", x: 121.511852, y: 99.040327 }
-    ],
-    price: 14500,
-    dim_NW: 1420,
-    dim_NE: 450,
-    dim_height: 430
-  },
-  {
-    id: 'deep-extension-NE',
-    filename: 'deep-extension-NE.svg',
-    product: 'Deep Extension',
-    anchors: [
-      { type: "FDNE", x: 118.950485, y: 135.194418 },
-      { type: "HDNE", x: 118.950485, y: 105.604582 }
-    ],
-    price: 9500,
-    dim_NE: 1420,
-    dim_NW: 450,
-    dim_height: 300
-  },
-  {
-    id: 'deep-extension-NW',
-    filename: 'deep-extension-NW.svg',
-    product: 'Deep Extension',
-    anchors: [
-      { type: "FDNW", x: 118.105399, y: 135.194418 },
-      { type: "HDNW", x: 118.105399, y: 105.604582 }
-    ],
-    price: 9500,
-    dim_NW: 1420,
-    dim_NE: 450,
-    dim_height: 300
-  },
-  {
-    id: 'deep-spacer-NE',
-    filename: 'deep-spacer-NE.svg',
-    product: 'Deep Spacer',
-    anchors: [
-      { type: "FDNE", x: 118.950485, y: 135.194418 },
-      { type: "HDNE", x: 118.950485, y: 105.604582 }
-    ],
-    price: 6000,
-    dim_NE: 1420,
-    dim_NW: 450,
-    dim_height: 300
-  },
-  {
-    id: 'deep-spacer-NW',
-    filename: 'deep-spacer-NW.svg',
-    product: 'Deep Spacer',
-    anchors: [
-      { type: "FDNW", x: 118.105399, y: 135.194418 },
-      { type: "HDNW", x: 118.105399, y: 105.604582 }
-    ],
-    price: 6000,
-    dim_NW: 1420,
-    dim_NE: 450,
-    dim_height: 300
-  },
-  {
-    id: 'compact-base-NE',
-    product: 'Compact Base',
-    filename: 'compact-base-NE.svg',
-    anchors: [
-      { type: "HCNE", x: 114.476518, y: 95.933639 },
-      { type: "SW", x: 84.682628, y: 120.336618 },
-      { type: "NE", x: 129.845322, y: 94.261925 }
-    ],
-    price: 9500,
-    dim_NE: 520,
-    dim_NW: 450,
-    dim_height: 430
-  },
-  {
-    id: 'compact-base-NW',
-    product: 'Compact Base',
-    filename: 'compact-base-NW.svg',
-    anchors: [
-      { type: "NW", x: 99.107715, y: 94.261925 },
-      { type: "SE", x: 144.270408, y: 120.336618 },
-      { type: "HCNW", x: 114.476518, y: 95.933639 }
-    ],
-    price: 9500,
-    dim_NW: 520,
-    dim_NE: 450,
-    dim_height: 430
-  },
-  {
-    id: 'compact-extension-NE',
-    filename: 'compact-extension-NE.svg',
-    product: 'Compact Extension',
-    anchors: [
-      { type: "FCNE", x: 114.425775, y: 132.438223 },
-      { type: "HCNE", x: 114.425775, y: 102.848356 }
-    ],
-    price: 8500,
-    dim_NE: 520,
-    dim_NW: 450,
-    dim_height: 300
-  },
-  {
-    id: 'compact-extension-NW',
-    filename: 'compact-extension-NW.svg',
-    product: 'Compact Extension',
-    anchors: [
-      { type: "FCNW", x: 114.425775, y: 132.438223 },
-      { type: "HCNW", x: 114.425775, y: 102.848356 }
-    ],
-    price: 8500,
-    dim_NW: 520,
-    dim_NE: 450,
-    dim_height: 300
-  },
-  {
-    id: 'compact-spacer-NE',
-    filename: 'compact-spacer-NE.svg',
-    product: 'Compact Spacer',
-    anchors: [
-      { type: "FCNE", x: 114.425775, y: 132.438223 },
-      { type: "HCNE", x: 114.425775, y: 102.848356 }
-    ],
-    price: 5000,
-    dim_NE: 520,
-    dim_NW: 450,
-    dim_height: 300
-  },
-  {
-    id: 'compact-spacer-NW',
-    filename: 'compact-spacer-NW.svg',
-    product: 'Compact Spacer',
-    anchors: [
-      { type: "FCNW", x: 114.425775, y: 132.438223 },
-      { type: "HCNW", x: 114.425775, y: 102.848356 }
-    ],
-    price: 5000,
-    dim_NW: 520,
-    dim_NE: 450,
     dim_height: 300
   },
   {
@@ -790,7 +790,7 @@ DesignerEngine.moduleFilenames = [
     filename: 'lamp-compact-NE-N.svg',
     product: 'Lamp',
     anchors: [
-      { type: "FCNE",  x: 113.476518, y: 95.933639 }
+      { type: "FCNE", x: 113.476518, y: 95.933639 }
     ],
     price: 4500,
     dim_NE: 720,
