@@ -6,7 +6,7 @@ cd 241202_shelf-builder-v2
 
 or
 
-cd C:\Users\Ben Hoyle\Dropbox (Personal)\01_Current-Projects\Framework\05_Marketing\Website\240905_custom-website\new-feature-development\241202_shelf-builder-v2
+cd /Users/ben/Library/CloudStorage/Dropbox/01_Current-Projects/Framework/05_Marketing/Website/240905_custom-website/git-framework-site/framework-site
 
 
 If python not running: 

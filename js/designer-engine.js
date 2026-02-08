@@ -808,7 +808,272 @@ DesignerEngine.moduleFilenames = [
     dim_NE: 720,
     dim_NW: 280,
     dim_height: 760
+  },
+  {
+    id: 'top-bar-wide-NW', 
+    filename: 'top-bar-wide-NW.svg',
+    product: 'Wide Top Bar',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 3500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'top-bar-wide-NE', 
+    filename: 'top-bar-wide-NE.svg',
+    product: 'Wide Top Bar',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 3500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'deep-adapter-NW', 
+    filename: 'deep-adapter-NW.svg',
+    product: 'Deep Adapter',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 2500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'deep-adapter-NE', 
+    filename: 'deep-adapter-NE.svg',
+    product: 'Deep Adapter',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 2500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'hanger-extension-NW', 
+    filename: 'hanger-extension-NW.svg',
+    product: 'Hanger Extension',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 7000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'hanger-extension-NE', 
+    filename: 'hanger-extension-NE.svg',
+    product: 'Hanger Extension',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 7000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'slim-extension-NW', 
+    filename: 'slim-extension-NW.svg',
+    product: 'Slim Extension',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 4500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'slim-extension-NE', 
+    filename: 'slim-extension-NE.svg',
+    product: 'Slim Extension',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 4500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'standard-booster-full-NE', 
+    filename: 'standard-booster-full-NE.svg',
+    product: 'Standard Booster',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 2000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'standard-booster-full-NW', 
+    filename: 'standard-booster-full-NW.svg',
+    product: 'Standard Booster',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 2000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'top-bar-standard-NE', 
+    filename: 'top-bar-standard-NE.svg',
+    product: 'Standard Top Bar',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 3000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'top-bar-standard-NW', 
+    filename: 'top-bar-standard-NW.svg',
+    product: 'Standard Top Bar',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 3000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'wide-booster-full-NW', 
+    filename: 'wide-booster-full-NW.svg',
+    product: 'Wide Booster',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 2500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'wide-booster-full-NE', 
+    filename: 'wide-booster-full-NE.svg',
+    product: 'Wide Booster',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 2500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'bookend-SE', 
+    filename: 'bookend-SE.svg',
+    product: 'Bookend',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 1000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'bookend-SW', 
+    filename: 'bookend-SW.svg',
+    product: 'Bookend',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 1000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'slim-base-NE', 
+    filename: 'slim-base-NE.svg',
+    product: 'Slim Base',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 6000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'slim-base-NW', 
+    filename: 'slim-base-NW.svg',
+    product: 'Slim Base',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 6000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'standard-base-trimmed-NE', 
+    filename: 'standard-base-trimmed-NE.svg',
+    product: 'Standard Base (Trimmed)',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 6500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'standard-base-trimmed-NW', 
+    filename: 'standard-base-trimmed-NW.svg',
+    product: 'Standard Base (Trimmed)',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 6500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'standard-extension-trimmed-NW', 
+    filename: 'standard-extension-trimmed-NW.svg',
+    product: 'Standard Extension (Trimmed)',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 5500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'standard-extension-trimmed-NE', 
+    filename: 'standard-extension-trimmed-NE.svg',
+    product: 'Standard Extension (Trimmed)',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points 
+    price: 5500,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
   }
+
 
 ];
 

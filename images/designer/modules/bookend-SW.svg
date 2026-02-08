@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="119.76pt" height="119.76pt" viewBox="0 0 119.76 119.76" overflow="visible" xmlns="http://www.w3.org/2000/svg">
+  <path d="M62.95141,59.58363 L62.95141,65.74312 L62.82541,59.51088" stroke="#000000" stroke-width="0" fill="#555555" fill-opacity="1" />
+  <path d="M64.86549,66.72007 L64.98851,66.99199 C65.00947,67.21854 64.77517,67.62436 64.56849,67.71949 L64.27149,67.74891 L64.14847,67.47699 C64.12752,67.25043 64.36182,66.84462 64.56849,66.74949 z" stroke="#000000" stroke-width="0" fill="#555555" fill-opacity="1" />
+  <path d="M64.29548,59.38963 L60.51529,57.20714 L60.93531,56.96464 L62.32138,57.61938 L62.32138,58.10439 L64.29548,59.24413 L64.58949,59.07438 L63.45544,58.41963 L64.84151,59.07438 L64.84151,60.04438 L64.42149,60.28688 z M62.19537,57.69213 L61.06131,57.03739 L60.7673,57.20714 L62.19537,58.03164 z" stroke="#000000" stroke-width="0" fill="#555555" fill-opacity="1" />
+  <path d="M61.98536,65.05722 L61.98536,59.02588 L60.51529,58.17714 L60.51529,57.20714 L64.29548,59.38963 L64.29548,60.35963 L62.82541,59.51088 L62.82541,65.81586 L64.85645,66.715 L64.56849,66.74949 C64.36182,66.84462 64.12752,67.25043 64.14847,67.47699 L64.26385,67.74438 L60.07128,65.32391 L59.94826,65.05199 C59.9273,64.82544 60.1616,64.41962 60.36828,64.32449 L60.66524,64.29505 z" stroke="#000000" stroke-width="0" fill="#777777" fill-opacity="1" />
+  <path d="M62.19537,57.69213 L62.19537,58.03164 L60.7673,57.20714 L61.06131,57.03739 z" stroke="#000000" stroke-width="0" fill="#777777" fill-opacity="1" />
+  <path d="M63.4554,58.75903 L63.45544,58.41963 L64.58949,59.07438 L64.29548,59.24413 z" stroke="#000000" stroke-width="0" fill="#777777" fill-opacity="1" />
+  <path d="M62.95144,59.58366 L62.95144,65.74314" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M64.2955,59.38966 L64.2955,60.35965" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M60.51531,57.20716 L64.2955,59.38966" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M64.42151,60.2869 L64.84153,60.0444" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M63.58147,58.34691 L64.84153,59.07441" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M62.82543,65.8159 L62.82543,59.51091" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M61.98535,65.05722 L60.66528,64.29507" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M60.64132,57.13441 L60.93533,56.96466" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M64.86549,66.72007 L64.56849,66.74949 C64.36182,66.84462 64.12752,67.25043 64.14847,67.47699 L64.27149,67.74891" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M60.07128,65.32391 L64.27149,67.74891 L64.56849,67.71949 C64.77517,67.62436 65.00947,67.21854 64.98851,66.99199 L64.86549,66.72007" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M62.1954,57.69216 L62.1954,58.03166 L62.3214,58.10441" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M60.51531,57.20716 L60.51531,58.17716" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M63.45546,58.41966 L63.45546,58.75898" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M60.66521,64.29504 L60.36828,64.32449 C60.1616,64.41962 59.9273,64.82544 59.94826,65.05199 L60.07128,65.32391" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M61.98539,65.33089 L62.82543,65.8159" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M62.3214,57.61941 L61.06134,56.89191 L61.06134,57.37691" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M64.42151,59.31691 L64.84153,59.07441" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M61.06134,57.03741 L62.1954,57.69216" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M64.58952,59.07441 L63.45546,58.41966" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M64.84153,59.07441 L64.84153,60.0444" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M62.82543,59.51091 L64.2955,60.35965" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M60.51531,58.17716 L61.98539,59.02591" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M61.98539,65.33089 L61.98539,59.02591" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M64.85651,66.71488 L62.9513,65.61491" stroke="#111111" stroke-width="0.24" fill="none" />
+  <path d="M119,0.4800251 L0.4800251,0.4800251 L0.4800251,119" stroke="#000000" stroke-width="0.24" fill="none" />
+  <text x="-6358.85498916774" y="909.671865871721" transform="rotate(30 -6358.85498916774,909.671865871721)" font-family="Arial" text-anchor="middle" fill="#000000" font-size="28.925220489502">1m</text>
+  <polygon fill="#000000" fill-opacity="1" points="-6380.722,903.9057 -6396.128,889.0095 -6401.326,898.0119" xmlns="" />
+  <polygon fill="#000000" fill-opacity="1" points="-6338.72,928.1556 -6323.314,943.0518 -6318.117,934.0495" xmlns="" />
+  <text x="-6269.56577113633" y="-8.70875921521675" font-family="Arial" fill="#000000" font-size="28.925220489502">Corner Base</text>
+  <text x="-6746.95791380425" y="219.623285099787" font-family="Arial" fill="#000000" font-size="14.462610244751">top and bottom </text>
+  <text x="-6746.95791380425" y="236.255286762987" font-family="Arial" fill="#000000" font-size="14.462610244751">anchors both flush. </text>
+  <text x="-6746.95791380425" y="252.887288426187" font-family="Arial" fill="#000000" font-size="14.462610244751">Delete foot </text>
+  <text x="-6746.95791380425" y="269.519290089387" font-family="Arial" fill="#000000" font-size="14.462610244751">extensions</text>
+  <text x="-6676.47636375427" y="-87.4500119079161" transform="rotate(-30 -6676.47636375427,-87.4500119079161)" font-family="Arial" text-anchor="middle" fill="#000000" font-size="28.925220489502">20.0</text>
+  <polygon fill="#000000" fill-opacity="1" points="-6613.839,-116.4935 -6634.443,-110.5997 -6629.246,-101.5974" xmlns="" />
+  <polygon fill="#000000" fill-opacity="1" points="-6612.811,-117.0875 -6592.208,-122.9814 -6597.405,-131.9837" xmlns="" />
+  <text x="-6737.40461245366" y="24.0529168842256" font-family="Arial" fill="#000000" font-size="14.462610244751">GH anchor </text>
+  <text x="-6737.40461245366" y="40.6849185474256" font-family="Arial" fill="#000000" font-size="14.462610244751">point </text>
+  <text x="-6737.40461245366" y="57.3169202106257" font-family="Arial" fill="#000000" font-size="14.462610244751">should be </text>
+  <text x="-6737.40461245366" y="73.9489218738256" font-family="Arial" fill="#000000" font-size="14.462610244751">up here</text>
+  <polygon fill="#000000" fill-opacity="1" points="-6620.599,0.480018 -6630.993,-2.118732 -6630.993,3.078768" xmlns="" />
+  <text x="-6362.9540092269" y="-152.803972645343" font-family="Arial" fill="#000000" font-size="14.462610244751">dark edge </text>
+  <text x="-6362.9540092269" y="-136.171970982143" font-family="Arial" fill="#000000" font-size="14.462610244751">(MDF-Color3) </text>
+  <text x="-6362.9540092269" y="-119.539969318943" font-family="Arial" fill="#000000" font-size="14.462610244751">to left</text>
+  <polygon fill="#000000" fill-opacity="1" points="-6375.321,-64.588 -6371.695,-74.6707 -6376.866,-75.19091" xmlns="" />
+  <text x="-6746.95791380425" y="114.910119873079" font-family="Arial" fill="#000000" font-size="14.462610244751">top anchor flush, </text>
+  <text x="-6746.95791380425" y="131.542121536279" font-family="Arial" fill="#000000" font-size="14.462610244751">bottom 3mm up</text>
+  <text x="-6746.95791380425" y="285.479635131174" font-family="Arial" fill="#000000" font-size="14.462610244751">total 30mm gap </text>
+  <text x="-6746.95791380425" y="302.111636794374" font-family="Arial" fill="#000000" font-size="14.462610244751">side to side, so </text>
+  <text x="-6746.95791380425" y="318.743638457574" font-family="Arial" fill="#000000" font-size="14.462610244751">15mm on each</text>
+  <text x="-6615.38564364572" y="196.119929903239" font-family="Arial" fill="#000000" font-size="28.925220489502">Standard Extension</text>
+  <text x="-6615.38564364572" y="-8.70875921521675" font-family="Arial" fill="#000000" font-size="28.925220489502">Standard Base</text>
+  <text x="-5350.93265348413" y="8.31880401023163" font-family="Arial" fill="#000000" font-size="2.89252209663391">Replace:</text>
+  <text x="-5350.93265348413" y="11.6452043428716" font-family="Arial" fill="#000000" font-size="2.89252209663391">stroke="#000000" stroke-width="0.48"</text>
+  <text x="-5350.93265348413" y="18.2980050081516" font-family="Arial" fill="#000000" font-size="2.89252209663391">With</text>
+  <text x="-5350.93265348413" y="21.6244053407916" font-family="Arial" fill="#000000" font-size="2.89252209663391">stroke="#000000" stroke-width="0.1"</text>
+  <text x="-5350.93265348413" y="150.887178489248" font-family="Arial" fill="#000000" font-size="2.89252209663391">Replace:</text>
+  <text x="-5350.93265348413" y="154.213578821888" font-family="Arial" fill="#000000" font-size="2.89252209663391">stroke="#000000" stroke-width="0.48"</text>
+  <text x="-5350.93265348413" y="160.866379487168" font-family="Arial" fill="#000000" font-size="2.89252209663391">With</text>
+  <text x="-5350.93265348413" y="164.192779819808" font-family="Arial" fill="#000000" font-size="2.89252209663391">stroke="#000000" stroke-width="0.1"</text>
+  <text x="-3139.83383179072" y="8.31880401023163" font-family="Arial" fill="#000000" font-size="2.89252209663391">Replace:</text>
+  <text x="-3139.83383179072" y="11.6452043428716" font-family="Arial" fill="#000000" font-size="2.89252209663391">stroke="#000000" stroke-width="0.48"</text>
+  <text x="-3139.83383179072" y="18.2980050081516" font-family="Arial" fill="#000000" font-size="2.89252209663391">With</text>
+  <text x="-3139.83383179072" y="21.6244053407916" font-family="Arial" fill="#000000" font-size="2.89252209663391">stroke="#000000" stroke-width="0.1"</text>
+  <text x="-5681.53336643055" y="-8.70875921521654" font-family="Arial" fill="#000000" font-size="28.925220489502">Standard Spacer</text>
+  <text x="-3139.83383179072" y="150.887178489248" font-family="Arial" fill="#000000" font-size="2.89252209663391">Replace:</text>
+  <text x="-3139.83383179072" y="154.213578821888" font-family="Arial" fill="#000000" font-size="2.89252209663391">stroke="#000000" stroke-width="0.48"</text>
+  <text x="-3139.83383179072" y="160.866379487168" font-family="Arial" fill="#000000" font-size="2.89252209663391">With</text>
+  <text x="-3139.83383179072" y="164.192779819808" font-family="Arial" fill="#000000" font-size="2.89252209663391">stroke="#000000" stroke-width="0.1"</text>
+  <text x="-6269.56577113633" y="196.119929903239" font-family="Arial" fill="#000000" font-size="28.925220489502">Corner Extension</text>
+  <path d="M60.51529,57.20714 L60.51529,58.17714 L61.98536,59.02588 L61.98536,65.05722 L60.66524,64.29505 L60.36828,64.32449 C60.1616,64.41962 59.9273,64.82544 59.94826,65.05199 L60.07128,65.32391 L64.27149,67.74891 L64.56849,67.71949 C64.77517,67.62436 65.00947,67.21854 64.98851,66.99199 L64.86549,66.72007 L62.95141,65.61497 L62.95141,59.58363 L64.29548,60.35963 L64.84151,60.04438 L64.84151,59.07438 L63.58144,58.34689 L63.4554,58.75903 L62.32138,58.10439 L62.32138,57.61938 L61.06131,56.89189 L60.64129,57.13439 L60.76732,57.20716" stroke="#000000" stroke-width="0.24" fill="none" />
+  <path d="M64.58952,59.07441 L64.2955,59.24416 L60.76732,57.20716" stroke="#000000" stroke-width="0.24" fill="none" />
+  <text x="-3430.12298214485" y="-190.153571520322" font-family="Arial" fill="#000000" font-size="8.677565574646">120 x 120 pixels, 300dpi</text>
+  <text x="-2049.68285187808" y="-60.6545478731678" font-family="Arial" fill="#000000" font-size="28.925220489502">export as 120x120 with 300dpi, and process with </text>
+  <text x="-2049.68285187808" y="-27.3905445467678" font-family="Arial" fill="#000000" font-size="28.925220489502">svg-normalizer file</text>
+</svg>

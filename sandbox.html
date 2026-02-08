@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en" translate="no" class="notranslate">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="google" content="notranslate">
+    <title>Framework Sandbox</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="js/designer-engine.js"></script>
+
+    <style>
+        html, body, #root {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #ffffff;
+            touch-action: none;
+            overscroll-behavior: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .ui-interactive {
+            touch-action: auto;
+            pointer-events: auto;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+
+        .svg-content path { transition: fill 0.2s, stroke 0.2s; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, useCallback, memo } = React;
+
+        // --- Configuration ---
+        const ZOOM_PADDING = 40; 
+        const LADY_URL = 'images/designer/context/cxt_woman-book-1.svg';
+
+        // --- Helpers ---
+        const getPointer = (e) => {
+            if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            return { x: e.clientX, y: e.clientY };
+        };
+
+        // --- SvgLoader Component ---
+        const SvgLoader = memo(({ id, theme, className, onLoad }) => {
+            const [svgContent, setSvgContent] = useState(null);
+
+            useEffect(() => {
+                let active = true;
+                
+                // Determine path: Context figures are direct URLs, Modules come from Engine
+                let src = id;
+                if (!id.includes('/')) {
+                    // It's a module ID, look up in engine
+                    const piece = window.DesignerEngine?.testPieces?.find(p => p.id === id);
+                    if (piece) src = piece.imagePath;
+                }
+
+                fetch(src)
+                    .then(res => res.text())
+                    .then(text => {
+                        if (!active) return;
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(text, 'image/svg+xml');
+                        
+                        // Apply Theme
+                        if (window.DesignerEngine && window.DesignerEngine.applySVGTheme) {
+                            window.DesignerEngine.applySVGTheme(doc, theme);
+                        }
+
+                        // Accessibility: Allow clicks on visible shapes
+                        const svg = doc.documentElement;
+                        svg.setAttribute('style', 'pointer-events: none; width: 100%; height: 100%; overflow: visible;');
+                        Array.from(svg.querySelectorAll('path, rect, circle, polygon')).forEach(el => {
+                             const fill = el.getAttribute('fill'); 
+                             const stroke = el.getAttribute('stroke');
+                             const style = window.getComputedStyle(el);
+                             // Simple visibility check
+                             if ((fill && fill !== 'none') || (stroke && stroke !== 'none') || 
+                                 (style.fill && style.fill !== 'none') || (style.stroke && style.stroke !== 'none')) {
+                                 el.style.pointerEvents = 'auto';
+                             }
+                        });
+
+                        setSvgContent(svg.outerHTML);
+                        if (onLoad) onLoad(doc);
+                    })
+                    .catch(e => console.warn("SVG Load Error", e));
+                return () => active = false;
+            }, [id, theme]);
+
+            if (!svgContent) return <div className="w-full h-full animate-pulse bg-gray-100 rounded-lg"></div>;
+
+            return (
+                <div 
+                    className={`svg-content ${className}`}
+                    dangerouslySetInnerHTML={{ __html: svgContent }}
+                />
+            );
+        });
+
+        // --- Main Sandbox Component ---
+        const Sandbox = () => {
+            const [modules, setModules] = useState([]); 
+            const [camera, setCamera] = useState({ x: 0, y: 0, scale: 1 });
+            const [selectedId, setSelectedId] = useState(null);
+            const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+            const [isPriceOpen, setIsPriceOpen] = useState(false);
+            const [theme, setTheme] = useState('THEME_1');
+            const [uiHidden, setUiHidden] = useState(false);
+            
+            const containerRef = useRef(null);
+            const dragRef = useRef({ 
+                isDragging: false, isPanning: false, 
+                startX: 0, startY: 0, 
+                initialCamX: 0, initialCamY: 0,
+                initialModX: 0, initialModY: 0,
+                targetId: null
+            });
+
+            // -- Initialization --
+            useEffect(() => {
+                const loadFromHash = () => {
+                    try {
+                        const hash = window.location.hash.slice(1);
+                        if (!hash) return;
+                        const [code, themeCode] = hash.split(';');
+                        if (themeCode && window.DesignerEngine.colorThemes[themeCode]) setTheme(themeCode);
+                        if (code.startsWith('SBX:')) {
+                            const data = JSON.parse(decodeURIComponent(code.substring(4)));
+                            setModules(data);
+                            setTimeout(() => requestAnimationFrame(autoZoom), 200);
+                        }
+                    } catch (e) { console.error("Hash Load Error", e); }
+                };
+                loadFromHash();
+                window.addEventListener('hashchange', loadFromHash);
+                return () => window.removeEventListener('hashchange', loadFromHash);
+            }, []);
+
+            useEffect(() => {
+                if (modules.length > 0) {
+                    const data = JSON.stringify(modules.map(m => ({
+                        id: m.id, x: m.x, y: m.y, zIndex: m.zIndex, pieceId: m.pieceId, customTheme: m.customTheme
+                    })));
+                    const hash = `SBX:${encodeURIComponent(data)};${theme}`;
+                    const timer = setTimeout(() => window.history.replaceState(null, null, '#' + hash), 500);
+                    return () => clearTimeout(timer);
+                }
+            }, [modules, theme]);
+
+            // -- Camera --
+            const autoZoom = useCallback(() => {
+                if (modules.length === 0 || !containerRef.current) return;
+                
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                modules.forEach(m => {
+                    const w = 240; 
+                    minX = Math.min(minX, m.x);
+                    minY = Math.min(minY, m.y);
+                    maxX = Math.max(maxX, m.x + w);
+                    maxY = Math.max(maxY, m.y + w);
+                });
+
+                const contentW = maxX - minX;
+                const contentH = maxY - minY;
+                const containerW = containerRef.current.clientWidth;
+                const containerH = containerRef.current.clientHeight;
+
+                const scaleX = (containerW - ZOOM_PADDING * 2) / contentW;
+                const scaleY = (containerH - ZOOM_PADDING * 2) / contentH;
+                const newScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.2), 1.8);
+
+                const centerX = minX + contentW / 2;
+                const centerY = minY + contentH / 2;
+
+                setCamera({
+                    scale: newScale,
+                    x: (containerW / 2) - (centerX * newScale),
+                    y: (containerH / 2) - (centerY * newScale)
+                });
+            }, [modules]);
+
+            const zoomIn = () => setCamera(prev => ({ ...prev, scale: Math.min(prev.scale * 1.2, 3) }));
+            const zoomOut = () => setCamera(prev => ({ ...prev, scale: Math.max(prev.scale * 0.8, 0.2) }));
+
+            // -- Interaction --
+            const handlePointerDown = useCallback((e, type, id) => {
+                const pt = getPointer(e);
+                dragRef.current.startX = pt.x;
+                dragRef.current.startY = pt.y;
+                
+                if (type === 'bg') {
+                    dragRef.current.isPanning = true;
+                    dragRef.current.initialCamX = camera.x;
+                    dragRef.current.initialCamY = camera.y;
+                    setSelectedId(null);
+                } else if (type === 'module') {
+                    e.stopPropagation();
+                    const mod = modules.find(m => m.id === id);
+                    if (!mod) return;
+                    dragRef.current.isDragging = true;
+                    dragRef.current.targetId = id;
+                    dragRef.current.initialModX = mod.x;
+                    dragRef.current.initialModY = mod.y;
+                    setSelectedId(id);
+                }
+            }, [camera, modules]);
+
+            const handlePointerMove = (e) => {
+                const pt = getPointer(e);
+                const dx = pt.x - dragRef.current.startX;
+                const dy = pt.y - dragRef.current.startY;
+
+                if (dragRef.current.isPanning) {
+                    setCamera(prev => ({ ...prev, x: dragRef.current.initialCamX + dx, y: dragRef.current.initialCamY + dy }));
+                } 
+                
+                if (dragRef.current.isDragging && dragRef.current.targetId) {
+                    const worldDx = dx / camera.scale;
+                    const worldDy = dy / camera.scale;
+                    
+                    // Simple drag, no snapping
+                    const newX = dragRef.current.initialModX + worldDx;
+                    const newY = dragRef.current.initialModY + worldDy;
+
+                    setModules(prev => prev.map(m => m.id === dragRef.current.targetId ? { ...m, x: newX, y: newY } : m));
+                }
+            };
+
+            const handlePointerUp = () => {
+                dragRef.current.isPanning = false;
+                dragRef.current.isDragging = false;
+                dragRef.current.targetId = null;
+            };
+
+            // -- Actions --
+            const addModule = (pieceId, isContext = false) => {
+                const container = containerRef.current;
+                const cx = (container.clientWidth / 2 - camera.x) / camera.scale;
+                const cy = (container.clientHeight / 2 - camera.y) / camera.scale;
+                
+                const newModule = {
+                    id: Date.now().toString(),
+                    pieceId: pieceId,
+                    x: cx - 120, y: cy - 120,
+                    zIndex: Math.max(0, ...modules.map(m => m.zIndex || 0)) + 1,
+                    isContext: isContext
+                };
+                setModules(prev => [...prev, newModule]);
+                setIsPaletteOpen(false);
+                setSelectedId(newModule.id);
+            };
+
+            const duplicateModule = (id) => {
+                const mod = modules.find(m => m.id === id);
+                if (!mod) return;
+                const newModule = {
+                    ...mod,
+                    id: Date.now().toString(),
+                    x: mod.x + 30, y: mod.y + 30,
+                    zIndex: Math.max(0, ...modules.map(m => m.zIndex || 0)) + 1,
+                };
+                setModules(prev => [...prev, newModule]);
+                setSelectedId(newModule.id);
+            };
+
+            const removeModule = (id) => {
+                setModules(prev => prev.filter(m => m.id !== id));
+                setSelectedId(null);
+            };
+
+            const resetProject = () => {
+                if(window.confirm("Are you sure you want to clear your design?")) {
+                    setModules([]);
+                    setSelectedId(null);
+                    setTheme('THEME_1');
+                    window.history.replaceState(null, null, ' ');
+                }
+            };
+
+            // -- Rotate / Swap --
+            const rotateModule = (mod) => {
+                const engine = window.DesignerEngine;
+                if (!engine || !engine.testPieces) return;
+                
+                const currentPiece = engine.testPieces.find(p => p.id === mod.pieceId);
+                if (!currentPiece) return;
+
+                // Find all variants of this product
+                const variants = engine.testPieces.filter(p => p.product === currentPiece.product);
+                const idx = variants.findIndex(p => p.id === mod.pieceId);
+                const next = variants[(idx + 1) % variants.length];
+                
+                setModules(prev => prev.map(m => m.id === mod.id ? { ...m, pieceId: next.id } : m));
+            };
+
+            const swapModule = (mod) => {
+                const engine = window.DesignerEngine;
+                if (!engine || !engine.testPieces) return;
+
+                const currentPiece = engine.testPieces.find(p => p.id === mod.pieceId);
+                if (!currentPiece) return;
+
+                // Find unique product list
+                const products = [...new Set(engine.testPieces.map(p => p.product))];
+                const currentProdIdx = products.indexOf(currentPiece.product);
+                const nextProd = products[(currentProdIdx + 1) % products.length];
+                
+                // Find NE variant of next product, or first available
+                let nextPiece = engine.testPieces.find(p => p.product === nextProd && p.id.includes('NE'));
+                if (!nextPiece) nextPiece = engine.testPieces.find(p => p.product === nextProd);
+
+                if (nextPiece) {
+                    setModules(prev => prev.map(m => m.id === mod.id ? { ...m, pieceId: nextPiece.id } : m));
+                }
+            };
+
+            const cycleColor = (mod) => {
+                const themes = Object.keys(window.DesignerEngine.colorThemes);
+                const currentTheme = mod.customTheme || theme;
+                const idx = themes.indexOf(currentTheme);
+                const nextTheme = themes[(idx + 1) % themes.length];
+                setModules(prev => prev.map(m => m.id === mod.id ? { ...m, customTheme: nextTheme } : m));
+            };
+
+            const resetCustomColors = () => {
+                setModules(prev => prev.map(m => ({ ...m, customTheme: null })));
+            };
+
+            // -- Derived State --
+            const totalPrice = useMemo(() => {
+                if (!window.DesignerEngine?.testPieces) return 0;
+                return modules.reduce((sum, m) => {
+                    if (m.isContext) return sum;
+                    const p = window.DesignerEngine.testPieces.find(tp => tp.id === m.pieceId);
+                    return sum + (p ? (p.price || 0) : 0);
+                }, 0);
+            }, [modules]);
+
+            const itemBreakdown = useMemo(() => {
+                const counts = {};
+                if (!window.DesignerEngine?.testPieces) return counts;
+                modules.forEach(m => {
+                    if (m.isContext) return;
+                    const p = window.DesignerEngine.testPieces.find(tp => tp.id === m.pieceId);
+                    const name = p ? p.product : 'Unknown';
+                    const price = p ? p.price : 0;
+                    if (!counts[name]) counts[name] = { count: 0, price };
+                    counts[name].count++;
+                });
+                return counts;
+            }, [modules]);
+
+            const menuItems = useMemo(() => {
+                if (!window.DesignerEngine?.testPieces) return [];
+                // Unique products only for the palette
+                const unique = [];
+                const seen = new Set();
+                window.DesignerEngine.testPieces.forEach(p => {
+                    if (!seen.has(p.product)) {
+                        // Prefer NE for icon
+                        const neVariant = window.DesignerEngine.testPieces.find(v => v.product === p.product && v.id.includes('NE'));
+                        unique.push(neVariant || p);
+                        seen.add(p.product);
+                    }
+                });
+                return unique;
+            }, []);
+
+            // -- Render --
+            return (
+                <div 
+                    className="w-full h-full relative overflow-hidden font-sans text-gray-800"
+                    onMouseMove={handlePointerMove}
+                    onTouchMove={handlePointerMove}
+                    onMouseUp={handlePointerUp}
+                    onTouchEnd={handlePointerUp}
+                >
+                    {/* Top Bar */}
+                    <div className={`absolute top-0 left-0 right-0 p-4 flex justify-between items-start pointer-events-none z-20 transition-opacity duration-300 ${uiHidden ? 'opacity-0' : 'opacity-100'}`}>
+                        <div className="flex flex-col gap-2 items-start ui-interactive">
+                             <div className="flex gap-2">
+                                <a href="/" className="glass-panel shadow-sm rounded-full w-10 h-10 flex items-center justify-center text-gray-700 font-bold hover:bg-white border border-gray-200">←</a>
+                                <button 
+                                    onClick={() => {
+                                        const themes = Object.keys(window.DesignerEngine.colorThemes);
+                                        const idx = themes.indexOf(theme);
+                                        setTheme(themes[(idx + 1) % themes.length]);
+                                    }}
+                                    className="glass-panel shadow-sm px-3 h-10 rounded-full text-xs font-bold text-gray-700 flex items-center gap-2 hover:bg-white border border-gray-200"
+                                >
+                                    <div className="w-4 h-4 rounded-full border border-gray-300 shadow-sm" style={{backgroundColor: window.DesignerEngine.colorThemes[theme].parameterMappings.SET_1.fill}}></div>
+                                    {window.DesignerEngine.colorThemes[theme].displayName}
+                                </button>
+                            </div>
+                            
+                            {/* Reset Colors */}
+                            {modules.some(m => m.customTheme) && (
+                                <button 
+                                    onClick={resetCustomColors}
+                                    className="bg-white/80 shadow-sm px-3 py-1 rounded-full text-[10px] font-bold text-red-500 flex items-center gap-1 hover:bg-white border border-red-100 ml-12"
+                                >
+                                    <span>↺ Colors</span>
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="ui-interactive flex gap-2">
+                             <button onClick={resetProject} className="glass-panel shadow-sm w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-white border border-gray-200" title="Clear Design">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                             </button>
+                             <div className="w-px bg-gray-200 mx-1 h-8 self-center"></div>
+                             <button onClick={zoomOut} className="glass-panel shadow-sm w-10 h-10 rounded-full flex items-center justify-center text-gray-700 text-xl hover:bg-white border border-gray-200">-</button>
+                             <button onClick={zoomIn} className="glass-panel shadow-sm w-10 h-10 rounded-full flex items-center justify-center text-gray-700 text-xl hover:bg-white border border-gray-200">+</button>
+                             <button onClick={autoZoom} className="glass-panel shadow-sm w-10 h-10 rounded-full flex items-center justify-center text-gray-700 text-xl hover:bg-white border border-gray-200">⤢</button>
+                        </div>
+                    </div>
+
+                    {/* Canvas */}
+                    <div 
+                        ref={containerRef}
+                        className="absolute inset-0 cursor-move"
+                        onMouseDown={(e) => handlePointerDown(e, 'bg')}
+                        onTouchStart={(e) => handlePointerDown(e, 'bg')}
+                    >
+                        <div style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`, transformOrigin: '0 0', width: 0, height: 0 }}>
+                            {modules.sort((a,b) => a.zIndex - b.zIndex).map(m => (
+                                <div
+                                    key={m.id}
+                                    style={{
+                                        position: 'absolute',
+                                        transform: `translate(${m.x}px, ${m.y}px)`,
+                                        width: '240px', height: '240px',
+                                        zIndex: m.zIndex,
+                                        pointerEvents: 'none'
+                                    }}
+                                >
+                                    <div 
+                                        style={{
+                                            width: '100%', height: '100%',
+                                            filter: selectedId === m.id ? 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))' : 'none',
+                                            transition: 'filter 0.2s ease',
+                                            pointerEvents: 'none'
+                                        }}
+                                    >
+                                        <div 
+                                            onMouseDown={(e) => handlePointerDown(e, 'module', m.id)}
+                                            onTouchStart={(e) => handlePointerDown(e, 'module', m.id)}
+                                            style={{ pointerEvents: 'none', width: '100%', height: '100%' }}
+                                        >
+                                            <SvgLoader 
+                                                id={m.isContext ? LADY_URL : m.pieceId} 
+                                                theme={m.customTheme || theme}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Toolbar */}
+                    {selectedId && !uiHidden && (
+                        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-gray-900/90 backdrop-blur text-white px-5 py-2.5 rounded-2xl shadow-2xl flex gap-5 items-center z-30 ui-interactive transition-all">
+                             <button onClick={() => swapModule(modules.find(m => m.id === selectedId))} className="flex flex-col items-center gap-1 active:scale-90 transition-transform group">
+                                <span className="text-xl group-hover:text-blue-300">⇄</span>
+                                <span className="text-[9px] uppercase opacity-70 font-medium">Swap</span>
+                            </button>
+                            <div className="w-px h-6 bg-gray-700 opacity-50"></div>
+                            <button onClick={() => rotateModule(modules.find(m => m.id === selectedId))} className="flex flex-col items-center gap-1 active:scale-90 transition-transform group">
+                                <span className="text-xl group-hover:text-blue-300">↷</span>
+                                <span className="text-[9px] uppercase opacity-70 font-medium">Rotate</span>
+                            </button>
+                            <div className="w-px h-6 bg-gray-700 opacity-50"></div>
+                            <button onClick={() => cycleColor(modules.find(m => m.id === selectedId))} className="flex flex-col items-center gap-1 active:scale-90 transition-transform group">
+                                <span className="text-xl group-hover:text-purple-300">🎨</span>
+                                <span className="text-[9px] uppercase opacity-70 font-medium">Color</span>
+                            </button>
+                            <div className="w-px h-6 bg-gray-700 opacity-50"></div>
+                            <button onClick={() => duplicateModule(selectedId)} className="flex flex-col items-center gap-1 active:scale-90 transition-transform group">
+                                <span className="text-xl group-hover:text-green-300">❐</span>
+                                <span className="text-[9px] uppercase opacity-70 font-medium">Copy</span>
+                            </button>
+                            <div className="w-px h-6 bg-gray-700 opacity-50"></div>
+                            <div className="flex flex-col gap-0.5">
+                                <button onClick={() => setModules(prev => prev.map(m => m.id === selectedId ? { ...m, zIndex: m.zIndex + 1 } : m))} className="leading-none text-base hover:text-blue-400">↑</button>
+                                <button onClick={() => setModules(prev => prev.map(m => m.id === selectedId ? { ...m, zIndex: m.zIndex - 1 } : m))} className="leading-none text-base hover:text-blue-400">↓</button>
+                            </div>
+                            <div className="w-px h-6 bg-gray-700 opacity-50"></div>
+                            <button onClick={() => removeModule(selectedId)} className="flex flex-col items-center gap-1 text-red-400 hover:text-red-300 active:scale-90 transition-transform">
+                                <span className="text-xl">×</span>
+                                <span className="text-[9px] uppercase opacity-70 font-medium">Del</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Bottom Bar */}
+                    <div className="absolute bottom-6 left-4 right-4 z-30 flex gap-3 pointer-events-none">
+                        <div className="flex-1 glass-panel shadow-lg rounded-2xl p-2 pl-4 flex items-center ui-interactive cursor-pointer hover:bg-white transition-all border border-gray-200/50" onClick={() => setIsPriceOpen(true)}>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Total Estimate</span>
+                                <span className="text-base font-bold text-gray-900">Ksh {totalPrice.toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <div className={`flex gap-3 transition-opacity duration-300 ${uiHidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                            <button 
+                                onClick={() => { setSelectedId(null); setUiHidden(true); }}
+                                className="w-14 h-14 glass-panel shadow-lg rounded-2xl flex items-center justify-center text-gray-700 ui-interactive hover:bg-white"
+                            >
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+
+                            <button 
+                                onClick={() => setIsPaletteOpen(true)}
+                                className="w-14 h-14 bg-black shadow-lg rounded-2xl flex items-center justify-center text-white text-3xl ui-interactive pb-1 active:scale-95 transition-transform"
+                            >
+                                +
+                            </button>
+                        </div>
+                    </div>
+
+                    {uiHidden && (
+                        <button 
+                            onClick={() => setUiHidden(false)}
+                            className="absolute bottom-6 right-4 w-14 h-14 glass-panel shadow-lg rounded-2xl flex items-center justify-center text-gray-900 ui-interactive z-40 animate-pulse"
+                        >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    )}
+
+                    {isPaletteOpen && (
+                        <div className="absolute inset-0 z-40 bg-black/20 backdrop-blur-sm" onClick={() => setIsPaletteOpen(false)}>
+                            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 h-[65vh] overflow-y-auto ui-interactive transition-transform" onClick={e => e.stopPropagation()}>
+                                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-bold">Add Module</h3>
+                                    <button onClick={() => addModule(LADY_URL, true)} className="bg-gray-100 px-3 py-1.5 rounded-full text-xs font-bold text-gray-600 hover:bg-gray-200 flex items-center gap-1">
+                                        <span className="text-lg leading-none">+</span> Person
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 pb-12">
+                                    {menuItems.map(m => (
+                                        <button key={m.product} onClick={() => addModule(m.id)} className="flex flex-col items-center bg-gray-50 rounded-xl p-4 active:scale-95 transition-transform">
+                                            <div className="w-24 h-24 relative mb-2">
+                                                <object data={m.imagePath} type="image/svg+xml" className="w-full h-full pointer-events-none" />
+                                            </div>
+                                            <span className="text-xs font-medium text-center">{m.product}</span>
+                                            <span className="text-[10px] text-gray-500">Ksh {m.price.toLocaleString()}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {isPriceOpen && (
+                        <div className="absolute inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsPriceOpen(false)}>
+                            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl ui-interactive" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-xl font-bold">Details</h3>
+                                    <button onClick={() => setIsPriceOpen(false)} className="bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center">×</button>
+                                </div>
+                                <div className="space-y-3 mb-6 max-h-[40vh] overflow-y-auto">
+                                    {Object.entries(itemBreakdown).map(([name, data]) => (
+                                        <div key={name} className="flex justify-between text-sm border-b border-gray-100 pb-2">
+                                            <span>{data.count}x {name}</span>
+                                            <span className="font-medium">Ksh {(data.price * data.count).toLocaleString()}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex justify-between text-lg font-bold mb-6 pt-2 border-t mt-auto">
+                                    <span>Total</span>
+                                    <span>Ksh {totalPrice.toLocaleString()}</span>
+                                </div>
+                                <a href={`https://wa.me/254783891005?text=${encodeURIComponent('I created a design in Sandbox Mode. Total: Ksh ' + totalPrice.toLocaleString())}`} target="_blank" className="block w-full bg-green-600 text-white text-center py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-transform">Order via WhatsApp</a>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Sandbox />);
+    </script>
+</body>
+</html>
