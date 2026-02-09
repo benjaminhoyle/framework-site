@@ -954,9 +954,9 @@ DesignerEngine.moduleFilenames = [
     dim_height: 0
   },
   {
-    id: 'wide-booster-full-NW', 
-    filename: 'wide-booster-full-NW.svg',
-    product: 'Wide Booster',
+    id: 'deep-booster-full-NW', 
+    filename: 'deep-booster-full-NW.svg',
+    product: 'Deep Booster',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points 
@@ -966,9 +966,9 @@ DesignerEngine.moduleFilenames = [
     dim_height: 0
   },
   {
-    id: 'wide-booster-full-NE', 
-    filename: 'wide-booster-full-NE.svg',
-    product: 'Wide Booster',
+    id: 'deep-booster-full-NE', 
+    filename: 'deep-booster-full-NE.svg',
+    product: 'Deep Booster',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points 
