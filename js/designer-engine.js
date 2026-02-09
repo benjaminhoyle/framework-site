@@ -840,7 +840,7 @@ DesignerEngine.moduleFilenames = [
     anchors: [
 
     ], //TODO -- add dimensions and anchor points 
-    price: 2500,
+    price: 3000,
     dim_NE: 0,
     dim_NW: 0,
     dim_height: 0
@@ -852,7 +852,7 @@ DesignerEngine.moduleFilenames = [
     anchors: [
 
     ], //TODO -- add dimensions and anchor points 
-    price: 2500,
+    price: 3000,
     dim_NE: 0,
     dim_NW: 0,
     dim_height: 0
