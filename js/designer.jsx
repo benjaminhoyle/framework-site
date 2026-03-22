@@ -1033,7 +1033,7 @@ window.ModuleBuilder = function ModuleBuilder() {
           fill="rgba(0,0,0,0.8)"
           fontSize={10}
         >
-          {dimension}mm
+          {Math.round(dimension/10)}cm
         </text>
       </g>
     );
@@ -1110,7 +1110,7 @@ window.ModuleBuilder = function ModuleBuilder() {
           fill="rgba(0,0,0,0.8)"
           fontSize={10}
         >
-          {dimension}mm
+          {Math.round(dimension/10)}cm
         </text>
       </g>
     );

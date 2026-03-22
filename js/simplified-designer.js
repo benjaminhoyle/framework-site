@@ -64,9 +64,9 @@ class SimplifiedDesigner {
             const dimensions = this.calculateDimensions(this.options.defaultCode, 'standard');
 
             // Update dimension UI elements directly
-            document.getElementById('width-value-control').textContent = `${dimensions.width} mm`;
-            document.getElementById('height-value-control').textContent = `${dimensions.height} mm`;
-            document.getElementById('depth-value-control').textContent = `${dimensions.depth} mm`;
+            document.getElementById('width-value-control').textContent = `${Math.round(dimensions.width / 10)} cm`;
+            document.getElementById('height-value-control').textContent = `${Math.round(dimensions.height / 10)} cm`;
+            document.getElementById('depth-value-control').textContent = `${Math.round(dimensions.depth / 10)} cm`;
 
             // Calculate and update price
             const moduleIds = [...this.options.defaultCode.matchAll(/\{([^}]+)\}/g)].map(match => match[1]);

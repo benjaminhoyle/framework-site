@@ -377,7 +377,7 @@
                                 <div class="dimension-row">
                                     <label class="control-label">Width</label>
                                     <div class="dimension-value-control">
-                                        <span id="width-value-control" class="dimension-value">980 mm</span>
+                                        <span id="width-value-control" class="dimension-value">98 cm</span>
                                         <div class="dimension-buttons">
                                             <button class="dimension-button minus" id="decrease-width">-</button>
                                             <button class="dimension-button plus" id="increase-width">+</button>
@@ -388,7 +388,7 @@
                                 <div class="dimension-row">
                                     <label class="control-label">Height</label>
                                     <div class="dimension-value-control">
-                                        <span id="height-value-control" class="dimension-value">430 mm</span>
+                                        <span id="height-value-control" class="dimension-value">43 cm</span>
                                         <div class="dimension-buttons">
                                             <button class="dimension-button minus" id="decrease-height">-</button>
                                             <button class="dimension-button plus" id="increase-height">+</button>
@@ -399,7 +399,7 @@
                                 <div class="dimension-row">
                                     <label class="control-label">Depth</label>
                                     <div class="dimension-value-control">
-                                        <span id="depth-value-control" class="dimension-value">280 mm</span>
+                                        <span id="depth-value-control" class="dimension-value">28 cm</span>
                                     </div>
                                 </div>
                             </div>
@@ -705,9 +705,9 @@
 
             // Update dimensions display
             function updateDimensions(dimensions) {
-                dimensionElements.width.textContent = `${dimensions.width} mm`;
-                dimensionElements.height.textContent = `${dimensions.height} mm`;
-                dimensionElements.depth.textContent = `${dimensions.depth} mm`;
+                dimensionElements.width.textContent = `${Math.round(dimensions.width / 10)} cm`;
+                dimensionElements.height.textContent = `${Math.round(dimensions.height / 10)} cm`;
+                dimensionElements.depth.textContent = `${Math.round(dimensions.depth / 10)} cm`;
             }
 
             // Update lamp visibility based on config mode
