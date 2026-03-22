@@ -185,6 +185,7 @@ window.ModuleBuilder = function ModuleBuilder() {
     isSimplifiedMode,
     isManualColorMode,
     onSetManualColors,
+    onDoneManualColors,
     onRemoveManualColors,
     colorOverrides
   }) => {
@@ -222,13 +223,20 @@ window.ModuleBuilder = function ModuleBuilder() {
             Color: {DesignerEngine.colorThemes[selectedTheme].displayName} ▾
           </button>
 
-          {/* Add Manual Colors button - only show when not in manual color mode */}
-          {!isManualColorMode && (
+          {/* Manual Colors button - toggle between Set and Done */}
+          {!isManualColorMode ? (
             <button
               onClick={onSetManualColors}
               className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-2 text-xs shadow-sm designer-btn"
             >
               Set Manual Colors
+            </button>
+          ) : (
+            <button
+              onClick={onDoneManualColors}
+              className="flex-1 bg-green-500 text-white border border-green-500 rounded-md px-3 py-2 text-xs shadow-sm designer-btn"
+            >
+              Done Setting Colors
             </button>
           )}
 
@@ -2444,6 +2452,7 @@ window.ModuleBuilder = function ModuleBuilder() {
         isSimplifiedMode={isSimplifiedMode}
         isManualColorMode={isManualColorMode}
         onSetManualColors={handleSetManualColors}
+        onDoneManualColors={handleDoneManualColors}
         onRemoveManualColors={handleRemoveManualColors}
         colorOverrides={colorOverrides}
       />
