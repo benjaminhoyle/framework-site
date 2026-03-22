@@ -355,6 +355,7 @@
                                 <label class="dropdown-label">I'd like a shelf made of...</label>
                                 <select id="config-mode" class="dropdown-select">
                                     <option value="standard">Standard units</option>
+                                    <option value="compact">Compact units</option>
                                     <option value="wide">Wide units</option>
                                     <option value="deep">Deep units</option>
                                     <option value="corner">Corner units</option>
@@ -711,7 +712,7 @@
 
             // Update lamp visibility based on config mode
             function updateLampVisibility() {
-                if (configMode === 'standard' || configMode === 'corner') {
+                if (configMode === 'standard' || configMode === 'corner' || configMode === 'compact') {
                     lampOptionContainer.style.display = 'flex';
                 } else {
                     lampOptionContainer.style.display = 'none';
@@ -810,6 +811,30 @@
                         // Add deep extensions
                         for (let j = 0; j < extensions; j++) {
                             config += 'HDNE-FDNE{deep-extension-NE}';
+                        }
+
+                        config += ')';
+
+                        if (i < columns - 1) {
+                            config += 'NE-SW';
+                        }
+                    }
+                } else if (configMode === 'compact') {
+                    // Compact configuration logic
+                    for (let i = 0; i < columns; i++) {
+                        config += '(';
+
+                        // Add compact base
+                        config += '{compact-base-NE}';
+
+                        // Add compact extensions
+                        for (let j = 0; j < extensions; j++) {
+                            config += 'HCNE-FCNE{compact-extension-NE}';
+                        }
+
+                        // Add lamp if enabled and this is the first column
+                        if (hasLamp && i === 0) {
+                            config += 'HCNE-FCNE{lamp-compact-NE-N}';
                         }
 
                         config += ')';

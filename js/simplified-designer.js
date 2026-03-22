@@ -306,7 +306,7 @@ class SimplifiedDesigner {
         let height = 0;
         let depth = 0;
 
-        if (mode === 'standard' || mode === 'wide' || mode === 'deep') {
+        if (mode === 'standard' || mode === 'wide' || mode === 'deep' || mode === 'compact') {
             // For standard/wide/deep mode: width = sum of NE dimensions, depth = single NW dimension
             const baseModules = stacks.map(stack => stack[0]); // Get first module from each stack
         
