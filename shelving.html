@@ -1,9 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-<script src="js/structured-data.js"></script>
-
 
 <head>
+    <!-- === TRACKING === -->
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1492649948884685');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1492649948884685&ev=PageView&noscript=1"/></noscript>
+    <!-- End Meta Pixel Code -->
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16875113878"></script>
     <script>
@@ -26,29 +41,11 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-HXHT6KGZT3"></script>
     <script src="js/image-loading.js"></script>
     <script>
-        console.log('Page loading diagnostics:');
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('DOM fully loaded');
-
-            // Check if React loaded
-            if (window.React) {
-                console.log('React loaded successfully');
-            } else {
-                console.log('React failed to load');
-            }
-
-            // Check root element
-            const root = document.getElementById('root');
-            console.log('Root element:', root ? 'Found' : 'Not found');
-        });
-    </script>
-    <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
 
         gtag('config', 'G-HXHT6KGZT3', {
-            debug_mode: true,
             send_page_view: true,
             allow_google_signals: true,
             enhanced_measurement: {
@@ -195,6 +192,7 @@
         }
     </style>
     <link rel="canonical" href="https://www.framework.co.ke/shelving.html">
+    <script src="js/structured-data.js"></script>
 </head>
 
 <body class="bg-white">
@@ -212,7 +210,8 @@
         <p class="gallery-intro max-w-4xl mx-auto px-4 pt-8 pb-2 text-center">
             Kenya's first modular shelf system. Infinitely expandable with no tools necessary. Start small and add more
             shelves as you need them. Scroll down to learn more or <a href="simplified-designer.html"
-                class="elegant-link">click here to start your order</a>.
+                class="elegant-link"
+                onclick="if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Simple Designer',content_category:'shelving_page_intro'});}">click here to start your order</a>.
         </p>
 
     </div>
@@ -470,6 +469,12 @@
                                         event_category: 'navigation',
                                         event_label: 'lightbox_order_button'
                                     });
+                                    if (typeof fbq === 'function') {
+                                        fbq('track', 'CustomizeProduct', {
+                                            content_name: 'Simple Designer',
+                                            content_category: 'shelving_page_lightbox'
+                                        });
+                                    }
                                 }}
                             >
                                 Build Your Shelf
@@ -488,17 +493,23 @@
                     target="_blank"
                     rel="noopener noreferrer"
                     className="fixed bottom-6 right-6 bg-green-600 text-white p-4 rounded-full shadow-lg hover:bg-green-700 transition-all duration-200 z-50 flex items-center gap-2 group md:pr-6"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        return trackContactConversion(e.currentTarget.href, {
+                    onClick={() => {
+                        trackContactConversion('', {
                             event_category: 'engagement',
-                            event_label: 'whatsapp_chat'
+                            event_label: 'whatsapp_fab'
                         });
-                    }
-                    }
+                        if (typeof fbq === 'function') {
+                            fbq('track', 'Lead', {
+                                content_name: 'WhatsApp Chat',
+                                content_category: 'shelving_page'
+                            });
+                        }
+                    }}
                 >
-                    {/* content */}
-                </a >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                </a>
             );
         }
 
@@ -635,6 +646,12 @@
                                                         event_category: 'navigation',
                                                         event_label: 'simple_shelf_designer'
                                                     });
+                                                    if (typeof fbq === 'function') {
+                                                        fbq('track', 'CustomizeProduct', {
+                                                            content_name: 'Simple Designer',
+                                                            content_category: 'shelving_page_body'
+                                                        });
+                                                    }
                                                 }}
                                             >
                                                 Start Here
@@ -674,12 +691,17 @@
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    return trackContactConversion(e.currentTarget.href, {
+                                                onClick={() => {
+                                                    trackContactConversion('', {
                                                         event_category: 'navigation',
                                                         event_label: 'whatsapp_guidance'
                                                     });
+                                                    if (typeof fbq === 'function') {
+                                                        fbq('track', 'Lead', {
+                                                            content_name: 'WhatsApp Chat',
+                                                            content_category: 'shelving_page_guidance'
+                                                        });
+                                                    }
                                                 }}
                                             >
                                                 Contact Us on WhatsApp
@@ -696,6 +718,12 @@
                                                         event_category: 'navigation',
                                                         event_label: 'full_designer'
                                                     });
+                                                    if (typeof fbq === 'function') {
+                                                        fbq('track', 'CustomizeProduct', {
+                                                            content_name: 'Advanced Designer',
+                                                            content_category: 'shelving_page'
+                                                        });
+                                                    }
                                                 }}
                                             >
                                                 Go to Advanced Designer
@@ -765,6 +793,15 @@
             </div>
         </div>
     </section>
+    <script>
+    if (typeof fbq === 'function') {
+        fbq('track', 'ViewContent', {
+            content_name: 'Shelving',
+            content_category: 'landing_page',
+            content_type: 'product'
+        });
+    }
+    </script>
 </body>
 
 </html>

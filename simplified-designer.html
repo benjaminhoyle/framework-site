@@ -1,8 +1,24 @@
 <!DOCTYPE html>
 <html>
-<script src="js/structured-data.js"></script>
 
 <head>
+    <!-- === TRACKING === -->
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1492649948884685');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1492649948884685&ev=PageView&noscript=1"/></noscript>
+    <!-- End Meta Pixel Code -->
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16875113878"></script>
     <script>
@@ -39,6 +55,7 @@
     <!-- Tailwind for the post-designer sections -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <script src="js/image-loading.js"></script>
+    <script src="js/structured-data.js"></script>
 
     <style>
         body {
@@ -464,7 +481,8 @@
                                         onclick="gtag('event', 'click_chat', {
                                     event_category: 'engagement',
                                     event_label: 'whatsapp_chat'
-                                });">
+                                });
+                                if(typeof fbq==='function'){fbq('track','Lead',{content_name:'WhatsApp Chat',content_category:'simple_designer_page'});}">
                                         Contact Us on WhatsApp
                                     </a>
                                 </div>
@@ -477,7 +495,8 @@
                                         onclick="gtag('event', 'click', {
                                     event_category: 'navigation',
                                     event_label: 'full_designer'
-                                });">
+                                });
+                                if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Advanced Designer',content_category:'simple_designer_page'});}">
                                         Go to Advanced Designer
                                     </a>
                                 </div>
@@ -577,6 +596,19 @@
             // Add GA4 conversion tracking for WhatsApp order button
             document.getElementById('whatsapp-order-button').addEventListener('click', function (e) {
                 e.preventDefault();
+
+                // Meta Pixel: InitiateCheckout
+                if (typeof fbq === 'function') {
+                    var price = parseFloat(document.getElementById('total-price').textContent.replace(/,/g, ''));
+                    fbq('track', 'InitiateCheckout', {
+                        content_name: 'Modular Shelving',
+                        content_category: 'simple_designer',
+                        value: price,
+                        currency: 'KES',
+                        num_items: 1
+                    });
+                }
+
                 return trackCheckoutConversion(this.href, {
                     'currency': 'KES',
                     'value': parseFloat(document.getElementById('total-price').textContent.replace(/,/g, '')),

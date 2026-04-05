@@ -2332,6 +2332,18 @@ window.ModuleBuilder = function ModuleBuilder() {
               )}`}
               onClick={(e) => {
                 e.preventDefault();
+
+                // Meta Pixel: InitiateCheckout
+                if (typeof fbq === 'function') {
+                    fbq('track', 'InitiateCheckout', {
+                        content_name: 'Modular Shelving',
+                        content_category: 'advanced_designer',
+                        value: placedPieces.reduce((sum, { piece }) => sum + piece.price, 0),
+                        currency: 'KES',
+                        num_items: placedPieces.length
+                    });
+                }
+
                 return trackCheckoutConversion(e.currentTarget.href, {
                   'currency': 'KES',
                   'value': placedPieces.reduce((sum, { piece }) => sum + piece.price, 0),
