@@ -73,59 +73,90 @@
     <title>Customizable Modernist Shelving System | Kenyan-Made Modular Design | Framework Nairobi</title>
     <meta name="description"
         content="Flexible, modernist and Kenyan-made. Use our modular shelving system to bring functionality, design and color to any part of your home, office or shop.">
+    <meta property="og:title" content="Customizable Modernist Shelving | Framework Nairobi">
+    <meta property="og:description" content="Flexible, modernist and Kenyan-made. Modular shelving that brings design and color to any space. Starting from Ksh 6,500.">
+    <meta property="og:image" content="https://www.framework.co.ke/images/shelving/shelf (18).jpg">
+    <meta property="og:url" content="https://www.framework.co.ke/shelving.html">
+    <meta property="og:type" content="product">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap">
     <link rel="stylesheet" href="css/styles.css">
 
-    <!-- Load React -->
-    <script src="https://unpkg.com/react@16.14.0/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@16.14.0/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <style>
+        /* === Layout (replacing Tailwind utilities) === */
+        *, *::before, *::after { box-sizing: border-box; }
+        .max-w-6xl { max-width: 72rem; }
+        .max-w-4xl { max-width: 56rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+        .pt-8 { padding-top: 2rem; }
+        .pb-2 { padding-bottom: 0.5rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-12 { margin-bottom: 3rem; }
+        .mb-16 { margin-bottom: 4rem; }
+        .mt-3 { margin-top: 0.75rem; }
+        .text-center { text-align: center; }
+        .text-lg { font-size: 1.125rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .font-bold { font-weight: 700; }
+        .font-medium { font-weight: 500; }
+        .font-light { font-weight: 300; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-700 { color: #374151; }
+        .text-white { color: #ffffff; }
+        .bg-white { background-color: #ffffff; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-md { border-radius: 0.375rem; }
+        .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .shadow-md { box-shadow: 0 4px 6px rgba(0,0,0,0.07); }
+        .overflow-hidden { overflow: hidden; }
+        .inline-block { display: inline-block; }
+        .hidden { display: none; }
+        .w-full { width: 100%; }
+        .h-auto { height: auto; }
+        .h-64 { height: 16rem; }
+        .object-cover { object-fit: cover; }
+        .object-center { object-position: center; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .space-y-6 > * + * { margin-top: 1.5rem; }
+
+        /* Flexbox */
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .gap-2 { gap: 0.5rem; }
+
+        /* Grid */
+        .grid { display: grid; }
+        .gap-8 { gap: 2rem; }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+          .md\:flex { display: flex; }
+          .md\:w-2\/5 { width: 40%; }
+          .md\:w-3\/5 { width: 60%; }
+          .md\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+          .md\:hidden { display: none; }
+          .md\:block { display: block; }
+          .md\:bg-white { background-color: #ffffff; }
+          .md\:shadow-none { box-shadow: none; }
+          .md\:h-full { height: 100%; }
+        }
+
         .gallery-item {
             transition: transform 0.2s;
         }
 
         .gallery-item:hover {
             transform: translateY(-4px);
-        }
-
-        .lightbox-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
-
-        .lightbox-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .lightbox-content {
-            max-width: 90vw;
-            max-height: 90vh;
-            position: relative;
-            transform: scale(0.95);
-            transition: transform 0.3s;
-        }
-
-        .lightbox-overlay.active .lightbox-content {
-            transform: scale(1);
-        }
-
-        .lightbox-image {
-            max-width: 100%;
-            max-height: 80vh;
-            object-fit: contain;
         }
 
         .featured-section-card {
@@ -190,6 +221,359 @@
             color: #2c4b6e;
             border-bottom-color: #4a6c8a;
         }
+
+        /* === Intro Section === */
+        .intro-section {
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 28px 24px 36px;
+        }
+        .intro-tagline {
+          font-size: 13px;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: #999;
+          margin: 0 0 12px;
+          font-weight: 400;
+        }
+        .intro-headline {
+          font-size: 24px;
+          font-weight: 700;
+          line-height: 1.35;
+          color: #333;
+          margin: 0 0 16px;
+          letter-spacing: -0.2px;
+        }
+        .intro-subhead {
+          font-size: 15px;
+          line-height: 1.6;
+          color: #666;
+          margin: 0 0 24px;
+          font-weight: 400;
+        }
+        .intro-links {
+          display: flex;
+          flex-direction: column;
+        }
+        .intro-link-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 0;
+          border-top: 1px solid #eee;
+          text-decoration: none;
+          color: #333;
+          transition: color 0.2s;
+        }
+        .intro-link-row:last-child {
+          border-bottom: 1px solid #eee;
+        }
+        .intro-link-row:hover {
+          color: #4a6c8a;
+        }
+        .intro-link-text {
+          font-size: 15px;
+          font-weight: 400;
+        }
+        .intro-link-arrow {
+          font-size: 20px;
+          color: #ccc;
+          transition: color 0.2s;
+        }
+        .intro-link-row:hover .intro-link-arrow {
+          color: #4a6c8a;
+        }
+        @media (min-width: 768px) {
+          .intro-headline { font-size: 28px; }
+          .intro-section { padding: 40px 24px 48px; }
+        }
+
+        /* === Featured Gallery === */
+        .featured-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 2rem;
+          max-width: 72rem;
+          margin: 0 auto 1rem;
+          padding: 2rem 1rem 0;
+        }
+        @media (min-width: 768px) {
+          .featured-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .featured-item {
+          cursor: pointer;
+          transition: transform 0.2s;
+        }
+        .featured-item:hover { transform: translateY(-4px); }
+        .featured-img {
+          width: 100%;
+          aspect-ratio: 1;
+          object-fit: cover;
+          border-radius: 0.5rem;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .featured-caption {
+          margin-top: 0.75rem;
+          color: #374151;
+          line-height: 1.5;
+        }
+        .see-more-link {
+          text-align: center;
+          margin-bottom: 3rem;
+          padding: 1rem;
+        }
+        .see-configs-btn {
+          display: inline-block;
+          padding: 12px 28px;
+          background: #2563eb;
+          color: #fff;
+          font-weight: 600;
+          font-size: 1.05rem;
+          border-radius: 8px;
+          text-decoration: none;
+          transition: background 0.2s, transform 0.15s;
+        }
+        .see-configs-btn:hover {
+          background: #1d4ed8;
+          transform: translateY(-1px);
+        }
+
+        /* === Configuration Lightbox === */
+        .lightbox-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.92);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          z-index: 1000;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.3s, visibility 0.3s;
+          padding: 1rem;
+        }
+        .lightbox-overlay.active {
+          opacity: 1;
+          visibility: visible;
+        }
+        .lightbox-content {
+          max-width: 480px;
+          width: calc(100% - 120px);
+          max-height: 90vh;
+          overflow-y: auto;
+          background: #fff;
+          border-radius: 12px;
+          transform: scale(0.95);
+          transition: transform 0.3s;
+          position: relative;
+          flex-shrink: 1;
+          min-width: 0;
+        }
+        @media (max-width: 680px) {
+          .lightbox-content { width: 100%; max-width: 100%; }
+        }
+        .lightbox-overlay.active .lightbox-content {
+          transform: scale(1);
+        }
+        .lightbox-close {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          background: rgba(0,0,0,0.5);
+          border: none;
+          color: #fff;
+          font-size: 28px;
+          line-height: 1;
+          cursor: pointer;
+          padding: 4px 10px 6px;
+          border-radius: 50%;
+          z-index: 10;
+          transition: background 0.2s;
+        }
+        .lightbox-close:hover { background: rgba(0,0,0,0.8); }
+        .lightbox-image-wrap {
+          position: relative;
+        }
+        .lightbox-image {
+          width: 100%;
+          aspect-ratio: 1;
+          object-fit: cover;
+          display: block;
+          border-radius: 12px 12px 0 0;
+        }
+        .lightbox-nav {
+          background: rgba(255,255,255,0.15);
+          color: #fff;
+          border: none;
+          font-size: 22px;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          border-radius: 50%;
+          transition: background 0.2s;
+          z-index: 1001;
+          flex-shrink: 0;
+        }
+        .lightbox-nav:hover { background: rgba(255,255,255,0.3); }
+        @media (max-width: 680px) {
+          .lightbox-nav { display: none; }
+        }
+        .lightbox-dots {
+          position: absolute;
+          bottom: 12px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 6px;
+        }
+        .dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.5);
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        .dot.active { background: #fff; }
+        .lightbox-info {
+          padding: 20px 24px 24px;
+        }
+        .lightbox-title {
+          font-size: 1.25rem;
+          font-weight: 700;
+          margin: 0 0 4px;
+          color: #111;
+        }
+        .lightbox-price {
+          font-size: 1.35rem;
+          font-weight: 700;
+          color: #16a34a;
+          margin: 0 0 8px;
+        }
+        .lightbox-desc {
+          color: #555;
+          line-height: 1.5;
+          margin: 0 0 20px;
+          font-size: 0.95rem;
+        }
+        .lightbox-ctas {
+          display: flex;
+          gap: 10px;
+        }
+        @media (max-width: 480px) {
+          .lightbox-ctas { flex-direction: column; }
+        }
+        .btn-order {
+          flex: 1;
+          display: inline-block;
+          text-align: center;
+          padding: 12px 20px;
+          background: #16a34a;
+          color: #fff;
+          font-weight: 600;
+          border-radius: 8px;
+          text-decoration: none;
+          transition: background 0.2s;
+          font-size: 0.95rem;
+        }
+        .btn-order:hover { background: #15803d; }
+        .btn-customize {
+          flex: 1;
+          display: inline-block;
+          text-align: center;
+          padding: 12px 20px;
+          background: transparent;
+          color: #2563eb;
+          font-weight: 600;
+          border: 1.5px solid #2563eb;
+          border-radius: 8px;
+          text-decoration: none;
+          transition: background 0.2s, color 0.2s;
+          font-size: 0.95rem;
+        }
+        .btn-customize:hover { background: #2563eb; color: #fff; }
+
+        /* === Details Grid === */
+        .details-section {
+          max-width: 72rem;
+          margin: 0 auto 3rem;
+          padding: 0 1rem;
+        }
+        .details-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
+        }
+        @media (min-width: 768px) {
+          .details-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+        .detail-item img {
+          width: 100%;
+          aspect-ratio: 1;
+          object-fit: cover;
+          border-radius: 8px;
+        }
+        .detail-item p {
+          margin-top: 0.5rem;
+          font-size: 0.9rem;
+          color: #555;
+        }
+
+        /* === WhatsApp FAB === */
+        .whatsapp-fab {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          background: #16a34a;
+          color: #fff;
+          padding: 14px 20px 14px 16px;
+          border-radius: 50px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          text-decoration: none;
+          font-weight: 500;
+          font-size: 0.95rem;
+          z-index: 50;
+          transition: background 0.2s, transform 0.2s;
+        }
+        .whatsapp-fab:hover { background: #15803d; transform: translateY(-2px); }
+        @media (max-width: 480px) {
+          .whatsapp-label { display: none; }
+          .whatsapp-fab { padding: 14px; border-radius: 50%; }
+        }
+
+        /* === Button styles for CTA cards === */
+        .btn-blue {
+          background-color: #2563eb;
+          color: #fff;
+          font-weight: 500;
+          padding: 0.5rem 1.5rem;
+          border-radius: 0.375rem;
+          transition: background-color 0.2s;
+          display: inline-block;
+          text-decoration: none;
+        }
+        .btn-blue:hover { background-color: #1d4ed8; }
+        .btn-green {
+          background-color: #16a34a;
+          color: #fff;
+          font-weight: 500;
+          padding: 0.5rem 1.5rem;
+          border-radius: 0.375rem;
+          transition: background-color 0.2s;
+          display: inline-block;
+          text-decoration: none;
+        }
+        .btn-green:hover { background-color: #15803d; }
+
+        /* Mobile-only title bg */
+        .bg-mobile-title { background-color: #F2F3F6; }
     </style>
     <link rel="canonical" href="https://www.framework.co.ke/shelving.html">
     <script src="js/structured-data.js"></script>
@@ -200,560 +584,161 @@
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NNSS73RJ" height="0" width="0"
             style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
-    <!-- Header bar -->
-    <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap">
-    <link rel="stylesheet" href="css/styles.css">
     <script src="js/site.js"></script>
 
-    <div class="gallery-container" role="main">
-        <p class="gallery-intro max-w-4xl mx-auto px-4 pt-8 pb-2 text-center">
-            Kenya's first modular shelf system. Infinitely expandable with no tools necessary. Start small and add more
-            shelves as you need them. Scroll down to learn more or <a href="simplified-designer.html"
-                class="elegant-link"
-                onclick="if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Simple Designer',content_category:'shelving_page_intro'});}">click here to start your order</a>.
-        </p>
-
+    <!-- Intro -->
+    <div class="intro-section">
+      <p class="intro-tagline">Modular shelving</p>
+      <h1 class="intro-headline">Stack it. Expand it. Make it yours.</h1>
+      <p class="intro-subhead">Steel-framed modular shelving you can configure to fit any space. Available in four bold colors, made in Nairobi, and delivered to your door within a week.</p>
+      <div class="intro-links">
+        <a href="#" class="intro-link-row" onclick="event.preventDefault(); openLightbox(0);
+           if(typeof fbq==='function'){fbq('track','ViewContent',{content_name:'Design Ideas',content_category:'shelving_page_intro'});}">
+          <span class="intro-link-text">Design ideas & pricing</span>
+          <span class="intro-link-arrow">&rsaquo;</span>
+        </a>
+        <a href="simplified-designer.html" class="intro-link-row"
+           onclick="if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Simple Designer',content_category:'shelving_page_intro'});}">
+          <span class="intro-link-text">Customize your own shelf</span>
+          <span class="intro-link-arrow">&rsaquo;</span>
+        </a>
+        <a href="#featured-gallery" class="intro-link-row"
+           onclick="event.preventDefault(); document.getElementById('featured-gallery').scrollIntoView({behavior:'smooth'});">
+          <span class="intro-link-text">See it in action</span>
+          <span class="intro-link-arrow">&rsaquo;</span>
+        </a>
+      </div>
     </div>
-    <div id="root"></div>
 
-    <script type="text/babel">
-        // Gallery images data
-        const galleryImages = [
-            {
-                id: 'shelf-00',
-                path: 'images/shelving/shelf (18).jpg',
-                caption: '<strong>Infinitely Expandable</strong><br>Our modular shelving system grows in any direction – stack it vertically, extend it horizontally, and turn corners. Perfect for Nairobi\'s diverse living spaces, these space-saving solutions adapt to apartments, homes, and offices throughout Kenya.'
-            },
-            {
-                id: 'shelf-01',
-                path: 'images/shelving/shelf (14).jpg',
-                caption: '<strong>Made in Kenya</strong><br>Crafted in our Nairobi workshop, these steel shelving units combine slim proportions with exceptional durability. The precision-engineered steel frame and quality wood surfaces create furniture that\'s both beautiful and built to last, supporting even the heaviest collections.'
-            },
-            {
-                id: 'shelf-03',
-                path: 'images/shelving/shelf (00).jpg',
-                caption: '<strong>Colorful & Customizable</strong><br>Choose from our curated palette of vibrant colors to match any Kenyan interior design scheme. Further customize your shelving with our range of accessories, including integrated lamps and bookends, creating a truly bespoke storage solution.'
-            },
-            {
-                id: 'shelf-04',
-                path: 'images/shelving/shelf (04).jpg',
-                caption: 'Combine several units to make a tall elegant shelf. The unit shown goes for Ksh 28,500.'
-            },
-            {
-                id: 'shelf-10',
-                path: 'images/shelving/shelf (10).jpg',
-                caption: 'Adding on extra shelves is as easy as sliding them together. No tools necessary.'
-            },
-            {
-                id: 'shelf-11',
-                path: 'images/shelving/shelf (11).jpg',
-                caption: 'Steel construction makes for a rock-solid structure'
-            },
-            {
-                id: 'shelf-11b',
-                path: 'images/shelving/shelf (11b).jpg',
-                caption: 'Grow your shelves as you grow your library.'
-            },
-            {
-                id: 'shelf-12',
-                path: 'images/shelving/shelf (12).jpg',
-                caption: 'All shelves come with adjustable feet to ensure stability on uneven floors.'
-            },
-            {
-                id: 'shelf-14',
-                path: 'images/shelving/shelf (14).jpg',
-                caption: 'Top-knotch fabrication and perfectly engineered details.'
-            },
-            {
-                id: 'shelf-17',
-                path: 'images/shelving/shelf (17).jpg',
-                caption: 'Designed to fit in any corner of your home or office.'
-            },
-            {
-                id: 'shelf-20',
-                path: 'images/shelving/shelf (20).jpg',
-                caption: 'The system can expand to hold your entire collection.'
-            },
-            {
-                id: 'shelf-video',
-                path: 'images/shelving/designer-tutorial.gif',
-                caption: 'Design a shelf that is perfect for your space with our online design tool.'
-            }
-        ];
+    <!-- Featured Gallery (Top 3 Images) -->
+    <div id="featured-gallery" class="featured-gallery">
+      <div class="featured-grid">
+        <div class="featured-item" onclick="openLightbox(0)">
+          <img src="images/shelving/shelf (18).jpg"
+               alt="Modular shelving system showing infinite expandability — stack vertically, extend horizontally, turn corners"
+               class="featured-img">
+          <p class="featured-caption"><strong>Infinitely Expandable</strong><br>Our modular shelving system grows in any direction — stack vertically, extend horizontally, and turn corners. Perfect for Nairobi's diverse living spaces.</p>
+        </div>
+        <div class="featured-item" onclick="openLightbox(0)">
+          <img src="images/shelving/shelf (14).jpg"
+               alt="Steel and wood shelving unit crafted in Nairobi workshop"
+               loading="lazy"
+               class="featured-img">
+          <p class="featured-caption"><strong>Made in Kenya</strong><br>Crafted in our Nairobi workshop, these steel shelving units combine slim proportions with exceptional durability.</p>
+        </div>
+        <div class="featured-item" onclick="openLightbox(0)">
+          <img src="images/shelving/shelf (00).jpg"
+               alt="Colorful customizable shelving in multiple color options"
+               loading="lazy"
+               class="featured-img">
+          <p class="featured-caption"><strong>Colorful & Customizable</strong><br>Choose from our curated palette of vibrant colors to match any interior design scheme.</p>
+        </div>
+      </div>
 
-        // Track scroll depth
-        function trackScrollDepth() {
-            let maxScroll = 0;
-            let scrollTimeout;
+      <div class="see-more-link">
+        <a href="#" onclick="event.preventDefault(); openLightbox(0);" class="see-configs-btn">
+          See design ideas &amp; pricing
+        </a>
+      </div>
+    </div>
 
-            document.addEventListener('scroll', () => {
-                if (scrollTimeout) {
-                    clearTimeout(scrollTimeout);
-                }
-
-                scrollTimeout = setTimeout(() => {
-                    const scrollPercent = Math.round(
-                        (window.scrollY + window.innerHeight) /
-                        document.documentElement.scrollHeight * 100
-                    );
-
-                    // Only track at significant thresholds
-                    if (scrollPercent >= 90 && maxScroll < 90) {
-                        maxScroll = 90;
-                        gtag('event', 'scroll_depth', {
-                            percent_scrolled: 90
-                        });
-                    }
-                    else if (scrollPercent >= 75 && maxScroll < 75) {
-                        maxScroll = 75;
-                        gtag('event', 'scroll_depth', {
-                            percent_scrolled: 75
-                        });
-                    }
-                    else if (scrollPercent >= 50 && maxScroll < 50) {
-                        maxScroll = 50;
-                        gtag('event', 'scroll_depth', {
-                            percent_scrolled: 50
-                        });
-                    }
-                    else if (scrollPercent >= 25 && maxScroll < 25) {
-                        maxScroll = 25;
-                        gtag('event', 'scroll_depth', {
-                            percent_scrolled: 25
-                        });
-                    }
-                }, 100); // 100ms debounce
-            });
-        }
-
-        // Featured Gallery Item Component
-        function FeaturedGalleryItem({ image, index, onImageClick }) {
-            return (
-                <div className="gallery-item">
-                    <div className="relative aspect-square cursor-pointer" onClick={() => onImageClick(index)}>
-                        <img
-                            src={image.path}
-                            alt={image.caption.replace(/<\/?[^>]+(>|$)/g, "")}
-                            loading={index > 0 ? "lazy" : "eager"}
-                            className="w-full h-full object-cover rounded-lg shadow-md"
-                        />
-                    </div>
-                    <p
-                        className="mt-3 text-gray-700"
-                        dangerouslySetInnerHTML={{ __html: image.caption }}
-                    ></p>
+    <!-- Simple Shelf CTA Card -->
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="mb-12">
+        <div class="bg-white rounded-lg overflow-hidden shadow-md">
+          <h2 class="text-2xl text-center md:hidden p-4 pb-2 font-bold bg-mobile-title mb-0">
+            Looking for a<br>Simple Shelf?
+          </h2>
+          <div class="md:flex">
+            <div class="md:w-2\/5">
+              <img src="images/shelving/shelf (03).jpg"
+                   alt="Simple modular shelf configuration"
+                   class="w-full h-auto object-cover">
+            </div>
+            <div class="p-6 md:w-3\/5 flex flex-col justify-center bg-gray-50 md:bg-white">
+              <h2 class="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Simple Shelf?</h2>
+              <div class="bg-white p-4 rounded-lg shadow-sm md:shadow-none">
+                <p class="text-gray-700 mb-6">If you want a great shelf without needing to overthink it, our simplified ordering tool will help you get exactly what you need.</p>
+                <div>
+                  <a href="simplified-designer.html"
+                     class="btn-blue"
+                     onclick="gtag('event','click',{event_category:'navigation',event_label:'simple_shelf_designer'}); if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Simple Designer',content_category:'shelving_page_body'});}">
+                    Start Here
+                  </a>
                 </div>
-            );
-        }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        // Lightbox Component
-        // Replace the existing Lightbox component with this Instagram-style version
-        function Lightbox({ isOpen, currentIndex, images, onClose, onNext, onPrev }) {
-            const handleKeyDown = React.useCallback((e) => {
-                if (e.key === 'Escape') onClose();
-                if (e.key === 'ArrowRight') onNext();
-                if (e.key === 'ArrowLeft') onPrev();
-            }, [onClose, onNext, onPrev]);
+      <!-- Custom Shelf CTA Card -->
+      <div class="mb-16">
+        <div class="bg-white rounded-lg overflow-hidden shadow-md">
+          <h2 class="text-2xl text-center md:hidden p-4 pb-2 font-bold bg-mobile-title mb-0">
+            Looking for a<br>Unique Shelf?
+          </h2>
+          <div class="md:flex">
+            <div class="md:w-2\/5 bg-gray-50">
+              <img src="images/shelving/designer-tutorial.gif"
+                   alt="Custom shelving design tool"
+                   class="w-full h-64 md:h-full object-cover object-center">
+            </div>
+            <div class="p-6 md:w-3\/5 flex flex-col justify-center">
+              <h2 class="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Unique Shelf?</h2>
+              <p class="text-gray-600 mb-6">If you want to leverage the full potential of our shelving system, we can chat on WhatsApp to find a perfect setup for your space, or you can try out our full shelf designer app.</p>
 
-            React.useEffect(() => {
-                if (isOpen) {
-                    document.addEventListener('keydown', handleKeyDown);
-                    document.body.style.overflow = 'hidden';
-                } else {
-                    document.removeEventListener('keydown', handleKeyDown);
-                    document.body.style.overflow = '';
-                }
-
-                return () => {
-                    document.removeEventListener('keydown', handleKeyDown);
-                    document.body.style.overflow = '';
-                };
-            }, [isOpen, handleKeyDown]);
-
-            if (!isOpen) return null;
-
-            const image = images[currentIndex];
-
-            return (
-                <div className={`lightbox-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}>
-                    <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-                        {/* Close button */}
-                        <button
-                            onClick={onClose}
-                            className="close-button"
-                            aria-label="Close lightbox"
-                        >
-                            ×
-                        </button>
-
-                        {/* Image container with arrow navigation */}
-                        <div
-                            className="image-container"
-                            onTouchStart={(e) => {
-                                // Store the starting touch position
-                                this.touchStartX = e.touches[0].clientX;
-                            }}
-                            onTouchEnd={(e) => {
-                                // Get the ending touch position
-                                const touchEndX = e.changedTouches[0].clientX;
-                                // Calculate the difference
-                                const diffX = touchEndX - this.touchStartX;
-
-                                // If the swipe was significant enough (more than 50px)
-                                if (diffX > 50) {
-                                    // Swiped right, go to previous image
-                                    onPrev();
-                                } else if (diffX < -50) {
-                                    // Swiped left, go to next image
-                                    onNext();
-                                }
-                            }}
-                        >
-                            <button className="nav-button prev-button" onClick={(e) => {
-                                e.stopPropagation();
-                                onPrev();
-                            }} aria-label="Previous image">
-                                ‹
-                            </button>
-                            <img
-                                src={image.path}
-                                alt={image.caption.replace(/<\/?[^>]+(>|$)/g, "")}
-                                className="lightbox-image"
-                            />
-                            <button className="nav-button next-button" onClick={(e) => {
-                                e.stopPropagation();
-                                onNext();
-                            }} aria-label="Next image">
-                                ›
-                            </button>
-
-                            {/* Dots indicator at bottom of image */}
-                            <div className="dots-container">
-                                {images.map((_, index) => (
-                                    <span
-                                        key={index}
-                                        className={`dot ${index === currentIndex ? 'active' : ''}`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (index !== currentIndex) {
-                                                // Direct navigation to the clicked dot
-                                                const imagesCopy = [...images];
-                                                while (currentIndex !== index) {
-                                                    if (currentIndex < index) {
-                                                        onNext();
-                                                    } else {
-                                                        onPrev();
-                                                    }
-                                                }
-                                            }
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Caption container */}
-                        <div className="caption-container">
-                            <p dangerouslySetInnerHTML={{ __html: image.caption }}></p>
-                        </div>
-
-                        {/* CTA button */}
-                        <div className="cta-container">
-                            <a
-                                href="simplified-designer.html"
-                                className="cta-button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    gtag('event', 'click', {
-                                        event_category: 'navigation',
-                                        event_label: 'lightbox_order_button'
-                                    });
-                                    if (typeof fbq === 'function') {
-                                        fbq('track', 'CustomizeProduct', {
-                                            content_name: 'Simple Designer',
-                                            content_category: 'shelving_page_lightbox'
-                                        });
-                                    }
-                                }}
-                            >
-                                Build Your Shelf
-                            </a>
-                        </div>
-                    </div>
+              <div class="space-y-4">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                  <h3 class="font-bold text-lg mb-2">Get guidance on a perfect design</h3>
+                  <a href="https://wa.me/254783891005"
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     class="btn-green"
+                     onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{event_category:'navigation',event_label:'whatsapp_guidance'});} if(typeof fbq==='function'){fbq('track','Lead',{content_name:'WhatsApp Chat',content_category:'shelving_page_guidance'});}">
+                    Contact Us on WhatsApp
+                  </a>
                 </div>
-            );
-        }
 
-        // WhatsApp Button Component
-        function WhatsAppButton() {
-            return (
-                <a
-                    href="https://wa.me/254783891005"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="fixed bottom-6 right-6 bg-green-600 text-white p-4 rounded-full shadow-lg hover:bg-green-700 transition-all duration-200 z-50 flex items-center gap-2 group md:pr-6"
-                    onClick={() => {
-                        trackContactConversion('', {
-                            event_category: 'engagement',
-                            event_label: 'whatsapp_fab'
-                        });
-                        if (typeof fbq === 'function') {
-                            fbq('track', 'Lead', {
-                                content_name: 'WhatsApp Chat',
-                                content_category: 'shelving_page'
-                            });
-                        }
-                    }}
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                </a>
-            );
-        }
-
-        // Main App Component
-        function App() {
-            const [lightboxOpen, setLightboxOpen] = React.useState(false);
-            const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
-
-            // Initialize scroll tracking
-            React.useEffect(() => {
-                trackScrollDepth();
-
-                // Check for gallery parameter in URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const galleryParam = urlParams.get('gallery');
-                if (galleryParam === 'open') {
-                    setLightboxOpen(true);
-                    const imageIndex = parseInt(urlParams.get('image')) || 0;
-                    setCurrentImageIndex(Math.min(Math.max(0, imageIndex), galleryImages.length - 1));
-                }
-            }, []);
-
-            // Handle opening the lightbox
-            const openLightbox = (index) => {
-                setCurrentImageIndex(index);
-                setLightboxOpen(true);
-
-                // Update URL without refreshing page
-                const url = new URL(window.location);
-                url.searchParams.set('gallery', 'open');
-                url.searchParams.set('image', index);
-                window.history.pushState({}, '', url);
-
-                gtag('event', 'open_gallery', {
-                    event_category: 'engagement',
-                    image_index: index
-                });
-            };
-
-            // Handle closing the lightbox
-            const closeLightbox = () => {
-                setLightboxOpen(false);
-
-                // Remove parameters from URL
-                const url = new URL(window.location);
-                url.searchParams.delete('gallery');
-                url.searchParams.delete('image');
-                window.history.pushState({}, '', url);
-            };
-
-            // Handle next/previous image
-            const nextImage = () => {
-                const newIndex = (currentImageIndex + 1) % galleryImages.length;
-                setCurrentImageIndex(newIndex);
-
-                // Update URL parameter
-                const url = new URL(window.location);
-                url.searchParams.set('image', newIndex);
-                window.history.pushState({}, '', url);
-            };
-
-            const prevImage = () => {
-                const newIndex = currentImageIndex === 0 ? galleryImages.length - 1 : currentImageIndex - 1;
-                setCurrentImageIndex(newIndex);
-
-                // Update URL parameter
-                const url = new URL(window.location);
-                url.searchParams.set('image', newIndex);
-                window.history.pushState({}, '', url);
-            };
-
-            // Featured images (first 3)
-            const featuredImages = galleryImages.slice(0, 3);
-
-            return (
-                <div className="max-w-6xl mx-auto px-4 py-8">
-                    {/* Featured Gallery Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                        {featuredImages.map((image, index) => (
-                            <FeaturedGalleryItem
-                                key={image.id}
-                                image={image}
-                                index={index}
-                                onImageClick={openLightbox}
-                            />
-                        ))}
-                    </div>
-
-                    {/* See More Photos Link */}
-                    <div className="text-center mb-16">
-                        <a
-                            href="#"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                openLightbox(0);
-                                gtag('event', 'click', {
-                                    event_category: 'engagement',
-                                    event_label: 'see_more_photos_link'
-                                });
-                            }}
-                            className="elegant-link text-lg"
-                            aria-label="View more photos in gallery"
-                        >
-                            See more photos
-                        </a>
-                    </div>
-
-                    {/* Simple Shelf Section with Image */}
-                    <div className="mb-12">
-                        <div className="bg-white rounded-lg overflow-hidden shadow-md">
-                            {/* Mobile-only title with custom background color and no bottom margin */}
-                            <h2 className="text-2xl text-center md:hidden p-4 pb-6 font-bold bg-[#F2F3F6] mb-0">
-                                Looking for a<br />Simple Shelf?
-                            </h2>
-                            <div className="md:flex">
-                                <div className="md:w-2/5">
-                                    <img
-                                        src="images/shelving/shelf (03).jpg"
-                                        alt="Simple modular shelf configuration"
-                                        className="w-full h-auto object-cover"
-                                    />
-                                </div>
-                                <div className="p-6 md:w-3/5 flex flex-col justify-center bg-gray-50 md:bg-white">
-                                    {/* Desktop-only title */}
-                                    <h2 className="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Simple Shelf?</h2>
-                                    <div className="bg-white p-4 rounded-lg shadow-sm md:shadow-none">
-                                        <p className="text-gray-700 mb-6">If you want a great shelf without needing to overthink it, our simplified ordering tool will help you get exactly what you need.</p>
-                                        <div>
-                                            <a
-                                                href="simplified-designer.html"
-                                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                                                onClick={() => {
-                                                    gtag('event', 'click', {
-                                                        event_category: 'navigation',
-                                                        event_label: 'simple_shelf_designer'
-                                                    });
-                                                    if (typeof fbq === 'function') {
-                                                        fbq('track', 'CustomizeProduct', {
-                                                            content_name: 'Simple Designer',
-                                                            content_category: 'shelving_page_body'
-                                                        });
-                                                    }
-                                                }}
-                                            >
-                                                Start Here
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Custom Shelf Section with GIF */}
-                    <div className="mb-16">
-                        <div className="bg-white rounded-lg overflow-hidden shadow-md">
-                            {/* Mobile-only title with custom background color and no bottom margin */}
-                            <h2 className="text-2xl text-center md:hidden p-4 pb-6 font-bold bg-[#F2F3F6] mb-0">
-                                Looking for a<br />Unique Shelf?
-                            </h2>
-                            <div className="md:flex">
-                                <div className="md:w-2/5 bg-gray-50">
-                                    <img
-                                        src="images/shelving/designer-tutorial.gif"
-                                        alt="Custom shelving design tool"
-                                        className="w-full h-64 md:h-full object-cover object-center"
-                                    />
-                                </div>
-                                <div className="p-6 md:w-3/5 flex flex-col justify-center">
-                                    {/* Desktop-only title */}
-                                    <h2 className="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Unique Shelf?</h2>
-                                    <p className="text-gray-600 mb-6">If you want to leverage the full potential of our shelving system, we can chat on WhatsApp to find a perfect setup for your space, or you can try out our full shelf designer app.</p>
-
-                                    <div className="space-y-4">
-                                        <div className="bg-gray-50 p-4 rounded-lg">
-                                            <h3 className="font-bold text-lg mb-2">Get guidance on a perfect design</h3>
-                                            <a
-                                                href="https://wa.me/254783891005"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                                                onClick={() => {
-                                                    trackContactConversion('', {
-                                                        event_category: 'navigation',
-                                                        event_label: 'whatsapp_guidance'
-                                                    });
-                                                    if (typeof fbq === 'function') {
-                                                        fbq('track', 'Lead', {
-                                                            content_name: 'WhatsApp Chat',
-                                                            content_category: 'shelving_page_guidance'
-                                                        });
-                                                    }
-                                                }}
-                                            >
-                                                Contact Us on WhatsApp
-                                            </a>
-                                        </div>
-
-                                        <div className="bg-gray-50 p-4 rounded-lg">
-                                            <h3 className="font-bold text-lg mb-2">Customize a shelf on your own</h3>
-                                            <a
-                                                href="/designer"
-                                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                                                onClick={() => {
-                                                    gtag('event', 'click', {
-                                                        event_category: 'navigation',
-                                                        event_label: 'full_designer'
-                                                    });
-                                                    if (typeof fbq === 'function') {
-                                                        fbq('track', 'CustomizeProduct', {
-                                                            content_name: 'Advanced Designer',
-                                                            content_category: 'shelving_page'
-                                                        });
-                                                    }
-                                                }}
-                                            >
-                                                Go to Advanced Designer
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Lightbox Component */}
-                    <Lightbox
-                        isOpen={lightboxOpen}
-                        currentIndex={currentImageIndex}
-                        images={galleryImages}
-                        onClose={closeLightbox}
-                        onNext={nextImage}
-                        onPrev={prevImage}
-                    />
-
-                    <WhatsAppButton />
+                <div class="bg-gray-50 p-4 rounded-lg">
+                  <h3 class="font-bold text-lg mb-2">Customize a shelf on your own</h3>
+                  <a href="/designer"
+                     class="btn-blue"
+                     onclick="gtag('event','click',{event_category:'navigation',event_label:'full_designer'}); if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Advanced Designer',content_category:'shelving_page'});}">
+                    Go to Advanced Designer
+                  </a>
                 </div>
-            );
-        }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-        // Render the app
-        ReactDOM.render(React.createElement(App), document.getElementById('root'));
-    </script>
+    <!-- Details & Craftsmanship -->
+    <section class="details-section">
+      <h2 class="section-title">Details & Craftsmanship</h2>
+      <div class="details-grid">
+        <div class="detail-item">
+          <img src="images/shelving/shelf (11).jpg" alt="Steel construction close-up showing solid frame joints" loading="lazy">
+          <p>Rock-solid steel construction</p>
+        </div>
+        <div class="detail-item">
+          <img src="images/shelving/shelf (12).jpg" alt="Adjustable feet on shelf base for uneven floors" loading="lazy">
+          <p>Adjustable feet for any floor</p>
+        </div>
+        <div class="detail-item">
+          <img src="images/shelving/shelf (10).jpg" alt="Shelves sliding together without tools" loading="lazy">
+          <p>Tool-free assembly — just slide together</p>
+        </div>
+        <div class="detail-item">
+          <img src="images/shelving/shelf (14).jpg" alt="Precision engineering and finish detail" loading="lazy">
+          <p>Precision-engineered details</p>
+        </div>
+      </div>
+    </section>
 
+    <!-- FAQ Section -->
     <section class="max-w-6xl mx-auto px-4 py-8 mb-12">
         <h2 class="text-2xl mb-6 font-light text-center section-title">Frequently Asked Questions</h2>
         <div class="space-y-6">
@@ -793,6 +778,8 @@
             </div>
         </div>
     </section>
+
+    <!-- ViewContent tracking -->
     <script>
     if (typeof fbq === 'function') {
         fbq('track', 'ViewContent', {
@@ -801,6 +788,350 @@
             content_type: 'product'
         });
     }
+    </script>
+
+    <!-- Configuration Lightbox -->
+    <div id="config-lightbox" class="lightbox-overlay" onclick="closeLightbox()">
+      <button class="lightbox-nav lightbox-prev" onclick="event.stopPropagation(); prevConfig()" aria-label="Previous">&#8249;</button>
+      <div class="lightbox-content" onclick="event.stopPropagation()">
+        <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
+
+        <div class="lightbox-image-wrap">
+          <img id="lb-image" class="lightbox-image" src="" alt="">
+          <div id="lb-dots" class="lightbox-dots"></div>
+        </div>
+
+        <div class="lightbox-info">
+          <h3 id="lb-title" class="lightbox-title"></h3>
+          <p id="lb-price" class="lightbox-price"></p>
+          <p id="lb-desc" class="lightbox-desc"></p>
+          <div class="lightbox-ctas">
+            <a id="lb-order" href="#" target="_blank" rel="noopener noreferrer" class="btn-order" onclick="trackOrder()">
+              Order This Unit
+            </a>
+            <a id="lb-customize" href="/designer" class="btn-customize" onclick="trackCustomize()">
+              Customize This Unit
+            </a>
+          </div>
+        </div>
+      </div>
+      <button class="lightbox-nav lightbox-next" onclick="event.stopPropagation(); nextConfig()" aria-label="Next">&#8250;</button>
+    </div>
+
+    <!-- WhatsApp FAB -->
+    <a href="https://wa.me/254783891005"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="whatsapp-fab"
+       onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{event_category:'engagement',event_label:'whatsapp_fab'});} if(typeof fbq==='function'){fbq('track','Lead',{content_name:'WhatsApp Chat',content_category:'shelving_page'});}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      <span class="whatsapp-label">Chat with us</span>
+    </a>
+
+    <!-- Configuration Data + Lightbox JS + Tracking -->
+    <script>
+    const configurations = [    
+    
+         {
+        id: "compact-corner",
+        title: "The Compact Corner",
+        image: "images/shelving/configs/compact-corner.jpg",
+        price: "Ksh 25,000",
+        description: "Transforms unused corners into functional space. Built from steel and engineered wood in our Nairobi workshop. Smaller units from Ksh 6,500.",
+        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bcorner-base-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7D);THEME_1",
+      },
+       {
+        id: "standard-base",
+        title: "The Starter",
+        image: "images/shelving/configs/standard-base.jpg",
+        price: "Ksh 6,000",
+        description: "A two-tier unit at an unbeatable price. Use it as is, and add as many more levels as needed later on.",
+        designerUrl: "/designer#(%7Bstandard-base-NE%7D);THEME_1",
+      },
+      {
+        id: "standard-stack",
+        title: "The Standard Stack",
+        image: "images/shelving/configs/color-stack.jpg",
+        price: "Ksh 23,000",
+        description: "A five tier unit -- avaialable as shown in vibrant multicolor, or a monochrome",
+        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1",
+      },
+      {
+        id: "statement-apartment",
+        title: "The Statement Wall",
+        image: "images/shelving/configs/berlin-apartment.jpg",
+        price: "Ksh 54,000",
+        description: "Made in Nairobi, at home in a Berlin apartment. Proof that good design travels. Configuration as shown, excluding accessories.",
+        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-spacer-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-spacer-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_3",
+      },
+    {
+        id: "gallery-shelf",
+        title: "The Gallery Shelf",
+        image: "images/shelving/configs/gallery-shelf.jpg",
+        price: "Ksh 24,500",
+        description: "Extra-tall spaces for plants, artworks, and anything that wouldn't fit in a standard bookcase.",
+        designerUrl: "/designer#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-adapter-SW%7DHSNE-FSNE%7Bstandard-spacer-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2",
+      },  
+      {
+        id: "knead-cafe",
+        title: "The Café Display",
+        image: "images/shelving/configs/knead-cafe.jpg",
+        price: "Ksh 33,000",
+        description: "A multifunctional design, as well suited to retail and office spaces as it is to a living room.",
+        designerUrl: "/designer#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-extension-NE%7DHWNE-FWNE%7Bwide-adapter-SW%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_4",
+      },
+      {
+        id: "grow-library",
+        title: "The Growing Library",
+        image: "images/shelving/configs/grow-library.jpg",
+        price: "From Ksh 17,500",
+        description: "Designed to expand with your book collection. Start with a few units and add more as your library grows — no tools necessary.",
+        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_3",
+      },
+      {
+        id: "bedside-coral",
+        title: "The Bedside Shelf",
+        image: "images/shelving/configs/bedside-coral.jpg",
+        price: "Ksh 8,000",
+        description: "A single Wide Base unit in Coral. Keeps essentials within reach while adding a pop of color to your bedroom.",
+        designerUrl: "/designer#(%7Bwide-base-NE%7D);THEME_4",
+      },
+      {
+        id: "go-wide",
+        title: "The Wide Shelf",
+        image: "images/shelving/configs/go-wide.jpg",
+        price: "Ksh 19,500",
+        description: "If you can't go tall, go wide. Spread your shelves to adapt to any horizontal space — stack them, spread them, get creative.",
+        designerUrl: "/designer#(%7Bstandard-base-NE%7D)NE-SW(%7Bstandard-base-NE%7D)NE-SW(%7Bstandard-base-NE%7D);THEME_1",
+      },
+      {
+        id: "multi-tier",
+        title: "The Multi-Tier",
+        image: "images/shelving/configs/multi-tier.jpg",
+        price: "Ksh 41,500",
+        description: "Stack, expand, and customize to create your perfect storage solution. Great design shouldn't break the bank.",
+        designerUrl: "/designer#(%7Bstandard-base-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1",
+      },
+      {
+        id: "coat-hanger",
+        title: "The Open Wardrobe",
+        image: "images/shelving/configs/coat-hanger.jpg",
+        price: "Ksh 43,000",
+        description: "Our coat hanger module creates a stunning open wardrobe that holds all your clothes while keeping your space feeling open and airy.",
+        designerUrl: "/sandbox.html#SBX:%5B%7B%22id%22%3A%221775501960284%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-base-NE%22%2C%22x%22%3A567.5%2C%22y%22%3A272%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221775501965287%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-spacer-NE%22%2C%22x%22%3A571.95466%2C%22y%22%3A236.15294000000003%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221775501972626%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-spacer-NE%22%2C%22x%22%3A572.1487400754459%2C%22y%22%3A206.87599812757207%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221775502480840%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22hanger-extension-NE%22%2C%22x%22%3A577.3199819524463%2C%22y%22%3A186.85624669410151%2C%22zIndex%22%3A4%7D%2C%7B%22id%22%3A%221775502490091%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-extension-NE%22%2C%22x%22%3A572.3184012339963%2C%22y%22%3A147.52762336591223%2C%22zIndex%22%3A5%7D%5D;THEME_2",
+      },
+      {
+        id: "corner-unit",
+        title: "The Corner Unit",
+        image: "images/shelving/configs/corner-unit.jpg",
+        price: "Ksh 36,000",
+        description: "Corners were made for shelves like this. Our modular system gets the most out of any space in your home. Customizable to your space and budget.",
+        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bcorner-base-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7D);THEME_1",
+      },
+      {
+        id: "client-space",
+        title: "Book Nook",
+        image: "images/shelving/configs/client-space.jpg",
+        price: "Ksh 28,500",
+        description: "Fit your entire library into a cozy corner.",
+        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2",
+      }
+    ];
+
+    /* === Lightbox === */
+    let currentIndex = 0;
+    let touchStartX = 0;
+
+    function openLightbox(index) {
+      currentIndex = index;
+      renderLightbox();
+      document.getElementById('config-lightbox').classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      var url = new URL(window.location);
+      url.searchParams.set('config', configurations[index].id);
+      window.history.pushState({}, '', url);
+
+      var config = configurations[index];
+      gtag('event', 'open_gallery', { event_category: 'engagement', config_id: config.id });
+      trackConfigView(config);
+    }
+
+    function closeLightbox() {
+      document.getElementById('config-lightbox').classList.remove('active');
+      document.body.style.overflow = '';
+      var url = new URL(window.location);
+      url.searchParams.delete('config');
+      window.history.pushState({}, '', url);
+    }
+
+    function nextConfig() {
+      currentIndex = (currentIndex + 1) % configurations.length;
+      renderLightbox();
+      trackConfigView(configurations[currentIndex]);
+    }
+
+    function prevConfig() {
+      currentIndex = currentIndex === 0 ? configurations.length - 1 : currentIndex - 1;
+      renderLightbox();
+      trackConfigView(configurations[currentIndex]);
+    }
+
+    function goToConfig(index) {
+      currentIndex = index;
+      renderLightbox();
+      trackConfigView(configurations[currentIndex]);
+    }
+
+    function renderLightbox() {
+      var config = configurations[currentIndex];
+      document.getElementById('lb-image').src = config.image;
+      document.getElementById('lb-image').alt = config.title + ' - ' + config.description;
+      document.getElementById('lb-title').textContent = config.title;
+      document.getElementById('lb-price').textContent = config.price;
+      document.getElementById('lb-desc').textContent = config.description;
+
+      // WhatsApp link — short URL that redirects to the designer
+      var shortUrl = 'https://www.framework.co.ke/shelving.html#' + config.id;
+      var waMsg = "Hi! I'm interested in the " + config.title.replace('The ', '') + ". Design linked below — could you help me finalize my order?\n\n" + shortUrl;
+      var waUrl = 'https://wa.me/254783891005?text=' + encodeURIComponent(waMsg);
+      document.getElementById('lb-order').href = waUrl;
+
+      // Designer link
+      document.getElementById('lb-customize').href = config.designerUrl;
+
+      // Update URL param
+      var url = new URL(window.location);
+      url.searchParams.set('config', config.id);
+      window.history.replaceState({}, '', url);
+
+      // Render dots
+      var dotsEl = document.getElementById('lb-dots');
+      dotsEl.innerHTML = configurations.map(function(_, i) {
+        return '<span class="dot' + (i === currentIndex ? ' active' : '') + '" onclick="event.stopPropagation(); goToConfig(' + i + ')"></span>';
+      }).join('');
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+      var lb = document.getElementById('config-lightbox');
+      if (!lb.classList.contains('active')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') nextConfig();
+      if (e.key === 'ArrowLeft') prevConfig();
+    });
+
+    // Touch/swipe navigation
+    (function() {
+      var lb = document.getElementById('config-lightbox');
+      lb.addEventListener('touchstart', function(e) {
+        touchStartX = e.touches[0].clientX;
+      });
+      lb.addEventListener('touchend', function(e) {
+        var diff = e.changedTouches[0].clientX - touchStartX;
+        if (diff > 50) prevConfig();
+        else if (diff < -50) nextConfig();
+      });
+    })();
+
+    // Hash-based redirect: shelving.html#statement-apartment → designer URL
+    (function() {
+      var hash = window.location.hash.replace('#', '');
+      if (hash) {
+        var config = configurations.find(function(c) { return c.id === hash; });
+        if (config && config.designerUrl !== '/designer') {
+          window.location.replace('https://www.framework.co.ke' + config.designerUrl);
+          return;
+        }
+      }
+
+      // Auto-open from URL ?config= param
+      var urlParams = new URLSearchParams(window.location.search);
+      var configParam = urlParams.get('config');
+      if (configParam) {
+        var idx = configurations.findIndex(function(c) { return c.id === configParam; });
+        if (idx >= 0) openLightbox(idx);
+      }
+      // Support legacy gallery param
+      if (urlParams.get('gallery') === 'open') {
+        openLightbox(parseInt(urlParams.get('image')) || 0);
+      }
+    })();
+
+    /* === Tracking Functions === */
+    function trackConfigView(config) {
+      if (typeof fbq === 'function') {
+        fbq('track', 'ViewContent', {
+          content_name: config.title,
+          content_category: 'shelving_configuration',
+          content_type: 'product',
+          value: parseFloat(config.price.replace(/[^0-9.]/g, '')) || 0,
+          currency: 'KES'
+        });
+      }
+    }
+
+    function trackOrder() {
+      var config = configurations[currentIndex];
+      gtag('event', 'click', { event_category: 'conversion', event_label: 'order_unit_' + config.id });
+      if (typeof fbq === 'function') {
+        fbq('track', 'Lead', {
+          content_name: config.title,
+          content_category: 'shelving_config_lightbox',
+          value: parseFloat(config.price.replace(/[^0-9.]/g, '')) || 0,
+          currency: 'KES'
+        });
+      }
+    }
+
+    function trackCustomize() {
+      var config = configurations[currentIndex];
+      gtag('event', 'click', { event_category: 'navigation', event_label: 'customize_unit_' + config.id });
+      if (typeof fbq === 'function') {
+        fbq('track', 'CustomizeProduct', {
+          content_name: config.title,
+          content_category: 'shelving_config_lightbox'
+        });
+      }
+    }
+
+    /* === Scroll Depth Tracking === */
+    (function trackScrollDepth() {
+      var maxScroll = 0;
+      var scrollTimeout;
+
+      document.addEventListener('scroll', function() {
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout);
+        }
+
+        scrollTimeout = setTimeout(function() {
+          var scrollPercent = Math.round(
+            (window.scrollY + window.innerHeight) /
+            document.documentElement.scrollHeight * 100
+          );
+
+          if (scrollPercent >= 90 && maxScroll < 90) {
+            maxScroll = 90;
+            gtag('event', 'scroll_depth', { percent_scrolled: 90 });
+          }
+          else if (scrollPercent >= 75 && maxScroll < 75) {
+            maxScroll = 75;
+            gtag('event', 'scroll_depth', { percent_scrolled: 75 });
+          }
+          else if (scrollPercent >= 50 && maxScroll < 50) {
+            maxScroll = 50;
+            gtag('event', 'scroll_depth', { percent_scrolled: 50 });
+          }
+          else if (scrollPercent >= 25 && maxScroll < 25) {
+            maxScroll = 25;
+            gtag('event', 'scroll_depth', { percent_scrolled: 25 });
+          }
+        }, 100);
+      });
+    })();
     </script>
 </body>
 
