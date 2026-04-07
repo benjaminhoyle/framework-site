@@ -478,11 +478,7 @@
                                     <h3 class="font-bold text-lg mb-2">Want guidance on that custom design?</h3>
                                     <a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer"
                                         class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                                        onclick="gtag('event', 'click_chat', {
-                                    event_category: 'engagement',
-                                    event_label: 'whatsapp_chat'
-                                });
-                                if(typeof fbq==='function'){fbq('track','Lead',{content_name:'WhatsApp Chat',content_category:'simple_designer_page'});}">
+                                        onclick="gtag('event', 'contact_chat', {link_target: 'simplified_designer_guidance'}); if(typeof fbq==='function'){fbq('track','Lead',{content_name:'WhatsApp Chat',content_category:'simple_designer_page'});}">
                                         Contact Us on WhatsApp
                                     </a>
                                 </div>
@@ -609,14 +605,21 @@
                     });
                 }
 
+                var orderPrice = parseFloat(document.getElementById('total-price').textContent.replace(/,/g, ''));
+                gtag('event', 'generate_lead', {
+                    link_target: 'simplified_designer_order',
+                    value: orderPrice,
+                    currency: 'KES'
+                });
+
                 return trackCheckoutConversion(this.href, {
                     'currency': 'KES',
-                    'value': parseFloat(document.getElementById('total-price').textContent.replace(/,/g, '')),
+                    'value': orderPrice,
                     'items': [
                         {
                             'item_name': 'Modular Shelving',
                             'quantity': 1,
-                            'price': parseFloat(document.getElementById('total-price').textContent.replace(/,/g, ''))
+                            'price': orderPrice
                         }
                     ]
                 });

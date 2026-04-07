@@ -24,7 +24,7 @@ window.trackCheckoutConversion = function (url, eventParams = {}) {
 
 window.trackContactConversion = function (url, eventParams = {}) {
     // First track the GA4 event (keep your existing GA4 tracking)
-    gtag('event', 'click_chat', eventParams);
+    gtag('event', 'contact_chat', eventParams);
 
     // Add the Google Ads conversion tracking
     var callback = function () {
@@ -79,7 +79,7 @@ function loadHeaderAndFooter() {
                     <li><a href="index.html">Home</a></li>
                     <li><a href="shelving.html">Shelving</a></li>
                     <li><a href="products-services.html">Products and Services</a></li>
-    <li><a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" onclick="return trackContactConversion(this.href, {'event_category':'engagement','event_label':'header_contact'});">Contact</a></li>            </ul>
+    <li><a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" onclick="return trackContactConversion(this.href, {link_target:'header_contact'});">Contact</a></li>            </ul>
             </nav>
             <button id="mobile-menu-toggle" aria-label="Toggle mobile menu">
                 <span></span>
@@ -105,7 +105,7 @@ function loadHeaderAndFooter() {
             <div class="footer-info">
                 <p>© ${new Date().getFullYear()} Framework Designs Limited</p>
                 <p>Email: <a href="mailto:info@framework.co.ke" class="text-link">info@framework.co.ke</a></p>
-    <p>WhatsApp: <a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" class="text-link" onclick="return trackContactConversion(this.href, {'event_category':'engagement','event_label':'footer_whatsapp'});">+254 783 891 005</a></p>            <p>Instagram: <a href="https://www.instagram.com/framework_nairobi/" target="_blank" rel="noopener noreferrer" class="text-link">framework_nairobi</a></p>
+    <p>WhatsApp: <a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" class="text-link" onclick="return trackContactConversion(this.href, {link_target:'footer_whatsapp'});">+254 783 891 005</a></p>            <p>Instagram: <a href="https://www.instagram.com/framework_nairobi/" target="_blank" rel="noopener noreferrer" class="text-link">framework_nairobi</a></p>
             </div>
             <div class="footer-keywords">
                 <p class="footer-tags">Custom Steel Shelving | Modular Furniture Kenya | Space-Saving Solutions | Kenyan-Made Furniture</p>
