@@ -81,10 +81,12 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap">
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="preload" as="image" href="images/shelving/shelf (18).jpg">
 
     <style>
         /* === Layout (replacing Tailwind utilities) === */
         *, *::before, *::after { box-sizing: border-box; }
+        img { max-width: 100%; height: auto; }
         .max-w-6xl { max-width: 72rem; }
         .max-w-4xl { max-width: 56rem; }
         .mx-auto { margin-left: auto; margin-right: auto; }
@@ -616,21 +618,25 @@
         <div class="featured-item" onclick="openLightbox(0)">
           <img src="images/shelving/shelf (18).jpg"
                alt="Modular shelving system showing infinite expandability — stack vertically, extend horizontally, turn corners"
-               class="featured-img">
+               class="featured-img"
+               width="1080" height="1080"
+               loading="eager" fetchpriority="high">
           <p class="featured-caption"><strong>Infinitely Expandable</strong><br>Our modular shelving system grows in any direction — stack vertically, extend horizontally, and turn corners. Perfect for Nairobi's diverse living spaces.</p>
         </div>
         <div class="featured-item" onclick="openLightbox(0)">
           <img src="images/shelving/shelf (14).jpg"
                alt="Steel and wood shelving unit crafted in Nairobi workshop"
-               loading="lazy"
-               class="featured-img">
+               class="featured-img"
+               width="1000" height="1000"
+               loading="lazy">
           <p class="featured-caption"><strong>Made in Kenya</strong><br>Crafted in our Nairobi workshop, these steel shelving units combine slim proportions with exceptional durability.</p>
         </div>
         <div class="featured-item" onclick="openLightbox(0)">
           <img src="images/shelving/shelf (00).jpg"
                alt="Colorful customizable shelving in multiple color options"
-               loading="lazy"
-               class="featured-img">
+               class="featured-img"
+               width="1000" height="1000"
+               loading="lazy">
           <p class="featured-caption"><strong>Colorful & Customizable</strong><br>Choose from our curated palette of vibrant colors to match any interior design scheme.</p>
         </div>
       </div>
@@ -653,7 +659,9 @@
             <div class="md:w-2\/5">
               <img src="images/shelving/shelf (03).jpg"
                    alt="Simple modular shelf configuration"
-                   class="w-full h-auto object-cover">
+                   class="w-full h-auto object-cover"
+                   width="1000" height="1000"
+                   loading="lazy">
             </div>
             <div class="p-6 md:w-3\/5 flex flex-col justify-center bg-gray-50 md:bg-white">
               <h2 class="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Simple Shelf?</h2>
@@ -680,9 +688,10 @@
           </h2>
           <div class="md:flex">
             <div class="md:w-2\/5 bg-gray-50">
-              <img src="images/shelving/designer-tutorial.gif"
-                   alt="Custom shelving design tool"
-                   class="w-full h-64 md:h-full object-cover object-center">
+              <video autoplay loop muted playsinline width="100%" class="w-full h-64 md:h-full object-cover object-center">
+                <source src="images/shelving/designer-tutorial.mp4" type="video/mp4">
+                <img src="images/shelving/designer-tutorial.gif" alt="Custom shelving design tool">
+              </video>
             </div>
             <div class="p-6 md:w-3\/5 flex flex-col justify-center">
               <h2 class="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Unique Shelf?</h2>
@@ -720,19 +729,19 @@
       <h2 class="section-title">Details & Craftsmanship</h2>
       <div class="details-grid">
         <div class="detail-item">
-          <img src="images/shelving/shelf (11).jpg" alt="Steel construction close-up showing solid frame joints" loading="lazy">
+          <img src="images/shelving/shelf (11).jpg" alt="Steel construction close-up showing solid frame joints" loading="lazy" width="1000" height="1000">
           <p>Rock-solid steel construction</p>
         </div>
         <div class="detail-item">
-          <img src="images/shelving/shelf (12).jpg" alt="Adjustable feet on shelf base for uneven floors" loading="lazy">
+          <img src="images/shelving/shelf (12).jpg" alt="Adjustable feet on shelf base for uneven floors" loading="lazy" width="1000" height="1000">
           <p>Adjustable feet for any floor</p>
         </div>
         <div class="detail-item">
-          <img src="images/shelving/shelf (10).jpg" alt="Shelves sliding together without tools" loading="lazy">
+          <img src="images/shelving/shelf (10).jpg" alt="Shelves sliding together without tools" loading="lazy" width="1000" height="1000">
           <p>Tool-free assembly — just slide together</p>
         </div>
         <div class="detail-item">
-          <img src="images/shelving/shelf (14).jpg" alt="Precision engineering and finish detail" loading="lazy">
+          <img src="images/shelving/shelf (14).jpg" alt="Precision engineering and finish detail" loading="lazy" width="1000" height="1000">
           <p>Precision-engineered details</p>
         </div>
       </div>
