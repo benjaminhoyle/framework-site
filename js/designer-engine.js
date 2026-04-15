@@ -858,7 +858,19 @@ DesignerEngine.moduleFilenames = [
     dim_height: 0
   },
   {
-    id: 'hanger-extension-NW', 
+    id: 'compact-hanger-NW',
+    filename: 'compact-hanger-NW.svg',
+    product: 'Compact Hanger',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 6000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'hanger-extension-NW',
     filename: 'hanger-extension-NW.svg',
     product: 'Hanger Extension',
     anchors: [
