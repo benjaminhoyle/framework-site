@@ -226,6 +226,13 @@
 
             const containerRef = useRef(null);
             const dragRef = useRef({ isDragging: false, isPanning: false, startX: 0, startY: 0, targetId: null, snapAnchorOffset: {x:0, y:0} });
+            const searchInputRef = useRef(null);
+
+            useEffect(() => {
+                if (isPaletteOpen && searchInputRef.current) {
+                    setTimeout(() => { searchInputRef.current?.focus(); searchInputRef.current?.select(); }, 50);
+                }
+            }, [isPaletteOpen]);
 
             // -- Logic --
             const getEngineData = () => window.DesignerEngine?.testPieces || [];
@@ -698,7 +705,7 @@
                                     <h3 className="text-lg font-bold">Add Module</h3>
                                     <button onClick={() => addModule(LADY_URL, true)} className="bg-gray-100 px-3 py-1 text-xs font-bold rounded-full">+ Person</button>
                                 </div>
-                                <input type="text" placeholder="Search modules..." className="w-full bg-gray-100 rounded-xl px-4 py-3 mb-6 outline-none focus:ring-2 focus:ring-blue-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                                <input ref={searchInputRef} type="text" placeholder="Search modules..." className="w-full bg-gray-100 rounded-xl px-4 py-3 mb-6 outline-none focus:ring-2 focus:ring-blue-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                                 <div className="grid grid-cols-2 gap-4 pb-12">
                                     {filteredMenu.map(p => (
                                         <button key={p.product} onClick={() => addModule(p.id)} className="flex flex-col items-center bg-gray-50 rounded-xl p-4 active:scale-95 transition-transform">

@@ -394,6 +394,102 @@ DesignerEngine.moduleFilenames = [
     dim_height: 300
   },
   {
+    id: 'broad-base-NE',
+    filename: 'broad-base-NE.svg',
+    product: 'Broad Base',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 12000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'broad-base-NW',
+    filename: 'broad-base-NW.svg',
+    product: 'Broad Base',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 12000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'broad-base-trimmed-NE',
+    filename: 'broad-base-trimmed-NE.svg',
+    product: 'Broad Base Trimmed',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 12000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'broad-base-trimmed-NW',
+    filename: 'broad-base-trimmed-NW.svg',
+    product: 'Broad Base Trimmed',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 12000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'broad-extension-NE',
+    filename: 'broad-extension-NE.svg',
+    product: 'Broad Extension',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 9000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'broad-extension-NW',
+    filename: 'broad-extension-NW.svg',
+    product: 'Broad Extension',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 9000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'broad-extension-trimmed-NE',
+    filename: 'broad-extension-trimmed-NE.svg',
+    product: 'Broad Extension Trimmed',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 9000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'broad-extension-trimmed-NW',
+    filename: 'broad-extension-trimmed-NW.svg',
+    product: 'Broad Extension Trimmed',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 9000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
     id: 'compact-base-NE',
     product: 'Compact Base',
     filename: 'compact-base-NE.svg',
@@ -870,6 +966,18 @@ DesignerEngine.moduleFilenames = [
     dim_height: 0
   },
   {
+    id: 'compact-hanger-NE',
+    filename: 'compact-hanger-NE.svg',
+    product: 'Compact Hanger',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 6000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
     id: 'hanger-extension-NW',
     filename: 'hanger-extension-NW.svg',
     product: 'Hanger Extension',
@@ -906,12 +1014,60 @@ DesignerEngine.moduleFilenames = [
     dim_height: 0
   },
   {
-    id: 'slim-extension-NE', 
+    id: 'slim-extension-NE',
     filename: 'slim-extension-NE.svg',
     product: 'Slim Extension',
     anchors: [
 
-    ], //TODO -- add dimensions and anchor points 
+    ], //TODO -- add dimensions and anchor points
+    price: 5000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'slim-base-trimmed-NE',
+    filename: 'slim-base-trimmed-NE.svg',
+    product: 'Slim Base Trimmed',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 6000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'slim-base-trimmed-NW',
+    filename: 'slim-base-trimmed-NW.svg',
+    product: 'Slim Base Trimmed',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 6000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'slim-extension-trimmed-NE',
+    filename: 'slim-extension-trimmed-NE.svg',
+    product: 'Slim Extension Trimmed',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
+    price: 5000,
+    dim_NE: 0,
+    dim_NW: 0,
+    dim_height: 0
+  },
+  {
+    id: 'slim-extension-trimmed-NW',
+    filename: 'slim-extension-trimmed-NW.svg',
+    product: 'Slim Extension Trimmed',
+    anchors: [
+
+    ], //TODO -- add dimensions and anchor points
     price: 5000,
     dim_NE: 0,
     dim_NW: 0,
