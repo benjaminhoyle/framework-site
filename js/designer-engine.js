@@ -1320,6 +1320,10 @@ DesignerEngine.testPieces = DesignerEngine.moduleFilenames.map(module => ({
   height: 240
 }));
 
+// Subset of testPieces that have anchor connections defined — used by designer.html.
+// Modules with empty anchors are sandbox-only (still being set up).
+DesignerEngine.designerPieces = DesignerEngine.testPieces.filter(p => p.anchors.length > 0);
+
 // Core helper functions
 DesignerEngine.findConnections = function (piece, placedPieces) {
   return placedPieces.flatMap(otherPiece =>
@@ -1849,7 +1853,7 @@ DesignerEngine.canPieceReplace = function (originalPiece, newPieceTemplate, plac
 }
 
 DesignerEngine.getCompatibleReplacements = function (piece, placedPieces) {
-  return DesignerEngine.testPieces.filter(template =>
+  return DesignerEngine.designerPieces.filter(template =>
     template.id !== piece.piece.id &&
     DesignerEngine.canPieceReplace(piece, template, placedPieces)
   );

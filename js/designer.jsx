@@ -1576,7 +1576,7 @@ window.ModuleBuilder = function ModuleBuilder() {
     const isFirstPiece = connections.length === 0;
 
     // Get all possible pieces for this position, including current piece
-    const allPieces = DesignerEngine.testPieces.filter(p => {
+    const allPieces = DesignerEngine.designerPieces.filter(p => {
       // Must be current piece or able to replace it
       const isValidReplacement = p.id === piece.piece.id || DesignerEngine.canPieceReplace(piece, p, placedPieces);
 
@@ -1635,7 +1635,7 @@ window.ModuleBuilder = function ModuleBuilder() {
 
 
   const handleAnchorClick = (sourcePiece, anchor) => {
-    const compatiblePieces = DesignerEngine.testPieces.filter(piece =>
+    const compatiblePieces = DesignerEngine.designerPieces.filter(piece =>
       piece.anchors.some(a => DesignerEngine.compatibilityMap[anchor.type] === a.type)
     );
     if (compatiblePieces.length === 0) return;
