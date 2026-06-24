@@ -244,7 +244,7 @@ DesignerEngine.moduleFilenames = [
       { type: "HSNE", x: 109.113135, y: 109.818297 }
     ],
     price: 4000,
-    dim_NE: 980,
+    dim_NE: 780,
     dim_NW: 280,
     dim_height: 300
   },
@@ -257,7 +257,7 @@ DesignerEngine.moduleFilenames = [
       { type: "FSNW", x: 130.886865, y: 139.408133 }
     ],
     price: 4000,
-    dim_NW: 980,
+    dim_NW: 780,
     dim_NE: 280,
     dim_height: 300
   },
@@ -324,7 +324,7 @@ DesignerEngine.moduleFilenames = [
       { type: "HWNW", x: 118.105399, y: 105.604582 }
     ],
     price: 5000,
-    dim_NW: 1420,
+    dim_NW: 1170,
     dim_NE: 280,
     dim_height: 300
   },
@@ -337,7 +337,7 @@ DesignerEngine.moduleFilenames = [
       { type: "FWNE", x: 118.950485, y: 135.194418 }
     ],
     price: 5000,
-    dim_NE: 1420,
+    dim_NE: 1170,
     dim_NW: 280,
     dim_height: 300
   },
@@ -420,7 +420,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'broad-base-trimmed-NE',
     filename: 'broad-base-trimmed-NE.svg',
-    product: 'Broad Base Trimmed',
+    product: 'Broad Base (Trimmed)',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points
@@ -432,7 +432,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'broad-base-trimmed-NW',
     filename: 'broad-base-trimmed-NW.svg',
-    product: 'Broad Base Trimmed',
+    product: 'Broad Base (Trimmed)',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points
@@ -468,7 +468,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'broad-extension-trimmed-NE',
     filename: 'broad-extension-trimmed-NE.svg',
-    product: 'Broad Extension Trimmed',
+    product: 'Broad Extension (Trimmed)',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points
@@ -480,7 +480,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'broad-extension-trimmed-NW',
     filename: 'broad-extension-trimmed-NW.svg',
-    product: 'Broad Extension Trimmed',
+    product: 'Broad Extension (Trimmed)',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points
@@ -632,7 +632,7 @@ DesignerEngine.moduleFilenames = [
       { type: "HDNE", x: 118.950485, y: 105.604582 }
     ],
     price: 6000,
-    dim_NE: 1420,
+    dim_NE: 1170,
     dim_NW: 450,
     dim_height: 300
   },
@@ -645,7 +645,7 @@ DesignerEngine.moduleFilenames = [
       { type: "HDNW", x: 118.105399, y: 105.604582 }
     ],
     price: 6000,
-    dim_NW: 1420,
+    dim_NW: 1170,
     dim_NE: 450,
     dim_height: 300
   },
@@ -764,7 +764,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-NW',
     filename: 'lamp-NW.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FSNW", x: 129.210985, y: 146.854794 }
     ],
@@ -776,7 +776,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-NE',
     filename: 'lamp-NE.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FSNE", x: 129.210985, y: 146.854794 }
     ],
@@ -788,7 +788,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-SE',
     filename: 'lamp-SE.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FSNW", x: 106.750408, y: 147.351661 }
     ],
@@ -800,7 +800,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-SW',
     filename: 'lamp-SW.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FSNE", x: 133.249592, y: 147.351661 }
     ],
@@ -812,7 +812,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-NW-2',
     filename: 'lamp-NW-2.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FSNW", x: 117.580133, y: 154.714673 }
     ],
@@ -824,7 +824,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-NE-2',
     filename: 'lamp-NE-2.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FSNE", x: 101.616181, y: 146.826659 }
     ],
@@ -836,7 +836,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-SE-2',
     filename: 'lamp-SE-2.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FSNW", x: 109.947308, y: 165.795899 }
     ],
@@ -848,7 +848,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-SW-2',
     filename: 'lamp-SW-2.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FSNE", x: 138.180926, y: 142.876599 }
     ],
@@ -860,7 +860,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-compact-NW-N',
     filename: 'lamp-compact-NW-N.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FCNW", x: 115.476518, y: 95.933639 }
     ],
@@ -872,7 +872,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-compact-NW-W',
     filename: 'lamp-compact-NW-W.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FCNW", x: 114.476518, y: 95.933639 }
     ],
@@ -884,7 +884,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-compact-NE-N',
     filename: 'lamp-compact-NE-N.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FCNE", x: 113.476518, y: 95.933639 }
     ],
@@ -896,7 +896,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'lamp-compact-NE-E',
     filename: 'lamp-compact-NE-E.svg',
-    product: 'Lamp',
+    product: 'Lamp Mount',
     anchors: [
       { type: "FCNE", x: 114.476518, y: 95.933639 }
     ],
@@ -936,7 +936,7 @@ DesignerEngine.moduleFilenames = [
     anchors: [
 
     ], //TODO -- add dimensions and anchor points 
-    price: 3000,
+    price: 10000,
     dim_NE: 0,
     dim_NW: 0,
     dim_height: 0
@@ -948,7 +948,7 @@ DesignerEngine.moduleFilenames = [
     anchors: [
 
     ], //TODO -- add dimensions and anchor points 
-    price: 3000,
+    price: 10000,
     dim_NE: 0,
     dim_NW: 0,
     dim_height: 0
@@ -956,7 +956,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'compact-hanger-NW',
     filename: 'compact-hanger-NW.svg',
-    product: 'Compact Hanger',
+    product: 'Compact Hanger Extension',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points
@@ -968,7 +968,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'compact-hanger-NE',
     filename: 'compact-hanger-NE.svg',
-    product: 'Compact Hanger',
+    product: 'Compact Hanger Extension',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points
@@ -980,7 +980,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'hanger-extension-NW',
     filename: 'hanger-extension-NW.svg',
-    product: 'Hanger Extension',
+    product: 'Deep Hanger Extension',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points 
@@ -992,7 +992,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'hanger-extension-NE', 
     filename: 'hanger-extension-NE.svg',
-    product: 'Hanger Extension',
+    product: 'Deep Hanger Extension',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points 
@@ -1028,7 +1028,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'slim-base-trimmed-NE',
     filename: 'slim-base-trimmed-NE.svg',
-    product: 'Slim Base Trimmed',
+    product: 'Slim Base (Trimmed)',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points
@@ -1040,7 +1040,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'slim-base-trimmed-NW',
     filename: 'slim-base-trimmed-NW.svg',
-    product: 'Slim Base Trimmed',
+    product: 'Slim Base (Trimmed)',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points
@@ -1052,7 +1052,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'slim-extension-trimmed-NE',
     filename: 'slim-extension-trimmed-NE.svg',
-    product: 'Slim Extension Trimmed',
+    product: 'Slim Extension (Trimmed)',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points
@@ -1064,7 +1064,7 @@ DesignerEngine.moduleFilenames = [
   {
     id: 'slim-extension-trimmed-NW',
     filename: 'slim-extension-trimmed-NW.svg',
-    product: 'Slim Extension Trimmed',
+    product: 'Slim Extension (Trimmed)',
     anchors: [
 
     ], //TODO -- add dimensions and anchor points
@@ -1930,4 +1930,3 @@ DesignerEngine.applySVGTheme = function (svgDoc, theme) {
     }
   });
 }
-
