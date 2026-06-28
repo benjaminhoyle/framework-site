@@ -92,7 +92,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@300;400;500;700&display=swap" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/styles.css">
-    <link rel="preload" as="image" href="images/shelving/shelf (18).jpg">
+    <link rel="preload" as="image" href="images/shelving/shelf%20%2800%29.jpg" media="(min-width: 900px)">
 
     <style>
         /* === Layout (replacing Tailwind utilities) === */
@@ -1188,9 +1188,9 @@
           </h2>
           <div class="md:flex">
             <div class="customize-media">
-              <video autoplay loop muted playsinline preload="metadata" width="100%" class="w-full object-cover object-center">
+              <video autoplay loop muted playsinline preload="metadata" width="500" height="500" class="w-full object-cover object-center">
                 <source src="images/shelving/designer-tutorial.mp4" type="video/mp4">
-                <img src="images/shelving/designer-tutorial.gif" alt="Custom shelving design tool" loading="lazy">
+                <img src="images/shelving/designer-tutorial.gif" alt="Custom shelving design tool" loading="lazy" width="500" height="500">
               </video>
             </div>
             <div class="p-6 flex flex-col justify-center customize-copy">
@@ -1288,7 +1288,7 @@
 
         <div class="lightbox-image-wrap">
           <button id="lb-image-prev" class="lightbox-image-nav lightbox-image-prev" type="button" onclick="event.stopPropagation(); prevConfigImage()" aria-label="Previous image">&#8249;</button>
-          <img id="lb-image" class="lightbox-image" alt="" loading="lazy">
+          <img id="lb-image" class="lightbox-image" alt="" loading="lazy" width="1400" height="1400">
           <button id="lb-image-next" class="lightbox-image-nav lightbox-image-next" type="button" onclick="event.stopPropagation(); nextConfigImage()" aria-label="Next image">&#8250;</button>
           <div id="lb-dots" class="lightbox-dots"></div>
         </div>
