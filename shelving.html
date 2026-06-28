@@ -542,6 +542,10 @@
         }
 
         /* === Configuration Lightbox === */
+        :root {
+          --text-secondary: #555;
+          --text-muted: #777;
+        }
         .lightbox-overlay {
           position: fixed;
           inset: 0;
@@ -561,10 +565,10 @@
           visibility: visible;
         }
         .lightbox-content {
-          max-width: 820px;
+          max-width: 920px;
           width: calc(100% - 2rem);
           max-height: 90vh;
-          overflow: hidden;
+          overflow: visible;
           background: #fff;
           border-radius: 12px;
           transform: scale(0.95);
@@ -573,7 +577,7 @@
           flex-shrink: 1;
           min-width: 0;
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 340px;
+          grid-template-columns: minmax(0, 1fr) minmax(340px, 1fr);
         }
         @media (max-width: 680px) {
           .lightbox-content { width: 100%; max-width: 100%; }
@@ -653,48 +657,14 @@
           background: #2563eb;
           box-shadow: 0 0 0 1px rgba(255,255,255,0.8);
         }
-        .lightbox-product-nav {
-          border-top: 1px solid #e8eaee;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-          margin-top: 12px;
-          padding-top: 12px;
-        }
-        .lightbox-product-button {
-          background: #fff;
-          border: 1px solid #d6dce8;
-          border-radius: 6px;
-          color: #374151;
-          cursor: pointer;
-          font: inherit;
-          font-size: 0.82rem;
-          font-weight: 700;
-          line-height: 1.2;
-          min-height: 38px;
-          padding: 8px 10px;
-          transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
-          white-space: nowrap;
-        }
-        .lightbox-product-button.product-next {
-          background: #f8fbff;
-          border-color: #2563eb;
-          color: #1d4ed8;
-        }
-        .lightbox-product-button:hover,
-        .lightbox-product-button:focus-visible {
-          background: #f8fbff;
-          border-color: #2563eb;
-          color: #1d4ed8;
-          outline: none;
-          transform: translateY(-1px);
-        }
         .lightbox-info {
           padding: 20px 24px 24px;
           display: flex;
           flex-direction: column;
           justify-content: flex-start;
           min-width: 0;
+          max-height: 90vh;
+          overflow-y: auto;
         }
         .lightbox-title {
           font-size: 1.25rem;
@@ -710,20 +680,15 @@
         }
         .lightbox-desc {
           color: #555;
-          display: -webkit-box;
-          -webkit-line-clamp: 4;
-          -webkit-box-orient: vertical;
-          line-clamp: 4;
           line-height: 1.5;
-          margin: 0 0 20px;
-          overflow: hidden;
+          margin: 0 0 24px;
           font-size: 0.95rem;
         }
         .lightbox-ctas {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
           margin-top: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
         }
         @media (max-width: 768px) {
           .lightbox-overlay {
@@ -759,7 +724,9 @@
             border-radius: 0;
           }
           .lightbox-info {
-            flex-shrink: 0;
+            flex: 0 1 auto;
+            max-height: 48dvh;
+            overflow-y: auto;
             padding: 16px 20px 20px;
           }
           .lightbox-close {
@@ -771,32 +738,33 @@
             height: 36px;
             color: #fff;
           }
-          .lightbox-desc {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            line-clamp: 2;
-            overflow: hidden;
-          }
         }
-        .btn-order {
+        .modal-action {
           align-items: center;
-          background: #16a34a;
-          border: 1px solid #16a34a;
-          border-radius: 7px;
-          box-shadow: 0 6px 14px rgba(22, 163, 74, 0.18);
-          color: #fff;
+          border-radius: 8px;
           display: flex;
-          font-size: 0.86rem;
+          font-size: 1rem;
           font-weight: 700;
+          gap: 10px;
           justify-content: center;
           line-height: 1.15;
-          min-height: 44px;
-          padding: 11px 14px;
+          min-height: 48px;
+          padding: 12px 16px;
           text-align: center;
           text-decoration: none;
-          transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+          transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, color 0.2s, transform 0.15s;
           white-space: nowrap;
+        }
+        .modal-action .ti {
+          flex: 0 0 auto;
+          height: 20px;
+          width: 20px;
+        }
+        .btn-order {
+          background: #16a34a;
+          border: 1px solid #16a34a;
+          box-shadow: 0 6px 14px rgba(22, 163, 74, 0.18);
+          color: #fff;
         }
         .btn-order:hover {
           background: #15803d;
@@ -804,27 +772,66 @@
           transform: translateY(-1px);
         }
         .btn-customize {
-          align-items: center;
-          background: #f8fbff;
-          border: 1px solid #b9ccff;
-          border-radius: 7px;
-          color: #1d4ed8;
-          display: flex;
-          font-size: 0.86rem;
-          font-weight: 700;
-          justify-content: center;
-          line-height: 1.15;
-          min-height: 44px;
-          padding: 11px 14px;
-          text-align: center;
-          text-decoration: none;
-          transition: background 0.2s, border-color 0.2s, transform 0.15s;
-          white-space: nowrap;
+          background: #fff;
+          border: 1px solid #d6d6d6;
+          color: #111;
         }
+        .btn-customize .ti { color: var(--text-secondary); }
         .btn-customize:hover {
-          background: #eef4ff;
-          border-color: #2563eb;
+          background: #fafafa;
+          border-color: #bdbdbd;
           transform: translateY(-1px);
+        }
+        .shelf-designer-link {
+          align-self: center;
+          color: var(--text-secondary);
+          font-size: 12px;
+          line-height: 1.35;
+          margin-top: 2px;
+          text-decoration: none;
+        }
+        .shelf-designer-link:hover,
+        .shelf-designer-link:focus-visible {
+          color: #1d4ed8;
+          outline: none;
+          text-decoration: underline;
+        }
+        .lightbox-product-nav {
+          align-items: center;
+          border-top: 1px solid #e8eaee;
+          display: flex;
+          justify-content: center;
+          margin-top: 20px;
+          padding-top: 12px;
+        }
+        .lightbox-product-button {
+          align-items: center;
+          appearance: none;
+          background: transparent;
+          border: 0;
+          color: var(--text-secondary);
+          cursor: pointer;
+          display: flex;
+          justify-content: center;
+          min-height: 36px;
+          min-width: 36px;
+          padding: 0 12px;
+        }
+        .lightbox-product-button .ti {
+          height: 14px;
+          width: 14px;
+        }
+        .lightbox-product-button:hover,
+        .lightbox-product-button:focus-visible {
+          color: #1d4ed8;
+          outline: none;
+        }
+        .lightbox-product-count {
+          color: var(--text-muted);
+          font-size: 13px;
+          line-height: 1;
+          min-width: 54px;
+          text-align: center;
         }
 
         /* === Details Grid === */
@@ -1298,23 +1305,39 @@
           <p id="lb-price" class="lightbox-price"></p>
           <p id="lb-desc" class="lightbox-desc"></p>
           <div class="lightbox-ctas">
-            <a id="lb-order" href="#" target="_blank" rel="noopener noreferrer" class="btn-order" onclick="trackOrder()"
+            <a id="lb-order" href="#" target="_blank" rel="noopener noreferrer" class="modal-action btn-order" onclick="trackOrder()"
                data-clarity-action="order_config">
-              Order on WhatsApp
+              <svg class="ti ti-brand-whatsapp" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9"></path>
+                <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1"></path>
+              </svg>
+              <span>Order now</span>
             </a>
-            <a id="lb-customize" href="/designer" class="btn-customize" onclick="trackCustomize()"
+            <a id="lb-customize" href="#" target="_blank" rel="noopener noreferrer" class="modal-action btn-customize" onclick="trackCustomize()"
                data-clarity-action="customize_config">
-              Customize
+              <svg class="ti ti-brand-whatsapp" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9"></path>
+                <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1"></path>
+              </svg>
+              <span>Customise</span>
+            </a>
+            <a id="lb-designer-link" href="designer.html" class="shelf-designer-link">
+              Open in shelf designer &rarr;
             </a>
           </div>
           <div class="lightbox-product-nav" aria-label="Browse configurations">
             <button id="lb-prev-product" class="lightbox-product-button product-prev" type="button" onclick="prevConfig()"
                     data-clarity-action="previous_config">
-              &lsaquo; Previous product
+              <svg class="ti ti-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 6l-6 6l6 6"></path>
+              </svg>
             </button>
+            <span id="lb-product-count" class="lightbox-product-count"></span>
             <button id="lb-next-product" class="lightbox-product-button product-next" type="button" onclick="nextConfig()"
                     data-clarity-action="next_config">
-              Next product &rsaquo;
+              <svg class="ti ti-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 6l6 6l-6 6"></path>
+              </svg>
             </button>
           </div>
         </div>
@@ -1765,13 +1788,17 @@
       document.getElementById('lb-desc').textContent = config.description;
 
       var shareUrl = 'https://www.framework.co.ke/shelving.html?config=' + encodeURIComponent(config.id);
-      var waMsg = "Hi! I'm interested in " + config.title + ".\nConfig ID: " + config.id + "\nCould you help me finalize my order?\n" + shareUrl;
-      document.getElementById('lb-order').href = 'https://wa.me/254783891005?text=' + encodeURIComponent(waMsg);
-      document.getElementById('lb-customize').href = config.designerUrl;
+      var orderMsg = "Hello, I'd like to place an order for " + config.title + ".\n\n" + shareUrl;
+      var customizeMsg = "Hello, I'd like to develop a custom design for my space based on " + config.title + ".\n\n" + shareUrl;
+      document.getElementById('lb-order').href = 'https://wa.me/254783891005?text=' + encodeURIComponent(orderMsg);
+      document.getElementById('lb-customize').href = 'https://wa.me/254783891005?text=' + encodeURIComponent(customizeMsg);
+      document.getElementById('lb-designer-link').href = config.designerUrl;
+      document.getElementById('lb-product-count').textContent = (currentIndex + 1) + ' of ' + configurations.length;
 
       var orderEl = document.getElementById('lb-order');
       var customizeEl = document.getElementById('lb-customize');
-      [orderEl, customizeEl].forEach(function(el) {
+      var designerEl = document.getElementById('lb-designer-link');
+      [orderEl, customizeEl, designerEl].forEach(function(el) {
         el.setAttribute('data-clarity-config-id', config.id);
         el.setAttribute('data-clarity-config-title', config.title);
       });
