@@ -601,6 +601,13 @@
           transition: background 0.2s;
         }
         .lightbox-close:hover { background: rgba(0,0,0,0.8); }
+        .lightbox-media {
+          background: #fff;
+          border-radius: 12px 0 0 12px;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
         .lightbox-image-wrap {
           position: relative;
           aspect-ratio: 1;
@@ -613,7 +620,7 @@
           aspect-ratio: auto;
           object-fit: contain;
           display: block;
-          border-radius: 12px 0 0 12px;
+          border-radius: 12px 0 0 0;
         }
         .lightbox-image-nav {
           position: absolute;
@@ -634,28 +641,48 @@
         .lightbox-image-nav.visible { display: flex; align-items: center; justify-content: center; }
         .lightbox-image-prev { left: 12px; }
         .lightbox-image-next { right: 12px; }
-        .lightbox-dots {
-          position: absolute;
-          bottom: 12px;
-          left: 50%;
-          transform: translateX(-50%);
+        .lightbox-thumbnails {
+          border-top: 1px solid #eef0f3;
           display: flex;
-          gap: 6px;
+          gap: 8px;
+          min-width: 0;
+          overflow-x: auto;
+          padding: 10px 12px 12px;
+          scrollbar-width: thin;
         }
-        .dot {
-          border: none;
-          width: 8px;
-          height: 8px;
-          padding: 0;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.78);
-          box-shadow: 0 0 0 1px rgba(17, 24, 39, 0.24);
+        .lightbox-thumbnails[hidden] {
+          display: none;
+        }
+        .lightbox-thumbnail {
+          appearance: none;
+          background: #fff;
+          border: 2px solid transparent;
+          border-radius: 7px;
           cursor: pointer;
-          transition: background 0.2s;
+          aspect-ratio: 1;
+          flex: 0 0 auto;
+          height: 54px;
+          overflow: hidden;
+          padding: 2px;
+          touch-action: manipulation;
+          transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+          width: 54px;
         }
-        .dot.active {
-          background: #2563eb;
-          box-shadow: 0 0 0 1px rgba(255,255,255,0.8);
+        .lightbox-thumbnail img {
+          border-radius: 4px;
+          display: block;
+          height: 100%;
+          object-fit: cover;
+          width: 100%;
+        }
+        .lightbox-thumbnail.active {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.16);
+        }
+        .lightbox-thumbnail:hover,
+        .lightbox-thumbnail:focus-visible {
+          border-color: #93b4ff;
+          outline: none;
         }
         .lightbox-info {
           padding: 20px 24px 24px;
@@ -719,10 +746,15 @@
             flex-direction: column;
             grid-template-columns: none;
           }
+          .lightbox-media {
+            border-radius: 0;
+            flex: 0 0 auto;
+          }
           .lightbox-image-wrap {
-            flex: 0 0 42dvh;
-            max-height: 440px;
-            min-height: 260px;
+            aspect-ratio: auto;
+            flex: 0 0 34dvh;
+            max-height: 320px;
+            min-height: 230px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -737,6 +769,15 @@
             aspect-ratio: auto;
             object-fit: contain;
             border-radius: 0;
+          }
+          .lightbox-thumbnails {
+            gap: 7px;
+            min-height: 62px;
+            padding: 8px 10px 10px;
+          }
+          .lightbox-thumbnail {
+            height: 46px;
+            width: 46px;
           }
           .lightbox-info {
             flex: 1 1 auto;
@@ -770,6 +811,9 @@
           .lightbox-desc-toggle {
             display: inline-block;
           }
+          .lightbox-desc-toggle[hidden] {
+            display: none;
+          }
           .lightbox-ctas {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -788,7 +832,9 @@
           }
           .shelf-designer-link {
             grid-column: 1 / -1;
+            justify-self: center;
             margin-top: 0;
+            text-align: center;
           }
         }
         .modal-action {
@@ -1370,11 +1416,13 @@
       <div class="lightbox-content" onclick="event.stopPropagation()">
         <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
 
-        <div class="lightbox-image-wrap">
-          <button id="lb-image-prev" class="lightbox-image-nav lightbox-image-prev" type="button" onclick="event.stopPropagation(); prevConfigImage()" aria-label="Previous image">&#8249;</button>
-          <img id="lb-image" class="lightbox-image" alt="" loading="lazy" width="1400" height="1400">
-          <button id="lb-image-next" class="lightbox-image-nav lightbox-image-next" type="button" onclick="event.stopPropagation(); nextConfigImage()" aria-label="Next image">&#8250;</button>
-          <div id="lb-dots" class="lightbox-dots"></div>
+        <div class="lightbox-media">
+          <div class="lightbox-image-wrap">
+            <button id="lb-image-prev" class="lightbox-image-nav lightbox-image-prev" type="button" onclick="event.stopPropagation(); prevConfigImage()" aria-label="Previous image">&#8249;</button>
+            <img id="lb-image" class="lightbox-image" alt="" loading="lazy" width="1400" height="1400">
+            <button id="lb-image-next" class="lightbox-image-nav lightbox-image-next" type="button" onclick="event.stopPropagation(); nextConfigImage()" aria-label="Next image">&#8250;</button>
+          </div>
+          <div id="lb-thumbnails" class="lightbox-thumbnails" aria-label="Product images"></div>
         </div>
 
         <div class="lightbox-info">
@@ -1782,6 +1830,14 @@
       return config.image ? [config.image] : [];
     }
 
+    function getConfigThumbnailImage(image) {
+      var src = String(image || '');
+      if (src.indexOf('images/shelving/configs/') === 0) {
+        return src.replace('images/shelving/configs/', 'images/shelving/configs/thumbs/');
+      }
+      return src;
+    }
+
     function getConfigPriceValue(config) {
       if (typeof config.priceValue === 'number') return config.priceValue;
       return parseFloat(String(config.price || '').replace(/[^0-9.]/g, '')) || 0;
@@ -1889,9 +1945,14 @@
       document.getElementById('lb-image-prev').classList.toggle('visible', showImageNav);
       document.getElementById('lb-image-next').classList.toggle('visible', showImageNav);
 
-      var dotsEl = document.getElementById('lb-dots');
-      dotsEl.innerHTML = showImageNav ? images.map(function(_, i) {
-        return '<button class="dot' + (i === currentImageIndex ? ' active' : '') + '" type="button" aria-label="View image ' + (i + 1) + '" onclick="event.stopPropagation(); goToConfigImage(' + i + ')"></button>';
+      var thumbsEl = document.getElementById('lb-thumbnails');
+      thumbsEl.hidden = !showImageNav;
+      thumbsEl.innerHTML = showImageNav ? images.map(function(src, i) {
+        return '<button class="lightbox-thumbnail' + (i === currentImageIndex ? ' active' : '') + '" type="button" aria-label="View image ' + (i + 1) + ' of ' + images.length + '"' +
+          (i === currentImageIndex ? ' aria-current="true"' : '') +
+          ' onclick="event.stopPropagation(); goToConfigImage(' + i + ')">' +
+            '<img src="' + escapeHtml(getConfigThumbnailImage(src)) + '" alt="" loading="lazy" decoding="async" width="180" height="180">' +
+          '</button>';
       }).join('') : '';
     }
 
