@@ -211,12 +211,12 @@
 
         /* Simple, elegant heading style */
         .section-title {
-            font-weight: 300;
-            letter-spacing: 0.5px;
-            position: relative;
+            font-weight: 700;
+            letter-spacing: 0;
+            line-height: 1.35;
             color: #333;
-            border-bottom: 1px solid #eaeaea;
-            padding-bottom: 8px;
+            border-bottom: 0;
+            padding-bottom: 0;
             margin-bottom: 16px;
         }
 
@@ -237,9 +237,23 @@
 
         /* === Intro Section === */
         .intro-section {
+          max-width: 64rem;
+          margin: 0 auto;
+          padding: 28px 1rem 36px;
+        }
+        .intro-copy {
           max-width: 600px;
           margin: 0 auto;
-          padding: 28px 24px 36px;
+        }
+        .intro-media {
+          display: none;
+        }
+        .intro-media img {
+          width: 100%;
+          aspect-ratio: 1;
+          object-fit: cover;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
         .intro-tagline {
           font-size: 13px;
@@ -300,21 +314,58 @@
           .intro-headline { font-size: 28px; }
           .intro-section { padding: 40px 24px 48px; }
         }
+        @media (min-width: 900px) {
+          .intro-section {
+            display: grid;
+            grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+            gap: 3rem;
+            align-items: center;
+            padding: 48px 1rem 56px;
+          }
+          .intro-copy {
+            max-width: none;
+            margin: 0;
+          }
+          .intro-media {
+            display: block;
+          }
+        }
+
+        .section-band {
+          border-top: 1px solid #e8eaee;
+          padding: 3.5rem 0;
+        }
+        .section-band-muted {
+          background: #f7f8fa;
+          border-bottom: 1px solid #e8eaee;
+        }
+        .section-inner {
+          max-width: 64rem;
+          margin: 0 auto;
+          padding: 0 1rem;
+        }
 
         /* === Featured Gallery === */
         .featured-grid {
           display: grid;
           grid-template-columns: 1fr;
           gap: 2rem;
-          max-width: 72rem;
-          margin: 0 auto 1rem;
-          padding: 2rem 1rem 0;
+          align-items: start;
+          margin: 2rem 0 0;
         }
         @media (min-width: 768px) {
           .featured-grid { grid-template-columns: repeat(3, 1fr); }
         }
         .featured-item {
+          appearance: none;
+          background: transparent;
+          border: 0;
+          color: inherit;
           cursor: pointer;
+          display: block;
+          font: inherit;
+          padding: 0;
+          text-align: left;
           transition: transform 0.2s;
         }
         .featured-item:hover { transform: translateY(-4px); }
@@ -322,6 +373,7 @@
           width: 100%;
           aspect-ratio: 1;
           object-fit: cover;
+          display: block;
           border-radius: 0.5rem;
           box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
@@ -332,8 +384,7 @@
         }
         .see-more-link {
           text-align: center;
-          margin-bottom: 3rem;
-          padding: 1rem;
+          margin-top: 1.5rem;
         }
         .see-configs-btn {
           display: inline-block;
@@ -349,6 +400,145 @@
         .see-configs-btn:hover {
           background: #1d4ed8;
           transform: translateY(-1px);
+        }
+
+        .section-header {
+          text-align: left;
+          max-width: none;
+          margin: 0 0 2rem;
+          padding-bottom: 0.9rem;
+          border-bottom: 1px solid #dfe4ec;
+        }
+        .section-header h2 {
+          display: block;
+          font-size: 1.5rem;
+          font-weight: 700;
+          letter-spacing: 0;
+          line-height: 1.35;
+          color: #333;
+          margin: 0;
+          text-transform: none;
+        }
+        @media (min-width: 768px) {
+          .section-header h2 { font-size: 1.75rem; }
+        }
+
+        /* === Popular Configurations Catalog === */
+        .catalog-section {
+          margin: 0 auto;
+        }
+        .catalog-header {
+          max-width: none;
+          margin: 0 0 2rem;
+          text-align: left;
+        }
+        .catalog-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        @media (min-width: 640px) {
+          .catalog-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 960px) {
+          .catalog-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .catalog-card {
+          background: #fff;
+          border: 0;
+          border-radius: 8px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+          color: inherit;
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          font: inherit;
+          min-height: 100%;
+          overflow: hidden;
+          padding: 0;
+          text-align: left;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .catalog-card:hover,
+        .catalog-card:focus-visible {
+          box-shadow: 0 8px 18px rgba(0,0,0,0.1);
+          outline: none;
+          transform: translateY(-3px);
+        }
+        .catalog-card:focus-visible {
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3), 0 8px 18px rgba(0,0,0,0.1);
+        }
+        .catalog-card-image {
+          width: 100%;
+          aspect-ratio: 1;
+          object-fit: cover;
+          display: block;
+        }
+        .catalog-card-body {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          padding: 1rem;
+        }
+        .catalog-card-title {
+          color: #111;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+          font-size: 1.05rem;
+          font-weight: 700;
+          line-height: 1.3;
+          margin: 0 0 0.35rem;
+        }
+        .catalog-card-title::after {
+          content: "\203A";
+          color: #2563eb;
+          flex-shrink: 0;
+          font-size: 1.25rem;
+          line-height: 1;
+          transition: transform 0.2s;
+        }
+        .catalog-card:hover .catalog-card-title::after,
+        .catalog-card:focus-visible .catalog-card-title::after {
+          transform: translateX(3px);
+        }
+        .catalog-card-price {
+          color: #16a34a;
+          font-weight: 700;
+          margin: 0 0 0.5rem;
+        }
+        .catalog-card-desc {
+          color: #555;
+          display: -webkit-box;
+          font-size: 0.92rem;
+          line-height: 1.45;
+          margin: 0 0 1rem;
+          overflow: hidden;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 3;
+          line-clamp: 3;
+        }
+        .catalog-more-wrap {
+          margin-top: 1.5rem;
+          text-align: center;
+        }
+        .catalog-more-button {
+          background: #fff;
+          border: 1.5px solid #2563eb;
+          border-radius: 8px;
+          color: #2563eb;
+          cursor: pointer;
+          font: inherit;
+          font-weight: 700;
+          padding: 12px 24px;
+          transition: background 0.2s, color 0.2s;
+        }
+        .catalog-more-button:hover,
+        .catalog-more-button:focus-visible {
+          background: #2563eb;
+          color: #fff;
+          outline: none;
         }
 
         /* === Configuration Lightbox === */
@@ -371,10 +561,10 @@
           visibility: visible;
         }
         .lightbox-content {
-          max-width: 480px;
-          width: calc(100% - 120px);
+          max-width: 820px;
+          width: calc(100% - 2rem);
           max-height: 90vh;
-          overflow-y: auto;
+          overflow: hidden;
           background: #fff;
           border-radius: 12px;
           transform: scale(0.95);
@@ -382,6 +572,8 @@
           position: relative;
           flex-shrink: 1;
           min-width: 0;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 340px;
         }
         @media (max-width: 680px) {
           .lightbox-content { width: 100%; max-width: 100%; }
@@ -407,34 +599,37 @@
         .lightbox-close:hover { background: rgba(0,0,0,0.8); }
         .lightbox-image-wrap {
           position: relative;
+          aspect-ratio: 1;
+          background: #fff;
+          min-width: 0;
         }
         .lightbox-image {
           width: 100%;
-          aspect-ratio: 1;
-          object-fit: cover;
+          height: 100%;
+          aspect-ratio: auto;
+          object-fit: contain;
           display: block;
-          border-radius: 12px 12px 0 0;
+          border-radius: 12px 0 0 12px;
         }
-        .lightbox-nav {
-          background: rgba(255,255,255,0.15);
-          color: #fff;
+        .lightbox-image-nav {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          background: rgba(0,0,0,0.48);
           border: none;
-          font-size: 22px;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
           border-radius: 50%;
-          transition: background 0.2s;
-          z-index: 1001;
-          flex-shrink: 0;
+          color: #fff;
+          cursor: pointer;
+          display: none;
+          font-size: 20px;
+          height: 36px;
+          line-height: 1;
+          width: 36px;
+          z-index: 5;
         }
-        .lightbox-nav:hover { background: rgba(255,255,255,0.3); }
-        @media (max-width: 680px) {
-          .lightbox-nav { display: none; }
-        }
+        .lightbox-image-nav.visible { display: flex; align-items: center; justify-content: center; }
+        .lightbox-image-prev { left: 12px; }
+        .lightbox-image-next { right: 12px; }
         .lightbox-dots {
           position: absolute;
           bottom: 12px;
@@ -444,16 +639,62 @@
           gap: 6px;
         }
         .dot {
+          border: none;
           width: 8px;
           height: 8px;
+          padding: 0;
           border-radius: 50%;
-          background: rgba(255,255,255,0.5);
+          background: rgba(255,255,255,0.78);
+          box-shadow: 0 0 0 1px rgba(17, 24, 39, 0.24);
           cursor: pointer;
           transition: background 0.2s;
         }
-        .dot.active { background: #fff; }
+        .dot.active {
+          background: #2563eb;
+          box-shadow: 0 0 0 1px rgba(255,255,255,0.8);
+        }
+        .lightbox-product-nav {
+          border-top: 1px solid #e8eaee;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          margin-top: 12px;
+          padding-top: 12px;
+        }
+        .lightbox-product-button {
+          background: #fff;
+          border: 1px solid #d6dce8;
+          border-radius: 6px;
+          color: #374151;
+          cursor: pointer;
+          font: inherit;
+          font-size: 0.82rem;
+          font-weight: 700;
+          line-height: 1.2;
+          min-height: 38px;
+          padding: 8px 10px;
+          transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+          white-space: nowrap;
+        }
+        .lightbox-product-button.product-next {
+          background: #f8fbff;
+          border-color: #2563eb;
+          color: #1d4ed8;
+        }
+        .lightbox-product-button:hover,
+        .lightbox-product-button:focus-visible {
+          background: #f8fbff;
+          border-color: #2563eb;
+          color: #1d4ed8;
+          outline: none;
+          transform: translateY(-1px);
+        }
         .lightbox-info {
           padding: 20px 24px 24px;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          min-width: 0;
         }
         .lightbox-title {
           font-size: 1.25rem;
@@ -469,16 +710,20 @@
         }
         .lightbox-desc {
           color: #555;
+          display: -webkit-box;
+          -webkit-line-clamp: 4;
+          -webkit-box-orient: vertical;
+          line-clamp: 4;
           line-height: 1.5;
           margin: 0 0 20px;
+          overflow: hidden;
           font-size: 0.95rem;
         }
         .lightbox-ctas {
-          display: flex;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
           gap: 10px;
-        }
-        @media (max-width: 480px) {
-          .lightbox-ctas { flex-direction: column; }
+          margin-top: auto;
         }
         @media (max-width: 768px) {
           .lightbox-overlay {
@@ -493,6 +738,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            grid-template-columns: none;
           }
           .lightbox-image-wrap {
             flex: 1;
@@ -500,7 +746,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #000;
+            background: #fff;
             touch-action: pan-x;
           }
           .lightbox-image {
@@ -527,48 +773,66 @@
           }
           .lightbox-desc {
             display: -webkit-box;
-            -webkit-line-clamp: 3;
+            -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
-            line-clamp: 3;
+            line-clamp: 2;
             overflow: hidden;
           }
         }
         .btn-order {
-          flex: 1;
-          display: inline-block;
-          text-align: center;
-          padding: 12px 20px;
+          align-items: center;
           background: #16a34a;
+          border: 1px solid #16a34a;
+          border-radius: 7px;
+          box-shadow: 0 6px 14px rgba(22, 163, 74, 0.18);
           color: #fff;
-          font-weight: 600;
-          border-radius: 8px;
-          text-decoration: none;
-          transition: background 0.2s;
-          font-size: 0.95rem;
-        }
-        .btn-order:hover { background: #15803d; }
-        .btn-customize {
-          flex: 1;
-          display: inline-block;
+          display: flex;
+          font-size: 0.86rem;
+          font-weight: 700;
+          justify-content: center;
+          line-height: 1.15;
+          min-height: 44px;
+          padding: 11px 14px;
           text-align: center;
-          padding: 12px 20px;
-          background: transparent;
-          color: #2563eb;
-          font-weight: 600;
-          border: 1.5px solid #2563eb;
-          border-radius: 8px;
           text-decoration: none;
-          transition: background 0.2s, color 0.2s;
-          font-size: 0.95rem;
+          transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+          white-space: nowrap;
         }
-        .btn-customize:hover { background: #2563eb; color: #fff; }
+        .btn-order:hover {
+          background: #15803d;
+          box-shadow: 0 8px 18px rgba(22, 163, 74, 0.22);
+          transform: translateY(-1px);
+        }
+        .btn-customize {
+          align-items: center;
+          background: #f8fbff;
+          border: 1px solid #b9ccff;
+          border-radius: 7px;
+          color: #1d4ed8;
+          display: flex;
+          font-size: 0.86rem;
+          font-weight: 700;
+          justify-content: center;
+          line-height: 1.15;
+          min-height: 44px;
+          padding: 11px 14px;
+          text-align: center;
+          text-decoration: none;
+          transition: background 0.2s, border-color 0.2s, transform 0.15s;
+          white-space: nowrap;
+        }
+        .btn-customize:hover {
+          background: #eef4ff;
+          border-color: #2563eb;
+          transform: translateY(-1px);
+        }
 
         /* === Details Grid === */
         .details-section {
-          max-width: 72rem;
-          margin: 0 auto 3rem;
-          padding: 0 1rem;
+          display: none;
+          margin-top: 2rem;
         }
+        .details-section.active { display: block; }
         .details-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
@@ -587,6 +851,113 @@
           margin-top: 0.5rem;
           font-size: 0.9rem;
           color: #555;
+        }
+        .section-reveal-button {
+          background: #fff;
+          border: 1.5px solid #2563eb;
+          border-radius: 8px;
+          color: #2563eb;
+          cursor: pointer;
+          font: inherit;
+          font-weight: 700;
+          padding: 12px 24px;
+          transition: background 0.2s, color 0.2s;
+        }
+        .section-reveal-button:hover,
+        .section-reveal-button:focus-visible {
+          background: #2563eb;
+          color: #fff;
+          outline: none;
+        }
+        .section-hide-button {
+          background: transparent;
+          border-color: #d6dce8;
+          color: #4b5563;
+        }
+        .section-hide-button:hover,
+        .section-hide-button:focus-visible {
+          background: #fff;
+          border-color: #6b7280;
+          color: #333;
+        }
+
+        /* === Customize Cards === */
+        .customize-card .customize-media {
+          background: #f7f8fa;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          aspect-ratio: 1;
+          overflow: hidden;
+          padding: 0;
+        }
+        .customize-card .customize-media img,
+        .customize-card .customize-media video {
+          aspect-ratio: 1;
+          display: block;
+          height: 100%;
+          max-width: none;
+          object-fit: cover;
+          object-position: center;
+          width: 100%;
+        }
+        .customize-card .customize-media video {
+          transform: scale(1.08);
+        }
+        @media (min-width: 768px) {
+          .customize-card .customize-media {
+            align-self: flex-start;
+            border-radius: 0;
+            flex: 0 0 clamp(300px, 41%, 420px);
+            margin: 0;
+          }
+          .customize-card .customize-copy {
+            flex: 1;
+          }
+        }
+
+        /* === FAQ Details === */
+        .faq-list {
+          display: grid;
+          gap: 0.85rem;
+        }
+        .faq-item {
+          background: #f7f8fa;
+          border: 1px solid #e0e4ec;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        .faq-item summary {
+          color: #333;
+          cursor: pointer;
+          font-size: 1.05rem;
+          font-weight: 700;
+          list-style: none;
+          padding: 1rem 1.15rem;
+          position: relative;
+        }
+        .faq-item summary::-webkit-details-marker {
+          display: none;
+        }
+        .faq-item summary::after {
+          content: "+";
+          color: #2563eb;
+          font-size: 1.25rem;
+          line-height: 1;
+          position: absolute;
+          right: 1.15rem;
+          top: 50%;
+          transform: translateY(-50%);
+        }
+        .faq-item[open] summary::after {
+          content: "-";
+        }
+        .faq-item p {
+          border-top: 1px solid #e0e4ec;
+          color: #555;
+          line-height: 1.6;
+          margin: 0;
+          padding: 1rem 1.15rem 1.15rem;
         }
 
         /* === WhatsApp FAB === */
@@ -639,7 +1010,11 @@
         .btn-green:hover { background-color: #15803d; }
 
         /* Mobile-only title bg */
-        .bg-mobile-title { background-color: #F2F3F6; }
+        .bg-mobile-title {
+          background-color: #fff;
+          color: #333;
+          line-height: 1.35;
+        }
     </style>
     <link rel="canonical" href="https://www.framework.co.ke/shelving.html">
     <script src="js/structured-data.js" defer></script>
@@ -654,80 +1029,141 @@
 
     <!-- Intro -->
     <div class="intro-section">
-      <p class="intro-tagline">Modular shelving</p>
-      <h1 class="intro-headline">Stack it. Expand it. Make it yours.</h1>
-      <p class="intro-subhead">Steel-framed modular shelving you can configure to fit any space. Available in four bold colors, made in Nairobi, and delivered to your door within a week.</p>
-      <div class="intro-links">
-        <a href="#" class="intro-link-row" onclick="event.preventDefault(); openLightbox(0);
-           if(typeof fbq==='function'){fbq('track','ViewContent',{content_name:'Design Ideas',content_category:'shelving_page_intro'});}">
-          <span class="intro-link-text">Design ideas & pricing</span>
-          <span class="intro-link-arrow">&rsaquo;</span>
-        </a>
-        <a href="simplified-designer.html" class="intro-link-row"
-           onclick="if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Simple Designer',content_category:'shelving_page_intro'});}">
-          <span class="intro-link-text">Customize your own shelf</span>
-          <span class="intro-link-arrow">&rsaquo;</span>
-        </a>
-        <a href="#featured-gallery" class="intro-link-row"
-           onclick="event.preventDefault(); document.getElementById('featured-gallery').scrollIntoView({behavior:'smooth'});">
-          <span class="intro-link-text">See it in action</span>
-          <span class="intro-link-arrow">&rsaquo;</span>
-        </a>
+      <div class="intro-media" aria-hidden="true">
+        <picture>
+          <source media="(min-width: 900px)" srcset="images/shelving/shelf%20%2800%29.jpg">
+          <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="" width="1000" height="1000" loading="eager" fetchpriority="high">
+        </picture>
+      </div>
+      <div class="intro-copy">
+        <p class="intro-tagline">Modular shelving</p>
+        <h1 class="intro-headline">Stack it. Expand it. Make it yours.</h1>
+        <p class="intro-subhead">Steel-framed modular shelving you can configure to fit any space. Available in four bold colors, made in Nairobi, and delivered to your door within a week.</p>
+        <div class="intro-links">
+          <a href="#popular-configurations" class="intro-link-row"
+             onclick="event.preventDefault(); document.getElementById('popular-configurations').scrollIntoView({behavior:'smooth'});">
+            <span class="intro-link-text">Design ideas & pricing</span>
+            <span class="intro-link-arrow">&rsaquo;</span>
+          </a>
+          <a href="#customize-your-shelf" class="intro-link-row"
+             onclick="event.preventDefault(); document.getElementById('customize-your-shelf').scrollIntoView({behavior:'smooth'});">
+            <span class="intro-link-text">Customize your own shelf</span>
+            <span class="intro-link-arrow">&rsaquo;</span>
+          </a>
+          <a href="#product-details" class="intro-link-row"
+             onclick="event.preventDefault(); document.getElementById('product-details').scrollIntoView({behavior:'smooth'});">
+            <span class="intro-link-text">See it in action</span>
+            <span class="intro-link-arrow">&rsaquo;</span>
+          </a>
+        </div>
       </div>
     </div>
 
-    <!-- Featured Gallery (Top 3 Images) -->
-    <div id="featured-gallery" class="featured-gallery">
+    <!-- Product Details -->
+    <section id="product-details" class="section-band section-band-muted featured-gallery">
+      <div class="section-inner">
+      <div class="section-header">
+        <h2>Product Details</h2>
+      </div>
       <div class="featured-grid">
-        <div class="featured-item" onclick="openLightbox(0)">
+        <button type="button" class="featured-item" onclick="openConfigById('grand-corner', 'featured_gallery')">
           <img src="images/shelving/shelf (18).jpg"
                alt="Modular shelving system showing infinite expandability — stack vertically, extend horizontally, turn corners"
                class="featured-img"
                width="1080" height="1080"
-               loading="eager" fetchpriority="high">
+               loading="lazy">
           <p class="featured-caption"><strong>Infinitely Expandable</strong><br>Our modular shelving system grows in any direction — stack vertically, extend horizontally, and turn corners. Perfect for Nairobi's diverse living spaces.</p>
-        </div>
-        <div class="featured-item" onclick="openLightbox(0)">
+        </button>
+        <button type="button" class="featured-item" onclick="openConfigById('starter', 'featured_gallery')">
           <img src="images/shelving/shelf (14).jpg"
                alt="Steel and MDF shelving unit crafted in Nairobi workshop"
                class="featured-img"
                width="1000" height="1000"
                loading="lazy">
           <p class="featured-caption"><strong>Made in Kenya</strong><br>Crafted in our Nairobi workshop, these steel-framed shelving units combine slim proportions with exceptional durability.</p>
-        </div>
-        <div class="featured-item" onclick="openLightbox(0)">
+        </button>
+        <button type="button" class="featured-item" onclick="openConfigById('two-tone-stack', 'featured_gallery')">
           <img src="images/shelving/shelf (00).jpg"
                alt="Colorful customizable shelving in multiple color options"
                class="featured-img"
                width="1000" height="1000"
                loading="lazy">
           <p class="featured-caption"><strong>Colorful & Customizable</strong><br>Choose from our curated set of vibrant colors to match any interior design scheme, and watch them come to life on our steel and MDF material palette.</p>
-        </div>
+        </button>
       </div>
 
       <div class="see-more-link">
-        <a href="#" onclick="event.preventDefault(); openLightbox(0);" class="see-configs-btn">
-          See design ideas &amp; pricing
-        </a>
+        <button id="product-details-reveal" class="section-reveal-button" type="button" onclick="showProductDetails()">
+          See more product details
+        </button>
       </div>
-    </div>
 
-    <!-- Simple Shelf CTA Card -->
-    <div class="max-w-6xl mx-auto px-4">
+      <div id="details-craftsmanship" class="details-section">
+        <div class="details-grid">
+          <div class="detail-item">
+            <img src="images/shelving/shelf (11).jpg" alt="Steel frame close-up showing solid joinery" loading="lazy" width="1000" height="1000">
+            <p>Rock-solid steel frame</p>
+          </div>
+          <div class="detail-item">
+            <img src="images/shelving/shelf (12).jpg" alt="Adjustable feet on shelf base for uneven floors" loading="lazy" width="1000" height="1000">
+            <p>Adjustable feet for any floor</p>
+          </div>
+          <div class="detail-item">
+            <img src="images/shelving/shelf (10).jpg" alt="Shelves sliding together without tools" loading="lazy" width="1000" height="1000">
+            <p>Tool-free assembly, just slide together</p>
+          </div>
+          <div class="detail-item">
+            <img src="images/shelving/shelf (14).jpg" alt="Precision engineering and finish detail" loading="lazy" width="1000" height="1000">
+            <p>Precision-engineered details</p>
+          </div>
+        </div>
+        <div class="see-more-link">
+          <button id="product-details-hide" class="section-reveal-button section-hide-button" type="button" onclick="hideProductDetails()">
+            Hide product details
+          </button>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- Popular Configurations Catalog -->
+    <section id="popular-configurations" class="section-band" aria-labelledby="popular-configurations-title">
+      <div class="section-inner catalog-section">
+      <div class="catalog-header section-header">
+        <h2 id="popular-configurations-title">Popular Configurations</h2>
+      </div>
+      <div id="catalog-grid" class="catalog-grid"></div>
+      <div id="catalog-more-wrap" class="catalog-more-wrap">
+        <button id="catalog-see-more" class="catalog-more-button" type="button"
+                data-clarity-action="see_more_configurations">
+          See more configurations
+        </button>
+      </div>
+      </div>
+    </section>
+
+    <!-- Customize Your Shelf -->
+    <section id="customize-your-shelf" class="section-band section-band-muted">
+      <div class="section-inner">
+      <div class="section-header">
+        <h2>Customize Your Shelf</h2>
+      </div>
+
+      <!-- Simple Shelf CTA Card -->
       <div class="mb-12">
-        <div class="bg-white rounded-lg overflow-hidden shadow-md">
+        <div class="bg-white rounded-lg overflow-hidden shadow-md customize-card">
           <h2 class="text-2xl text-center md:hidden p-4 pb-2 font-bold bg-mobile-title mb-0">
-            Looking for a<br>Simple Shelf?
+            Looking for a Simple Shelf?
           </h2>
           <div class="md:flex">
-            <div class="md:w-2\/5">
+            <div class="customize-media">
               <img src="images/shelving/shelf (03).jpg"
                    alt="Simple modular shelf configuration"
                    class="w-full h-auto object-cover"
                    width="1000" height="1000"
                    loading="lazy">
             </div>
-            <div class="p-6 md:w-3\/5 flex flex-col justify-center bg-gray-50 md:bg-white">
+            <div class="p-6 flex flex-col justify-center bg-gray-50 md:bg-white customize-copy">
               <h2 class="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Simple Shelf?</h2>
               <div class="bg-white p-4 rounded-lg shadow-sm md:shadow-none">
                 <p class="text-gray-700 mb-6">If you want a great shelf without needing to overthink it, our simplified ordering tool will help you get exactly what you need.</p>
@@ -746,18 +1182,18 @@
 
       <!-- Custom Shelf CTA Card -->
       <div class="mb-16">
-        <div class="bg-white rounded-lg overflow-hidden shadow-md">
+        <div class="bg-white rounded-lg overflow-hidden shadow-md customize-card">
           <h2 class="text-2xl text-center md:hidden p-4 pb-2 font-bold bg-mobile-title mb-0">
-            Looking for a<br>Unique Shelf?
+            Looking for a Unique Shelf?
           </h2>
           <div class="md:flex">
-            <div class="md:w-2\/5 bg-gray-50">
-              <video autoplay loop muted playsinline width="100%" class="w-full h-64 md:h-full object-cover object-center">
+            <div class="customize-media">
+              <video autoplay loop muted playsinline preload="metadata" width="100%" class="w-full object-cover object-center">
                 <source src="images/shelving/designer-tutorial.mp4" type="video/mp4">
-                <img src="images/shelving/designer-tutorial.gif" alt="Custom shelving design tool">
+                <img src="images/shelving/designer-tutorial.gif" alt="Custom shelving design tool" loading="lazy">
               </video>
             </div>
-            <div class="p-6 md:w-3\/5 flex flex-col justify-center">
+            <div class="p-6 flex flex-col justify-center customize-copy">
               <h2 class="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Unique Shelf?</h2>
               <p class="text-gray-600 mb-6">If you want to leverage the full potential of our shelving system, we can chat on WhatsApp to find a perfect setup for your space, or you can try out our full shelf designer app.</p>
 
@@ -786,70 +1222,52 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Details & Craftsmanship -->
-    <section class="details-section">
-      <h2 class="section-title">Details & Craftsmanship</h2>
-      <div class="details-grid">
-        <div class="detail-item">
-          <img src="images/shelving/shelf (11).jpg" alt="Steel frame close-up showing solid joinery" loading="lazy" width="1000" height="1000">
-          <p>Rock-solid steel frame</p>
-        </div>
-        <div class="detail-item">
-          <img src="images/shelving/shelf (12).jpg" alt="Adjustable feet on shelf base for uneven floors" loading="lazy" width="1000" height="1000">
-          <p>Adjustable feet for any floor</p>
-        </div>
-        <div class="detail-item">
-          <img src="images/shelving/shelf (10).jpg" alt="Shelves sliding together without tools" loading="lazy" width="1000" height="1000">
-          <p>Tool-free assembly — just slide together</p>
-        </div>
-        <div class="detail-item">
-          <img src="images/shelving/shelf (14).jpg" alt="Precision engineering and finish detail" loading="lazy" width="1000" height="1000">
-          <p>Precision-engineered details</p>
-        </div>
       </div>
     </section>
 
     <!-- FAQ Section -->
-    <section class="max-w-6xl mx-auto px-4 py-8 mb-12">
-        <h2 class="text-2xl mb-6 font-light text-center section-title">Frequently Asked Questions</h2>
-        <div class="space-y-6">
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="font-medium text-lg mb-2">What makes Framework's shelving unique in Nairobi?</h3>
-                <p class="text-gray-700">Our shelving systems are designed and manufactured in Kenya using premium steel
+    <section class="section-band">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>Frequently Asked Questions</h2>
+        </div>
+        <div class="faq-list">
+            <details class="faq-item">
+                <summary>What makes Framework's shelving unique in Nairobi?</summary>
+                <p>Our shelving systems are designed and manufactured in Kenya using premium steel
                     and engineered wood. Unlike imported furniture, our modular shelving is specifically designed
                     for Nairobi homes and businesses, with adjustable features that make it adaptable to any space. The
                     space-saving design maximizes storage while maintaining an elegant aesthetic that complements
                     contemporary Kenyan interiors.</p>
-            </div>
+            </details>
 
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="font-medium text-lg mb-2">How customizable are your shelving solutions?</h3>
-                <p class="text-gray-700">Our modular shelving systems are infinitely customizable. You can choose
+            <details class="faq-item">
+                <summary>How customizable are your shelving solutions?</summary>
+                <p>Our modular shelving systems are infinitely customizable. You can choose
                     colors, dimensions, and configurations to match your exact needs. Our online designer tool lets you
                     visualize your custom shelving before ordering, ensuring a perfect fit for your Nairobi home or
                     office. From colorful furniture options to minimalist designs, we offer steel-framed shelving solutions
                     that adapt to every style preference and spatial requirement.</p>
-            </div>
+            </details>
 
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="font-medium text-lg mb-2">Do you deliver and install in Nairobi?</h3>
-                <p class="text-gray-700">Yes, we offer delivery throughout Nairobi and surrounding areas. Installation
+            <details class="faq-item">
+                <summary>Do you deliver and install in Nairobi?</summary>
+                <p>Yes, we offer delivery throughout Nairobi and surrounding areas. Installation
                     services are also available for an additional fee. Our team ensures your shelving is properly set up
                     and stable, with adjustable feet that adapt to uneven floors commonly found in Nairobi buildings. We
                     serve clients across all neighborhoods, from Kilimani and Westlands to Karen and beyond.</p>
-            </div>
+            </details>
 
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="font-medium text-lg mb-2">What is the price range for Framework shelving?</h3>
-                <p class="text-gray-700">Our shelving starts at KSh 6,500 for a standard base unit, with extension units
+            <details class="faq-item">
+                <summary>What is the price range for Framework shelving?</summary>
+                <p>Our shelving starts at KSh 6,500 for a standard base unit, with extension units
                     available from KSh 5,500. Custom configurations vary in price based on size and features. Being
                     Kenyan-made, our shelving offers exceptional value compared to imported options of similar quality.
                     For architects, interior designers, and business owners looking for commercial shelving solutions,
                     we also offer competitive pricing for bulk orders.</p>
-            </div>
+            </details>
         </div>
+      </div>
     </section>
 
     <!-- ViewContent tracking -->
@@ -865,12 +1283,13 @@
 
     <!-- Configuration Lightbox -->
     <div id="config-lightbox" class="lightbox-overlay" onclick="closeLightbox()">
-      <button class="lightbox-nav lightbox-prev" onclick="event.stopPropagation(); prevConfig()" aria-label="Previous">&#8249;</button>
       <div class="lightbox-content" onclick="event.stopPropagation()">
         <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
 
         <div class="lightbox-image-wrap">
-          <img id="lb-image" class="lightbox-image" src="" alt="">
+          <button id="lb-image-prev" class="lightbox-image-nav lightbox-image-prev" type="button" onclick="event.stopPropagation(); prevConfigImage()" aria-label="Previous image">&#8249;</button>
+          <img id="lb-image" class="lightbox-image" alt="" loading="lazy">
+          <button id="lb-image-next" class="lightbox-image-nav lightbox-image-next" type="button" onclick="event.stopPropagation(); nextConfigImage()" aria-label="Next image">&#8250;</button>
           <div id="lb-dots" class="lightbox-dots"></div>
         </div>
 
@@ -879,16 +1298,27 @@
           <p id="lb-price" class="lightbox-price"></p>
           <p id="lb-desc" class="lightbox-desc"></p>
           <div class="lightbox-ctas">
-            <a id="lb-order" href="#" target="_blank" rel="noopener noreferrer" class="btn-order" onclick="trackOrder()">
-              Order This Unit
+            <a id="lb-order" href="#" target="_blank" rel="noopener noreferrer" class="btn-order" onclick="trackOrder()"
+               data-clarity-action="order_config">
+              Order on WhatsApp
             </a>
-            <a id="lb-customize" href="/designer" class="btn-customize" onclick="trackCustomize()">
-              Customize This Unit
+            <a id="lb-customize" href="/designer" class="btn-customize" onclick="trackCustomize()"
+               data-clarity-action="customize_config">
+              Customize
             </a>
+          </div>
+          <div class="lightbox-product-nav" aria-label="Browse configurations">
+            <button id="lb-prev-product" class="lightbox-product-button product-prev" type="button" onclick="prevConfig()"
+                    data-clarity-action="previous_config">
+              &lsaquo; Previous product
+            </button>
+            <button id="lb-next-product" class="lightbox-product-button product-next" type="button" onclick="nextConfig()"
+                    data-clarity-action="next_config">
+              Next product &rsaquo;
+            </button>
           </div>
         </div>
       </div>
-      <button class="lightbox-nav lightbox-next" onclick="event.stopPropagation(); nextConfig()" aria-label="Next">&#8250;</button>
     </div>
 
     <!-- WhatsApp FAB -->
@@ -905,131 +1335,363 @@
 
     <!-- Configuration Data + Lightbox JS + Tracking -->
     <script>
-    const configurations = [    
-    
-         {
-        id: "compact-corner",
-        title: "The Compact Corner",
-        image: "images/shelving/configs/compact-corner.jpg",
-        price: "Ksh 25,000",
-        description: "Transforms unused corners into functional space. Built from steel and engineered wood in our Nairobi workshop. Smaller units from Ksh 6,500.",
-        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bcorner-base-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7D);THEME_1",
-      },
-       {
-        id: "standard-base",
-        title: "The Starter",
-        image: "images/shelving/configs/standard-base.jpg",
-        price: "Ksh 6,500",
-        description: "A two-tier unit at an unbeatable price. Use it as is, and add as many more levels as needed later on.",
-        designerUrl: "/designer#(%7Bstandard-base-NE%7D);THEME_1",
-      },
-      {
-        id: "standard-stack",
-        title: "The Standard Stack",
-        image: "images/shelving/configs/color-stack.jpg",
-        price: "Ksh 23,000",
-        description: "A five tier unit -- avaialable as shown in vibrant multicolor or any of the colors on its own",
-        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1",
-      },
-      {
-        id: "statement-apartment",
-        title: "The Statement Wall",
-        image: "images/shelving/configs/berlin-apartment.jpg",
-        price: "Ksh 54,000",
-        description: "Full-wall shelving for all of your books and decorations.",
-        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-spacer-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-spacer-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_3",
-      },
-    {
-        id: "gallery-shelf",
-        title: "The Gallery Shelf",
-        image: "images/shelving/configs/gallery-shelf.jpg",
-        price: "Ksh 24,500",
-        description: "Extra-tall spaces for plants, artworks, and anything that wouldn't fit in a standard bookcase.",
-        designerUrl: "/designer#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-adapter-SW%7DHSNE-FSNE%7Bstandard-spacer-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2",
-      },  
-      {
-        id: "knead-cafe",
-        title: "The Café Display",
-        image: "images/shelving/configs/knead-cafe.jpg",
-        price: "Ksh 33,000",
-        description: "A multifunctional design, as well suited to retail and office spaces as it is to a living room.",
-        designerUrl: "/designer#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-extension-NE%7DHWNE-FWNE%7Bwide-adapter-SW%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_4",
-      },
-      {
-        id: "grow-library",
-        title: "The Growing Library",
-        image: "images/shelving/configs/grow-library.jpg",
-        price: "From Ksh 17,500",
-        description: "Designed to expand with your book collection. Start with a few units and add more as your library grows — no tools necessary.",
-        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_3",
-      },
-      {
-        id: "bedside-coral",
-        title: "The Bedside Shelf",
-        image: "images/shelving/configs/bedside-coral.jpg",
-        price: "Ksh 8,000",
-        description: "A single Wide Base unit in Coral. Keeps essentials within reach while adding a pop of color to your bedroom.",
-        designerUrl: "/designer#(%7Bwide-base-NE%7D);THEME_4",
-      },
-      {
-        id: "go-wide",
-        title: "The Wide Shelf",
-        image: "images/shelving/configs/go-wide.jpg",
-        price: "Ksh 19,500",
-        description: "If you can't go tall, go wide. Spread your shelves to adapt to any horizontal space — stack them, spread them, get creative.",
-        designerUrl: "/designer#(%7Bstandard-base-NE%7D)NE-SW(%7Bstandard-base-NE%7D)NE-SW(%7Bstandard-base-NE%7D);THEME_1",
-      },
-      {
-        id: "multi-tier",
-        title: "The Multi-Tier",
-        image: "images/shelving/configs/multi-tier.jpg",
-        price: "Ksh 41,500",
-        description: "Stack, expand, and customize to create your perfect storage solution. Great design shouldn't break the bank.",
-        designerUrl: "/designer#(%7Bstandard-base-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1",
-      },
-      {
-        id: "coat-hanger",
-        title: "The Open Wardrobe",
-        image: "images/shelving/configs/coat-hanger.jpg",
-        price: "Ksh 43,000",
-        description: "Our deep hanger extension creates a stunning open wardrobe that holds all your clothes while keeping your space feeling open and airy.",
-        designerUrl: "/sandbox.html#SBX:%5B%7B%22id%22%3A%221775501960284%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-base-NE%22%2C%22x%22%3A567.5%2C%22y%22%3A272%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221775501965287%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-spacer-NE%22%2C%22x%22%3A571.95466%2C%22y%22%3A236.15294000000003%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221775501972626%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-spacer-NE%22%2C%22x%22%3A572.1487400754459%2C%22y%22%3A206.87599812757207%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221775502480840%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22hanger-extension-NE%22%2C%22x%22%3A577.3199819524463%2C%22y%22%3A186.85624669410151%2C%22zIndex%22%3A4%7D%2C%7B%22id%22%3A%221775502490091%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-extension-NE%22%2C%22x%22%3A572.3184012339963%2C%22y%22%3A147.52762336591223%2C%22zIndex%22%3A5%7D%5D;THEME_2",
-      },
-      {
-        id: "corner-unit",
-        title: "The Corner Unit",
-        image: "images/shelving/configs/corner-unit.jpg",
-        price: "Ksh 36,000",
-        description: "Corners were made for shelves like this. Our modular system gets the most out of any space in your home. Customizable to your space and budget.",
-        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bcorner-base-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7D);THEME_1",
-      },
-      {
-        id: "client-space",
-        title: "Book Nook",
-        image: "images/shelving/configs/client-space.jpg",
-        price: "Ksh 28,500",
-        description: "Fit your entire library into a cozy corner.",
-        designerUrl: "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2",
-      }
-    ];
+    const blankConfigImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 1200'%3E%3Crect width='1200' height='1200' fill='%23f2f3f6'/%3E%3C/svg%3E";
+    const configurations = [
+          {
+                "id": "starter",
+                "title": "The Starter",
+                "image": "images/shelving/configs/starter-populated.jpg",
+                "images": [
+                      "images/shelving/configs/starter-populated.jpg",
+                      "images/shelving/configs/starter-emptied.jpg",
+                      "images/shelving/configs/starter-front.jpg"
+                ],
+                "price": "Ksh 6,500",
+                "priceValue": 6500,
+                "description": "A low, two-tier unit that works perfectly as a media console, entryway organizer, or low display. Built in our Nairobi workshop from steel and engineered wood, it offers a sturdy foundation you can always expand later.",
+                "designerUrl": "/designer#(%7Bstandard-base-NE%7D);THEME_1"
+          },
+          {
+                "id": "end-table",
+                "title": "The End Table",
+                "image": "images/shelving/configs/end-table-populated.jpg",
+                "images": [
+                      "images/shelving/configs/end-table-populated.jpg",
+                      "images/shelving/configs/end-table-emptied.jpg",
+                      "images/shelving/configs/end-table-front.jpg"
+                ],
+                "price": "Ksh 9,500",
+                "priceValue": 9500,
+                "description": "A versatile two-tier unit that works perfectly as a side table, bedside shelf, or entryway organizer. Keep your books, crafts, and daily essentials within easy reach.",
+                "designerUrl": "/designer#(%7Bcompact-base-NE%7D);THEME_3"
+          },
+          {
+                "id": "low-console",
+                "title": "The Low Console",
+                "image": "images/shelving/configs/low-console-populated.jpg",
+                "images": [
+                      "images/shelving/configs/low-console-populated.jpg",
+                      "images/shelving/configs/low-console-emptied.jpg",
+                      "images/shelving/configs/low-console-front.jpg",
+                      "images/shelving/configs/low-console-under-mdf.jpg"
+                ],
+                "price": "Ksh 12,000",
+                "priceValue": 12000,
+                "description": "A versatile three-tier unit designed to sit comfortably in entryways, living rooms, or under windows. Perfect for keeping books, art, and everyday essentials beautifully on display.",
+                "designerUrl": "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_3"
+          },
+          {
+                "id": "triple",
+                "title": "The Triple",
+                "image": "images/shelving/configs/triple-populated.jpg",
+                "images": [
+                      "images/shelving/configs/triple-populated.jpg",
+                      "images/shelving/configs/triple-emptied.jpg",
+                      "images/shelving/configs/triple-angle.jpg",
+                      "images/shelving/configs/triple-mdf-edge.jpg"
+                ],
+                "price": "Ksh 12,000",
+                "priceValue": 12000,
+                "description": "A versatile three-tier configuration in an earthy sage green. It makes a perfect low sideboard or hallway console for organizing books, baskets, and daily essentials.",
+                "designerUrl": "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2"
+          },
+          {
+                "id": "quadruple",
+                "title": "The Quadruple",
+                "image": "images/shelving/configs/quadruple-populated.jpg",
+                "images": [
+                      "images/shelving/configs/quadruple-populated.jpg",
+                      "images/shelving/configs/quadruple-emptied.jpg",
+                      "images/shelving/configs/quadruple-angle.jpg"
+                ],
+                "price": "Ksh 17,500",
+                "priceValue": 17500,
+                "description": "A four-tier unit in a striking deep blue finish. Designed to showcase your collection of books, baskets, and handcrafted pieces beautifully.",
+                "designerUrl": "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1"
+          },
+          {
+                "id": "lighted-console",
+                "title": "The Lighted Console",
+                "image": "images/shelving/configs/lighted-console-populated.jpg",
+                "images": [
+                      "images/shelving/configs/lighted-console-populated.jpg",
+                      "images/shelving/configs/lighted-console-emptied.jpg"
+                ],
+                "price": "Ksh 19,500",
+                "priceValue": 19500,
+                "description": "A three-tier modular unit featuring an integrated overhead lamp. Bring warmth and organized storage to your favorite reading corner. Note: lamp shade not included.",
+                "designerUrl": "/sandbox#SBX:%5B%7B%22id%22%3A%221782663675664%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782663680628%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-extension-NE%22%2C%22x%22%3A1047.95466%2C%22y%22%3A430.15294000000006%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782663687033%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22lamp-NE%22%2C%22x%22%3A1056.5887200000002%2C%22y%22%3A378.80572000000006%2C%22zIndex%22%3A3%7D%5D;THEME_1"
+          },
+          {
+                "id": "wide-four-tier",
+                "title": "The Wide Four-Tier",
+                "image": "images/shelving/configs/wide-four-tier-populated.jpg",
+                "images": [
+                      "images/shelving/configs/wide-four-tier-populated.jpg",
+                      "images/shelving/configs/wide-four-tier-emptied.jpg"
+                ],
+                "price": "Ksh 22,000",
+                "priceValue": 22000,
+                "description": "A spacious four-shelf unit finished in soft coral. Designed to give you plenty of horizontal room for organizing books, toys, and creative displays.",
+                "designerUrl": "/designer#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-extension-NE%7DHWNE-FWNE%7Bwide-extension-NE%7D);THEME_4"
+          },
+          {
+                "id": "lantern-shelf",
+                "title": "The Lantern Shelf",
+                "image": "images/shelving/configs/lantern-shelf-populated.jpg",
+                "images": [
+                      "images/shelving/configs/lantern-shelf-populated.jpg",
+                      "images/shelving/configs/lantern-shelf-emptied.jpg",
+                      "images/shelving/configs/lantern-shelf-foot.jpg"
+                ],
+                "price": "Ksh 24,500",
+                "priceValue": 24500,
+                "description": "Combines spacious multi-tier storage with an integrated overhead lamp arm. Perfect for casting a warm, cozy glow over your favorite books and curated displays. Note: lamp shade not included.",
+                "designerUrl": "/sandbox#SBX:%5B%7B%22id%22%3A%221782663675664%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782663680628%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-adapter-NE%22%2C%22x%22%3A1042.596292373114%2C%22y%22%3A426.4690622565158%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782663916086%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22slim-extension-NE%22%2C%22x%22%3A1018.184552373114%2C%22y%22%3A420.1884222565159%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221782663921565%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22lamp-NE%22%2C%22x%22%3A1056.4593523731141%2C%22y%22%3A379.0690622565158%2C%22zIndex%22%3A4%7D%5D;THEME_4"
+          },
+          {
+                "id": "two-tone-stack",
+                "title": "The Two-Tone Stack",
+                "image": "images/shelving/configs/two-tone-stack-populated.jpg",
+                "images": [
+                      "images/shelving/configs/two-tone-stack-populated.jpg",
+                      "images/shelving/configs/two-tone-stack-emptied.jpg",
+                      "images/shelving/configs/two-tone-stack-angle.jpg",
+                      "images/shelving/configs/two-tone-stack-under-mdf.jpg"
+                ],
+                "price": "Ksh 28,500",
+                "priceValue": 28500,
+                "description": "A six-tier modular configuration in a vibrant navy and coral mix. Perfect for displaying books, baskets, and collected treasures while adding a bold pop of color to your space.",
+                "designerUrl": "/sandbox#SBX:%5B%7B%22id%22%3A%221782661764710%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782661768336%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.639%2C%22y%22%3A431.8853%2C%22zIndex%22%3A2%2C%22customTheme%22%3A%22THEME_4%22%7D%2C%7B%22id%22%3A%221782661774056%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.6391999999998%2C%22y%22%3A402.54997999999995%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221782661776252%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.6393999999998%2C%22y%22%3A373.2146599999999%2C%22zIndex%22%3A4%2C%22customTheme%22%3A%22THEME_4%22%7D%2C%7B%22id%22%3A%221782661779409%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.6395999999997%2C%22y%22%3A343.8793399999999%2C%22zIndex%22%3A5%7D%5D;THEME_1"
+          },
+          {
+                "id": "versatile-stack",
+                "title": "The Versatile Stack",
+                "image": "images/shelving/configs/versatile-stack-populated.jpg",
+                "images": [
+                      "images/shelving/configs/versatile-stack-populated.jpg",
+                      "images/shelving/configs/versatile-stack-emptied.jpg",
+                      "images/shelving/configs/versatile-stack-angle.jpg",
+                      "images/shelving/configs/versatile-stack-under-mdf.jpg"
+                ],
+                "price": "Ksh 28,500",
+                "priceValue": 28500,
+                "description": "A tall seven-tier unit in a calm sage green finish. Designed to offer maximum vertical storage for your books, baskets, and art while keeping a clean, slim footprint.",
+                "designerUrl": "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2"
+          },
+          {
+                "id": "stepped-stack",
+                "title": "The Stepped Stack",
+                "image": "images/shelving/configs/stepped-stack-populated.jpg",
+                "images": [
+                      "images/shelving/configs/stepped-stack-populated.jpg",
+                      "images/shelving/configs/stepped-stack-emptied.jpg",
+                      "images/shelving/configs/stepped-stack-angle.jpg",
+                      "images/shelving/configs/stepped-stack-under-mdf.jpg"
+                ],
+                "price": "Ksh 31,500",
+                "priceValue": 31500,
+                "description": "An asymmetric, stepped design that offers plenty of shelving at varying heights. Perfect for showcasing a mix of books, art, and larger collectibles.",
+                "designerUrl": "/designer#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-adapter-SW%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2"
+          },
+          {
+                "id": "dynamic-corner",
+                "title": "Dynamic Corner",
+                "image": "images/shelving/configs/dynamic-corner-populated.jpg",
+                "images": [
+                      "images/shelving/configs/dynamic-corner-populated.jpg",
+                      "images/shelving/configs/dynamic-corner-emptied.jpg"
+                ],
+                "price": "Ksh 36,000",
+                "priceValue": 36000,
+                "description": "Turn that forgotten corner into the most interesting part of your space.",
+                "designerUrl": "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bcorner-base-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7D);THEME_1"
+          },
+          {
+                "id": "asymmetric-display",
+                "title": "The Curator's Shelf",
+                "image": "images/shelving/configs/asymmetric-display-populated.jpg",
+                "images": [
+                      "images/shelving/configs/asymmetric-display-populated.jpg",
+                      "images/shelving/configs/asymmetric-display-emptied.jpg",
+                      "images/shelving/configs/asymmetric-display-angle.jpg",
+                      "images/shelving/configs/asymmetric-display-foot.jpg",
+                      "images/shelving/configs/asymmetric-display-joint.jpg"
+                ],
+                "price": "Ksh 36,500",
+                "priceValue": 36500,
+                "description": "Features asymmetrical shelf heights that create unique pockets for books, art, and hanging decorations. Built from steel and engineered wood in our Nairobi workshop.",
+                "designerUrl": "/sandbox#SBX:%5B%7B%22id%22%3A%221771565766838%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A567.5%2C%22y%22%3A256.5%2C%22zIndex%22%3A1%2C%22customTheme%22%3Anull%7D%2C%7B%22id%22%3A%221771565778488%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-adapter-NE%22%2C%22x%22%3A566.8348979766804%2C%22y%22%3A216.50469393004116%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221771565793486%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22slim-extension-NE%22%2C%22x%22%3A542.4231579766804%2C%22y%22%3A210.22405393004112%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221771565801397%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-booster-full-NW%22%2C%22x%22%3A624.1642013237312%2C%22y%22%3A163.07206116598078%2C%22zIndex%22%3A4%7D%2C%7B%22id%22%3A%221771565815796%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A600.5606213237312%2C%22y%22%3A147.03002116598077%2C%22zIndex%22%3A5%7D%2C%7B%22id%22%3A%221771565821775%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-booster-full-NW%22%2C%22x%22%3A527.9076641152263%2C%22y%22%3A188.7183874691358%2C%22zIndex%22%3A6%7D%2C%7B%22id%22%3A%221771565835168%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-extension-NE%22%2C%22x%22%3A572.2838213237311%2C%22y%22%3A132.56620116598077%2C%22zIndex%22%3A7%7D%5D;THEME_4"
+          },
+          {
+                "id": "offset-shelf",
+                "title": "The Offset Shelf",
+                "image": "images/shelving/configs/offset-shelf-populated.jpg",
+                "images": [
+                      "images/shelving/configs/offset-shelf-populated.jpg",
+                      "images/shelving/configs/offset-shelf-emptied.jpg",
+                      "images/shelving/configs/offset-shelf-angle.jpg"
+                ],
+                "price": "Ksh 37,000",
+                "priceValue": 37000,
+                "description": "An asymmetrical, multi-level configuration that pairs a tall tower with a lower side unit. Perfect for displaying art, books, and plants at varying heights to create a dynamic focal point in your space.",
+                "designerUrl": "/sandbox#SBX:%5B%7B%22id%22%3A%221782661506964%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782661519510%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-adapter-SW%22%2C%22x%22%3A1043.6813271604938%2C%22y%22%3A420.3672839506173%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782661540291%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.3133671604937%2C%22y%22%3A406.7274239506174%2C%22zIndex%22%3A3%2C%22customTheme%22%3A%22THEME_1%22%7D%2C%7B%22id%22%3A%221782661543465%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.3135671604937%2C%22y%22%3A377.39210395061735%2C%22zIndex%22%3A4%2C%22customTheme%22%3A%22THEME_1%22%7D%2C%7B%22id%22%3A%221782661546213%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.3137671604936%2C%22y%22%3A348.05678395061733%2C%22zIndex%22%3A5%7D%2C%7B%22id%22%3A%221782661548536%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.5516471604938%2C%22y%22%3A318.3090839506174%2C%22zIndex%22%3A6%7D%5D;THEME_4"
+          },
+          {
+                "id": "deep-stack",
+                "title": "The Deep Stack",
+                "image": "images/shelving/configs/deep-stack-populated.jpg",
+                "images": [
+                      "images/shelving/configs/deep-stack-populated.jpg",
+                      "images/shelving/configs/deep-stack-emptied.jpg"
+                ],
+                "price": "Ksh 43,500",
+                "priceValue": 43500,
+                "description": "A tall, five-tier shelving unit finished in a calming sage green. Its deep profile makes it perfect for displaying books, baskets, and collectibles in smaller spaces.",
+                "designerUrl": "/designer#(%7Bcompact-base-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7D);THEME_2"
+          },
+          {
+                "id": "double-bay",
+                "title": "The Double Bay",
+                "image": "images/shelving/configs/double-bay-populated.jpg",
+                "images": [
+                      "images/shelving/configs/double-bay-populated.jpg",
+                      "images/shelving/configs/double-bay-emptied.jpg",
+                      "images/shelving/configs/double-bay-angle.jpg",
+                      "images/shelving/configs/double-bay-under-mdf.jpg"
+                ],
+                "price": "Ksh 46,000",
+                "priceValue": 46000,
+                "description": "A spacious ten-shelf setup that offers plenty of room for your books, crafts, and collectibles. The double-width design makes a bold statement in any living room or creative studio.",
+                "designerUrl": "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1"
+          },
+          {
+                "id": "stepped-display",
+                "title": "The Stepped Display",
+                "image": "images/shelving/configs/stepped-display-populated.jpg",
+                "images": [
+                      "images/shelving/configs/stepped-display-populated.jpg",
+                      "images/shelving/configs/stepped-display-emptied.jpg",
+                      "images/shelving/configs/stepped-display-angle.jpg"
+                ],
+                "price": "Ksh 46,000",
+                "priceValue": 46000,
+                "description": "Combines low-level shelving with a tall display stack in a striking asymmetric design. Perfect for showing off books, art, and your favorite collections.",
+                "designerUrl": "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1"
+          },
+          {
+                "id": "high-low",
+                "title": "The High-Low",
+                "image": "images/shelving/configs/high-low-populated.jpg",
+                "images": [
+                      "images/shelving/configs/high-low-populated.jpg",
+                      "images/shelving/configs/high-low-emptied.jpg"
+                ],
+                "price": "Ksh 51,000",
+                "priceValue": 51000,
+                "description": "Pairs a low-slung console with a tall shelving tower for a striking asymmetrical look. Perfect for displaying books, baskets, and art at different heights.",
+                "designerUrl": "/designer#(%7Bdeep-base-NE%7D)NE-SW(%7Bcompact-base-NE%7DHCNE-FCNE%7Bcompact-spacer-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-spacer-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7D);THEME_2"
+          },
+          {
+                "id": "triple-bay",
+                "title": "The Triple Bay",
+                "image": "images/shelving/configs/triple-bay-populated.jpg",
+                "images": [
+                      "images/shelving/configs/triple-bay-populated.jpg",
+                      "images/shelving/configs/triple-bay-emptied.jpg",
+                      "images/shelving/configs/triple-bay-angle.jpg",
+                      "images/shelving/configs/triple-bay-joint.jpg"
+                ],
+                "price": "Ksh 69,000",
+                "priceValue": 69000,
+                "description": "Three connected columns offer generous, easy-to-reach storage while keeping a low profile. Perfect for organizing books, baskets, and toys in any living space.",
+                "designerUrl": "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1"
+          },
+          {
+                "id": "grand-corner",
+                "title": "The Grand Corner",
+                "image": "images/shelving/configs/grand-corner-populated.jpg",
+                "images": [
+                      "images/shelving/configs/grand-corner-populated.jpg",
+                      "images/shelving/configs/grand-corner-emptied.jpg",
+                      "images/shelving/configs/grand-corner-foot.jpg"
+                ],
+                "price": "Ksh 71,000",
+                "priceValue": 71000,
+                "description": "A generous seven-tier configuration designed to turn any corner into a beautiful focal point. Built in our Nairobi workshop to hold a massive collection of books and more.",
+                "designerUrl": "/designer#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bcorner-base-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7D);THEME_1"
+          },
+          {
+                "id": "wardrobe-shelf",
+                "title": "The Wardrobe Shelf",
+                "image": "images/shelving/configs/wardrobe-shelf-populated.jpg",
+                "images": [
+                      "images/shelving/configs/wardrobe-shelf-populated.jpg",
+                      "images/shelving/configs/wardrobe-shelf-emptied.jpg",
+                      "images/shelving/configs/wardrobe-shelf-front.jpg"
+                ],
+                "price": "",
+                "priceValue": 0,
+                "description": "Combines an integrated hanging rail with two spacious lower shelves for baskets, books, or folded clothes. Built from steel in our Nairobi workshop to keep your space organized and airy.",
+                "designerUrl": "/sandbox#SBX:%5B%7B%22id%22%3A%221782658906240%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-base-NW%22%2C%22x%22%3A761.5%2C%22y%22%3A294.5%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782658913839%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-spacer-NW%22%2C%22x%22%3A764.9365354938271%2C%22y%22%3A258.75347222222223%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782658923753%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-spacer-NW%22%2C%22x%22%3A765.130615569273%2C%22y%22%3A229.14163237311385%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221782658940667%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22hanger-extension-NW%22%2C%22x%22%3A757.5802111911294%2C%22y%22%3A209.31163551668953%2C%22zIndex%22%3A4%7D%2C%7B%22id%22%3A%221782658953678%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-extension-NW%22%2C%22x%22%3A765.0535801040237%2C%22y%22%3A170.65280814186102%2C%22zIndex%22%3A5%7D%5D;THEME_2"
+          }
+        ];
 
-    /* === Lightbox === */
+    /* === Catalog + Lightbox === */
+    const INITIAL_VISIBLE_CONFIGS = 9;
     let currentIndex = 0;
+    let currentImageIndex = 0;
+    let catalogExpanded = false;
     let touchStartX = 0;
+    let touchStartY = 0;
 
-    function openLightbox(index) {
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, function(character) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[character];
+      });
+    }
+
+    function getConfigImages(config) {
+      if (Array.isArray(config.images) && config.images.length) return config.images;
+      return config.image ? [config.image] : [];
+    }
+
+    function getConfigPriceValue(config) {
+      if (typeof config.priceValue === 'number') return config.priceValue;
+      return parseFloat(String(config.price || '').replace(/[^0-9.]/g, '')) || 0;
+    }
+
+    function getConfigPriceLabel(config) {
+      return String(config.price || '').trim() || 'Price on request';
+    }
+
+    function updateConfigUrl(config, mode) {
+      var url = new URL(window.location);
+      url.searchParams.set('config', config.id);
+      if (mode === 'push') window.history.pushState({}, '', url);
+      else window.history.replaceState({}, '', url);
+    }
+
+    function openConfigById(configId, source) {
+      var index = configurations.findIndex(function(config) { return config.id === configId; });
+      if (index >= 0) openLightbox(index, source || 'id_link');
+    }
+
+    function openLightbox(index, source) {
+      if (index < 0 || index >= configurations.length) return;
       currentIndex = index;
+      currentImageIndex = 0;
       renderLightbox();
       document.getElementById('config-lightbox').classList.add('active');
       document.body.style.overflow = 'hidden';
-
-      var url = new URL(window.location);
-      url.searchParams.set('config', configurations[index].id);
-      window.history.pushState({}, '', url);
-
-      var config = configurations[index];
-      gtag('event', 'view_configuration', { content_name: config.title, content_category: 'lightbox_open' });
-      trackConfigView(config);
+      updateConfigUrl(configurations[index], 'push');
+      trackConfigView(configurations[index], source || 'lightbox_open');
     }
 
     function closeLightbox() {
@@ -1042,49 +1704,186 @@
 
     function nextConfig() {
       currentIndex = (currentIndex + 1) % configurations.length;
+      currentImageIndex = 0;
       renderLightbox();
-      trackConfigView(configurations[currentIndex]);
+      updateConfigUrl(configurations[currentIndex], 'replace');
+      trackConfigView(configurations[currentIndex], 'config_navigation');
     }
 
     function prevConfig() {
       currentIndex = currentIndex === 0 ? configurations.length - 1 : currentIndex - 1;
+      currentImageIndex = 0;
       renderLightbox();
-      trackConfigView(configurations[currentIndex]);
+      updateConfigUrl(configurations[currentIndex], 'replace');
+      trackConfigView(configurations[currentIndex], 'config_navigation');
     }
 
-    function goToConfig(index) {
-      currentIndex = index;
-      renderLightbox();
-      trackConfigView(configurations[currentIndex]);
+    function goToConfigImage(index) {
+      var images = getConfigImages(configurations[currentIndex]);
+      if (index < 0 || index >= images.length) return;
+      currentImageIndex = index;
+      renderLightboxImage();
+    }
+
+    function nextConfigImage() {
+      var images = getConfigImages(configurations[currentIndex]);
+      if (images.length < 2) return;
+      currentImageIndex = (currentImageIndex + 1) % images.length;
+      renderLightboxImage();
+    }
+
+    function prevConfigImage() {
+      var images = getConfigImages(configurations[currentIndex]);
+      if (images.length < 2) return;
+      currentImageIndex = currentImageIndex === 0 ? images.length - 1 : currentImageIndex - 1;
+      renderLightboxImage();
+    }
+
+    function renderLightboxImage() {
+      var config = configurations[currentIndex];
+      var images = getConfigImages(config);
+      var image = images[currentImageIndex] || config.image;
+      var imageEl = document.getElementById('lb-image');
+      imageEl.src = image;
+      imageEl.alt = config.title + ' - ' + config.description;
+
+      var showImageNav = images.length > 1;
+      document.getElementById('lb-image-prev').classList.toggle('visible', showImageNav);
+      document.getElementById('lb-image-next').classList.toggle('visible', showImageNav);
+
+      var dotsEl = document.getElementById('lb-dots');
+      dotsEl.innerHTML = showImageNav ? images.map(function(_, i) {
+        return '<button class="dot' + (i === currentImageIndex ? ' active' : '') + '" type="button" aria-label="View image ' + (i + 1) + '" onclick="event.stopPropagation(); goToConfigImage(' + i + ')"></button>';
+      }).join('') : '';
     }
 
     function renderLightbox() {
       var config = configurations[currentIndex];
-      document.getElementById('lb-image').src = config.image;
-      document.getElementById('lb-image').alt = config.title + ' - ' + config.description;
+      renderLightboxImage();
       document.getElementById('lb-title').textContent = config.title;
-      document.getElementById('lb-price').textContent = config.price;
+      document.getElementById('lb-price').textContent = getConfigPriceLabel(config);
       document.getElementById('lb-desc').textContent = config.description;
 
-      // WhatsApp link — short URL that redirects to the designer
-      var shortUrl = 'https://www.framework.co.ke/shelving.html#' + config.id;
-      var waMsg = "Hi! I'm interested in the " + config.title.replace('The ', '') + ". Design linked below — could you help me finalize my order?\n\n" + shortUrl;
-      var waUrl = 'https://wa.me/254783891005?text=' + encodeURIComponent(waMsg);
-      document.getElementById('lb-order').href = waUrl;
-
-      // Designer link
+      var shareUrl = 'https://www.framework.co.ke/shelving.html?config=' + encodeURIComponent(config.id);
+      var waMsg = "Hi! I'm interested in " + config.title + ".\nConfig ID: " + config.id + "\nCould you help me finalize my order?\n" + shareUrl;
+      document.getElementById('lb-order').href = 'https://wa.me/254783891005?text=' + encodeURIComponent(waMsg);
       document.getElementById('lb-customize').href = config.designerUrl;
 
-      // Update URL param
-      var url = new URL(window.location);
-      url.searchParams.set('config', config.id);
-      window.history.replaceState({}, '', url);
+      var orderEl = document.getElementById('lb-order');
+      var customizeEl = document.getElementById('lb-customize');
+      [orderEl, customizeEl].forEach(function(el) {
+        el.setAttribute('data-clarity-config-id', config.id);
+        el.setAttribute('data-clarity-config-title', config.title);
+      });
 
-      // Render dots
-      var dotsEl = document.getElementById('lb-dots');
-      dotsEl.innerHTML = configurations.map(function(_, i) {
-        return '<span class="dot' + (i === currentIndex ? ' active' : '') + '" onclick="event.stopPropagation(); goToConfig(' + i + ')"></span>';
+      ['lb-prev-product', 'lb-next-product'].forEach(function(id) {
+        var el = document.getElementById(id);
+        el.setAttribute('data-clarity-config-id', config.id);
+        el.setAttribute('data-clarity-config-title', config.title);
+      });
+    }
+
+    function renderCatalog() {
+      var grid = document.getElementById('catalog-grid');
+      var moreWrap = document.getElementById('catalog-more-wrap');
+      if (!grid || !moreWrap) return;
+
+      var visibleConfigs = catalogExpanded ? configurations : configurations.slice(0, INITIAL_VISIBLE_CONFIGS);
+      grid.innerHTML = visibleConfigs.map(function(config, index) {
+        var image = config.image || getConfigImages(config)[0] || '';
+        return '<button class="catalog-card" type="button"' +
+          ' data-clarity-action="open_config"' +
+          ' data-clarity-config-id="' + escapeHtml(config.id) + '"' +
+          ' data-clarity-config-title="' + escapeHtml(config.title) + '"' +
+          ' aria-label="Open ' + escapeHtml(config.title) + ' configuration details"' +
+          ' onclick="openCatalogConfig(' + index + ')">' +
+            '<img class="catalog-card-image" src="' + escapeHtml(image) + '" alt="' + escapeHtml(config.title + ' shelving configuration') + '" loading="lazy" width="800" height="800">' +
+            '<span class="catalog-card-body">' +
+              '<span class="catalog-card-title">' + escapeHtml(config.title) + '</span>' +
+              '<span class="catalog-card-price">' + escapeHtml(getConfigPriceLabel(config)) + '</span>' +
+              '<span class="catalog-card-desc">' + escapeHtml(config.description) + '</span>' +
+            '</span>' +
+          '</button>';
       }).join('');
+
+      moreWrap.style.display = configurations.length <= INITIAL_VISIBLE_CONFIGS ? 'none' : '';
+      var button = document.getElementById('catalog-see-more');
+      if (button) {
+        button.textContent = catalogExpanded ? 'Hide additional configurations' : 'See more configurations';
+        button.setAttribute('data-clarity-action', catalogExpanded ? 'hide_more_configurations' : 'see_more_configurations');
+      }
+    }
+
+    function openCatalogConfig(index) {
+      var config = configurations[index];
+      if (!config) return;
+      trackCatalogCardClick(config);
+      openLightbox(index, 'catalog_card');
+    }
+
+    function showMoreConfigurations() {
+      catalogExpanded = true;
+      renderCatalog();
+      if (typeof gtag === 'function') {
+        gtag('event', 'catalog_see_more', {
+          content_category: 'popular_configurations'
+        });
+      }
+      if (typeof clarity === 'function') {
+        clarity('event', 'catalog_see_more_click');
+      }
+    }
+
+    function hideMoreConfigurations() {
+      catalogExpanded = false;
+      renderCatalog();
+      document.getElementById('popular-configurations').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (typeof gtag === 'function') {
+        gtag('event', 'catalog_hide_more', {
+          content_category: 'popular_configurations'
+        });
+      }
+      if (typeof clarity === 'function') {
+        clarity('event', 'catalog_hide_more_click');
+      }
+    }
+
+    function toggleAdditionalConfigurations() {
+      if (catalogExpanded) hideMoreConfigurations();
+      else showMoreConfigurations();
+    }
+
+    function showProductDetails() {
+      var details = document.getElementById('details-craftsmanship');
+      var button = document.getElementById('product-details-reveal');
+      if (!details || !button) return;
+      details.classList.add('active');
+      button.style.display = 'none';
+      if (typeof gtag === 'function') {
+        gtag('event', 'product_details_expand', {
+          content_category: 'shelving_product_details'
+        });
+      }
+      if (typeof clarity === 'function') {
+        clarity('event', 'product_details_expand');
+      }
+    }
+
+    function hideProductDetails() {
+      var details = document.getElementById('details-craftsmanship');
+      var button = document.getElementById('product-details-reveal');
+      if (!details || !button) return;
+      details.classList.remove('active');
+      button.style.display = '';
+      document.getElementById('product-details').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (typeof gtag === 'function') {
+        gtag('event', 'product_details_hide', {
+          content_category: 'shelving_product_details'
+        });
+      }
+      if (typeof clarity === 'function') {
+        clarity('event', 'product_details_hide');
+      }
     }
 
     // Keyboard navigation
@@ -1098,18 +1897,21 @@
 
     // Touch/swipe navigation
     (function() {
-      var lb = document.getElementById('config-lightbox');
-      lb.addEventListener('touchstart', function(e) {
+      var imageWrap = document.querySelector('.lightbox-image-wrap');
+      imageWrap.addEventListener('touchstart', function(e) {
         touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
       });
-      lb.addEventListener('touchend', function(e) {
-        var diff = e.changedTouches[0].clientX - touchStartX;
-        if (diff > 50) prevConfig();
-        else if (diff < -50) nextConfig();
+      imageWrap.addEventListener('touchend', function(e) {
+        var diffX = e.changedTouches[0].clientX - touchStartX;
+        var diffY = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(diffX) < 50 || Math.abs(diffX) < Math.abs(diffY)) return;
+        if (diffX > 0) prevConfigImage();
+        else nextConfigImage();
       });
     })();
 
-    // Hash-based redirect: shelving.html#statement-apartment → designer URL
+    // Hash-based redirect: shelving.html#starter → designer URL
     (function() {
       var hash = window.location.hash.replace('#', '');
       if (hash) {
@@ -1120,58 +1922,146 @@
         }
       }
 
+      renderCatalog();
+      var seeMoreButton = document.getElementById('catalog-see-more');
+      if (seeMoreButton) {
+        seeMoreButton.addEventListener('click', toggleAdditionalConfigurations);
+      }
+
       // Auto-open from URL ?config= param
       var urlParams = new URLSearchParams(window.location.search);
       var configParam = urlParams.get('config');
       if (configParam) {
         var idx = configurations.findIndex(function(c) { return c.id === configParam; });
-        if (idx >= 0) openLightbox(idx);
+        if (idx >= 0) openLightbox(idx, 'url_parameter');
       }
       // Support legacy gallery param
       if (urlParams.get('gallery') === 'open') {
-        openLightbox(parseInt(urlParams.get('image')) || 0);
+        openLightbox(parseInt(urlParams.get('image')) || 0, 'legacy_gallery_parameter');
       }
     })();
 
     /* === Tracking Functions === */
-    function trackConfigView(config) {
-      gtag('event', 'view_configuration', {
-        content_name: config.title,
-        value: parseFloat(config.price.replace(/[^0-9.]/g, '')) || 0,
-        currency: 'KES'
-      });
+    function trackClarityConfigClick(config, source) {
+      if (typeof clarity === 'function') {
+        clarity('event', 'config_click_' + config.id);
+        clarity('set', 'last_config_clicked', config.id);
+        clarity('set', 'last_config_clicked_title', config.title);
+        clarity('set', 'last_config_click_source', source || 'unknown');
+      }
+    }
+
+    function trackCatalogCardClick(config) {
+      trackClarityConfigClick(config, 'catalog_card');
+      if (typeof clarity === 'function') {
+        clarity('event', 'catalog_card_click_' + config.id);
+      }
+      if (typeof gtag === 'function') {
+        gtag('event', 'select_configuration', {
+          content_id: config.id,
+          content_name: config.title,
+          content_category: 'popular_configurations',
+          value: getConfigPriceValue(config),
+          currency: 'KES'
+        });
+      }
+    }
+
+    function trackConfigView(config, source) {
+      trackClarityConfigClick(config, source || 'lightbox_open');
+      if (typeof clarity === 'function') {
+        clarity('event', 'config_lightbox_open_' + config.id);
+      }
+      if (typeof gtag === 'function') {
+        gtag('event', 'view_configuration', {
+          content_id: config.id,
+          content_name: config.title,
+          content_category: 'shelving_configuration',
+          value: getConfigPriceValue(config),
+          currency: 'KES',
+          source: source || 'unknown'
+        });
+        gtag('event', 'view_item', {
+          currency: 'KES',
+          value: getConfigPriceValue(config),
+          items: [{
+            item_id: config.id,
+            item_name: config.title,
+            item_category: 'shelving_configuration',
+            price: getConfigPriceValue(config),
+            quantity: 1
+          }]
+        });
+      }
       if (typeof fbq === 'function') {
         fbq('track', 'ViewContent', {
+          content_ids: [config.id],
           content_name: config.title,
           content_category: 'shelving_configuration',
           content_type: 'product',
-          value: parseFloat(config.price.replace(/[^0-9.]/g, '')) || 0,
+          value: getConfigPriceValue(config),
           currency: 'KES'
+        });
+        fbq('trackCustom', 'ViewConfiguration', {
+          content_ids: [config.id],
+          content_name: config.title,
+          content_category: 'shelving_configuration',
+          value: getConfigPriceValue(config),
+          currency: 'KES',
+          source: source || 'unknown'
         });
       }
     }
 
     function trackOrder() {
       var config = configurations[currentIndex];
-      gtag('event', 'generate_lead', { content_name: 'WhatsApp Chat', content_category: 'shelving_config_lightbox', link_target: 'order_unit_' + config.id });
-      if (typeof fbq === 'function') {
-        fbq('track', 'Lead', {
+      if (typeof gtag === 'function') {
+        gtag('event', 'generate_lead', {
+          content_id: config.id,
           content_name: config.title,
           content_category: 'shelving_config_lightbox',
-          value: parseFloat(config.price.replace(/[^0-9.]/g, '')) || 0,
+          link_target: 'order_unit_' + config.id,
+          value: getConfigPriceValue(config),
           currency: 'KES'
         });
+      }
+      if (typeof fbq === 'function') {
+        fbq('track', 'Lead', {
+          content_ids: [config.id],
+          content_name: config.title,
+          content_category: 'shelving_config_lightbox',
+          value: getConfigPriceValue(config),
+          currency: 'KES'
+        });
+      }
+      if (typeof clarity === 'function') {
+        clarity('event', 'config_order_click_' + config.id);
+        clarity('set', 'last_order_config_id', config.id);
+        clarity('set', 'last_order_config_title', config.title);
       }
     }
 
     function trackCustomize() {
       var config = configurations[currentIndex];
-      gtag('event', 'customize_product', { content_name: config.title, content_category: 'shelving_config_lightbox', link_target: 'customize_unit_' + config.id });
+      if (typeof gtag === 'function') {
+        gtag('event', 'customize_product', {
+          content_id: config.id,
+          content_name: config.title,
+          content_category: 'shelving_config_lightbox',
+          link_target: 'customize_unit_' + config.id
+        });
+      }
       if (typeof fbq === 'function') {
         fbq('track', 'CustomizeProduct', {
+          content_ids: [config.id],
           content_name: config.title,
           content_category: 'shelving_config_lightbox'
         });
+      }
+      if (typeof clarity === 'function') {
+        clarity('event', 'config_customize_click_' + config.id);
+        clarity('set', 'last_customize_config_id', config.id);
+        clarity('set', 'last_customize_config_title', config.title);
       }
     }
 
