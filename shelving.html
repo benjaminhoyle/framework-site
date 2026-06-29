@@ -2513,6 +2513,15 @@
           value: getConfigPriceValue(config),
           currency: 'KES'
         });
+        fbq('track', 'Contact', {
+          content_ids: [config.id],
+          contents: [{ id: config.id, quantity: 1 }],
+          content_type: 'product',
+          content_name: config.title,
+          content_category: 'shelving_config_lightbox',
+          value: getConfigPriceValue(config),
+          currency: 'KES'
+        });
       }
       if (typeof clarity === 'function') {
         clarity('event', 'config_order_click_' + config.id);
@@ -2537,7 +2546,18 @@
           contents: [{ id: config.id, quantity: 1 }],
           content_type: 'product',
           content_name: config.title,
-          content_category: 'shelving_config_lightbox'
+          content_category: 'shelving_config_lightbox',
+          value: getConfigPriceValue(config),
+          currency: 'KES'
+        });
+        fbq('track', 'Contact', {
+          content_ids: [config.id],
+          contents: [{ id: config.id, quantity: 1 }],
+          content_type: 'product',
+          content_name: config.title,
+          content_category: 'shelving_config_lightbox',
+          value: getConfigPriceValue(config),
+          currency: 'KES'
         });
       }
       if (typeof clarity === 'function') {
