@@ -1438,13 +1438,12 @@
       </div>
     </section>
 
-    <!-- ViewContent tracking -->
+    <!-- Landing-page tracking. Product ViewContent events fire when a specific configuration opens. -->
     <script>
     if (typeof fbq === 'function') {
-        fbq('track', 'ViewContent', {
+        fbq('trackCustom', 'ViewShelvingLanding', {
             content_name: 'Shelving',
-            content_category: 'landing_page',
-            content_type: 'product'
+            content_category: 'landing_page'
         });
     }
     </script>
