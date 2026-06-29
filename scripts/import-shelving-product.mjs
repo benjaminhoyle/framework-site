@@ -8,6 +8,7 @@ const DEFAULT_CATALOG_ROOT = '/Users/ben/Library/CloudStorage/Dropbox/01_Current
 const CONFIG_IMAGE_DIR = 'images/shelving/configs';
 const THUMB_DIR = 'images/shelving/configs/thumbs';
 const PAGE_PATH = 'shelving.html';
+const META_FEED_SCRIPT = 'scripts/generate-meta-catalog-feed.mjs';
 const FULL_SIZE = '1400';
 const THUMB_SIZE = '180';
 
@@ -271,6 +272,12 @@ function validateCatalog() {
   return configs.length;
 }
 
+function generateMetaFeed(dryRun) {
+  if (dryRun) return null;
+  const output = execFileSync('node', [META_FEED_SCRIPT], { encoding: 'utf8' });
+  return JSON.parse(output);
+}
+
 function getFolders(args) {
   if (!args.all) return args.folders.map((folder) => path.resolve(folder));
   assertDir(args.catalogRoot, 'Catalog root');
@@ -294,7 +301,8 @@ try {
   }
 
   const productCount = args.dryRun ? 'not validated in dry run' : validateCatalog();
-  console.log(JSON.stringify({ dryRun: args.dryRun, results, productCount }, null, 2));
+  const metaFeed = generateMetaFeed(args.dryRun);
+  console.log(JSON.stringify({ dryRun: args.dryRun, results, productCount, metaFeed }, null, 2));
 } catch (error) {
   console.error(error.message);
   process.exit(1);

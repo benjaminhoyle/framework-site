@@ -1886,6 +1886,14 @@
       return config.image ? [config.image] : [];
     }
 
+    function getSiteUrl(pathOrUrl) {
+      return new URL(pathOrUrl || '', 'https://www.framework.co.ke/shelving.html').href;
+    }
+
+    function getConfigUrl(config) {
+      return getSiteUrl('shelving.html?config=' + encodeURIComponent(config.id));
+    }
+
     function getConfigThumbnailImage(image) {
       var src = String(image || '');
       if (src.indexOf('images/shelving/configs/') === 0) {
@@ -1978,6 +1986,111 @@
 
     function getConfigPriceLabel(config) {
       return String(config.price || '').trim() || 'Price on request';
+    }
+
+    function getMetaCatalogProduct(config) {
+      var priceValue = getConfigPriceValue(config);
+      var images = getConfigImages(config).map(getSiteUrl);
+      return {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        '@id': getConfigUrl(config) + '#product',
+        name: config.title,
+        sku: config.id,
+        productID: config.id,
+        brand: {
+          '@type': 'Brand',
+          name: 'Framework Designs'
+        },
+        category: 'Furniture > Shelving',
+        description: config.description,
+        image: images,
+        url: getConfigUrl(config),
+        keywords: ['Shelving', 'Modular furniture'],
+        additionalProperty: [
+          {
+            '@type': 'PropertyValue',
+            propertyID: 'google_product_category',
+            value: 'Furniture > Shelving'
+          },
+          {
+            '@type': 'PropertyValue',
+            propertyID: 'fb_product_category',
+            value: 'Furniture > Shelving'
+          }
+        ],
+        offers: {
+          '@type': 'Offer',
+          url: getConfigUrl(config),
+          priceCurrency: 'KES',
+          price: priceValue,
+          availability: 'https://schema.org/InStock',
+          itemCondition: 'https://schema.org/NewCondition'
+        }
+      };
+    }
+
+    function injectMetaCatalogProductData() {
+      var products = configurations.map(getMetaCatalogProduct);
+      var graph = products.concat([{
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        '@id': getSiteUrl('shelving.html#catalog'),
+        name: 'Framework Designs Shelving Configurations',
+        itemListElement: products.map(function(product, index) {
+          return {
+            '@type': 'ListItem',
+            position: index + 1,
+            item: {
+              '@id': product['@id']
+            }
+          };
+        })
+      }]);
+
+      var jsonLd = document.createElement('script');
+      jsonLd.type = 'application/ld+json';
+      jsonLd.id = 'meta-catalog-products-jsonld';
+      jsonLd.text = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+      document.head.appendChild(jsonLd);
+
+      var microdata = document.createElement('div');
+      microdata.id = 'meta-catalog-products-microdata';
+      microdata.setAttribute('aria-hidden', 'true');
+      microdata.style.display = 'none';
+      microdata.innerHTML = configurations.map(function(config) {
+        var images = getConfigImages(config);
+        var priceValue = getConfigPriceValue(config);
+        return '<div itemscope itemtype="https://schema.org/Product">' +
+          '<meta itemprop="name" content="' + escapeHtml(config.title) + '">' +
+          '<meta itemprop="sku" content="' + escapeHtml(config.id) + '">' +
+          '<meta itemprop="productID" content="' + escapeHtml(config.id) + '">' +
+          '<meta itemprop="brand" content="Framework Designs">' +
+          '<meta itemprop="category" content="Furniture > Shelving">' +
+          '<meta itemprop="description" content="' + escapeHtml(config.description) + '">' +
+          '<meta itemprop="keywords" content="Shelving, Modular furniture">' +
+          '<link itemprop="url" href="' + escapeHtml(getConfigUrl(config)) + '">' +
+          images.map(function(image) {
+            return '<link itemprop="image" href="' + escapeHtml(getSiteUrl(image)) + '">';
+          }).join('') +
+          '<div itemprop="additionalProperty" itemscope itemtype="https://schema.org/PropertyValue">' +
+            '<meta itemprop="propertyID" content="google_product_category">' +
+            '<meta itemprop="value" content="Furniture &gt; Shelving">' +
+          '</div>' +
+          '<div itemprop="additionalProperty" itemscope itemtype="https://schema.org/PropertyValue">' +
+            '<meta itemprop="propertyID" content="fb_product_category">' +
+            '<meta itemprop="value" content="Furniture &gt; Shelving">' +
+          '</div>' +
+          '<div itemprop="offers" itemscope itemtype="https://schema.org/Offer">' +
+            '<link itemprop="url" href="' + escapeHtml(getConfigUrl(config)) + '">' +
+            '<meta itemprop="priceCurrency" content="KES">' +
+            '<meta itemprop="price" content="' + escapeHtml(priceValue) + '">' +
+            '<link itemprop="availability" href="https://schema.org/InStock">' +
+            '<link itemprop="itemCondition" href="https://schema.org/NewCondition">' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      document.body.appendChild(microdata);
     }
 
     function updateDescriptionToggle() {
@@ -2286,6 +2399,7 @@
       }
 
       renderCatalog();
+      injectMetaCatalogProductData();
       var seeMoreButton = document.getElementById('catalog-see-more');
       if (seeMoreButton) {
         seeMoreButton.addEventListener('click', toggleAdditionalConfigurations);
@@ -2359,6 +2473,7 @@
       if (typeof fbq === 'function') {
         fbq('track', 'ViewContent', {
           content_ids: [config.id],
+          contents: [{ id: config.id, quantity: 1 }],
           content_name: config.title,
           content_category: 'shelving_configuration',
           content_type: 'product',
@@ -2367,6 +2482,7 @@
         });
         fbq('trackCustom', 'ViewConfiguration', {
           content_ids: [config.id],
+          contents: [{ id: config.id, quantity: 1 }],
           content_name: config.title,
           content_category: 'shelving_configuration',
           value: getConfigPriceValue(config),
@@ -2391,6 +2507,8 @@
       if (typeof fbq === 'function') {
         fbq('track', 'Lead', {
           content_ids: [config.id],
+          contents: [{ id: config.id, quantity: 1 }],
+          content_type: 'product',
           content_name: config.title,
           content_category: 'shelving_config_lightbox',
           value: getConfigPriceValue(config),
@@ -2417,6 +2535,8 @@
       if (typeof fbq === 'function') {
         fbq('track', 'CustomizeProduct', {
           content_ids: [config.id],
+          contents: [{ id: config.id, quantity: 1 }],
+          content_type: 'product',
           content_name: config.title,
           content_category: 'shelving_config_lightbox'
         });

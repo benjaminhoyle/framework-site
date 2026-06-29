@@ -15,6 +15,7 @@ This is the simplest way to add or edit shelving products without manually touch
    `Please add the stepped-duo catalog folder to shelving.html, resize images, verify locally, commit, and push.`
 
 Codex will run the importer script, which copies/resizes the images, creates thumbnails, inserts or updates the catalog item, and checks that all assets exist.
+It also regenerates the public Meta catalog feed at `feeds/meta-shelving-catalog.csv`.
 
 ## Product Folder Format
 
@@ -64,6 +65,26 @@ Update the JSON or replace images in the Dropbox folder, then ask Codex:
 
 The importer updates the existing catalog item when the `id` already exists.
 
+## Remove A Product
+
+Ask Codex:
+
+`Please remove the [product-slug] shelving catalog item from the website, regenerate the Meta catalog feed, verify locally, commit, and push.`
+
+Codex should remove the item from the `shelving.html` catalog data and regenerate `feeds/meta-shelving-catalog.csv`. Source images can stay in Dropbox unless you specifically want them cleaned up.
+
+## Meta And WhatsApp Catalog Sync
+
+The website catalog is the source of truth. Meta should use this hosted feed:
+
+```text
+https://www.framework.co.ke/feeds/meta-shelving-catalog.csv
+```
+
+In Meta Commerce Manager, use a scheduled data feed for the main Framework Designs catalog. Connect the `Framework Website` pixel to that same catalog for event matching, and connect WhatsApp to that catalog instead of maintaining a separate manual WhatsApp catalog. Configure the feed so items missing from the latest feed are removed or archived in Meta, otherwise removed website products may remain in the catalog.
+
+The feed item `id` values match the Meta pixel `content_ids` values used on the shelving page, such as `starter`, `low-console`, and `grand-corner`.
+
 ## Edit A Page Image
 
 For non-catalog page images, such as the hero or product-detail cards:
@@ -81,3 +102,9 @@ scripts/import-shelving-product.mjs
 ```
 
 It is intended for Codex or a developer to run. You should not need to use it directly.
+
+To regenerate only the Meta CSV feed from the current `shelving.html` catalog data, run:
+
+```text
+node scripts/generate-meta-catalog-feed.mjs
+```
