@@ -621,26 +621,41 @@
           object-fit: contain;
           display: block;
           border-radius: 12px 0 0 0;
+          opacity: 1;
+          transition: opacity 0.16s ease;
+        }
+        .lightbox-image.is-loading {
+          opacity: 0.45;
         }
         .lightbox-image-nav {
           position: absolute;
           top: 50%;
           transform: translateY(-50%);
-          background: rgba(0,0,0,0.48);
-          border: none;
+          background: rgba(255, 255, 255, 0.88);
+          border: 1px solid rgba(17, 17, 17, 0.08);
           border-radius: 50%;
-          color: #fff;
+          box-shadow: 0 8px 18px rgba(0,0,0,0.14);
+          color: #111;
           cursor: pointer;
           display: none;
-          font-size: 20px;
-          height: 36px;
+          font-size: 30px;
+          height: 44px;
           line-height: 1;
-          width: 36px;
+          width: 44px;
           z-index: 5;
+          transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s;
         }
         .lightbox-image-nav.visible { display: flex; align-items: center; justify-content: center; }
         .lightbox-image-prev { left: 12px; }
         .lightbox-image-next { right: 12px; }
+        .lightbox-image-nav:hover,
+        .lightbox-image-nav:focus-visible {
+          background: rgba(255, 255, 255, 0.98);
+          border-color: rgba(17, 17, 17, 0.16);
+          box-shadow: 0 10px 22px rgba(0,0,0,0.18);
+          outline: none;
+          transform: translateY(-50%) scale(1.03);
+        }
         .lightbox-thumbnails {
           border-top: 1px solid #eef0f3;
           display: flex;
@@ -712,6 +727,7 @@
           font-size: 0.95rem;
         }
         .lightbox-desc-toggle {
+          align-self: flex-start;
           appearance: none;
           background: transparent;
           border: 0;
@@ -724,6 +740,11 @@
           margin: -14px 0 14px;
           padding: 0;
           text-align: left;
+        }
+        .lightbox-desc-toggle:focus-visible {
+          border-radius: 4px;
+          outline: 2px solid rgba(37, 99, 235, 0.28);
+          outline-offset: 3px;
         }
         .lightbox-ctas {
           margin-top: auto;
@@ -751,10 +772,11 @@
             flex: 0 0 auto;
           }
           .lightbox-image-wrap {
-            aspect-ratio: auto;
-            flex: 0 0 34dvh;
-            max-height: 320px;
-            min-height: 230px;
+            aspect-ratio: 1 / 1;
+            flex: 0 0 auto;
+            height: min(100vw, max(300px, 54dvh));
+            max-height: 100vw;
+            min-height: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -762,29 +784,42 @@
             touch-action: pan-x;
           }
           .lightbox-image {
-            max-height: 100%;
-            max-width: 100%;
-            width: auto;
-            height: auto;
+            inset: 0;
+            height: 100%;
+            max-height: none;
+            max-width: none;
+            position: absolute;
+            width: 100%;
             aspect-ratio: auto;
             object-fit: contain;
             border-radius: 0;
           }
           .lightbox-thumbnails {
             gap: 7px;
-            min-height: 62px;
-            padding: 8px 10px 10px;
+            min-height: 60px;
+            padding: 7px 10px 9px;
           }
           .lightbox-thumbnail {
-            height: 46px;
-            width: 46px;
+            height: 48px;
+            width: 48px;
           }
           .lightbox-info {
             flex: 1 1 auto;
             max-height: none;
             min-height: 0;
-            overflow: hidden;
-            padding: 16px 20px 20px;
+            overflow-anchor: none;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 16px 20px calc(18px + env(safe-area-inset-bottom));
+            -webkit-overflow-scrolling: touch;
+          }
+          .lightbox-title,
+          .lightbox-price,
+          .lightbox-desc,
+          .lightbox-desc-toggle,
+          .lightbox-ctas,
+          .lightbox-product-nav {
+            flex-shrink: 0;
           }
           .lightbox-close {
             top: 12px;
@@ -797,19 +832,21 @@
           }
           .lightbox-desc {
             display: -webkit-box;
-            margin-bottom: 18px;
+            margin-bottom: 10px;
             overflow: hidden;
             -webkit-box-orient: vertical;
-            -webkit-line-clamp: 3;
-            line-clamp: 3;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
           }
           .lightbox-info.desc-expanded .lightbox-desc {
             display: block;
-            -webkit-line-clamp: unset;
-            line-clamp: unset;
+            overflow: visible;
+            -webkit-line-clamp: initial;
+            line-clamp: none;
           }
           .lightbox-desc-toggle {
             display: inline-block;
+            margin: -2px 0 12px;
           }
           .lightbox-desc-toggle[hidden] {
             display: none;
@@ -818,12 +855,12 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
-            margin-top: auto;
+            margin-top: 4px;
           }
           .modal-action {
             font-size: 0.86rem;
             gap: 6px;
-            min-height: 42px;
+            min-height: 44px;
             padding: 10px 8px;
           }
           .modal-action .ti {
@@ -938,12 +975,13 @@
           .lightbox-product-nav {
             flex-shrink: 0;
             gap: 4px;
-            margin-top: 12px;
-            padding-top: 10px;
+            margin-top: 10px;
+            padding-top: 8px;
           }
           .lightbox-product-button {
             gap: 4px;
-            min-width: 108px;
+            min-height: 34px;
+            min-width: 104px;
             padding: 0 8px;
           }
           .product-nav-label {
@@ -1419,7 +1457,7 @@
         <div class="lightbox-media">
           <div class="lightbox-image-wrap">
             <button id="lb-image-prev" class="lightbox-image-nav lightbox-image-prev" type="button" onclick="event.stopPropagation(); prevConfigImage()" aria-label="Previous image">&#8249;</button>
-            <img id="lb-image" class="lightbox-image" alt="" loading="lazy" width="1400" height="1400">
+            <img id="lb-image" class="lightbox-image" alt="" loading="eager" decoding="async" fetchpriority="high" width="1400" height="1400">
             <button id="lb-image-next" class="lightbox-image-nav lightbox-image-next" type="button" onclick="event.stopPropagation(); nextConfigImage()" aria-label="Next image">&#8250;</button>
           </div>
           <div id="lb-thumbnails" class="lightbox-thumbnails" aria-label="Product images"></div>
@@ -1826,6 +1864,10 @@
     let catalogExpanded = false;
     let touchStartX = 0;
     let touchStartY = 0;
+    let lightboxImageToken = 0;
+    let lightboxPreloadTimer = 0;
+    let lightboxThumbTimer = 0;
+    const preloadedLightboxImages = new Set();
 
     function escapeHtml(value) {
       return String(value || '').replace(/[&<>"']/g, function(character) {
@@ -1852,6 +1894,83 @@
       return src;
     }
 
+    function preloadLightboxImage(src, priority) {
+      if (!src || preloadedLightboxImages.has(src)) return;
+      preloadedLightboxImages.add(src);
+      var img = new Image();
+      img.decoding = 'async';
+      if ('fetchPriority' in img) img.fetchPriority = priority || 'low';
+      img.src = src;
+    }
+
+    function getPrimaryConfigImage(index) {
+      var config = configurations[(index + configurations.length) % configurations.length];
+      var images = getConfigImages(config);
+      return images[0] || config.image || '';
+    }
+
+    function scheduleLightboxPreloads() {
+      window.clearTimeout(lightboxPreloadTimer);
+      lightboxPreloadTimer = window.setTimeout(function() {
+        var config = configurations[currentIndex];
+        var images = getConfigImages(config);
+        if (images.length > 1) {
+          preloadLightboxImage(images[(currentImageIndex + 1) % images.length], 'low');
+          preloadLightboxImage(images[(currentImageIndex + images.length - 1) % images.length], 'low');
+        }
+        preloadLightboxImage(getPrimaryConfigImage(currentIndex + 1), 'high');
+        preloadLightboxImage(getPrimaryConfigImage(currentIndex - 1), 'high');
+      }, 180);
+    }
+
+    function hydrateLightboxThumbnails() {
+      window.clearTimeout(lightboxThumbTimer);
+      var delay = window.matchMedia('(max-width: 768px)').matches ? 220 : 0;
+      lightboxThumbTimer = window.setTimeout(function() {
+        document.querySelectorAll('#lb-thumbnails img[data-src]').forEach(function(img) {
+          img.src = img.getAttribute('data-src');
+          img.removeAttribute('data-src');
+        });
+      }, delay);
+    }
+
+    function setLightboxImage(imageEl, image) {
+      var token = ++lightboxImageToken;
+      var currentSrc = imageEl.getAttribute('src') || '';
+      if (!currentSrc || currentSrc === image || currentSrc === blankConfigImage) {
+        imageEl.src = image;
+        imageEl.classList.remove('is-loading');
+        imageEl.removeAttribute('aria-busy');
+        scheduleLightboxPreloads();
+        return;
+      }
+
+      imageEl.classList.add('is-loading');
+      imageEl.setAttribute('aria-busy', 'true');
+
+      var loader = new Image();
+      loader.decoding = 'async';
+      if ('fetchPriority' in loader) loader.fetchPriority = 'high';
+
+      var applyImage = function() {
+        if (token !== lightboxImageToken) return;
+        imageEl.src = image;
+        imageEl.classList.remove('is-loading');
+        imageEl.removeAttribute('aria-busy');
+        scheduleLightboxPreloads();
+      };
+
+      loader.onload = function() {
+        if (loader.decode) {
+          loader.decode().catch(function() {}).then(applyImage);
+        } else {
+          applyImage();
+        }
+      };
+      loader.onerror = applyImage;
+      loader.src = image;
+    }
+
     function getConfigPriceValue(config) {
       if (typeof config.priceValue === 'number') return config.priceValue;
       return parseFloat(String(config.price || '').replace(/[^0-9.]/g, '')) || 0;
@@ -1875,8 +1994,21 @@
     function toggleLightboxDescription() {
       var infoEl = document.querySelector('.lightbox-info');
       if (!infoEl) return;
+      var previousScrollTop = infoEl.scrollTop;
       infoEl.classList.toggle('desc-expanded');
       updateDescriptionToggle();
+      if (window.matchMedia('(max-width: 768px)').matches) {
+        document.getElementById('lb-desc-toggle').blur();
+      }
+      requestAnimationFrame(function() {
+        infoEl.scrollTop = previousScrollTop;
+        window.setTimeout(function() {
+          infoEl.scrollTop = previousScrollTop;
+        }, 0);
+        window.setTimeout(function() {
+          infoEl.scrollTop = previousScrollTop;
+        }, 80);
+      });
     }
 
     function updateConfigUrl(config, mode) {
@@ -1905,6 +2037,8 @@
     function closeLightbox() {
       document.getElementById('config-lightbox').classList.remove('active');
       document.body.style.overflow = '';
+      window.clearTimeout(lightboxPreloadTimer);
+      window.clearTimeout(lightboxThumbTimer);
       var url = new URL(window.location);
       url.searchParams.delete('config');
       window.history.pushState({}, '', url);
@@ -1952,8 +2086,8 @@
       var images = getConfigImages(config);
       var image = images[currentImageIndex] || config.image;
       var imageEl = document.getElementById('lb-image');
-      imageEl.src = image;
       imageEl.alt = config.title + ' - ' + config.description;
+      setLightboxImage(imageEl, image);
 
       var showImageNav = images.length > 1;
       document.getElementById('lb-image-prev').classList.toggle('visible', showImageNav);
@@ -1962,12 +2096,17 @@
       var thumbsEl = document.getElementById('lb-thumbnails');
       thumbsEl.hidden = !showImageNav;
       thumbsEl.innerHTML = showImageNav ? images.map(function(src, i) {
+        var thumb = getConfigThumbnailImage(src);
+        var deferThumb = i !== currentImageIndex && window.matchMedia('(max-width: 768px)').matches;
         return '<button class="lightbox-thumbnail' + (i === currentImageIndex ? ' active' : '') + '" type="button" aria-label="View image ' + (i + 1) + ' of ' + images.length + '"' +
           (i === currentImageIndex ? ' aria-current="true"' : '') +
           ' onclick="event.stopPropagation(); goToConfigImage(' + i + ')">' +
-            '<img src="' + escapeHtml(getConfigThumbnailImage(src)) + '" alt="" loading="lazy" decoding="async" width="180" height="180">' +
+            '<img src="' + escapeHtml(deferThumb ? blankConfigImage : thumb) + '"' +
+              (deferThumb ? ' data-src="' + escapeHtml(thumb) + '"' : '') +
+              ' alt="" loading="lazy" decoding="async" fetchpriority="low" width="180" height="180">' +
           '</button>';
       }).join('') : '';
+      if (showImageNav) hydrateLightboxThumbnails();
     }
 
     function renderLightbox() {
@@ -1976,7 +2115,9 @@
       document.getElementById('lb-title').textContent = config.title;
       document.getElementById('lb-price').textContent = getConfigPriceLabel(config);
       document.getElementById('lb-desc').textContent = config.description;
-      document.querySelector('.lightbox-info').classList.remove('desc-expanded');
+      var infoEl = document.querySelector('.lightbox-info');
+      infoEl.classList.remove('desc-expanded');
+      infoEl.scrollTop = 0;
       document.getElementById('lb-desc-toggle').hidden = true;
       requestAnimationFrame(updateDescriptionToggle);
 
