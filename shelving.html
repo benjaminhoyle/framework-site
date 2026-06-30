@@ -1863,8 +1863,7 @@
                 ],
                 "price": "Ksh 1,000",
                 "priceValue": 1000,
-                "description": "A neat clamp-on bookend for keeping rows of books upright and tidy on your Framework shelf. It can be attached to any of our shelf units except the trimmed configurations.",
-                "designerUrl": "designer.html"
+                "description": "A neat clamp-on bookend for keeping rows of books upright and tidy on your Framework shelf. It can be attached to any of our shelf units except the trimmed configurations."
           }
         ];
 
@@ -2250,7 +2249,14 @@
       var customizeMsg = "Hello, I'd like to develop a custom design for my space based on " + config.title + ".\n\n" + shareUrl;
       document.getElementById('lb-order').href = 'https://wa.me/254783891005?text=' + encodeURIComponent(orderMsg);
       document.getElementById('lb-customize').href = 'https://wa.me/254783891005?text=' + encodeURIComponent(customizeMsg);
-      document.getElementById('lb-designer-link').href = config.designerUrl;
+      var designerLinkEl = document.getElementById('lb-designer-link');
+      if (config.designerUrl) {
+        designerLinkEl.href = config.designerUrl;
+        designerLinkEl.hidden = false;
+      } else {
+        designerLinkEl.removeAttribute('href');
+        designerLinkEl.hidden = true;
+      }
       document.getElementById('lb-product-count').textContent = (currentIndex + 1) + ' of ' + configurations.length;
 
       var orderEl = document.getElementById('lb-order');
@@ -2403,7 +2409,7 @@
       var hash = window.location.hash.replace('#', '');
       if (hash) {
         var config = configurations.find(function(c) { return c.id === hash; });
-        if (config && config.designerUrl !== '/designer') {
+        if (config && config.designerUrl && config.designerUrl !== '/designer') {
           window.location.replace(new URL(config.designerUrl, 'https://www.framework.co.ke/shelving.html').href);
           return;
         }
