@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Framework Shelving Builder Mockup</title>
+  <link rel="icon" href="images/global/fwk-icon-lg.png">
+  <link rel="stylesheet" href="css/shelving-builder.css?v=skeleton-1">
+</head>
+
+<body>
+  <main class="builder-shell">
+    <section class="builder-workspace" aria-label="Shelving builder workspace">
+      <header class="builder-toolbar">
+        <div class="builder-title">
+          <strong>Framework Shelving Builder</strong>
+          <span>Level/run grammar mockup</span>
+        </div>
+        <div class="button-row">
+          <button type="button" class="tool-button" id="toggle-sockets">Sockets</button>
+          <button type="button" class="tool-button danger" id="reset-builder">Reset</button>
+        </div>
+      </header>
+
+      <div class="stage-wrap">
+        <svg id="builder-scene" role="img" aria-label="Isometric shelf configuration preview"></svg>
+        <div class="stage-cycle-panel" aria-label="Layer pattern controls">
+          <div id="builder-layer-target" class="target-note"></div>
+          <div id="builder-pattern-card" class="pattern-card"></div>
+          <div class="cycle-controls">
+            <button type="button" class="cycle-button" id="pattern-prev" title="Previous pattern">&lt;</button>
+            <button type="button" class="cycle-button add" id="pattern-apply" title="Apply pattern">+</button>
+            <button type="button" class="cycle-button" id="pattern-next" title="Next pattern">&gt;</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="builder-footer">
+        <div class="stats" id="builder-stats"></div>
+        <div class="button-row">
+          <button type="button" class="demo-button" data-demo="standard_stack">Standard Stack</button>
+          <button type="button" class="demo-button" data-demo="adjacent_pair">Adjacent Pair</button>
+          <button type="button" class="demo-button" data-demo="slim_gap_bridge">Slim Gap Bridge</button>
+          <button type="button" class="demo-button" data-demo="adapter_booster_slim">Adapter Split</button>
+        </div>
+      </footer>
+    </section>
+
+    <aside class="builder-side" aria-label="Builder controls">
+      <section class="side-section">
+        <h2>Floor Run</h2>
+        <div class="control-grid">
+          <label class="field">
+            <span>Next base</span>
+            <select id="base-type-select">
+              <option value="standard_base">Standard Base</option>
+              <option value="wide_base">Wide Base</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Gap before it</span>
+            <select id="gap-select">
+              <option value="adjacent">Adjacent</option>
+              <option value="slim_gap">Slim gap</option>
+              <option value="standard_gap">Standard gap</option>
+              <option value="wide_gap">Wide gap</option>
+            </select>
+          </label>
+        </div>
+        <div class="button-row" style="margin-top: 10px;">
+          <button type="button" class="tool-button" id="add-base">Add Base</button>
+          <button type="button" class="tool-button danger" id="remove-base">Remove Last Base</button>
+        </div>
+        <div id="builder-base-slots" class="base-list" style="margin-top: 12px;"></div>
+      </section>
+
+      <section class="side-section">
+        <h2>Levels</h2>
+        <div id="builder-levels" class="level-list"></div>
+        <div class="button-row" style="margin-top: 10px;">
+          <button type="button" class="tool-button" id="select-new-level">New Top Level</button>
+          <button type="button" class="tool-button danger" id="remove-level">Remove Top Level</button>
+        </div>
+      </section>
+
+      <section class="side-section">
+        <h2>Status</h2>
+        <div id="builder-validation"></div>
+      </section>
+
+      <section class="side-section">
+        <h2>Config JSON</h2>
+        <textarea id="builder-json" spellcheck="false"></textarea>
+        <div class="button-row" style="margin-top: 10px;">
+          <button type="button" class="tool-button" id="load-json">Load JSON</button>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="js/shelving-builder-core.js?v=skeleton-1"></script>
+  <script src="js/shelving-builder-prototype.js?v=skeleton-1"></script>
+</body>
+
+</html>
