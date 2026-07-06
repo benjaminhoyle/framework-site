@@ -1,0 +1,26 @@
+{
+  "schema": "framework-config@1",
+  "id": "end-table",
+  "description": "backfilled from site designerUrl (old 2D designer format)",
+  "provenance": {
+    "source": "designer.html-hash",
+    "bays": 1
+  },
+  "defaultFinish": "charcoal",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "compact_base_trimmed",
+      "finish": "charcoal",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "compact-base-NE",
+        "x": 200,
+        "y": 200,
+        "bay": 0
+      },
+      "placement": "floor"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "schema": "framework-config@1",
+  "id": "lantern-shelf",
+  "description": "backfilled from site designerUrl (SBX sandbox format)",
+  "provenance": {
+    "source": "sandbox.html-SBX",
+    "bays": 1
+  },
+  "defaultFinish": "coral",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "wide_base",
+      "finish": "coral",
+      "placement": "floor",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "wide-base-NE",
+        "x": 1043.5,
+        "y": 466,
+        "zIndex": 1
+      }
+    },
+    {
+      "id": "item_002",
+      "type": "wide_adapter",
+      "finish": "coral",
+      "on": [
+        "item_001"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "wide-adapter-NE",
+        "x": 1042.596292373114,
+        "y": 426.4690622565158,
+        "zIndex": 2
+      }
+    },
+    {
+      "id": "item_003",
+      "type": "slim_extension",
+      "finish": "coral",
+      "on": [
+        "item_002"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "slim-extension-NE",
+        "x": 1018.184552373114,
+        "y": 420.1884222565159,
+        "zIndex": 3
+      }
+    },
+    {
+      "id": "item_004",
+      "type": "lamp",
+      "finish": "coral",
+      "on": [
+        "item_003"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "lamp-NE",
+        "x": 1056.4593523731141,
+        "y": 379.0690622565158,
+        "zIndex": 4
+      }
+    }
+  ]
+}

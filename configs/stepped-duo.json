@@ -1,0 +1,156 @@
+{
+  "schema": "framework-config@1",
+  "id": "stepped-duo",
+  "description": "backfilled from site designerUrl (old 2D designer format)",
+  "provenance": {
+    "source": "designer.html-hash",
+    "bays": 2
+  },
+  "defaultFinish": "sage",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "wide_base",
+      "finish": "sage",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "wide-base-NE",
+        "x": 200,
+        "y": 200,
+        "bay": 0
+      },
+      "placement": "floor"
+    },
+    {
+      "id": "item_002",
+      "type": "wide_extension",
+      "finish": "sage",
+      "x": 4.49,
+      "y": -36.154,
+      "_designer": {
+        "pieceId": "wide-extension-NE",
+        "x": 204.49037799999996,
+        "y": 163.84590899999998,
+        "bay": 0
+      },
+      "on": [
+        "item_001"
+      ]
+    },
+    {
+      "id": "item_003",
+      "type": "standard_base",
+      "finish": "sage",
+      "x": 107.001,
+      "y": -65.948,
+      "_designer": {
+        "pieceId": "standard-base-NE",
+        "x": 307.00100699999996,
+        "y": 134.05223700000002,
+        "bay": 1
+      },
+      "placement": "floor",
+      "lateralOn": {
+        "ref": "item_001",
+        "connection": "NE-SW"
+      }
+    },
+    {
+      "id": "item_004",
+      "type": "standard_extension",
+      "finish": "sage",
+      "x": 118.23,
+      "y": -100.356,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 318.22959299999997,
+        "y": 99.64445600000005,
+        "bay": 1
+      },
+      "on": [
+        "item_003"
+      ]
+    },
+    {
+      "id": "item_005",
+      "type": "standard_spacer",
+      "finish": "sage",
+      "x": 118.23,
+      "y": -129.945,
+      "_designer": {
+        "pieceId": "standard-spacer-NE",
+        "x": 318.22959299999997,
+        "y": 70.05462000000006,
+        "bay": 1
+      },
+      "on": [
+        "item_004"
+      ]
+    },
+    {
+      "id": "item_006",
+      "type": "standard_extension",
+      "finish": "sage",
+      "x": 118.23,
+      "y": -159.535,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 318.22959299999997,
+        "y": 40.464784000000066,
+        "bay": 1
+      },
+      "on": [
+        "item_005"
+      ]
+    },
+    {
+      "id": "item_007",
+      "type": "standard_extension",
+      "finish": "sage",
+      "x": 118.23,
+      "y": -189.125,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 318.22959299999997,
+        "y": 10.874948000000074,
+        "bay": 1
+      },
+      "on": [
+        "item_006"
+      ]
+    },
+    {
+      "id": "item_008",
+      "type": "standard_extension",
+      "finish": "sage",
+      "x": 118.23,
+      "y": -218.715,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 318.22959299999997,
+        "y": -18.714887999999917,
+        "bay": 1
+      },
+      "on": [
+        "item_007"
+      ]
+    },
+    {
+      "id": "item_009",
+      "type": "standard_extension",
+      "finish": "sage",
+      "x": 118.23,
+      "y": -248.305,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 318.22959299999997,
+        "y": -48.30472399999991,
+        "bay": 1
+      },
+      "on": [
+        "item_008"
+      ]
+    }
+  ]
+}

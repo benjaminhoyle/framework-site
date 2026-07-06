@@ -1,0 +1,122 @@
+{
+  "schema": "framework-config@1",
+  "id": "asymmetric-display",
+  "description": "backfilled from site designerUrl (SBX sandbox format)",
+  "provenance": {
+    "source": "sandbox.html-SBX",
+    "bays": 1
+  },
+  "defaultFinish": "coral",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "wide_base",
+      "finish": "coral",
+      "placement": "floor",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "wide-base-NE",
+        "x": 567.5,
+        "y": 256.5,
+        "zIndex": 1
+      }
+    },
+    {
+      "id": "item_002",
+      "type": "wide_adapter",
+      "finish": "coral",
+      "on": [
+        "item_001"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "wide-adapter-NE",
+        "x": 566.8348979766804,
+        "y": 216.50469393004116,
+        "zIndex": 2
+      }
+    },
+    {
+      "id": "item_003",
+      "type": "slim_extension",
+      "finish": "coral",
+      "on": [
+        "item_002"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "slim-extension-NE",
+        "x": 542.4231579766804,
+        "y": 210.22405393004112,
+        "zIndex": 3
+      }
+    },
+    {
+      "id": "item_004",
+      "type": "standard_booster",
+      "finish": "coral",
+      "on": [
+        "item_003"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-booster-full-NW",
+        "x": 624.1642013237312,
+        "y": 163.07206116598078,
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "item_005",
+      "type": "standard_extension",
+      "finish": "coral",
+      "on": [
+        "item_004"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 600.5606213237312,
+        "y": 147.03002116598077,
+        "zIndex": 5
+      }
+    },
+    {
+      "id": "item_006",
+      "type": "standard_booster",
+      "finish": "coral",
+      "on": [
+        "item_005"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-booster-full-NW",
+        "x": 527.9076641152263,
+        "y": 188.7183874691358,
+        "zIndex": 6
+      }
+    },
+    {
+      "id": "item_007",
+      "type": "wide_extension",
+      "finish": "coral",
+      "on": [
+        "item_006"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "wide-extension-NE",
+        "x": 572.2838213237311,
+        "y": 132.56620116598077,
+        "zIndex": 7
+      }
+    }
+  ]
+}

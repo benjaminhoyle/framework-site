@@ -1,0 +1,42 @@
+{
+  "schema": "framework-config@1",
+  "id": "triple",
+  "description": "backfilled from site designerUrl (old 2D designer format)",
+  "provenance": {
+    "source": "designer.html-hash",
+    "bays": 1
+  },
+  "defaultFinish": "sage",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "standard_base",
+      "finish": "sage",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-base-NE",
+        "x": 200,
+        "y": 200,
+        "bay": 0
+      },
+      "placement": "floor"
+    },
+    {
+      "id": "item_002",
+      "type": "standard_extension",
+      "finish": "sage",
+      "x": 11.229,
+      "y": -34.408,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 211.228586,
+        "y": 165.59221900000003,
+        "bay": 0
+      },
+      "on": [
+        "item_001"
+      ]
+    }
+  ]
+}

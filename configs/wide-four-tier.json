@@ -1,0 +1,58 @@
+{
+  "schema": "framework-config@1",
+  "id": "wide-four-tier",
+  "description": "backfilled from site designerUrl (old 2D designer format)",
+  "provenance": {
+    "source": "designer.html-hash",
+    "bays": 1
+  },
+  "defaultFinish": "coral",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "wide_base",
+      "finish": "coral",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "wide-base-NE",
+        "x": 200,
+        "y": 200,
+        "bay": 0
+      },
+      "placement": "floor"
+    },
+    {
+      "id": "item_002",
+      "type": "wide_extension",
+      "finish": "coral",
+      "x": 4.49,
+      "y": -36.154,
+      "_designer": {
+        "pieceId": "wide-extension-NE",
+        "x": 204.49037799999996,
+        "y": 163.84590899999998,
+        "bay": 0
+      },
+      "on": [
+        "item_001"
+      ]
+    },
+    {
+      "id": "item_003",
+      "type": "wide_extension",
+      "finish": "coral",
+      "x": 4.49,
+      "y": -65.744,
+      "_designer": {
+        "pieceId": "wide-extension-NE",
+        "x": 204.49037799999996,
+        "y": 134.25607299999993,
+        "bay": 0
+      },
+      "on": [
+        "item_002"
+      ]
+    }
+  ]
+}

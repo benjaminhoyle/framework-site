@@ -1,0 +1,108 @@
+{
+  "schema": "framework-config@1",
+  "id": "high-low",
+  "description": "backfilled from site designerUrl (old 2D designer format)",
+  "provenance": {
+    "source": "designer.html-hash",
+    "bays": 2
+  },
+  "defaultFinish": "sage",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "deep_base",
+      "finish": "sage",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "deep-base-NE",
+        "x": 200,
+        "y": 200,
+        "bay": 0
+      },
+      "placement": "floor"
+    },
+    {
+      "id": "item_002",
+      "type": "compact_base_trimmed",
+      "finish": "sage",
+      "x": 99.523,
+      "y": -38.89,
+      "_designer": {
+        "pieceId": "compact-base-NE",
+        "x": 299.52334799999994,
+        "y": 161.11031100000002,
+        "bay": 1
+      },
+      "placement": "floor",
+      "lateralOn": {
+        "ref": "item_001",
+        "connection": "NE-SW"
+      }
+    },
+    {
+      "id": "item_003",
+      "type": "compact_spacer",
+      "finish": "sage",
+      "x": 99.574,
+      "y": -75.394,
+      "_designer": {
+        "pieceId": "compact-spacer-NE",
+        "x": 299.57409099999995,
+        "y": 124.605727,
+        "bay": 1
+      },
+      "on": [
+        "item_002"
+      ]
+    },
+    {
+      "id": "item_004",
+      "type": "compact_extension_trimmed",
+      "finish": "sage",
+      "x": 99.574,
+      "y": -104.984,
+      "_designer": {
+        "pieceId": "compact-extension-NE",
+        "x": 299.57409099999995,
+        "y": 95.01585999999998,
+        "bay": 1
+      },
+      "on": [
+        "item_003"
+      ]
+    },
+    {
+      "id": "item_005",
+      "type": "compact_spacer",
+      "finish": "sage",
+      "x": 99.574,
+      "y": -134.574,
+      "_designer": {
+        "pieceId": "compact-spacer-NE",
+        "x": 299.57409099999995,
+        "y": 65.42599299999998,
+        "bay": 1
+      },
+      "on": [
+        "item_004"
+      ]
+    },
+    {
+      "id": "item_006",
+      "type": "compact_extension_trimmed",
+      "finish": "sage",
+      "x": 99.574,
+      "y": -164.164,
+      "_designer": {
+        "pieceId": "compact-extension-NE",
+        "x": 299.57409099999995,
+        "y": 35.83612599999998,
+        "bay": 1
+      },
+      "on": [
+        "item_005"
+      ]
+    }
+  ]
+}

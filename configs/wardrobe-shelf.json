@@ -1,0 +1,90 @@
+{
+  "schema": "framework-config@1",
+  "id": "wardrobe-shelf",
+  "description": "backfilled from site designerUrl (SBX sandbox format)",
+  "provenance": {
+    "source": "sandbox.html-SBX",
+    "bays": 1
+  },
+  "defaultFinish": "sage",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "deep_base",
+      "finish": "sage",
+      "placement": "floor",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "deep-base-NW",
+        "x": 761.5,
+        "y": 294.5,
+        "zIndex": 1
+      }
+    },
+    {
+      "id": "item_002",
+      "type": "deep_spacer",
+      "finish": "sage",
+      "on": [
+        "item_001"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "deep-spacer-NW",
+        "x": 764.9365354938271,
+        "y": 258.75347222222223,
+        "zIndex": 2
+      }
+    },
+    {
+      "id": "item_003",
+      "type": "deep_spacer",
+      "finish": "sage",
+      "on": [
+        "item_002"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "deep-spacer-NW",
+        "x": 765.130615569273,
+        "y": 229.14163237311385,
+        "zIndex": 3
+      }
+    },
+    {
+      "id": "item_004",
+      "type": "deep_hanger",
+      "finish": "sage",
+      "on": [
+        "item_003"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "hanger-extension-NW",
+        "x": 757.5802111911294,
+        "y": 209.31163551668953,
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "item_005",
+      "type": "deep_extension",
+      "finish": "sage",
+      "on": [
+        "item_004"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "deep-extension-NW",
+        "x": 765.0535801040237,
+        "y": 170.65280814186102,
+        "zIndex": 5
+      }
+    }
+  ]
+}

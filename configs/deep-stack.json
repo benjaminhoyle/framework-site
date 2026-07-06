@@ -1,0 +1,90 @@
+{
+  "schema": "framework-config@1",
+  "id": "deep-stack",
+  "description": "backfilled from site designerUrl (old 2D designer format)",
+  "provenance": {
+    "source": "designer.html-hash",
+    "bays": 1
+  },
+  "defaultFinish": "sage",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "compact_base_trimmed",
+      "finish": "sage",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "compact-base-NE",
+        "x": 200,
+        "y": 200,
+        "bay": 0
+      },
+      "placement": "floor"
+    },
+    {
+      "id": "item_002",
+      "type": "compact_extension_trimmed",
+      "finish": "sage",
+      "x": 0.051,
+      "y": -36.505,
+      "_designer": {
+        "pieceId": "compact-extension-NE",
+        "x": 200.050743,
+        "y": 163.49541599999998,
+        "bay": 0
+      },
+      "on": [
+        "item_001"
+      ]
+    },
+    {
+      "id": "item_003",
+      "type": "compact_extension_trimmed",
+      "finish": "sage",
+      "x": 0.051,
+      "y": -66.094,
+      "_designer": {
+        "pieceId": "compact-extension-NE",
+        "x": 200.050743,
+        "y": 133.90554899999995,
+        "bay": 0
+      },
+      "on": [
+        "item_002"
+      ]
+    },
+    {
+      "id": "item_004",
+      "type": "compact_extension_trimmed",
+      "finish": "sage",
+      "x": 0.051,
+      "y": -95.684,
+      "_designer": {
+        "pieceId": "compact-extension-NE",
+        "x": 200.050743,
+        "y": 104.31568199999995,
+        "bay": 0
+      },
+      "on": [
+        "item_003"
+      ]
+    },
+    {
+      "id": "item_005",
+      "type": "compact_extension_trimmed",
+      "finish": "sage",
+      "x": 0.051,
+      "y": -125.274,
+      "_designer": {
+        "pieceId": "compact-extension-NE",
+        "x": 200.050743,
+        "y": 74.72581499999995,
+        "bay": 0
+      },
+      "on": [
+        "item_004"
+      ]
+    }
+  ]
+}

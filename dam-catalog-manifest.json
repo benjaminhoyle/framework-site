@@ -1,0 +1,2126 @@
+{
+  "starter-populated.jpg": {
+    "kind": "catalog",
+    "configId": "starter",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      }
+    ],
+    "variant": "populated"
+  },
+  "starter-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "starter",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "starter-front.jpg": {
+    "kind": "catalog",
+    "configId": "starter",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      }
+    ],
+    "variant": "front"
+  },
+  "end-table-populated.jpg": {
+    "kind": "catalog",
+    "configId": "end-table",
+    "modules": [
+      {
+        "type": "compact_base_trimmed",
+        "finish": "charcoal"
+      }
+    ],
+    "variant": "populated"
+  },
+  "end-table-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "end-table",
+    "modules": [
+      {
+        "type": "compact_base_trimmed",
+        "finish": "charcoal"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "end-table-front.jpg": {
+    "kind": "catalog",
+    "configId": "end-table",
+    "modules": [
+      {
+        "type": "compact_base_trimmed",
+        "finish": "charcoal"
+      }
+    ],
+    "variant": "front"
+  },
+  "low-console-populated.jpg": {
+    "kind": "catalog",
+    "configId": "low-console",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "charcoal"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "charcoal"
+      }
+    ],
+    "variant": "populated"
+  },
+  "low-console-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "low-console",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "charcoal"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "charcoal"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "low-console-front.jpg": {
+    "kind": "catalog",
+    "configId": "low-console",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "charcoal"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "charcoal"
+      }
+    ],
+    "variant": "front"
+  },
+  "low-console-under-mdf.jpg": {
+    "kind": "catalog",
+    "configId": "low-console",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "charcoal"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "charcoal"
+      }
+    ],
+    "variant": "under-mdf"
+  },
+  "triple-populated.jpg": {
+    "kind": "catalog",
+    "configId": "triple",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "populated"
+  },
+  "triple-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "triple",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "triple-angle.jpg": {
+    "kind": "catalog",
+    "configId": "triple",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "angle"
+  },
+  "triple-mdf-edge.jpg": {
+    "kind": "catalog",
+    "configId": "triple",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "mdf-edge"
+  },
+  "quadruple-populated.jpg": {
+    "kind": "catalog",
+    "configId": "quadruple",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "populated"
+  },
+  "quadruple-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "quadruple",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "quadruple-angle.jpg": {
+    "kind": "catalog",
+    "configId": "quadruple",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "angle"
+  },
+  "lighted-console-populated.jpg": {
+    "kind": "catalog",
+    "configId": "lighted-console",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "marine"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "lamp",
+        "finish": "marine"
+      }
+    ],
+    "variant": "populated"
+  },
+  "lighted-console-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "lighted-console",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "marine"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "lamp",
+        "finish": "marine"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "wide-four-tier-populated.jpg": {
+    "kind": "catalog",
+    "configId": "wide-four-tier",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "coral"
+      }
+    ],
+    "variant": "populated"
+  },
+  "wide-four-tier-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "wide-four-tier",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "coral"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "multicolor-stack-populated.jpg": {
+    "kind": "catalog",
+    "configId": "multicolor-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "charcoal"
+      }
+    ],
+    "variant": "populated"
+  },
+  "multicolor-stack-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "multicolor-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "charcoal"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "multicolor-stack-under-mdf.jpg": {
+    "kind": "catalog",
+    "configId": "multicolor-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "charcoal"
+      }
+    ],
+    "variant": "under-mdf"
+  },
+  "multicolor-stack-joint.jpg": {
+    "kind": "catalog",
+    "configId": "multicolor-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "charcoal"
+      }
+    ],
+    "variant": "joint"
+  },
+  "lantern-shelf-populated.jpg": {
+    "kind": "catalog",
+    "configId": "lantern-shelf",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "coral"
+      },
+      {
+        "type": "slim_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "lamp",
+        "finish": "coral"
+      }
+    ],
+    "variant": "populated"
+  },
+  "lantern-shelf-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "lantern-shelf",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "coral"
+      },
+      {
+        "type": "slim_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "lamp",
+        "finish": "coral"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "lantern-shelf-foot.jpg": {
+    "kind": "catalog",
+    "configId": "lantern-shelf",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "coral"
+      },
+      {
+        "type": "slim_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "lamp",
+        "finish": "coral"
+      }
+    ],
+    "variant": "foot"
+  },
+  "two-tone-stack-populated.jpg": {
+    "kind": "catalog",
+    "configId": "two-tone-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "populated"
+  },
+  "two-tone-stack-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "two-tone-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "two-tone-stack-angle.jpg": {
+    "kind": "catalog",
+    "configId": "two-tone-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "angle"
+  },
+  "two-tone-stack-under-mdf.jpg": {
+    "kind": "catalog",
+    "configId": "two-tone-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "under-mdf"
+  },
+  "versatile-stack-populated.jpg": {
+    "kind": "catalog",
+    "configId": "versatile-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "populated"
+  },
+  "versatile-stack-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "versatile-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "versatile-stack-angle.jpg": {
+    "kind": "catalog",
+    "configId": "versatile-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "angle"
+  },
+  "versatile-stack-under-mdf.jpg": {
+    "kind": "catalog",
+    "configId": "versatile-stack",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "under-mdf"
+  },
+  "stepped-stack-populated.jpg": {
+    "kind": "catalog",
+    "configId": "stepped-stack",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "sage"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "populated"
+  },
+  "stepped-stack-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "stepped-stack",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "sage"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "stepped-stack-angle.jpg": {
+    "kind": "catalog",
+    "configId": "stepped-stack",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "sage"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "angle"
+  },
+  "stepped-stack-under-mdf.jpg": {
+    "kind": "catalog",
+    "configId": "stepped-stack",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "sage"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "under-mdf"
+  },
+  "dynamic-corner-populated.jpg": {
+    "kind": "catalog",
+    "configId": "dynamic-corner",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_base",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "populated"
+  },
+  "dynamic-corner-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "dynamic-corner",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_base",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "asymmetric-display-populated.jpg": {
+    "kind": "catalog",
+    "configId": "asymmetric-display",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "coral"
+      },
+      {
+        "type": "slim_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_booster",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_booster",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "coral"
+      }
+    ],
+    "variant": "populated"
+  },
+  "asymmetric-display-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "asymmetric-display",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "coral"
+      },
+      {
+        "type": "slim_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_booster",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_booster",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "coral"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "asymmetric-display-angle.jpg": {
+    "kind": "catalog",
+    "configId": "asymmetric-display",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "coral"
+      },
+      {
+        "type": "slim_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_booster",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_booster",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "coral"
+      }
+    ],
+    "variant": "angle"
+  },
+  "asymmetric-display-foot.jpg": {
+    "kind": "catalog",
+    "configId": "asymmetric-display",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "coral"
+      },
+      {
+        "type": "slim_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_booster",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_booster",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "coral"
+      }
+    ],
+    "variant": "foot"
+  },
+  "asymmetric-display-joint.jpg": {
+    "kind": "catalog",
+    "configId": "asymmetric-display",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "coral"
+      },
+      {
+        "type": "slim_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_booster",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_booster",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "coral"
+      }
+    ],
+    "variant": "joint"
+  },
+  "offset-shelf-populated.jpg": {
+    "kind": "catalog",
+    "configId": "offset-shelf",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      }
+    ],
+    "variant": "populated"
+  },
+  "offset-shelf-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "offset-shelf",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "offset-shelf-angle.jpg": {
+    "kind": "catalog",
+    "configId": "offset-shelf",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "coral"
+      },
+      {
+        "type": "wide_adapter",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "coral"
+      }
+    ],
+    "variant": "angle"
+  },
+  "wardrobe-shelf-populated.jpg": {
+    "kind": "catalog",
+    "configId": "wardrobe-shelf",
+    "modules": [
+      {
+        "type": "deep_base",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_hanger",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "populated"
+  },
+  "wardrobe-shelf-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "wardrobe-shelf",
+    "modules": [
+      {
+        "type": "deep_base",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_hanger",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "wardrobe-shelf-front.jpg": {
+    "kind": "catalog",
+    "configId": "wardrobe-shelf",
+    "modules": [
+      {
+        "type": "deep_base",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_hanger",
+        "finish": "sage"
+      },
+      {
+        "type": "deep_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "front"
+  },
+  "deep-stack-populated.jpg": {
+    "kind": "catalog",
+    "configId": "deep-stack",
+    "modules": [
+      {
+        "type": "compact_base_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      }
+    ],
+    "variant": "populated"
+  },
+  "deep-stack-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "deep-stack",
+    "modules": [
+      {
+        "type": "compact_base_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "double-bay-populated.jpg": {
+    "kind": "catalog",
+    "configId": "double-bay",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "populated"
+  },
+  "double-bay-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "double-bay",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "double-bay-angle.jpg": {
+    "kind": "catalog",
+    "configId": "double-bay",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "angle"
+  },
+  "double-bay-under-mdf.jpg": {
+    "kind": "catalog",
+    "configId": "double-bay",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "under-mdf"
+  },
+  "stepped-display-populated.jpg": {
+    "kind": "catalog",
+    "configId": "stepped-display",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "populated"
+  },
+  "stepped-display-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "stepped-display",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "stepped-display-angle.jpg": {
+    "kind": "catalog",
+    "configId": "stepped-display",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "angle"
+  },
+  "high-low-populated.jpg": {
+    "kind": "catalog",
+    "configId": "high-low",
+    "modules": [
+      {
+        "type": "deep_base",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_base_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      }
+    ],
+    "variant": "populated"
+  },
+  "high-low-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "high-low",
+    "modules": [
+      {
+        "type": "deep_base",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_base_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "compact_extension_trimmed",
+        "finish": "sage"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "stepped-duo-populated.jpg": {
+    "kind": "catalog",
+    "configId": "stepped-duo",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "sage"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "populated"
+  },
+  "stepped-duo-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "stepped-duo",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "sage"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "stepped-duo-angle.jpg": {
+    "kind": "catalog",
+    "configId": "stepped-duo",
+    "modules": [
+      {
+        "type": "wide_base",
+        "finish": "sage"
+      },
+      {
+        "type": "wide_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_base",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_spacer",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "sage"
+      }
+    ],
+    "variant": "angle"
+  },
+  "triple-bay-populated.jpg": {
+    "kind": "catalog",
+    "configId": "triple-bay",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "populated"
+  },
+  "triple-bay-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "triple-bay",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "triple-bay-angle.jpg": {
+    "kind": "catalog",
+    "configId": "triple-bay",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "angle"
+  },
+  "triple-bay-joint.jpg": {
+    "kind": "catalog",
+    "configId": "triple-bay",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "joint"
+  },
+  "grand-corner-populated.jpg": {
+    "kind": "catalog",
+    "configId": "grand-corner",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_base",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "populated"
+  },
+  "grand-corner-emptied.jpg": {
+    "kind": "catalog",
+    "configId": "grand-corner",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_base",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "emptied"
+  },
+  "grand-corner-foot.jpg": {
+    "kind": "catalog",
+    "configId": "grand-corner",
+    "modules": [
+      {
+        "type": "standard_base",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "standard_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_base",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      },
+      {
+        "type": "corner_extension",
+        "finish": "marine"
+      }
+    ],
+    "variant": "foot"
+  },
+  "bookend.jpg": {
+    "kind": "catalog",
+    "configId": "bookend",
+    "modules": null,
+    "variant": "hero"
+  }
+}

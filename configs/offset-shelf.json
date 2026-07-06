@@ -1,0 +1,106 @@
+{
+  "schema": "framework-config@1",
+  "id": "offset-shelf",
+  "description": "backfilled from site designerUrl (SBX sandbox format)",
+  "provenance": {
+    "source": "sandbox.html-SBX",
+    "bays": 1
+  },
+  "defaultFinish": "coral",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "wide_base",
+      "finish": "coral",
+      "placement": "floor",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "wide-base-NE",
+        "x": 1043.5,
+        "y": 466,
+        "zIndex": 1
+      }
+    },
+    {
+      "id": "item_002",
+      "type": "wide_adapter",
+      "finish": "coral",
+      "on": [
+        "item_001"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "wide-adapter-SW",
+        "x": 1043.6813271604938,
+        "y": 420.3672839506173,
+        "zIndex": 2
+      }
+    },
+    {
+      "id": "item_003",
+      "type": "standard_extension",
+      "finish": "marine",
+      "on": [
+        "item_002"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 1039.3133671604937,
+        "y": 406.7274239506174,
+        "zIndex": 3
+      }
+    },
+    {
+      "id": "item_004",
+      "type": "standard_extension",
+      "finish": "marine",
+      "on": [
+        "item_003"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 1039.3135671604937,
+        "y": 377.39210395061735,
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "item_005",
+      "type": "standard_extension",
+      "finish": "coral",
+      "on": [
+        "item_004"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 1039.3137671604936,
+        "y": 348.05678395061733,
+        "zIndex": 5
+      }
+    },
+    {
+      "id": "item_006",
+      "type": "standard_extension",
+      "finish": "coral",
+      "on": [
+        "item_005"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 1039.5516471604938,
+        "y": 318.3090839506174,
+        "zIndex": 6
+      }
+    }
+  ]
+}

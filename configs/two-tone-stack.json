@@ -1,0 +1,90 @@
+{
+  "schema": "framework-config@1",
+  "id": "two-tone-stack",
+  "description": "backfilled from site designerUrl (SBX sandbox format)",
+  "provenance": {
+    "source": "sandbox.html-SBX",
+    "bays": 1
+  },
+  "defaultFinish": "marine",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "standard_base",
+      "finish": "marine",
+      "placement": "floor",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-base-NE",
+        "x": 1043.5,
+        "y": 466,
+        "zIndex": 1
+      }
+    },
+    {
+      "id": "item_002",
+      "type": "standard_extension",
+      "finish": "coral",
+      "on": [
+        "item_001"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 1054.639,
+        "y": 431.8853,
+        "zIndex": 2
+      }
+    },
+    {
+      "id": "item_003",
+      "type": "standard_extension",
+      "finish": "marine",
+      "on": [
+        "item_002"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 1054.6391999999998,
+        "y": 402.54997999999995,
+        "zIndex": 3
+      }
+    },
+    {
+      "id": "item_004",
+      "type": "standard_extension",
+      "finish": "coral",
+      "on": [
+        "item_003"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 1054.6393999999998,
+        "y": 373.2146599999999,
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "item_005",
+      "type": "standard_extension",
+      "finish": "marine",
+      "on": [
+        "item_004"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 1054.6395999999997,
+        "y": 343.8793399999999,
+        "zIndex": 5
+      }
+    }
+  ]
+}

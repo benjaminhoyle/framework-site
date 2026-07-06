@@ -1,0 +1,204 @@
+{
+  "schema": "framework-config@1",
+  "id": "grand-corner",
+  "description": "backfilled from site designerUrl (old 2D designer format)",
+  "provenance": {
+    "source": "designer.html-hash",
+    "bays": 2
+  },
+  "defaultFinish": "marine",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "standard_base",
+      "finish": "marine",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-base-NE",
+        "x": 200,
+        "y": 200,
+        "bay": 0
+      },
+      "placement": "floor"
+    },
+    {
+      "id": "item_002",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 11.229,
+      "y": -34.408,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 211.228586,
+        "y": 165.59221900000003,
+        "bay": 0
+      },
+      "on": [
+        "item_001"
+      ]
+    },
+    {
+      "id": "item_003",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 11.229,
+      "y": -63.998,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 211.228586,
+        "y": 136.00238300000004,
+        "bay": 0
+      },
+      "on": [
+        "item_002"
+      ]
+    },
+    {
+      "id": "item_004",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 11.229,
+      "y": -93.587,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 211.228586,
+        "y": 106.41254700000005,
+        "bay": 0
+      },
+      "on": [
+        "item_003"
+      ]
+    },
+    {
+      "id": "item_005",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 11.229,
+      "y": -123.177,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 211.228586,
+        "y": 76.82271100000006,
+        "bay": 0
+      },
+      "on": [
+        "item_004"
+      ]
+    },
+    {
+      "id": "item_006",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 11.229,
+      "y": -152.767,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 211.228586,
+        "y": 47.232875000000064,
+        "bay": 0
+      },
+      "on": [
+        "item_005"
+      ]
+    },
+    {
+      "id": "item_007",
+      "type": "corner_base",
+      "finish": "marine",
+      "x": 94.215,
+      "y": -13.315,
+      "_designer": {
+        "pieceId": "corner-base-NW",
+        "x": 294.215072,
+        "y": 186.68496100000002,
+        "bay": 1
+      },
+      "placement": "floor",
+      "lateralOn": {
+        "ref": "item_001",
+        "connection": "NE-SW"
+      }
+    },
+    {
+      "id": "item_008",
+      "type": "corner_extension",
+      "finish": "marine",
+      "x": 95.307,
+      "y": -41.915,
+      "_designer": {
+        "pieceId": "corner-extension-NW",
+        "x": 295.30681300000003,
+        "y": 158.084834,
+        "bay": 1
+      },
+      "on": [
+        "item_007"
+      ]
+    },
+    {
+      "id": "item_009",
+      "type": "corner_extension",
+      "finish": "marine",
+      "x": 95.307,
+      "y": -71.505,
+      "_designer": {
+        "pieceId": "corner-extension-NW",
+        "x": 295.30675900000006,
+        "y": 128.494998,
+        "bay": 1
+      },
+      "on": [
+        "item_008"
+      ]
+    },
+    {
+      "id": "item_010",
+      "type": "corner_extension",
+      "finish": "marine",
+      "x": 95.307,
+      "y": -101.095,
+      "_designer": {
+        "pieceId": "corner-extension-NW",
+        "x": 295.3067050000001,
+        "y": 98.90516200000002,
+        "bay": 1
+      },
+      "on": [
+        "item_009"
+      ]
+    },
+    {
+      "id": "item_011",
+      "type": "corner_extension",
+      "finish": "marine",
+      "x": 95.307,
+      "y": -130.685,
+      "_designer": {
+        "pieceId": "corner-extension-NW",
+        "x": 295.3066510000001,
+        "y": 69.315326,
+        "bay": 1
+      },
+      "on": [
+        "item_010"
+      ]
+    },
+    {
+      "id": "item_012",
+      "type": "corner_extension",
+      "finish": "marine",
+      "x": 95.307,
+      "y": -160.275,
+      "_designer": {
+        "pieceId": "corner-extension-NW",
+        "x": 295.3065970000001,
+        "y": 39.72548999999998,
+        "bay": 1
+      },
+      "on": [
+        "item_011"
+      ]
+    }
+  ]
+}

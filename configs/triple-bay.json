@@ -1,0 +1,206 @@
+{
+  "schema": "framework-config@1",
+  "id": "triple-bay",
+  "description": "backfilled from site designerUrl (old 2D designer format)",
+  "provenance": {
+    "source": "designer.html-hash",
+    "bays": 3
+  },
+  "defaultFinish": "marine",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "standard_base",
+      "finish": "marine",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "standard-base-NE",
+        "x": 200,
+        "y": 200,
+        "bay": 0
+      },
+      "placement": "floor"
+    },
+    {
+      "id": "item_002",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 11.229,
+      "y": -34.408,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 211.228586,
+        "y": 165.59221900000003,
+        "bay": 0
+      },
+      "on": [
+        "item_001"
+      ]
+    },
+    {
+      "id": "item_003",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 11.229,
+      "y": -63.998,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 211.228586,
+        "y": 136.00238300000004,
+        "bay": 0
+      },
+      "on": [
+        "item_002"
+      ]
+    },
+    {
+      "id": "item_004",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 11.229,
+      "y": -93.587,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 211.228586,
+        "y": 106.41254700000005,
+        "bay": 0
+      },
+      "on": [
+        "item_003"
+      ]
+    },
+    {
+      "id": "item_005",
+      "type": "standard_base",
+      "finish": "marine",
+      "x": 86.273,
+      "y": -49.81,
+      "_designer": {
+        "pieceId": "standard-base-NE",
+        "x": 286.273449,
+        "y": 150.19000100000002,
+        "bay": 1
+      },
+      "placement": "floor",
+      "lateralOn": {
+        "ref": "item_001",
+        "connection": "NE-SW"
+      }
+    },
+    {
+      "id": "item_006",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 97.502,
+      "y": -84.218,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 297.50203500000003,
+        "y": 115.78222000000005,
+        "bay": 1
+      },
+      "on": [
+        "item_005"
+      ]
+    },
+    {
+      "id": "item_007",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 97.502,
+      "y": -113.808,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 297.50203500000003,
+        "y": 86.19238400000006,
+        "bay": 1
+      },
+      "on": [
+        "item_006"
+      ]
+    },
+    {
+      "id": "item_008",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 97.502,
+      "y": -143.397,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 297.50203500000003,
+        "y": 56.60254800000007,
+        "bay": 1
+      },
+      "on": [
+        "item_007"
+      ]
+    },
+    {
+      "id": "item_009",
+      "type": "standard_base",
+      "finish": "marine",
+      "x": 172.547,
+      "y": -99.62,
+      "_designer": {
+        "pieceId": "standard-base-NE",
+        "x": 372.54689800000006,
+        "y": 100.38000200000002,
+        "bay": 2
+      },
+      "placement": "floor",
+      "lateralOn": {
+        "ref": "item_005",
+        "connection": "NE-SW"
+      }
+    },
+    {
+      "id": "item_010",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 183.775,
+      "y": -134.028,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 383.77548400000006,
+        "y": 65.97222100000005,
+        "bay": 2
+      },
+      "on": [
+        "item_009"
+      ]
+    },
+    {
+      "id": "item_011",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 183.775,
+      "y": -163.618,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 383.77548400000006,
+        "y": 36.382385000000056,
+        "bay": 2
+      },
+      "on": [
+        "item_010"
+      ]
+    },
+    {
+      "id": "item_012",
+      "type": "standard_extension",
+      "finish": "marine",
+      "x": 183.775,
+      "y": -193.207,
+      "_designer": {
+        "pieceId": "standard-extension-NE",
+        "x": 383.77548400000006,
+        "y": 6.792549000000065,
+        "bay": 2
+      },
+      "on": [
+        "item_011"
+      ]
+    }
+  ]
+}

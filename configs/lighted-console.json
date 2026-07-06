@@ -1,0 +1,58 @@
+{
+  "schema": "framework-config@1",
+  "id": "lighted-console",
+  "description": "backfilled from site designerUrl (SBX sandbox format)",
+  "provenance": {
+    "source": "sandbox.html-SBX",
+    "bays": 1
+  },
+  "defaultFinish": "marine",
+  "modules": [
+    {
+      "id": "item_001",
+      "type": "wide_base",
+      "finish": "marine",
+      "placement": "floor",
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "wide-base-NE",
+        "x": 1043.5,
+        "y": 466,
+        "zIndex": 1
+      }
+    },
+    {
+      "id": "item_002",
+      "type": "wide_extension",
+      "finish": "marine",
+      "on": [
+        "item_001"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "wide-extension-NE",
+        "x": 1047.95466,
+        "y": 430.15294000000006,
+        "zIndex": 2
+      }
+    },
+    {
+      "id": "item_003",
+      "type": "lamp",
+      "finish": "marine",
+      "on": [
+        "item_002"
+      ],
+      "x": 0,
+      "y": 0,
+      "_designer": {
+        "pieceId": "lamp-NE",
+        "x": 1056.5887200000002,
+        "y": 378.80572000000006,
+        "zIndex": 3
+      }
+    }
+  ]
+}
