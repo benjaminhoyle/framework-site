@@ -350,6 +350,16 @@ window.ModuleBuilder = function ModuleBuilder() {
                     'price': piece.price
                   }))
                 });
+                // Meta Pixel: product order intent → Lead (with value), matching
+                // every other order button. Anchor navigates natively.
+                if (typeof fbq === 'function') {
+                  fbq('track', 'Lead', {
+                    content_name: 'Modular Shelving',
+                    content_category: 'advanced_designer',
+                    value: placedPieces.reduce((sum, { piece }) => sum + piece.price, 0),
+                    currency: 'KES'
+                  });
+                }
               }}
               target="_blank"
               rel="noopener noreferrer"
@@ -2330,21 +2340,21 @@ window.ModuleBuilder = function ModuleBuilder() {
                 }\nAll in ${DesignerEngine.colorThemes[selectedTheme].displayName}\nTotal Cost: Ksh ${placedPieces.reduce((sum, { piece }) => sum + piece.price, 0).toLocaleString()
                 } (VAT inclusive)`
               )}`}
-              onClick={(e) => {
-                e.preventDefault();
-
-                // Meta Pixel: InitiateCheckout
+              onClick={() => {
+                // Product order intent → Lead (with value). Let the anchor open
+                // WhatsApp natively (target/_blank + ?text=) so it fires inside the
+                // click gesture; a deferred window.open() gets popup-blocked in
+                // Meta's in-app browser. Tracking is best-effort, non-blocking.
                 if (typeof fbq === 'function') {
-                    fbq('track', 'InitiateCheckout', {
+                    fbq('track', 'Lead', {
                         content_name: 'Modular Shelving',
                         content_category: 'advanced_designer',
                         value: placedPieces.reduce((sum, { piece }) => sum + piece.price, 0),
-                        currency: 'KES',
-                        num_items: placedPieces.length
+                        currency: 'KES'
                     });
                 }
 
-                return trackCheckoutConversion(e.currentTarget.href, {
+                trackCheckoutConversion('', {
                   'currency': 'KES',
                   'value': placedPieces.reduce((sum, { piece }) => sum + piece.price, 0),
                   'items': placedPieces.map(({ piece }) => ({
@@ -2354,6 +2364,7 @@ window.ModuleBuilder = function ModuleBuilder() {
                   }))
                 });
               }}
+              target="_blank"
               rel="noopener noreferrer"
               className="block w-full bg-green-600 text-white text-center px-2.5 py-1 rounded-md text-xs font-medium"
             >

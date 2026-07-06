@@ -732,7 +732,7 @@
                                     ))}
                                 </div>
                                 <div className="flex justify-between text-lg font-bold mb-6 pt-2 border-t"><span>Total</span><span>Ksh {totalPrice.toLocaleString()}</span></div>
-                                <a href={`https://wa.me/254783891005?text=${encodeURIComponent('Sandbox Design Total: Ksh '+totalPrice.toLocaleString())}`} target="_blank" className="block w-full bg-green-600 text-white text-center py-3 rounded-xl font-bold shadow-lg" onClick={() => gtag('event', 'generate_lead', { link_target: 'sandbox_order', value: totalPrice, currency: 'KES' })}>Order via WhatsApp</a>
+                                <a href={`https://wa.me/254783891005?text=${encodeURIComponent('Sandbox Design Total: Ksh '+totalPrice.toLocaleString())}`} target="_blank" className="block w-full bg-green-600 text-white text-center py-3 rounded-xl font-bold shadow-lg" onClick={() => { if (typeof gtag === 'function') gtag('event', 'generate_lead', { link_target: 'sandbox_order', value: totalPrice, currency: 'KES' }); if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'Modular Shelving', content_category: 'sandbox', value: totalPrice, currency: 'KES' }); }}>Order via WhatsApp</a>
                             </div>
                         </div>
                     )}

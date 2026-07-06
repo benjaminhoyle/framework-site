@@ -484,9 +484,9 @@
                             <div class="space-y-4">
                                 <div class="bg-gray-50 p-4 rounded-lg">
                                     <h3 class="font-bold text-lg mb-2">Want guidance on that custom design?</h3>
-                                    <a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer"
+                                    <a href="https://wa.me/254783891005?text=Hi%20Framework!%20I%20would%20like%20some%20guidance%20on%20designing%20a%20shelf%20for%20my%20space." target="_blank" rel="noopener noreferrer"
                                         class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 inline-block"
-                                        onclick="gtag('event', 'contact_chat', {link_target: 'simplified_designer_guidance'}); if(typeof fbq==='function'){fbq('track','Lead',{content_name:'WhatsApp Chat',content_category:'simple_designer_page'});}">
+                                        onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{link_target:'simplified_designer_guidance',content_category:'simple_designer_page'});}">
                                         Contact Us on WhatsApp
                                     </a>
                                 </div>
@@ -597,19 +597,25 @@
                 // Set the WhatsApp href with the phone number and message
                 whatsAppOrderButton.href = `https://wa.me/254783891005?text=${encodeURIComponent(orderMessage)}`;
             }
-            // Add GA4 conversion tracking for WhatsApp order button
-            document.getElementById('whatsapp-order-button').addEventListener('click', function (e) {
-                e.preventDefault();
-
-                // Meta Pixel: InitiateCheckout
+            // Add GA4 conversion tracking for WhatsApp order button.
+            // Let the anchor navigate natively (target="_blank", href already has
+            // ?text=) so WhatsApp opens inside the click gesture — a deferred
+            // window.open() here gets popup-blocked in Meta's in-app browser,
+            // which is exactly where our ad traffic lands. Tracking fires
+            // best-effort; we do NOT preventDefault or reopen the URL ourselves.
+            document.getElementById('whatsapp-order-button').addEventListener('click', function () {
+                // Meta Pixel: product order intent → Lead, with value so Meta can
+                // optimise for higher-value orders. Every "order/customise on
+                // WhatsApp" button fires exactly this event; the conversion always
+                // ends as a WhatsApp handoff, so there is no on-site checkout to
+                // model with InitiateCheckout — intent/quality lives in `value`.
                 if (typeof fbq === 'function') {
                     var price = parseFloat(document.getElementById('total-price').textContent.replace(/,/g, ''));
-                    fbq('track', 'InitiateCheckout', {
+                    fbq('track', 'Lead', {
                         content_name: 'Modular Shelving',
                         content_category: 'simple_designer',
                         value: price,
-                        currency: 'KES',
-                        num_items: 1
+                        currency: 'KES'
                     });
                 }
 
@@ -620,7 +626,7 @@
                     currency: 'KES'
                 });
 
-                return trackCheckoutConversion(this.href, {
+                trackCheckoutConversion('', {
                     'currency': 'KES',
                     'value': orderPrice,
                     'items': [

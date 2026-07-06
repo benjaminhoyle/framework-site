@@ -1,12 +1,43 @@
 // site.js
 
+// === WhatsApp deep links ===================================================
+// Single source of truth for our WhatsApp contact link. Every WhatsApp CTA MUST
+// open a chat with a message already typed in. An empty chat is where ad leads
+// leak away: the visitor taps the button, the pixel fires "Lead", WhatsApp opens
+// to a blank thread, and most people never bother writing anything — so the
+// message never actually reaches us and the "Website leads" count runs far ahead
+// of real inbound conversations. Build links with buildWhatsAppUrl(); the
+// load-time sweep (ensureWhatsAppMessages) is a safety net for injected/future
+// links, and scripts/test-whatsapp-links.js fails if a bare wa.me link slips in.
+window.WHATSAPP_PHONE = '254783891005';
+window.WHATSAPP_DEFAULT_MESSAGE = 'Hi Framework! I am interested in your shelving and would like some help.';
+
+window.buildWhatsAppUrl = function (message) {
+    var text = (message == null || message === '') ? window.WHATSAPP_DEFAULT_MESSAGE : message;
+    return 'https://wa.me/' + window.WHATSAPP_PHONE + '?text=' + encodeURIComponent(text);
+};
+
+// Guarantee no WhatsApp link ever opens a blank chat. Any anchor pointing at
+// wa.me / api.whatsapp.com without a ?text= gets its data-wa-message (or the
+// default) applied. Placeholder links (href="#") that other code fills on demand
+// — e.g. the shelving lightbox order buttons — don't match and are left alone.
+window.ensureWhatsAppMessages = function (root) {
+    var scope = root || document;
+    var links = scope.querySelectorAll('a[href*="wa.me/"], a[href*="api.whatsapp.com/send"]');
+    Array.prototype.forEach.call(links, function (link) {
+        var href = link.getAttribute('href') || '';
+        if (/[?&]text=/.test(href)) return; // already carries a message
+        link.setAttribute('href', window.buildWhatsAppUrl(link.getAttribute('data-wa-message')));
+    });
+};
+
 window.trackCheckoutConversion = function (url, eventParams = {}) {
     // First track the GA4 event (keep your existing GA4 tracking)
     gtag('event', 'begin_checkout', eventParams);
 
     // Add the Google Ads conversion tracking
     var callback = function () {
-        if (typeof url === 'string') {
+        if (typeof url === 'string' && url) {
             window.open(url, '_blank'); // Using window.open to open in new tab
         }
     };
@@ -26,9 +57,21 @@ window.trackContactConversion = function (url, eventParams = {}) {
     // First track the GA4 event (keep your existing GA4 tracking)
     gtag('event', 'contact_chat', eventParams);
 
+    // Meta pixel: a person opened a conversation with us. "Contact" = a generic
+    // chat/enquiry with no specific product attached (floating button, guidance
+    // buttons, header/footer WhatsApp links). Product order/customise actions
+    // fire "Lead" instead — keeping the two events distinct is what makes the
+    // campaign's lead optimisation and the conversions breakdown meaningful.
+    if (typeof fbq === 'function') {
+        fbq('track', 'Contact', {
+            content_name: eventParams.content_name || 'WhatsApp Chat',
+            content_category: eventParams.content_category || eventParams.link_target || 'contact'
+        });
+    }
+
     // Add the Google Ads conversion tracking
     var callback = function () {
-        if (typeof url === 'string') {
+        if (typeof url === 'string' && url) {
             window.open(url, '_blank'); // Using window.open to open in new tab
         }
     };
@@ -49,6 +92,7 @@ window.addEventListener('load', function () {
     loadHeaderAndFooter();
     setupMobileMenu();
     highlightActivePage();
+    ensureWhatsAppMessages(); // safety net: no WhatsApp CTA opens a blank chat
 });
 
 function loadHeaderAndFooter() {
@@ -79,7 +123,7 @@ function loadHeaderAndFooter() {
                     <li><a href="index.html">Home</a></li>
                     <li><a href="shelving.html">Shelving</a></li>
                     <li><a href="products-services.html">Products and Services</a></li>
-    <li><a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" onclick="return trackContactConversion(this.href, {link_target:'header_contact'});">Contact</a></li>            </ul>
+    <li><a href="${window.buildWhatsAppUrl()}" target="_blank" rel="noopener noreferrer" onclick="trackContactConversion('', {link_target:'header_contact'});">Contact</a></li>            </ul>
             </nav>
             <button id="mobile-menu-toggle" aria-label="Toggle mobile menu">
                 <span></span>
@@ -105,7 +149,7 @@ function loadHeaderAndFooter() {
             <div class="footer-info">
                 <p>© ${new Date().getFullYear()} Framework Designs Limited</p>
                 <p>Email: <a href="mailto:info@framework.co.ke" class="text-link">info@framework.co.ke</a></p>
-    <p>WhatsApp: <a href="https://wa.me/254783891005" target="_blank" rel="noopener noreferrer" class="text-link" onclick="return trackContactConversion(this.href, {link_target:'footer_whatsapp'});">+254 783 891 005</a></p>            <p>Instagram: <a href="https://www.instagram.com/framework_nairobi/" target="_blank" rel="noopener noreferrer" class="text-link">framework_nairobi</a></p>
+    <p>WhatsApp: <a href="${window.buildWhatsAppUrl()}" target="_blank" rel="noopener noreferrer" class="text-link" onclick="trackContactConversion('', {link_target:'footer_whatsapp'});">+254 783 891 005</a></p>            <p>Instagram: <a href="https://www.instagram.com/framework_nairobi/" target="_blank" rel="noopener noreferrer" class="text-link">framework_nairobi</a></p>
             </div>
             <div class="footer-keywords">
                 <p class="footer-tags">Custom Steel Shelving | Modular Furniture Kenya | Space-Saving Solutions | Kenyan-Made Furniture</p>
