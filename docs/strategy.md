@@ -309,12 +309,12 @@ point to a product in the live catalog.** These become the WS2 config-lint check
 
 ### Dashboard (WS3) — the monitoring instrument
 Rule: Meta's UI answers "how do ads perform in Meta's world" (never rebuild that); ours answers
-what Meta can't — the funnel across the WhatsApp cut + spend denominator + experiment outcomes.
-Three views: (1) **monthly cohort stacked funnel bar** (spend→C1→…→C7+revenue, filterable to an
-ad/campaign) — the goal-monitoring chart, redesign-proof by construction; (2) per-ad economics
-table (reallocation view; also pushed into `Marketing - Ads`); (3) experiment timeline. Auth =
-Netlify-function gate + secret key in a bookmarkable URL. Hypothesis ledger = tiny `Marketing -
-Experiments` table (low priority, "worth a try").
+what Meta can't — the funnel across the WhatsApp cut + spend denominator. Two views: (1)
+**monthly cohort stacked funnel bar** (spend→C1→…→C7+revenue, filterable to an ad/campaign) —
+the goal-monitoring chart, redesign-proof by construction; (2) per-ad economics table
+(reallocation view; also pushed into `Marketing - Ads`). Auth = Netlify-function gate + secret
+key in a bookmarkable URL. **Hypothesis ledger — considered, dropped (2026-07-16):** not worth
+the added surface right now.
 
 ### Event lake / stores 🔵
 `/api/track` Netlify Function → **Netlify Blobs** (events + `code → payload`); scheduled CSV export.
@@ -351,7 +351,10 @@ Node CommonJS tests run directly (`node scripts/test-*.js`); assert + success li
   + Page assigned). Adopted: config-lint (WS2), "catalog-anchored ads only" convention, the
   weekly AI-pasteable brief, dashboard 3-view design + signed-URL auth, ad-creation automation as
   parked-but-designed WS4 (born-correct/PAUSED-only). **Split docs: strategy.md (why) +
-  build-spec.md (work order).** Ready for a fresh builder session.
+  build-spec.md (work order).**
+- 2026-07-16 — **Approved & sealed for handoff:** WS1 + WS2 Airtable field additions approved
+  (build directly, no further confirmation needed); hypothesis ledger dropped from WS3 (two
+  views only). Ben hands off to a fresh builder session from here.
 
 ### Remaining open questions
 1. Exact Airtable field additions + which existing fields reconciliation writes (post schema-review).

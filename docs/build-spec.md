@@ -84,7 +84,7 @@ conversation. Starts real data flowing immediately (the dashboard needs weeks of
   `Site Journey` summary (products viewed, handoff_depth).
 - Surface the scraper's `_AT` gap report + a reconciliation summary into the weekly brief.
 
-**Airtable additions (WS1)** — confirm with Ben before creating (writes to production ERP):
+**Airtable additions (WS1)** — ✅ approved by Ben (2026-07-16), build these directly:
 `Orders - Messages`: `Ref Code` (text), `Match Method` (select: exact/product_time/template/
 manual/none), `Match Confidence` (select: high/med/low), `Manual Match` (text override),
 `Site Journey` (long text, optional).
@@ -128,8 +128,9 @@ emit the AI-pasteable weekly brief. Uses the **read** token.
 - Plus: reconciliation summary + `_AT` gap. Designed to paste a card into an AI for "make a
   better variant."
 
-**Airtable additions (WS2):** `Meta - Campaigns`, `Meta - Ad Sets` tables; `Marketing - Ads`
-stat/creative/`Config Flags` fields (only those without an existing home). Confirm with Ben.
+**Airtable additions (WS2)** — ✅ approved by Ben (2026-07-16), build these directly:
+`Meta - Campaigns`, `Meta - Ad Sets` tables; `Marketing - Ads` stat/creative/`Config Flags`
+fields (only those without an existing home).
 
 **Acceptance tests:** brief generates; `Marketing - Ads` shows current spend from Meta; a known
 misconfig (e.g., an ad with no `url_tags`) is flagged; re-running is idempotent (no dupes).
@@ -141,17 +142,13 @@ misconfig (e.g., an ad with no `url_tags`) is flagged; re-running is idempotent 
 (collector aggregates + Airtable outcomes + Meta spend). **Auth:** a Netlify-function gate with a
 secret key in a bookmarkable URL (option (a)); never open on the public domain.
 
-**Three views, nothing more:**
+**Two views, nothing more** (hypothesis ledger considered and dropped 2026-07-16 — not worth
+the surface right now):
 1. **Monthly cohort stacked funnel bar** (x = month-of-click; segments = C1 arrive → C2 product
    view → C3 engage → C4 handoff → C5 conversation → C6 quote → C7 sale + revenue). Filterable to
    a single ad/campaign. + cost-per-stage using Meta spend.
 2. **Per-ad economics table** (current period): spend, funnel counts, conversations, convo-depth,
    cost per outcome, flags — the weekly reallocation view. (Also pushed into `Marketing - Ads`.)
-3. **Experiment timeline** (from the ledger, if used) — dated markers over view 1.
-
-**Hypothesis ledger (low priority, "worth a try"):** tiny Airtable table `Marketing -
-Experiments` (Date, Hypothesis, Change, Metric to watch, Review date, Verdict, optional Ad/Campaign
-link). Dashboard overlays markers. Build last; droppable.
 
 **Acceptance tests:** stacked bar renders real ≥1-month funnel; filter-by-ad works; unauthenticated
 request is blocked; per-ad table matches Meta spend + our funnel counts.
