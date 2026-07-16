@@ -67,10 +67,18 @@ assert.strictEqual(arriveBeacon.session_id, sid);
 assert.strictEqual(arriveBeacon.ad.utm_content, "AdX", "first-touch ad params captured from URL");
 assert.strictEqual(arriveBeacon.ad.ad_id, "12345");
 
-// 3. product_view + engage threshold (4 distinct products).
-for (const id of ["a", "b", "c"]) fwk.productView(id, "grid");
-assert(!beacons.map((b) => JSON.parse(b.blob.text)).some((p) => p.event === "engage"), "engage must not fire before 4 products");
-fwk.productView("d", "grid");
+// 3. deep-link landing (?config=lantern-shelf) emits a C2 product_view on init,
+//    independent of shelving.html's parse-time auto-open (regression guard).
+const deeplinkPv = beacons.map((b) => JSON.parse(b.blob.text))
+  .find((p) => p.event === "product_view" && p.dims.product_id === "lantern-shelf");
+assert(deeplinkPv, "deep-link landing must emit product_view for the config id");
+assert.strictEqual(deeplinkPv.dims.view_source, "deeplink");
+
+// 4. product_view + engage threshold (4 distinct products). lantern-shelf is
+//    already counted from the deep-link above, so a+b+c reaches the 4th.
+for (const id of ["a", "b"]) fwk.productView(id, "grid");
+assert(!beacons.map((b) => JSON.parse(b.blob.text)).some((p) => p.event === "engage"), "engage must not fire before 4 distinct products");
+fwk.productView("c", "grid");
 const engageBeacon = beacons.map((b) => JSON.parse(b.blob.text)).find((p) => p.event === "engage");
 assert(engageBeacon, "engage must fire on the 4th distinct product");
 assert.strictEqual(engageBeacon.dims.engaged_via, "multi_product");

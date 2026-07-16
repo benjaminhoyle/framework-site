@@ -392,8 +392,10 @@ function highlightActivePage() {
     // pre-fill carries a framework config URL, append to that URL; otherwise add a
     // trailing "r=CODE" token so exact matching still works for generic chats.
     function injectRef(text, code) {
-        if (/framework\.co\.ke\/[^\s]*\?config=/.test(text)) {
-            return text.replace(/(framework\.co\.ke\/[^\s]*\?config=[^\s]*)/, function (url) {
+        if (/framework\.co\.ke\/[^\s"'<]*\?config=/.test(text)) {
+            // Bound the URL token to non-space/quote chars so trailing prose can't
+            // be swallowed into the query string.
+            return text.replace(/(framework\.co\.ke\/[^\s"'<]*\?config=[^\s"'<]*)/, function (url) {
                 return /[?&]r=/.test(url) ? url : url + '&r=' + code;
             });
         }
@@ -405,11 +407,16 @@ function highlightActivePage() {
     function rebuildHref(href, newText) {
         var phone = window.WHATSAPP_PHONE || '254783891005';
         var enc = encodeURIComponent(newText);
+        var waUrl = 'https://wa.me/' + phone + '?text=' + enc;
         if (isAndroid()) {
+            // Skip the wa.me interstitial when WhatsApp is installed, but fall back
+            // to the plain wa.me link if the intent can't be handled (e.g. an
+            // in-app WebView that doesn't resolve intent://) — never a dead click.
             return 'intent://send/?phone=' + phone + '&text=' + enc +
-                '#Intent;scheme=whatsapp;package=com.whatsapp;end';
+                '#Intent;scheme=whatsapp;package=com.whatsapp;' +
+                'S.browser_fallback_url=' + encodeURIComponent(waUrl) + ';end';
         }
-        return 'https://wa.me/' + phone + '?text=' + enc;
+        return waUrl;
     }
 
     // Capture-phase, delegated: catches every WhatsApp CTA (including ones injected
@@ -465,6 +472,16 @@ function highlightActivePage() {
         // Capture phase so we run before the browser follows the link.
         document.addEventListener('click', onWhatsAppClick, true);
         arrive();
+        // C2 for an ad-landing deep-link. shelving.html's auto-open runs during
+        // parse — before this deferred script defines window.fwk — so we emit the
+        // deep-link product_view here where timing is guaranteed. Marked once per
+        // session so a later manual re-open of the same product doesn't double-fire.
+        var q = new URLSearchParams(window.location.search);
+        var landConfig = q.get('config');
+        if (landConfig && !ss('fwk_deeplink_pv')) {
+            ss('fwk_deeplink_pv', '1');
+            productView(landConfig, 'deeplink', { view_source_raw: 'url_parameter' });
+        }
         // C3: entering the designer counts as engagement.
         var page = (window.location.pathname.split('/').pop() || '');
         if (/^(simplified-)?designer\.html$/.test(page)) engage('designer');
