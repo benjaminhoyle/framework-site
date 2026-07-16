@@ -38,8 +38,13 @@
   status = 404
   force = true
 
+# --- WS1 event lake collector (Netlify Functions + Blobs) ---
+# track.js / export.js declare their own routes via `export const config.path`
+# (/api/track, /api/export), so no redirects are needed here.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # --- Later phases (DO NOT enable yet — no handlers exist) ---
-# [functions]
-#   directory = "netlify/functions"     # /api/track, short-code resolve, CAPI
 # /d/:code       → design short-code resolver (Phase 2)
 # /shelf/:slug   → catalog slug pages (Phase 2)

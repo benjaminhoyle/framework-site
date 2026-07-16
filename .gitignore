@@ -1,1 +1,4 @@
 images/designer/.DS_Store
+.DS_Store
+.claude/
+node_modules/

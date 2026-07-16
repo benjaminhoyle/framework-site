@@ -1,0 +1,12 @@
+{
+  "name": "framework-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Framework Designs static site + Netlify Functions (WS1 event lake collector).",
+  "scripts": {
+    "test": "node scripts/test-whatsapp-links.js && node scripts/test-track-emitter.js"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

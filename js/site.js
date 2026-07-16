@@ -123,7 +123,7 @@ function loadHeaderAndFooter() {
                     <li><a href="index.html">Home</a></li>
                     <li><a href="shelving.html">Shelving</a></li>
                     <li><a href="products-services.html">Products and Services</a></li>
-    <li><a href="${window.buildWhatsAppUrl()}" target="_blank" rel="noopener noreferrer" onclick="trackContactConversion('', {link_target:'header_contact'});">Contact</a></li>            </ul>
+    <li><a href="${window.buildWhatsAppUrl()}" target="_blank" rel="noopener noreferrer" data-fwk-handoff="header" onclick="trackContactConversion('', {link_target:'header_contact'});">Contact</a></li>            </ul>
             </nav>
             <button id="mobile-menu-toggle" aria-label="Toggle mobile menu">
                 <span></span>
@@ -149,7 +149,7 @@ function loadHeaderAndFooter() {
             <div class="footer-info">
                 <p>© ${new Date().getFullYear()} Framework Designs Limited</p>
                 <p>Email: <a href="mailto:info@framework.co.ke" class="text-link">info@framework.co.ke</a></p>
-    <p>WhatsApp: <a href="${window.buildWhatsAppUrl()}" target="_blank" rel="noopener noreferrer" class="text-link" onclick="trackContactConversion('', {link_target:'footer_whatsapp'});">+254 783 891 005</a></p>            <p>Instagram: <a href="https://www.instagram.com/framework_nairobi/" target="_blank" rel="noopener noreferrer" class="text-link">framework_nairobi</a></p>
+    <p>WhatsApp: <a href="${window.buildWhatsAppUrl()}" target="_blank" rel="noopener noreferrer" class="text-link" data-fwk-handoff="footer" onclick="trackContactConversion('', {link_target:'footer_whatsapp'});">+254 783 891 005</a></p>            <p>Instagram: <a href="https://www.instagram.com/framework_nairobi/" target="_blank" rel="noopener noreferrer" class="text-link">framework_nairobi</a></p>
             </div>
             <div class="footer-keywords">
                 <p class="footer-tags">Custom Steel Shelving | Modular Furniture Kenya | Space-Saving Solutions | Kenyan-Made Furniture</p>
@@ -216,3 +216,263 @@ function highlightActivePage() {
         }
     });
 }
+
+// === WS1 funnel emitter =====================================================
+// Instruments the on-site funnel (ad -> site -> WhatsApp) as stable customer
+// milestones (checkpoints), never page mechanics. Events fire fire-and-forget
+// via navigator.sendBeacon('/api/track', ...) so they never block a click or a
+// paint. NO PII is ever emitted here — name/phone live only in Airtable. See
+// docs/strategy.md Part 2 (event schema) and docs/build-spec.md WS1.
+(function () {
+    'use strict';
+
+    var ENDPOINT = '/api/track';
+    var SS = window.sessionStorage;
+    // Crockford Base32, uppercase, no I/L/O/U — matches the short-code spec.
+    var CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+    function ss(key, val) {
+        try {
+            if (val === undefined) return SS.getItem(key);
+            SS.setItem(key, val);
+            return val;
+        } catch (e) { return null; } // private mode / storage disabled
+    }
+
+    // 6-char Crockford Base32 via crypto.getRandomValues (~1B combos).
+    function mintCode() {
+        var out = '';
+        try {
+            var buf = new Uint8Array(6);
+            (window.crypto || window.msCrypto).getRandomValues(buf);
+            for (var i = 0; i < 6; i++) out += CROCKFORD[buf[i] % 32];
+        } catch (e) {
+            for (var j = 0; j < 6; j++) out += CROCKFORD[Math.floor(Math.random() * 32)];
+        }
+        return out;
+    }
+
+    function sessionId() {
+        var id = ss('fwk_sid');
+        if (!id) { id = mintCode() + mintCode(); ss('fwk_sid', id); }
+        return id;
+    }
+
+    function detectDevice() {
+        return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+    }
+
+    function detectInApp() {
+        var ua = navigator.userAgent || '';
+        if (/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)) return 'fb';
+        if (/Instagram/i.test(ua)) return 'ig';
+        return 'none';
+    }
+
+    function isAndroid() { return /Android/i.test(navigator.userAgent || ''); }
+
+    // First-touch ad params, captured once per session from the landing URL.
+    function firstTouch() {
+        var cached = ss('fwk_first');
+        if (cached) { try { return JSON.parse(cached); } catch (e) {} }
+        var q = new URLSearchParams(window.location.search);
+        var page = (window.location.pathname.split('/').pop() || 'index.html');
+        var entry_type = q.get('config') ? 'product_deeplink'
+            : (page === 'shelving.html' ? 'catalog'
+                : ((page === 'index.html' || page === '') ? 'home' : 'other'));
+        var ft = {
+            utm_source: q.get('utm_source') || null,
+            utm_campaign: q.get('utm_campaign') || null,
+            utm_content: q.get('utm_content') || null,
+            utm_term: q.get('utm_term') || null,
+            ad_id: q.get('ad_id') || null,
+            fbclid: q.get('fbclid') || null,
+            device: detectDevice(),
+            in_app_browser: detectInApp(),
+            entry_type: entry_type
+        };
+        ss('fwk_first', JSON.stringify(ft));
+        return ft;
+    }
+
+    // Core emitter. Every event carries session_id + ts; the server enriches
+    // received_at / country / UA. Unknown/oversized payloads are dropped server-side.
+    function track(event, dims) {
+        var ft = firstTouch();
+        var payload = {
+            type: 'event',
+            event: event,
+            session_id: sessionId(),
+            ts: Date.now(),
+            // Session-level ad attributes ride only where the server needs them:
+            // included on every event so the lake can group by ad without a join.
+            ad: { utm_source: ft.utm_source, utm_campaign: ft.utm_campaign, utm_content: ft.utm_content, ad_id: ft.ad_id, fbclid: ft.fbclid },
+            device: ft.device,
+            in_app_browser: ft.in_app_browser,
+            dims: dims || {}
+        };
+        beacon(payload);
+    }
+
+    function beacon(payload) {
+        try {
+            var body = JSON.stringify(payload);
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(ENDPOINT, new Blob([body], { type: 'application/json' }));
+            } else {
+                fetch(ENDPOINT, { method: 'POST', body: body, headers: { 'Content-Type': 'application/json' }, keepalive: true }).catch(function () {});
+            }
+        } catch (e) { /* tracking must never break the page */ }
+    }
+
+    // --- Checkpoints ---------------------------------------------------------
+
+    // C1 Arrived — once per session.
+    function arrive() {
+        if (ss('fwk_arrived')) return;
+        ss('fwk_arrived', '1');
+        var ft = firstTouch();
+        track('arrive', { entry_type: ft.entry_type });
+    }
+
+    // C3 Engaged — once, when 4+ distinct products viewed OR designer entered.
+    function engage(via) {
+        if (ss('fwk_engaged')) return;
+        ss('fwk_engaged', '1');
+        var count = productsViewed().length;
+        track('engage', { engaged_via: via, products_viewed_count: count });
+    }
+
+    function productsViewed() {
+        try { return JSON.parse(ss('fwk_products') || '[]'); } catch (e) { return []; }
+    }
+
+    // C2 Saw a product. Records the id for the engage threshold and emits the event.
+    function productView(product_id, view_source, extra) {
+        var seen = productsViewed();
+        if (product_id && seen.indexOf(product_id) < 0) {
+            seen.push(product_id);
+            ss('fwk_products', JSON.stringify(seen));
+        }
+        var dims = { product_id: product_id || null, view_source: view_source || 'unknown' };
+        if (extra) for (var k in extra) dims[k] = extra[k];
+        track('product_view', dims);
+        if (seen.length >= 4) engage('multi_product');
+    }
+
+    // --- WhatsApp handoff + short code (C4) -----------------------------------
+
+    function isWhatsAppHref(href) {
+        return /wa\.me\/|api\.whatsapp\.com\/send|whatsapp:\/\/send/i.test(href || '');
+    }
+
+    // handoff_source: explicit data-fwk-handoff wins; else infer from id/context.
+    function handoffSource(a) {
+        var explicit = a.getAttribute('data-fwk-handoff');
+        if (explicit) return explicit;
+        var id = a.id || '';
+        if (id === 'lb-order') return 'lightbox_order';
+        if (id === 'lb-customize') return 'lightbox_customize';
+        return 'other';
+    }
+
+    function currentDepth() {
+        if (ss('fwk_engaged')) return 'engaged';
+        if (productsViewed().length > 0) return 'product_viewed';
+        return 'arrived';
+    }
+
+    // Pull a product id out of a framework config deep-link inside the message.
+    function productFromText(text) {
+        var m = /[?&]config=([^&\s]+)/.exec(text || '');
+        return m ? decodeURIComponent(m[1]) : null;
+    }
+
+    // Inject &r=CODE so the code rides into WhatsApp's First Message Body. If the
+    // pre-fill carries a framework config URL, append to that URL; otherwise add a
+    // trailing "r=CODE" token so exact matching still works for generic chats.
+    function injectRef(text, code) {
+        if (/framework\.co\.ke\/[^\s]*\?config=/.test(text)) {
+            return text.replace(/(framework\.co\.ke\/[^\s]*\?config=[^\s]*)/, function (url) {
+                return /[?&]r=/.test(url) ? url : url + '&r=' + code;
+            });
+        }
+        return text + '\n\nr=' + code;
+    }
+
+    // Build the outgoing WhatsApp href with the ref injected. On Android in-app
+    // browsers, use an intent:// deep link to skip the wa.me interstitial.
+    function rebuildHref(href, newText) {
+        var phone = window.WHATSAPP_PHONE || '254783891005';
+        var enc = encodeURIComponent(newText);
+        if (isAndroid()) {
+            return 'intent://send/?phone=' + phone + '&text=' + enc +
+                '#Intent;scheme=whatsapp;package=com.whatsapp;end';
+        }
+        return 'https://wa.me/' + phone + '?text=' + enc;
+    }
+
+    // Capture-phase, delegated: catches every WhatsApp CTA (including ones injected
+    // later) before navigation, so we can mint the code, rewrite the href and beacon.
+    function onWhatsAppClick(e) {
+        var a = e.target && e.target.closest ? e.target.closest('a') : null;
+        if (!a) return;
+        var href = a.getAttribute('href') || '';
+        if (!isWhatsAppHref(href)) return;
+
+        var textMatch = /[?&]text=([^&]*)/.exec(href);
+        var msg = textMatch ? decodeURIComponent(textMatch[1].replace(/\+/g, ' ')) : (window.WHATSAPP_DEFAULT_MESSAGE || '');
+
+        var code = mintCode();
+        var product_id = a.getAttribute('data-clarity-config-id') || productFromText(msg);
+        var source = handoffSource(a);
+
+        // Rewrite the link in place so the ref goes out with this very click.
+        try { a.setAttribute('href', rebuildHref(href, injectRef(msg, code))); } catch (err) {}
+
+        // Beacon the handoff event...
+        track('wa_handoff', {
+            handoff_source: source,
+            handoff_depth: currentDepth(),
+            product_id: product_id || null,
+            has_config: !!product_id,
+            short_code: code
+        });
+        // ...and the code -> payload record (resolves to session/product/ad).
+        var ft = firstTouch();
+        beacon({
+            type: 'code',
+            code: code,
+            session_id: sessionId(),
+            product_id: product_id || null,
+            handoff_source: source,
+            ad: { utm_source: ft.utm_source, utm_campaign: ft.utm_campaign, utm_content: ft.utm_content, ad_id: ft.ad_id, fbclid: ft.fbclid },
+            ts: Date.now()
+        });
+    }
+
+    // --- Public surface + init ----------------------------------------------
+
+    window.fwk = {
+        track: track,
+        productView: productView,
+        engage: engage,
+        mintCode: mintCode,
+        sessionId: sessionId
+    };
+
+    function init() {
+        // Capture phase so we run before the browser follows the link.
+        document.addEventListener('click', onWhatsAppClick, true);
+        arrive();
+        // C3: entering the designer counts as engagement.
+        var page = (window.location.pathname.split('/').pop() || '');
+        if (/^(simplified-)?designer\.html$/.test(page)) engage('designer');
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
