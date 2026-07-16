@@ -45,36 +45,52 @@ Open the temporary `https://<yoursite>.netlify.app` and check:
 
 If all good, proceed. If not, fix in repo and redeploy — still no visitor impact.
 
-### 4. Add the custom domain in Netlify
-Netlify → Site → **Domain management → Add a domain** → `framework.co.ke`.
-- Set **`www.framework.co.ke` as the primary domain** (matches today's canonical —
-  the apex currently 301-redirects to www).
-- Netlify will auto-redirect the apex → www.
-- Netlify shows the DNS target(s) it wants (a `*.netlify.app` CNAME for www, and an
-  apex A/ALIAS or Netlify load-balancer IP). Note them for step 5.
+### 4. Add the custom domains in Netlify  (site = `framework-nairobi`)
+Netlify → site **framework-nairobi** → **Domain management → Domains → Add a domain**.
+- Add **`www.framework.co.ke`**. When asked about DNS, choose **external DNS** — do NOT
+  switch nameservers to Netlify (DNS stays at Cloudflare).
+- Add **`framework.co.ke`** (apex) as well.
+- On `www.framework.co.ke` → **⋯ → Set as primary domain**. Netlify then auto-redirects
+  the apex → www (matching today's canonical).
+- DNS target Netlify wants: **`framework-nairobi.netlify.app`**.
 
-### 5. DNS cutover at Cloudflare — the careful part (this is what fixes the TLS mess)
+### 5. DNS cutover at Cloudflare — the careful part (this fixes the TLS mess)
 The old cert got stuck because Cloudflare's proxy (orange cloud) blocked Let's Encrypt
-validation. So we provision the cert with the proxy **off**, then optionally turn it
-back on.
+validation. So we point at Netlify with the proxy **off (grey cloud)**, provision the
+cert, then optionally turn the proxy back on.
 
-In Cloudflare → DNS, replace the GitHub Pages records with Netlify's:
-- `www` → **CNAME** → `<yoursite>.netlify.app` — set to **DNS only (grey cloud)**.
-- `framework.co.ke` (apex) → **CNAME** → `<yoursite>.netlify.app` (Cloudflare flattens
-  the apex automatically) **or** the apex IP Netlify gave you — **DNS only (grey cloud)**.
-- Remove the old GitHub Pages A/AAAA/CNAME records.
+Cloudflare → your domain → **DNS → Records**. Today both records are **proxied A records**
+(apex: `104.21.31.123`, `172.67.176.130` + AAAA; `www`: same). Replace them:
 
-Then Netlify → Domain management → **HTTPS → Verify DNS / Provision certificate**.
-With grey cloud, validation succeeds and the Let's Encrypt cert issues in minutes.
+**apex (`framework.co.ke`):**
+- Delete the apex **A** records (`104.21.31.123`, `172.67.176.130`) and any **AAAA**.
+- Add: **CNAME**, Name `@`, Target `framework-nairobi.netlify.app`,
+  **Proxy status: DNS only (grey cloud)**. (Cloudflare flattens the apex CNAME.)
+
+**www:**
+- Delete the `www` **A/AAAA** records.
+- Add: **CNAME**, Name `www`, Target `framework-nairobi.netlify.app`,
+  **Proxy status: DNS only (grey cloud)**.
+
+(Grey cloud = click the orange cloud icon so it turns grey. Cloudflare DNS is
+near-instant, so this propagates — and rolls back — fast.)
+
+Then Netlify → Domain management → **HTTPS → Verify DNS configuration → Provision
+certificate**. Grey cloud lets validation succeed; the cert (covering apex + www)
+issues in a few minutes. Then enable **Force HTTPS**.
 - [ ] `https://www.framework.co.ke` serves the Netlify site with a valid cert
 - [ ] `https://framework.co.ke` redirects to www
+
+**Rollback (any time):** re-add the old proxied A records above (or just re-point at the
+GitHub Pages setup). GH Pages is untouched, so DNS revert restores instantly.
 
 ### 6. (Optional) Re-enable Cloudflare proxy
 Only **after** the cert is issued. If you re-enable the orange cloud, set Cloudflare
 **SSL/TLS → Overview → Full (strict)** (both ends now have valid certs, so no loop).
-- **Recommendation:** if you don't specifically need Cloudflare's proxy features (WAF,
-  caching, proxy-based Web Analytics), **leave it grey** — Netlify has its own CDN, and
-  grey cloud avoids future cert headaches. See "Decisions" below.
+- **Recommendation:** leave it **grey** unless you specifically need Cloudflare's proxy
+  features (WAF, caching, proxy-based Web Analytics). Netlify has its own CDN, and grey
+  avoids future cert headaches. Note: grey cloud disables Cloudflare page/redirect rules,
+  but Netlify already handles the apex→www redirect, so that's fine.
 
 ### 7. Full verification on the live domain
 - [ ] All key pages load over HTTPS; HTTPS enforced (http → https)
