@@ -93,9 +93,40 @@
 
       html += '<h2>Monthly cohort funnel</h2>' + funnelPanel(d.cohorts);
       html += '<h2>Per-ad economics <span class="sub">(the weekly reallocation view)</span></h2>' + tablePanel(d.perAd);
+      html += referencePanel(d.reference);
       html += refreshPanel(days);
       show(html);
       wireSort(d.perAd);
+      window.__ref = d.reference; updateDeep();
+    }
+
+    function copyRow(text, id) {
+      return '<div style="display:flex;gap:8px;align-items:stretch;margin-top:6px">' +
+        '<textarea id="cp_' + id + '" readonly rows="2" style="flex:1;min-width:0;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;resize:none">' + esc(text) + '</textarea>' +
+        '<button onclick="copyBox(\'' + id + '\',this)" style="background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:0 14px;cursor:pointer">Copy</button></div>';
+    }
+    function copyBox(id, btn) {
+      var el = document.getElementById('cp_' + id); el.select();
+      try { navigator.clipboard.writeText(el.value); } catch (e) { document.execCommand('copy'); }
+      if (btn) { var o = btn.textContent; btn.textContent = 'Copied ✓'; setTimeout(function () { btn.textContent = o; }, 1200); }
+    }
+    function updateDeep() {
+      var ref = window.__ref; var sel = document.getElementById('cfgpick'); var box = document.getElementById('cp_deeplink');
+      if (!ref || !sel || !box) return;
+      box.value = ref.deeplinkBase + sel.value;
+    }
+    function referencePanel(ref) {
+      if (!ref) return '';
+      var opts = (ref.catalogIds || []).map(function (id) { return '<option value="' + esc(id) + '">' + esc(id) + '</option>'; }).join('');
+      return '<h2>Making a new ad? Setup reference</h2>' +
+        '<div class="panel" style="line-height:1.8;max-width:860px">' +
+        '<p><b>1 · URL parameters</b> — paste into the ad’s “URL parameters” field. This stamps the ad’s identity into the link so conversations trace back to it. Same string for every ad (Meta fills the {{…}} tokens):</p>' +
+        copyRow(ref.urlTags, 'urltags') +
+        '<p style="margin-top:18px"><b>2 · Destination link</b> — point the ad at a specific product, not the bare catalog. Pick the product and copy its link:</p>' +
+        '<div style="margin:6px 0"><select id="cfgpick" onchange="updateDeep()">' + opts + '</select></div>' +
+        copyRow('', 'deeplink') +
+        '<p style="color:var(--dim);margin-top:14px">url_tags = <b>which ad</b> · deep-link = <b>which product</b>. Put both on every new ad, and keep ad names consistent (the tags include the ad name).</p>' +
+        '</div>';
     }
 
     function stat(n, l) { return '<div class="stat"><div class="n">' + esc(n) + '</div><div class="l">' + esc(l) + '</div></div>'; }
