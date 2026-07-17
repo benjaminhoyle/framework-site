@@ -34,14 +34,25 @@ export default async (req) => {
 
   const events = getStore('events');
   const codes = getStore('codes');
+  const wantAll = url.searchParams.get('events') === 'all'; // for the WS3 dashboard aggregation
 
-  // wa_handoff events, day by day (event type is in the key path).
+  // wa_handoff events, day by day (event type is in the key path). With
+  // events=all, also collect every checkpoint event (arrive/product_view/engage)
+  // so the dashboard can build the C1–C4 cohort funnel.
   const handoffs = [];
+  const allEvents = [];
   for (const day of dayRange(since, until)) {
     const { blobs } = await events.list({ prefix: `${day}/wa_handoff/` });
     for (const b of blobs) {
       const rec = await events.get(b.key, { type: 'json' });
       if (rec) handoffs.push(rec);
+    }
+    if (wantAll) {
+      const { blobs: dayBlobs } = await events.list({ prefix: `${day}/` });
+      for (const b of dayBlobs) {
+        const rec = await events.get(b.key, { type: 'json' });
+        if (rec) allEvents.push(rec);
+      }
     }
   }
 
@@ -55,7 +66,9 @@ export default async (req) => {
     if (d >= since && d <= until) codePayloads.push(rec);
   }
 
-  return new Response(JSON.stringify({ ok: true, since, until, handoffs, codes: codePayloads }), {
+  const payload = { ok: true, since, until, handoffs, codes: codePayloads };
+  if (wantAll) payload.events = allEvents;
+  return new Response(JSON.stringify(payload), {
     status: 200,
     headers: { 'content-type': 'application/json' }
   });
