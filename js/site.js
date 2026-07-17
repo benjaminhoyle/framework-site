@@ -269,8 +269,6 @@ function highlightActivePage() {
         return 'none';
     }
 
-    function isAndroid() { return /Android/i.test(navigator.userAgent || ''); }
-
     // First-touch ad params, captured once per session from the landing URL.
     function firstTouch() {
         var cached = ss('fwk_first');
@@ -402,21 +400,17 @@ function highlightActivePage() {
         return text + '\n\nr=' + code;
     }
 
-    // Build the outgoing WhatsApp href with the ref injected. On Android in-app
-    // browsers, use an intent:// deep link to skip the wa.me interstitial.
+    // Build the outgoing WhatsApp href with the ref injected.
     function rebuildHref(href, newText) {
         var phone = window.WHATSAPP_PHONE || '254783891005';
         var enc = encodeURIComponent(newText);
-        var waUrl = 'https://wa.me/' + phone + '?text=' + enc;
-        if (isAndroid()) {
-            // Skip the wa.me interstitial when WhatsApp is installed, but fall back
-            // to the plain wa.me link if the intent can't be handled (e.g. an
-            // in-app WebView that doesn't resolve intent://) — never a dead click.
-            return 'intent://send/?phone=' + phone + '&text=' + enc +
-                '#Intent;scheme=whatsapp;package=com.whatsapp;' +
-                'S.browser_fallback_url=' + encodeURIComponent(waUrl) + ';end';
-        }
-        return waUrl;
+        // Plain wa.me on every platform — identical to the shipped behavior, just
+        // with the &r=CODE ref now inside the pre-fill. The Android intent:// deep
+        // link (to skip the wa.me interstitial) is DEFERRED until it's tested on a
+        // real budget phone in the FB in-app WebView (our primary environment):
+        //   'intent://send/?phone='+phone+'&text='+enc+'#Intent;scheme=whatsapp;'+
+        //   'package=com.whatsapp;S.browser_fallback_url='+encodeURIComponent(waUrl)+';end'
+        return 'https://wa.me/' + phone + '?text=' + enc;
     }
 
     // Capture-phase, delegated: catches every WhatsApp CTA (including ones injected
