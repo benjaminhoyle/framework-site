@@ -1,0 +1,383 @@
+{
+  "schema": "framework-catalog@1",
+  "updatedAt": "2026-07-17T20:31:12.564Z",
+  "products": [
+    {
+      "id": "starter",
+      "title": "The Starter",
+      "price": "Ksh 6,500",
+      "priceValue": 6500,
+      "description": "A low, two-tier unit that works perfectly as a media console, entryway organizer, or low display. Built in our Nairobi workshop from steel and engineered wood, it offers a sturdy foundation you can always expand later.",
+      "designerUrl": "designer.html#(%7Bstandard-base-NE%7D);THEME_1",
+      "image": "images/shelving/configs/starter-populated.jpg",
+      "images": [
+        "images/shelving/configs/starter-populated.jpg",
+        "images/shelving/configs/starter-emptied.jpg",
+        "images/shelving/configs/starter-front.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "end-table",
+      "title": "The End Table",
+      "price": "Ksh 9,500",
+      "priceValue": 9500,
+      "description": "A versatile two-tier unit that works perfectly as a side table, bedside shelf, or entryway organizer. Keep your books, crafts, and daily essentials within easy reach.",
+      "designerUrl": "designer.html#(%7Bcompact-base-NE%7D);THEME_3",
+      "image": "images/shelving/configs/end-table-populated.jpg",
+      "images": [
+        "images/shelving/configs/end-table-populated.jpg",
+        "images/shelving/configs/end-table-emptied.jpg",
+        "images/shelving/configs/end-table-front.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "low-console",
+      "title": "The Low Console",
+      "price": "Ksh 12,000",
+      "priceValue": 12000,
+      "description": "A versatile three-tier unit designed to sit comfortably in entryways, living rooms, or under windows. Perfect for keeping books, art, and everyday essentials beautifully on display.",
+      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_3",
+      "image": "images/shelving/configs/low-console-populated.jpg",
+      "images": [
+        "images/shelving/configs/low-console-populated.jpg",
+        "images/shelving/configs/low-console-emptied.jpg",
+        "images/shelving/configs/low-console-front.jpg",
+        "images/shelving/configs/low-console-under-mdf.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "triple",
+      "title": "The Triple",
+      "price": "Ksh 12,000",
+      "priceValue": 12000,
+      "description": "A versatile three-tier configuration in an earthy sage green. It makes a perfect low sideboard or hallway console for organizing books, baskets, and daily essentials.",
+      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2",
+      "image": "images/shelving/configs/triple-populated.jpg",
+      "images": [
+        "images/shelving/configs/triple-populated.jpg",
+        "images/shelving/configs/triple-emptied.jpg",
+        "images/shelving/configs/triple-angle.jpg",
+        "images/shelving/configs/triple-mdf-edge.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "quadruple",
+      "title": "The Quadruple",
+      "price": "Ksh 17,500",
+      "priceValue": 17500,
+      "description": "A four-tier unit in a striking deep blue finish. Designed to showcase your collection of books, baskets, and handcrafted pieces beautifully.",
+      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1",
+      "image": "images/shelving/configs/quadruple-populated.jpg",
+      "images": [
+        "images/shelving/configs/quadruple-populated.jpg",
+        "images/shelving/configs/quadruple-emptied.jpg",
+        "images/shelving/configs/quadruple-angle.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "lighted-console",
+      "title": "The Lighted Console",
+      "price": "Ksh 19,500",
+      "priceValue": 19500,
+      "description": "A three-tier modular unit featuring an integrated overhead lamp. Bring warmth and organized storage to your favorite reading corner. Note: lamp shade not included.",
+      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782663675664%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782663680628%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-extension-NE%22%2C%22x%22%3A1047.95466%2C%22y%22%3A430.15294000000006%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782663687033%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22lamp-NE%22%2C%22x%22%3A1056.5887200000002%2C%22y%22%3A378.80572000000006%2C%22zIndex%22%3A3%7D%5D;THEME_1",
+      "image": "images/shelving/configs/lighted-console-populated.jpg",
+      "images": [
+        "images/shelving/configs/lighted-console-populated.jpg",
+        "images/shelving/configs/lighted-console-emptied.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "wide-four-tier",
+      "title": "The Wide Four-Tier",
+      "price": "Ksh 22,000",
+      "priceValue": 22000,
+      "description": "A spacious four-shelf unit finished in soft coral. Designed to give you plenty of horizontal room for organizing books, toys, and creative displays.",
+      "designerUrl": "designer.html#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-extension-NE%7DHWNE-FWNE%7Bwide-extension-NE%7D);THEME_4",
+      "image": "images/shelving/configs/wide-four-tier-populated.jpg",
+      "images": [
+        "images/shelving/configs/wide-four-tier-populated.jpg",
+        "images/shelving/configs/wide-four-tier-emptied.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "multicolor-stack",
+      "title": "The Multicolor Stack",
+      "price": "Ksh 23,000",
+      "priceValue": 23000,
+      "description": "A vibrant five-tier unit that brings a playful mix of color to your home. Perfect for showcasing books, art, and your favorite collections.",
+      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782673131930%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-base-NE%22%2C%22x%22%3A567.5%2C%22y%22%3A256.5%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782673133664%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A578.639%2C%22y%22%3A222.38529999999997%2C%22zIndex%22%3A2%2C%22customTheme%22%3A%22THEME_1%22%7D%2C%7B%22id%22%3A%221782673140688%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A578.6392%2C%22y%22%3A193.04997999999995%2C%22zIndex%22%3A3%2C%22customTheme%22%3A%22THEME_4%22%7D%2C%7B%22id%22%3A%221782673143608%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A578.8768799999999%2C%22y%22%3A167.22783999999996%2C%22zIndex%22%3A4%2C%22customTheme%22%3A%22THEME_3%22%7D%5D;THEME_2",
+      "image": "images/shelving/configs/multicolor-stack-populated.jpg",
+      "images": [
+        "images/shelving/configs/multicolor-stack-populated.jpg",
+        "images/shelving/configs/multicolor-stack-emptied.jpg",
+        "images/shelving/configs/multicolor-stack-under-mdf.jpg",
+        "images/shelving/configs/multicolor-stack-joint.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "lantern-shelf",
+      "title": "The Lantern Shelf",
+      "price": "Ksh 24,500",
+      "priceValue": 24500,
+      "description": "Combines spacious multi-tier storage with an integrated overhead lamp arm. Perfect for casting a warm, cozy glow over your favorite books and curated displays. Note: lamp shade not included.",
+      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782663675664%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782663680628%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-adapter-NE%22%2C%22x%22%3A1042.596292373114%2C%22y%22%3A426.4690622565158%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782663916086%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22slim-extension-NE%22%2C%22x%22%3A1018.184552373114%2C%22y%22%3A420.1884222565159%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221782663921565%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22lamp-NE%22%2C%22x%22%3A1056.4593523731141%2C%22y%22%3A379.0690622565158%2C%22zIndex%22%3A4%7D%5D;THEME_4",
+      "image": "images/shelving/configs/lantern-shelf-populated.jpg",
+      "images": [
+        "images/shelving/configs/lantern-shelf-populated.jpg",
+        "images/shelving/configs/lantern-shelf-emptied.jpg",
+        "images/shelving/configs/lantern-shelf-foot.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "two-tone-stack",
+      "title": "The Two-Tone Stack",
+      "price": "Ksh 28,500",
+      "priceValue": 28500,
+      "description": "A six-tier modular configuration in a vibrant navy and coral mix. Perfect for displaying books, baskets, and collected treasures while adding a bold pop of color to your space.",
+      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782661764710%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782661768336%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.639%2C%22y%22%3A431.8853%2C%22zIndex%22%3A2%2C%22customTheme%22%3A%22THEME_4%22%7D%2C%7B%22id%22%3A%221782661774056%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.6391999999998%2C%22y%22%3A402.54997999999995%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221782661776252%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.6393999999998%2C%22y%22%3A373.2146599999999%2C%22zIndex%22%3A4%2C%22customTheme%22%3A%22THEME_4%22%7D%2C%7B%22id%22%3A%221782661779409%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.6395999999997%2C%22y%22%3A343.8793399999999%2C%22zIndex%22%3A5%7D%5D;THEME_1",
+      "image": "images/shelving/configs/two-tone-stack-populated.jpg",
+      "images": [
+        "images/shelving/configs/two-tone-stack-populated.jpg",
+        "images/shelving/configs/two-tone-stack-emptied.jpg",
+        "images/shelving/configs/two-tone-stack-angle.jpg",
+        "images/shelving/configs/two-tone-stack-under-mdf.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "versatile-stack",
+      "title": "The Versatile Stack",
+      "price": "Ksh 28,500",
+      "priceValue": 28500,
+      "description": "A tall seven-tier unit in a calm sage green finish. Designed to offer maximum vertical storage for your books, baskets, and art while keeping a clean, slim footprint.",
+      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2",
+      "image": "images/shelving/configs/versatile-stack-populated.jpg",
+      "images": [
+        "images/shelving/configs/versatile-stack-populated.jpg",
+        "images/shelving/configs/versatile-stack-emptied.jpg",
+        "images/shelving/configs/versatile-stack-angle.jpg",
+        "images/shelving/configs/versatile-stack-under-mdf.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "stepped-stack",
+      "title": "The Stepped Stack",
+      "price": "Ksh 31,500",
+      "priceValue": 31500,
+      "description": "An asymmetric, stepped design that offers plenty of shelving at varying heights. Perfect for showcasing a mix of books, art, and larger collectibles.",
+      "designerUrl": "designer.html#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-adapter-SW%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2",
+      "image": "images/shelving/configs/stepped-stack-populated.jpg",
+      "images": [
+        "images/shelving/configs/stepped-stack-populated.jpg",
+        "images/shelving/configs/stepped-stack-emptied.jpg",
+        "images/shelving/configs/stepped-stack-angle.jpg",
+        "images/shelving/configs/stepped-stack-under-mdf.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "dynamic-corner",
+      "title": "Dynamic Corner",
+      "price": "Ksh 36,000",
+      "priceValue": 36000,
+      "description": "Turn that forgotten corner into the most interesting part of your space.",
+      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bcorner-base-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7D);THEME_1",
+      "image": "images/shelving/configs/dynamic-corner-populated.jpg",
+      "images": [
+        "images/shelving/configs/dynamic-corner-populated.jpg",
+        "images/shelving/configs/dynamic-corner-emptied.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "asymmetric-display",
+      "title": "The Curator's Shelf",
+      "price": "Ksh 36,500",
+      "priceValue": 36500,
+      "description": "Features asymmetrical shelf heights that create unique pockets for books, art, and hanging decorations. Built from steel and engineered wood in our Nairobi workshop.",
+      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221771565766838%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A567.5%2C%22y%22%3A256.5%2C%22zIndex%22%3A1%2C%22customTheme%22%3Anull%7D%2C%7B%22id%22%3A%221771565778488%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-adapter-NE%22%2C%22x%22%3A566.8348979766804%2C%22y%22%3A216.50469393004116%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221771565793486%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22slim-extension-NE%22%2C%22x%22%3A542.4231579766804%2C%22y%22%3A210.22405393004112%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221771565801397%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-booster-full-NW%22%2C%22x%22%3A624.1642013237312%2C%22y%22%3A163.07206116598078%2C%22zIndex%22%3A4%7D%2C%7B%22id%22%3A%221771565815796%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A600.5606213237312%2C%22y%22%3A147.03002116598077%2C%22zIndex%22%3A5%7D%2C%7B%22id%22%3A%221771565821775%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-booster-full-NW%22%2C%22x%22%3A527.9076641152263%2C%22y%22%3A188.7183874691358%2C%22zIndex%22%3A6%7D%2C%7B%22id%22%3A%221771565835168%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-extension-NE%22%2C%22x%22%3A572.2838213237311%2C%22y%22%3A132.56620116598077%2C%22zIndex%22%3A7%7D%5D;THEME_4",
+      "image": "images/shelving/configs/asymmetric-display-populated.jpg",
+      "images": [
+        "images/shelving/configs/asymmetric-display-populated.jpg",
+        "images/shelving/configs/asymmetric-display-emptied.jpg",
+        "images/shelving/configs/asymmetric-display-angle.jpg",
+        "images/shelving/configs/asymmetric-display-foot.jpg",
+        "images/shelving/configs/asymmetric-display-joint.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "offset-shelf",
+      "title": "The Offset Shelf",
+      "price": "Ksh 37,000",
+      "priceValue": 37000,
+      "description": "An asymmetrical, multi-level configuration that pairs a tall tower with a lower side unit. Perfect for displaying art, books, and plants at varying heights to create a dynamic focal point in your space.",
+      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782661506964%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782661519510%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-adapter-SW%22%2C%22x%22%3A1043.6813271604938%2C%22y%22%3A420.3672839506173%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782661540291%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.3133671604937%2C%22y%22%3A406.7274239506174%2C%22zIndex%22%3A3%2C%22customTheme%22%3A%22THEME_1%22%7D%2C%7B%22id%22%3A%221782661543465%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.3135671604937%2C%22y%22%3A377.39210395061735%2C%22zIndex%22%3A4%2C%22customTheme%22%3A%22THEME_1%22%7D%2C%7B%22id%22%3A%221782661546213%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.3137671604936%2C%22y%22%3A348.05678395061733%2C%22zIndex%22%3A5%7D%2C%7B%22id%22%3A%221782661548536%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.5516471604938%2C%22y%22%3A318.3090839506174%2C%22zIndex%22%3A6%7D%5D;THEME_4",
+      "image": "images/shelving/configs/offset-shelf-populated.jpg",
+      "images": [
+        "images/shelving/configs/offset-shelf-populated.jpg",
+        "images/shelving/configs/offset-shelf-emptied.jpg",
+        "images/shelving/configs/offset-shelf-angle.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "wardrobe-shelf",
+      "title": "The Wardrobe Shelf",
+      "price": "Ksh 43,000",
+      "priceValue": 43000,
+      "description": "Combines an integrated hanging rail with two spacious lower shelves for baskets, books, or folded clothes. Built from steel in our Nairobi workshop to keep your space organized and airy.",
+      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782658906240%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-base-NW%22%2C%22x%22%3A761.5%2C%22y%22%3A294.5%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782658913839%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-spacer-NW%22%2C%22x%22%3A764.9365354938271%2C%22y%22%3A258.75347222222223%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782658923753%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-spacer-NW%22%2C%22x%22%3A765.130615569273%2C%22y%22%3A229.14163237311385%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221782658940667%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22hanger-extension-NW%22%2C%22x%22%3A757.5802111911294%2C%22y%22%3A209.31163551668953%2C%22zIndex%22%3A4%7D%2C%7B%22id%22%3A%221782658953678%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-extension-NW%22%2C%22x%22%3A765.0535801040237%2C%22y%22%3A170.65280814186102%2C%22zIndex%22%3A5%7D%5D;THEME_2",
+      "image": "images/shelving/configs/wardrobe-shelf-populated.jpg",
+      "images": [
+        "images/shelving/configs/wardrobe-shelf-populated.jpg",
+        "images/shelving/configs/wardrobe-shelf-emptied.jpg",
+        "images/shelving/configs/wardrobe-shelf-front.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "deep-stack",
+      "title": "The Deep Stack",
+      "price": "Ksh 43,500",
+      "priceValue": 43500,
+      "description": "A tall, five-tier shelving unit finished in a calming sage green. Its deep profile makes it perfect for displaying books, baskets, and collectibles in smaller spaces.",
+      "designerUrl": "designer.html#(%7Bcompact-base-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7D);THEME_2",
+      "image": "images/shelving/configs/deep-stack-populated.jpg",
+      "images": [
+        "images/shelving/configs/deep-stack-populated.jpg",
+        "images/shelving/configs/deep-stack-emptied.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "double-bay",
+      "title": "The Double Bay",
+      "price": "Ksh 46,000",
+      "priceValue": 46000,
+      "description": "A spacious ten-shelf setup that offers plenty of room for your books, crafts, and collectibles. The double-width design makes a bold statement in any living room or creative studio.",
+      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1",
+      "image": "images/shelving/configs/double-bay-populated.jpg",
+      "images": [
+        "images/shelving/configs/double-bay-populated.jpg",
+        "images/shelving/configs/double-bay-emptied.jpg",
+        "images/shelving/configs/double-bay-angle.jpg",
+        "images/shelving/configs/double-bay-under-mdf.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "stepped-display",
+      "title": "The Stepped Display",
+      "price": "Ksh 46,000",
+      "priceValue": 46000,
+      "description": "Combines low-level shelving with a tall display stack in a striking asymmetric design. Perfect for showing off books, art, and your favorite collections.",
+      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1",
+      "image": "images/shelving/configs/stepped-display-populated.jpg",
+      "images": [
+        "images/shelving/configs/stepped-display-populated.jpg",
+        "images/shelving/configs/stepped-display-emptied.jpg",
+        "images/shelving/configs/stepped-display-angle.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "high-low",
+      "title": "The High-Low",
+      "price": "Ksh 51,000",
+      "priceValue": 51000,
+      "description": "Pairs a low-slung console with a tall shelving tower for a striking asymmetrical look. Perfect for displaying books, baskets, and art at different heights.",
+      "designerUrl": "designer.html#(%7Bdeep-base-NE%7D)NE-SW(%7Bcompact-base-NE%7DHCNE-FCNE%7Bcompact-spacer-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-spacer-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7D);THEME_2",
+      "image": "images/shelving/configs/high-low-populated.jpg",
+      "images": [
+        "images/shelving/configs/high-low-populated.jpg",
+        "images/shelving/configs/high-low-emptied.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "stepped-duo",
+      "title": "The Stepped Duo",
+      "price": "Ksh 53,000",
+      "priceValue": 53000,
+      "description": "Combines a low three-tier unit with an extra-tall stack for a playful, dynamic silhouette. Perfect for organizing colorful baskets, books, and your favorite art pieces.",
+      "designerUrl": "designer.html#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-spacer-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2",
+      "image": "images/shelving/configs/stepped-duo-populated.jpg",
+      "images": [
+        "images/shelving/configs/stepped-duo-populated.jpg",
+        "images/shelving/configs/stepped-duo-emptied.jpg",
+        "images/shelving/configs/stepped-duo-angle.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "triple-bay",
+      "title": "The Triple Bay",
+      "price": "Ksh 69,000",
+      "priceValue": 69000,
+      "description": "Three connected columns offer generous, easy-to-reach storage while keeping a low profile. Perfect for organizing books, baskets, and toys in any living space.",
+      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1",
+      "image": "images/shelving/configs/triple-bay-populated.jpg",
+      "images": [
+        "images/shelving/configs/triple-bay-populated.jpg",
+        "images/shelving/configs/triple-bay-emptied.jpg",
+        "images/shelving/configs/triple-bay-angle.jpg",
+        "images/shelving/configs/triple-bay-joint.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "grand-corner",
+      "title": "The Grand Corner",
+      "price": "Ksh 71,000",
+      "priceValue": 71000,
+      "description": "A generous seven-tier configuration designed to turn any corner into a beautiful focal point. Built in our Nairobi workshop to hold a massive collection of books and more.",
+      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bcorner-base-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7D);THEME_1",
+      "image": "images/shelving/configs/grand-corner-populated.jpg",
+      "images": [
+        "images/shelving/configs/grand-corner-populated.jpg",
+        "images/shelving/configs/grand-corner-emptied.jpg",
+        "images/shelving/configs/grand-corner-foot.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "bookend",
+      "title": "The Bookend",
+      "price": "Ksh 1,000",
+      "priceValue": 1000,
+      "description": "A neat clamp-on bookend for keeping rows of books upright and tidy on your Framework shelf. It can be attached to any of our shelf units except the trimmed configurations.",
+      "image": "images/shelving/configs/bookend.jpg",
+      "images": [
+        "images/shelving/configs/bookend.jpg"
+      ],
+      "active": true
+    },
+    {
+      "id": "terraced-console",
+      "title": "The Terraced Console",
+      "price": "Ksh 30,500",
+      "priceValue": 30500,
+      "description": "A low, staggered shelving unit featuring an integrated lamp stem to cast a warm glow over your books and decor. Perfect for creating a cozy, well-lit nook in living rooms or nurseries. (Lamp shade not included.",
+      "image": "images/shelving/configs/terraced-console-populated.jpg",
+      "images": [
+        "images/shelving/configs/terraced-console-populated.jpg",
+        "images/shelving/configs/terraced-console-emptied.jpg",
+        "images/shelving/configs/terraced-console-front.jpg"
+      ],
+      "designerUrl": "designer.html#",
+      "active": false
+    }
+  ]
+}
