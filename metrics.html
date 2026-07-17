@@ -74,7 +74,15 @@
     }
 
     function render(d) {
-      document.getElementById('sub').textContent = 'Generated ' + new Date(d.generatedAt).toLocaleString() + ' · ' + d.perAd.length + ' ads';
+      // Freshness indicator — how long since the last sync.
+      var gen = new Date(d.generatedAt);
+      var days = Math.floor((Date.now() - gen.getTime()) / 86400000);
+      var label = days <= 0 ? 'Synced today' : days === 1 ? 'Synced yesterday' : 'Synced ' + days + ' days ago';
+      var color = days <= 2 ? 'var(--accent)' : days <= 7 ? 'var(--warn)' : '#ef4444';
+      var nudge = days > 7 ? ' — time to refresh (see bottom of page)' : '';
+      document.getElementById('sub').innerHTML =
+        '<span style="color:' + color + ';font-weight:600">● ' + label + nudge + '</span>' +
+        ' · <span style="color:var(--dim)">' + gen.toLocaleString() + ' · ' + d.perAd.length + ' ads</span>';
       var t = d.totals || {};
       var html = '<div class="cards">' +
         stat(kes(t.spend30), 'Spend (30d)') +
@@ -85,11 +93,27 @@
 
       html += '<h2>Monthly cohort funnel</h2>' + funnelPanel(d.cohorts);
       html += '<h2>Per-ad economics <span class="sub">(the weekly reallocation view)</span></h2>' + tablePanel(d.perAd);
+      html += refreshPanel(days);
       show(html);
       wireSort(d.perAd);
     }
 
     function stat(n, l) { return '<div class="stat"><div class="n">' + esc(n) + '</div><div class="l">' + esc(l) + '</div></div>'; }
+
+    function refreshPanel(days) {
+      var warn = days > 7 ? '<p style="color:#f59e0b;font-weight:600">These numbers are ' + days + ' days old — refresh them before making budget decisions.</p>' : '';
+      return '<h2>Keeping this up to date</h2>' +
+        '<div class="panel" style="line-height:1.8;max-width:760px">' + warn +
+        '<p>This page is a snapshot. To pull the latest ad spend and conversations:</p>' +
+        '<ol>' +
+        '<li>On the Mac, open Finder → <b>code</b> → <b>framework</b> → <b>mbs-scraper</b>.</li>' +
+        '<li>Double-click <b>sync.command</b>. A window opens and runs for about 30 seconds.</li>' +
+        '<li>When it says <b>“Press Enter to close this window”</b>, press Enter.</li>' +
+        '<li>Come back here and reload the page (<b>Cmd&nbsp;+&nbsp;R</b>). The badge up top should read <b>“Synced today”</b>.</li>' +
+        '</ol>' +
+        '<p style="color:var(--dim)">No login or typing needed — just the double-click. Do this about once a week, or any time you want fresh numbers before reallocating budget.</p>' +
+        '</div>';
+    }
 
     function funnelPanel(cohorts) {
       if (!cohorts || !cohorts.length) return '<div class="panel"><div class="msg">No funnel data yet — it fills in as site sessions and conversations accrue.</div></div>';
