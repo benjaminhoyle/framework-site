@@ -2305,6 +2305,42 @@
         button.textContent = catalogExpanded ? 'Hide additional configurations' : 'See more configurations';
         button.setAttribute('data-clarity-action', catalogExpanded ? 'hide_more_configurations' : 'see_more_configurations');
       }
+      observeCatalogCards(); // WS1: start the impression clock for hesitation dims
+    }
+
+    /* === WS1 catalog activity (grid slot / scroll / hesitation dims) ========
+       Local observation only — per spec the catalog-shuffle EVENTS
+       (catalog_render / product_impression) stay parked; we just enrich the
+       grid-sourced product_view with slot, scroll_depth, impressions_before and
+       ms_since_impression so catalog position/hesitation is measurable. */
+    var catalogSeen = {};        // config id -> { at: first-visible ts, order: nth card seen }
+    var catalogSeenCount = 0;
+    var catalogObserver = ('IntersectionObserver' in window) ? new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) return;
+        var id = entry.target.getAttribute('data-clarity-config-id');
+        if (id && !catalogSeen[id]) catalogSeen[id] = { at: Date.now(), order: catalogSeenCount++ };
+        catalogObserver.unobserve(entry.target);
+      });
+    }, { threshold: 0.5 }) : null;
+
+    function observeCatalogCards() {
+      if (!catalogObserver) return;
+      document.querySelectorAll('#catalog-grid .catalog-card').forEach(function(card) {
+        catalogObserver.observe(card);
+      });
+    }
+
+    function catalogViewDims(config) {
+      var slot = configurations.findIndex(function(c) { return c.id === config.id; });
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      var seen = catalogSeen[config.id];
+      return {
+        slot: slot >= 0 ? slot : null,
+        scroll_depth: max > 0 ? Math.min(100, Math.round(window.scrollY / max * 100)) : 0,
+        impressions_before: seen ? seen.order : catalogSeenCount,
+        ms_since_impression: seen ? (Date.now() - seen.at) : null
+      };
     }
 
     function openCatalogConfig(index) {
@@ -2467,8 +2503,15 @@
       // C2 product_view into the WS1 event lake (redesign-stable checkpoint).
       if (window.fwk && config) {
         var vs = source === 'url_parameter' ? 'deeplink'
-          : (source === 'config_navigation' ? 'next_nav' : 'grid');
-        window.fwk.productView(config.id, vs, { view_source_raw: source || 'lightbox_open' });
+          : source === 'config_navigation' ? 'next_nav'
+          : source === 'catalog_card' ? 'grid'
+          : 'other';
+        var extra = { view_source_raw: source || 'lightbox_open' };
+        if (vs === 'grid') { // spec: grid opens carry slot / scroll / hesitation
+          var cd = catalogViewDims(config);
+          for (var k in cd) extra[k] = cd[k];
+        }
+        window.fwk.productView(config.id, vs, extra);
       }
       trackClarityConfigClick(config, source || 'lightbox_open');
       if (typeof clarity === 'function') {

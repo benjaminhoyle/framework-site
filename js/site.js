@@ -424,7 +424,11 @@ function highlightActivePage() {
         var textMatch = /[?&]text=([^&]*)/.exec(href);
         var msg = textMatch ? decodeURIComponent(textMatch[1].replace(/\+/g, ' ')) : (window.WHATSAPP_DEFAULT_MESSAGE || '');
 
-        var code = mintCode();
+        // Reuse a code already injected into this message (e.g. a second click on
+        // the same CTA) so the beaconed code always matches what WhatsApp carries;
+        // otherwise mint a fresh one.
+        var existing = /\br=([0-9A-HJKMNP-TV-Z]{6})\b/i.exec(msg);
+        var code = existing ? existing[1].toUpperCase() : mintCode();
         var product_id = a.getAttribute('data-clarity-config-id') || productFromText(msg);
         var source = handoffSource(a);
 

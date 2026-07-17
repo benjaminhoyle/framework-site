@@ -88,8 +88,9 @@ assert.strictEqual(engageBeacon.dims.engaged_via, "multi_product");
 const preText = "Hello, I'd like to place an order.\n\nhttps://www.framework.co.ke/shelving.html?config=lantern-shelf";
 const anchor = {
   id: "lb-order",
+  // Reflects rewrites, like a real DOM node — a second click reads the new href.
   getAttribute: (k) => (k === "href"
-    ? "https://wa.me/254783891005?text=" + encodeURIComponent(preText)
+    ? (anchor._href || "https://wa.me/254783891005?text=" + encodeURIComponent(preText))
     : (k === "data-clarity-config-id" ? "lantern-shelf" : null)),
   setAttribute: (k, v) => { anchor._href = v; },
   closest: () => anchor,
@@ -109,5 +110,18 @@ assert.strictEqual(codePayload.code, handoff.dims.short_code, "code payload matc
 assert(anchor._href, "click must rewrite the href");
 const outText = decodeURIComponent(/text=([^&]*)/.exec(anchor._href)[1].replace(/\+/g, " "));
 assert(outText.includes("config=lantern-shelf&r=" + codePayload.code), "ref code injected into the config URL: " + outText);
+
+// 5. Second click on the same CTA reuses the code already in the message —
+//    the beaconed code must always match what the WhatsApp message carries.
+const before2 = beacons.length;
+clickHandler({ target: anchor });
+const second = beacons.slice(before2).map((b) => JSON.parse(b.blob.text));
+const handoff2 = second.find((p) => p.event === "wa_handoff");
+const codePayload2 = second.find((p) => p.type === "code");
+assert(handoff2 && codePayload2, "re-click still beacons handoff + code payload");
+assert.strictEqual(handoff2.dims.short_code, codePayload.code, "re-click reuses the code already in the message");
+assert.strictEqual(codePayload2.code, codePayload.code, "no orphan code minted on re-click");
+const outText2 = decodeURIComponent(/text=([^&]*)/.exec(anchor._href)[1].replace(/\+/g, " "));
+assert(!/r=[0-9A-HJKMNP-TV-Z]{6}.*r=[0-9A-HJKMNP-TV-Z]{6}/.test(outText2), "code not injected twice");
 
 console.log("track emitter tests passed (session, short code, checkpoints, ref injection)");
