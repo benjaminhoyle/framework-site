@@ -40,6 +40,14 @@ export default async (req) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
   if (!SAFE.test(id) || !SAFE.test(file)) return new Response(JSON.stringify({ ok: false, error: 'bad_name' }), { status: 422 });
 
+  // Require a binary content-type. Without one the runtime decodes the body as
+  // UTF-8 text, which silently corrupts (inflates) the image — and a corrupted
+  // photo would sail through to the live site. Fail loudly instead.
+  const ct = (req.headers.get('content-type') || '').toLowerCase();
+  if (!/^(image\/(jpeg|jpg|png|webp)|application\/octet-stream)/.test(ct)) {
+    return new Response(JSON.stringify({ ok: false, error: 'bad_content_type', got: ct || '(none)', need: 'image/* or application/octet-stream' }), { status: 415 });
+  }
+
   const buf = await req.arrayBuffer();
   if (!buf.byteLength || buf.byteLength > MAX) return new Response(JSON.stringify({ ok: false, error: 'bad_size' }), { status: 400 });
 
