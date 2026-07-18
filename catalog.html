@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Framework — Catalog Manager</title>
+  <style>
+    :root { --bg:#0f1115; --card:#171a21; --line:#262b36; --ink:#e6e9ef; --dim:#9aa4b2; --accent:#22c55e; --warn:#f59e0b; --danger:#ef4444; --blue:#3b82f6; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; padding-bottom:90px; }
+    header { padding:20px 24px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--bg); z-index:5; }
+    h1 { margin:0 0 4px; font-size:18px; } .sub { color:var(--dim); font-size:13px; }
+    main { padding:24px; max-width:1160px; margin:0 auto; }
+    .msg { padding:60px 24px; text-align:center; color:var(--dim); }
+    .msg code { background:var(--card); padding:2px 6px; border-radius:5px; color:var(--ink); }
+    .toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:18px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+    .prod { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
+    .prod.inactive { opacity:.62; }
+    .prod.changed { border-color:var(--warn); }
+    .prod.isnew { border-color:var(--blue); }
+    .ph { position:relative; aspect-ratio:1/1; background:#0b0d11; overflow:hidden; }
+    .ph img { width:100%; height:100%; object-fit:cover; display:block; }
+    .ph .placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:12px; text-align:center; padding:16px; }
+    .ph img { position:relative; z-index:1; }
+    .badge { position:absolute; top:8px; left:8px; font-size:11px; padding:2px 8px; border-radius:20px; background:rgba(0,0,0,.6); }
+    .badge.new { background:var(--blue); color:#fff; } .badge.changed { background:var(--warn); color:#000; }
+    .body { padding:12px 14px; display:flex; flex-direction:column; gap:8px; flex:1; }
+    .row { display:flex; align-items:center; gap:8px; justify-content:space-between; }
+    .title-in { font-size:15px; font-weight:600; background:transparent; border:1px solid transparent; color:var(--ink); border-radius:5px; padding:3px 5px; width:100%; }
+    .price-in { font-size:13px; color:var(--dim); background:transparent; border:1px solid transparent; border-radius:5px; padding:2px 5px; width:130px; }
+    .title-in:hover,.price-in:hover,.desc:hover { border-color:var(--line); }
+    .title-in:focus,.price-in:focus,.desc:focus { border-color:var(--blue); outline:none; background:var(--bg); }
+    .desc { font-size:12px; color:var(--dim); background:transparent; border:1px solid transparent; border-radius:5px; padding:5px; width:100%; resize:vertical; min-height:38px; font-family:inherit; }
+    .pid { font-size:11px; color:var(--dim); font-family:ui-monospace,Menlo,monospace; }
+    .stats { display:flex; gap:10px; flex-wrap:wrap; font-size:12px; border-top:1px solid var(--line); padding-top:8px; }
+    .stat b { color:var(--ink); } .stat span { color:var(--dim); }
+    .switch { display:inline-flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; user-select:none; }
+    .track { width:36px; height:20px; border-radius:20px; background:#39404d; position:relative; transition:background .15s; }
+    .track .knob { position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:left .15s; }
+    .switch.on .track { background:var(--accent); } .switch.on .track .knob { left:18px; }
+    .btn { background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:7px 12px; cursor:pointer; font-size:13px; }
+    .btn:hover { border-color:var(--dim); } .btn.primary { background:var(--accent); color:#04240f; border-color:var(--accent); font-weight:600; }
+    .btn.ghost { background:transparent; } .btn.small { padding:4px 9px; font-size:12px; }
+    .actions { display:flex; gap:8px; justify-content:space-between; align-items:center; border-top:1px solid var(--line); padding-top:8px; }
+    .publishbar { position:fixed; bottom:0; left:0; right:0; background:#12151b; border-top:1px solid var(--line); padding:12px 24px; display:flex; align-items:center; gap:14px; justify-content:space-between; z-index:10; }
+    .pending { color:var(--warn); font-weight:600; } .clean { color:var(--dim); }
+    .drop { border:1.5px dashed var(--line); border-radius:10px; padding:16px; text-align:center; color:var(--dim); font-size:13px; cursor:pointer; }
+    .drop:hover { border-color:var(--blue); color:var(--ink); }
+    dialog { background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:12px; max-width:560px; padding:0; }
+    dialog::backdrop { background:rgba(0,0,0,.6); }
+    .dlg-body { padding:22px; line-height:1.7; } .dlg-body h3 { margin:0 0 10px; } .dlg-body ol { padding-left:20px; }
+    .dlg-foot { padding:14px 22px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Framework — Catalog Manager</h1>
+    <div class="sub" id="sub">Loading…</div>
+  </header>
+  <main id="main"><div class="msg">Loading…</div></main>
+
+  <div class="publishbar" id="pbar" style="display:none">
+    <div id="pstatus" class="clean">No staged changes.</div>
+    <div style="display:flex; gap:10px">
+      <button class="btn ghost" id="discardBtn" style="display:none">Discard changes</button>
+      <button class="btn primary" id="publishBtn" disabled>Publish…</button>
+    </div>
+  </div>
+
+  <dialog id="publishDlg"><div class="dlg-body">
+    <h3>Publish catalog changes</h3>
+    <p>Your changes are <b>saved as a draft</b> (nothing is live yet). To apply them to the website and Meta catalog:</p>
+    <ol>
+      <li>On the Mac, open Finder → <b>code</b> → <b>framework</b> → <b>mbs-scraper</b>.</li>
+      <li>Double-click <b>catalog.command</b>. It reviews the draft, updates the site + Meta feed, and deploys.</li>
+      <li>When it finishes, reload this page — the “staged changes” banner clears.</li>
+    </ol>
+    <p style="color:var(--dim)">Publishing is deliberate and batched — you stage everything here, then apply it once. Nothing changes on the live site until you run that step.</p>
+  </div><div class="dlg-foot"><button class="btn" id="dlgClose">Got it</button></div></dialog>
+
+  <input type="file" id="fileInput" multiple accept=".json,image/*" style="display:none">
+
+  <script>
+    var key = new URLSearchParams(location.search).get('key');
+    var kes = function (n) { return 'KSh ' + Math.round(n||0).toLocaleString('en-US'); };
+    var esc = function (s) { return String(s==null?'':s).replace(/[&<>"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
+    var show = function (h) { document.getElementById('main').innerHTML = h; };
+
+    var state = { published: null, working: [], objectUrls: {} };
+    var saveTimer = null;
+
+    if (!key) {
+      show('<div class="msg">This page is private. Add your key to the URL:<br><br><code>' + location.origin + '/catalog.html?key=YOUR_KEY</code></div>');
+    } else {
+      load();
+    }
+
+    function api(path, opts) { return fetch(path + (path.indexOf('?')<0?'?':'&') + 'key=' + encodeURIComponent(key), opts); }
+
+    function load() {
+      api('/api/catalog').then(function (r) {
+        if (r.status === 401) throw new Error('Unauthorized — check your key.');
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function (d) {
+        state.published = d.published || { products: [] };
+        var base = (d.draft && Array.isArray(d.draft.products) && d.draft.products.length) ? d.draft.products : state.published.products;
+        state.working = JSON.parse(JSON.stringify(base || []));
+        render();
+      }).catch(function (e) { show('<div class="msg">' + esc(e.message) + '</div>'); });
+    }
+
+    function pubIndex() { var m = {}; (state.published.products||[]).forEach(function (p) { m[p.id] = p; }); return m; }
+
+    function diffState(p, pub) {
+      var was = pub[p.id];
+      if (!was) return 'isnew';
+      if (was.active !== (p.active !== false)) return 'changed';
+      if (was.title !== p.title || was.price !== p.price || (was.description||'') !== (p.description||'')) return 'changed';
+      return '';
+    }
+
+    function render() {
+      var pub = pubIndex();
+      var gen = state.published.generatedAt ? new Date(state.published.generatedAt) : null;
+      document.getElementById('sub').innerHTML = 'Source of truth: catalog.json · ' +
+        state.working.length + ' products · ' + state.working.filter(function(p){return p.active!==false;}).length + ' active' +
+        (gen ? ' · <span style="color:var(--dim)">stats generated ' + gen.toLocaleString() + '</span>' : '');
+
+      var html = '<div class="toolbar"><div class="drop" id="dropZone">➕ &nbsp;Upload a product package (select the folder’s <b>.json</b> + images)</div></div><div class="grid">';
+      state.working.forEach(function (p) { html += card(p, diffState(p, pub)); });
+      html += '</div>';
+      show(html);
+      wire();
+      updatePublishBar();
+    }
+
+    function card(p, diff) {
+      var active = p.active !== false;
+      var imgUrl = state.objectUrls[p.id] || (p.image ? '/' + p.image : (p.images && p.images[0] ? '/' + p.images[0] : ''));
+      var img = imgUrl ? '<img src="' + esc(imgUrl) + '" alt="" data-img onerror="this.remove()">' : '';
+      var placeholder = '<div class="placeholder">Image staged — appears on the site after Publish</div>';
+      var badge = diff === 'isnew' ? '<span class="badge new">NEW</span>' : diff === 'changed' ? '<span class="badge changed">CHANGED</span>' : '';
+      var s = p.stats || {};
+      var statHtml = '<div class="stats">' +
+        stat(s.views||0, 'views') + stat(s.handoffs||0, 'handoffs') + stat(s.conversations||0, 'convos') +
+        stat(s.sales||0, 'sales') + stat(kes(s.revenue||0), 'revenue') + '</div>';
+      return '<div class="prod ' + (active?'':'inactive ') + diff + '" data-id="' + esc(p.id) + '">' +
+        '<div class="ph">' + img + placeholder + badge + '</div>' +
+        '<div class="body">' +
+          '<input class="title-in" value="' + esc(p.title||'') + '" data-f="title" placeholder="Title">' +
+          '<div class="row"><input class="price-in" value="' + esc(p.price||'') + '" data-f="price" placeholder="Price">' +
+            '<label class="switch ' + (active?'on':'') + '" data-toggle><span class="track"><span class="knob"></span></span>' + (active?'Active':'Inactive') + '</label></div>' +
+          '<div class="pid">' + esc(p.id) + (diff==='isnew'?' · uploaded':'') + '</div>' +
+          '<textarea class="desc" data-f="description" placeholder="Description">' + esc(p.description||'') + '</textarea>' +
+          statHtml +
+          '<div class="actions"><button class="btn small ghost" data-dl>Download JSON</button>' +
+            (diff==='isnew' ? '<button class="btn small ghost" data-remove>Remove</button>' : '<span class="pid">KSh ' + (Number(p.priceValue)||0).toLocaleString() + '</span>') +
+          '</div>' +
+        '</div></div>';
+    }
+    function stat(v, l) { return '<span class="stat"><b>' + esc(v) + '</b> <span>' + esc(l) + '</span></span>'; }
+
+    function wire() {
+      document.getElementById('dropZone').onclick = function () { document.getElementById('fileInput').click(); };
+      document.querySelectorAll('.prod').forEach(function (el) {
+        var id = el.getAttribute('data-id');
+        el.querySelector('[data-toggle]').onclick = function () { setProd(id, function (p) { p.active = (p.active === false); }); };
+        el.querySelectorAll('[data-f]').forEach(function (inp) {
+          inp.onchange = function () { setProd(id, function (p) { p[inp.getAttribute('data-f')] = inp.value; }); };
+        });
+        var dl = el.querySelector('[data-dl]'); if (dl) dl.onclick = function () { downloadJson(id); };
+        var rm = el.querySelector('[data-remove]'); if (rm) rm.onclick = function () { removeProd(id); };
+      });
+    }
+
+    function getProd(id) { return state.working.find(function (p) { return p.id === id; }); }
+    function setProd(id, fn) { var p = getProd(id); if (!p) return; fn(p); render(); saveDraftDebounced(); }
+
+    function updatePublishBar() {
+      var pub = pubIndex();
+      var changes = 0, willPublishImages = 0;
+      state.working.forEach(function (p) { if (diffState(p, pub)) changes++; if (diffState(p,pub)==='isnew') willPublishImages++; });
+      // also count removed/deactivated already via diff; count products removed from working
+      var removed = (state.published.products||[]).filter(function (pp) { return !getProd(pp.id); }).length;
+      changes += removed;
+      document.getElementById('pbar').style.display = 'flex';
+      var st = document.getElementById('pstatus');
+      var btn = document.getElementById('publishBtn');
+      var dis = document.getElementById('discardBtn');
+      if (changes > 0) {
+        st.className = 'pending';
+        st.textContent = changes + ' staged change' + (changes>1?'s':'') + (willPublishImages?(' · '+willPublishImages+' new product'+(willPublishImages>1?'s':'')):'') + ' — not live until you Publish';
+        btn.disabled = false; dis.style.display = '';
+      } else {
+        st.className = 'clean'; st.textContent = 'No staged changes.'; btn.disabled = true; dis.style.display = 'none';
+      }
+    }
+
+    var saveDraftDebounced = function () { clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft, 500); };
+    function saveDraft() {
+      // Persist the working set (minus transient preview urls) as the draft overlay.
+      var payload = { products: state.working.map(function (p) { var c = Object.assign({}, p); delete c._file; return c; }) };
+      api('/api/catalog-draft', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(payload) }).catch(function(){});
+    }
+
+    function removeProd(id) { state.working = state.working.filter(function (p) { return p.id !== id; }); render(); saveDraftDebounced(); }
+
+    function downloadJson(id) {
+      var p = getProd(id); if (!p) return;
+      var pkg = { id:p.id, title:p.title, image:p.image, images:p.images, price:p.price, priceValue:Number(p.priceValue)||0, description:p.description };
+      if (p.designerUrl) pkg.designerUrl = p.designerUrl;
+      var blob = new Blob([JSON.stringify(pkg, null, 2)], { type:'application/json' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = id + '.json'; a.click();
+    }
+
+    // --- Upload a package (json + images) --------------------------------------
+    document.getElementById('fileInput').onchange = function (e) { handleFiles(Array.from(e.target.files)); e.target.value=''; };
+    function handleFiles(files) {
+      var jsonFile = files.find(function (f) { return f.name.toLowerCase().endsWith('.json'); });
+      var images = files.filter(function (f) { return /\.(jpe?g|png|webp)$/i.test(f.name); });
+      if (!jsonFile) { alert('Select the package .json file along with its images.'); return; }
+      jsonFile.text().then(function (txt) {
+        var meta; try { meta = JSON.parse(txt); } catch (e) { alert('That .json is not valid JSON.'); return; }
+        var id = String(meta.id || jsonFile.name.replace(/\.json$/i,'')).trim();
+        if (!/^[a-z0-9][a-z0-9-]{0,60}$/i.test(id)) { alert('Product id must be simple (letters, numbers, hyphens): ' + id); return; }
+        if (getProd(id)) { if (!confirm('Product "' + id + '" already exists — replace its metadata + images?')) return; }
+        uploadPackage(id, meta, images);
+      });
+    }
+    function uploadPackage(id, meta, images) {
+      var base = 'images/shelving/configs/';
+      var imgPaths = images.map(function (f) { return base + f.name; });
+      var product = {
+        id: id, title: meta.title || id, price: meta.price || 'Price on request',
+        priceValue: Number(meta.priceValue) || 0, description: meta.description || '',
+        image: base + (images[0] ? images[0].name : (meta.image ? meta.image.split('/').pop() : '')),
+        images: imgPaths.length ? imgPaths : (meta.images||[]).map(function(x){return base+x.split('/').pop();}),
+        active: false,
+      };
+      if (meta.designerUrl) product.designerUrl = meta.designerUrl;
+      // preview via the first uploaded image
+      if (images[0]) state.objectUrls[id] = URL.createObjectURL(images[0]);
+      // upsert into working
+      var existing = getProd(id);
+      if (existing) Object.assign(existing, product); else state.working.push(product);
+      render();
+      // upload each image to the staging store
+      var done = 0;
+      if (!images.length) { saveDraft(); return; }
+      images.forEach(function (f) {
+        api('/api/catalog-upload?id=' + encodeURIComponent(id) + '&file=' + encodeURIComponent(f.name), { method:'POST', body:f })
+          .then(function (r) { return r.json(); })
+          .then(function () { if (++done === images.length) { saveDraft(); toast(id + ': ' + images.length + ' image(s) staged'); } })
+          .catch(function () { toast('Upload failed for ' + f.name); });
+      });
+    }
+
+    function toast(msg) { var el = document.getElementById('pstatus'); if (el) { el.textContent = msg; el.className='pending'; } }
+
+    document.getElementById('publishBtn').onclick = function () { saveDraft(); document.getElementById('publishDlg').showModal(); };
+    document.getElementById('dlgClose').onclick = function () { document.getElementById('publishDlg').close(); };
+    document.getElementById('discardBtn').onclick = function () {
+      if (!confirm('Discard all staged changes and revert to the live catalog?')) return;
+      api('/api/catalog-draft', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({clear:true}) })
+        .then(function () { location.reload(); });
+    };
+  </script>
+</body>
+</html>
