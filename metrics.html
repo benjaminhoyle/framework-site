@@ -37,7 +37,7 @@
 </head>
 <body>
   <header>
-    <h1>Framework — Funnel Monitor</h1>
+    <h1>Framework — Funnel Monitor <a id="navCatalog" href="#" style="font-size:12px;font-weight:400;color:var(--dim);margin-left:10px">→ Catalog Manager</a></h1>
     <div class="sub" id="sub">Loading…</div>
   </header>
   <main id="main"><div class="msg">Loading…</div></main>
@@ -62,6 +62,7 @@
     if (!key) {
       show('<div class="msg">This dashboard is private. Add your key to the URL:<br><br><code>' + location.origin + '/metrics.html?key=YOUR_KEY</code></div>');
     } else {
+      document.getElementById('navCatalog').href = '/catalog.html?key=' + encodeURIComponent(key);
       fetch('/api/dashboard?key=' + encodeURIComponent(key))
         .then(function (r) {
           if (r.status === 401) throw new Error('Unauthorized — check your key.');

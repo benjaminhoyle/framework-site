@@ -56,7 +56,7 @@
 </head>
 <body>
   <header>
-    <h1>Framework — Catalog Manager</h1>
+    <h1>Framework — Catalog Manager <a id="navMetrics" href="#" style="font-size:12px;font-weight:400;color:var(--dim);margin-left:10px">→ Funnel Monitor</a></h1>
     <div class="sub" id="sub">Loading…</div>
   </header>
   <main id="main"><div class="msg">Loading…</div></main>
@@ -94,6 +94,7 @@
     if (!key) {
       show('<div class="msg">This page is private. Add your key to the URL:<br><br><code>' + location.origin + '/catalog.html?key=YOUR_KEY</code></div>');
     } else {
+      document.getElementById('navMetrics').href = '/metrics.html?key=' + encodeURIComponent(key);
       load();
     }
 
