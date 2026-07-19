@@ -85,7 +85,16 @@
         '<span style="color:' + color + ';font-weight:600">● ' + label + nudge + '</span>' +
         ' · <span style="color:var(--dim)">' + gen.toLocaleString() + ' · ' + d.perAd.length + ' ads</span>';
       var t = d.totals || {};
-      var html = '<div class="cards">' +
+      // Account-level alerts (e.g. spend cap reached) come first — they explain a
+      // whole account going quiet while every ad still reads ACTIVE.
+      var html = '';
+      (d.alerts || []).forEach(function (a) {
+        var crit = a.level === 'critical';
+        html += '<div style="border:1px solid ' + (crit ? '#ef4444' : 'var(--warn)') + ';background:' + (crit ? 'rgba(239,68,68,.10)' : 'rgba(245,158,11,.10)') +
+          ';border-radius:10px;padding:14px 16px;margin-bottom:16px">' +
+          '<b style="color:' + (crit ? '#ef4444' : 'var(--warn)') + '">' + (crit ? '⛔ ' : '⚠ ') + esc(a.code.replace(/_/g, ' ')) + '</b><br>' + esc(a.message) + '</div>';
+      });
+      html += '<div class="cards">' +
         stat(kes(t.spend30), 'Spend (30d)') +
         stat(t.activeAds, 'Active ads') +
         stat(kes(t.anSpend30), 'Audience Network (30d)') +
