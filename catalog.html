@@ -14,7 +14,30 @@
     main { padding:24px; max-width:1160px; margin:0 auto; }
     .msg { padding:60px 24px; text-align:center; color:var(--dim); }
     .msg code { background:var(--card); padding:2px 6px; border-radius:5px; color:var(--ink); }
-    .toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:18px; }
+    .toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+    .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+    .seg button { background:transparent; border:0; color:var(--dim); padding:6px 12px; font-size:12.5px; cursor:pointer; font-family:inherit; }
+    .seg button + button { border-left:1px solid var(--line); }
+    .seg button.on { background:#212734; color:var(--ink); }
+    input[type=search], select { background:var(--bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:12.5px; font-family:inherit; }
+    input[type=search]::placeholder { color:#6b7480; }
+    .emptybox { color:#6b7480; font-size:13px; padding:34px; text-align:center; border:1px solid var(--line); border-radius:12px; }
+    .tablewrap { overflow-x:auto; }
+    table.rows { border-collapse:collapse; width:100%; font-size:13px; }
+    table.rows th, table.rows td { padding:9px 12px; text-align:left; white-space:nowrap; }
+    table.rows th.num, table.rows td.num { text-align:right; font-variant-numeric:tabular-nums; }
+    table.rows thead th { color:#6b7480; font-weight:500; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--line); }
+    table.rows tbody tr { border-bottom:1px solid #1e222b; }
+    table.rows tbody tr:hover { background:#1c212b; }
+    table.rows tr.dim { opacity:.55; }
+    .rthumb { width:34px; height:34px; border-radius:6px; object-fit:cover; background:#0b0d11; display:block; }
+    .tcell { display:flex; align-items:center; gap:10px; }
+    .tmeta { display:flex; flex-direction:column; }
+    .rtitle { font-weight:500; }
+    .rid { font-size:11px; color:#6b7480; font-family:ui-monospace,Menlo,monospace; }
+    .rbadge { font-size:10px; padding:1px 6px; border-radius:20px; margin-left:4px; }
+    .rbadge.new { background:var(--blue); color:#fff; }
+    .rbadge.changed { background:var(--warn); color:#000; }
     .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; }
     .prod { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
     .prod.inactive { opacity:.62; }
@@ -94,7 +117,8 @@
     var esc = function (s) { return String(s==null?'':s).replace(/[&<>"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
     var show = function (h) { document.getElementById('main').innerHTML = h; };
 
-    var state = { published: null, working: [], objectUrls: {}, shown: {} };
+    var state = { published: null, working: [], objectUrls: {}, shown: {},
+      view:'grid', filter:'all', sort:'views', dir:-1, q:'' };
     var saveTimer = null;
 
     if (!key) {
@@ -129,19 +153,104 @@
       return '';
     }
 
+    // Which products the current toolbar state shows, in the chosen order.
+    function visible() {
+      var pub = pubIndex();
+      var list = state.working.slice();
+      if (state.filter === 'active') list = list.filter(function (p) { return p.active !== false; });
+      else if (state.filter === 'inactive') list = list.filter(function (p) { return p.active === false; });
+      else if (state.filter === 'changed') list = list.filter(function (p) { return !!diffState(p, pub); });
+      if (state.q) {
+        var q = state.q.toLowerCase();
+        list = list.filter(function (p) { return ((p.id||'') + ' ' + (p.title||'')).toLowerCase().indexOf(q) >= 0; });
+      }
+      var k = state.sort, dir = state.dir;
+      list.sort(function (a, b) {
+        var x, y;
+        if (k === 'title' || k === 'id') { x = String(a[k]||'').toLowerCase(); y = String(b[k]||'').toLowerCase(); return x>y?dir:x<y?-dir:0; }
+        if (k === 'priceValue') { x = Number(a.priceValue)||0; y = Number(b.priceValue)||0; }
+        else { x = ((a.stats||{})[k])||0; y = ((b.stats||{})[k])||0; }
+        return (x - y) * dir;
+      });
+      return list;
+    }
+
     function render() {
       var pub = pubIndex();
       var gen = state.published.generatedAt ? new Date(state.published.generatedAt) : null;
+      var nActive = state.working.filter(function(p){return p.active!==false;}).length;
       document.getElementById('sub').innerHTML = 'Source of truth: catalog.json · ' +
-        state.working.length + ' products · ' + state.working.filter(function(p){return p.active!==false;}).length + ' active' +
-        (gen ? ' · <span style="color:var(--dim)">stats generated ' + gen.toLocaleString() + '</span>' : '');
+        state.working.length + ' products · ' + nActive + ' live on the site' +
+        (gen ? ' · <span style="color:var(--dim)">stats ' + gen.toLocaleString() + '</span>' : '');
 
-      var html = '<div class="toolbar"><div class="drop" id="dropZone">➕ &nbsp;Upload a product package (select the folder’s <b>.json</b> + images)</div></div><div class="grid">';
-      state.working.forEach(function (p) { html += card(p, diffState(p, pub)); });
-      html += '</div>';
+      var counts = {
+        all: state.working.length,
+        active: nActive,
+        inactive: state.working.length - nActive,
+        changed: state.working.filter(function (p) { return !!diffState(p, pub); }).length
+      };
+      var list = visible();
+
+      var html = '<div class="toolbar">' +
+        '<span class="seg">' +
+          fbtn('all','All (' + counts.all + ')') +
+          fbtn('active','Live (' + counts.active + ')') +
+          fbtn('inactive','Hidden (' + counts.inactive + ')') +
+          (counts.changed ? fbtn('changed','Staged (' + counts.changed + ')') : '') +
+        '</span>' +
+        '<input type="search" id="cq" placeholder="Find a product…" value="' + esc(state.q) + '">' +
+        '<select id="csort">' + [
+          ['views','Most viewed'],['handoffs','Most handoffs'],['conversations','Most conversations'],
+          ['revenue','Most revenue'],['priceValue','Price'],['title','Name']
+        ].map(function (o) { return '<option value="' + o[0] + '"' + (state.sort===o[0]?' selected':'') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
+        '<span class="seg" style="margin-left:auto">' +
+          '<button data-view="grid" class="' + (state.view==='grid'?'on':'') + '">Gallery</button>' +
+          '<button data-view="rows" class="' + (state.view==='rows'?'on':'') + '">Rows</button>' +
+        '</span>' +
+      '</div>' +
+      '<div class="drop" id="dropZone">➕ &nbsp;Upload a product package — select the folder’s <b>.json</b> and its images</div>';
+
+      if (!list.length) {
+        html += '<div class="emptybox">No products match this view.</div>';
+      } else if (state.view === 'rows') {
+        html += rowsView(list, pub);
+      } else {
+        html += '<div class="grid">' + list.map(function (p) { return card(p, diffState(p, pub)); }).join('') + '</div>';
+      }
       show(html);
       wire();
       updatePublishBar();
+    }
+    function fbtn(v, l) { return '<button data-filter="' + v + '" class="' + (state.filter===v?'on':'') + '">' + esc(l) + '</button>'; }
+
+    // Dense row view — the right shape for comparing 25 products by performance.
+    function rowsView(list, pub) {
+      var rows = list.map(function (p) {
+        var d = diffState(p, pub), s = p.stats || {}, active = p.active !== false;
+        var imgs = (p.images && p.images.length ? p.images : [p.image]).filter(Boolean);
+        var thumb = state.objectUrls[p.id] || (imgs[0] ? '/' + imgs[0] : '');
+        var badge = d === 'isnew' ? '<span class="rbadge new">NEW</span>' : d === 'changed' ? '<span class="rbadge changed">CHANGED</span>' : '';
+        return '<tr class="' + (active?'':'dim') + '" data-id="' + esc(p.id) + '">' +
+          '<td class="tcell">' + (thumb ? '<img class="rthumb" src="' + esc(thumb) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '<span class="rthumb"></span>') +
+            '<span class="tmeta"><span class="rtitle">' + esc(p.title||p.id) + ' ' + badge + '</span>' +
+            '<span class="rid">' + esc(p.id) + ' · ' + esc(imgs.length) + ' image' + (imgs.length===1?'':'s') + '</span></span></td>' +
+          '<td class="num">' + esc(p.price||'—') + '</td>' +
+          '<td class="num">' + (s.views||0) + '</td>' +
+          '<td class="num">' + (s.handoffs||0) + '</td>' +
+          '<td class="num">' + (s.conversations||0) + '</td>' +
+          '<td class="num">' + (s.sales||0) + '</td>' +
+          '<td class="num">' + (s.revenue ? kes(s.revenue) : '—') + '</td>' +
+          '<td><label class="switch ' + (active?'on':'') + '" data-toggle><span class="track"><span class="knob"></span></span>' + (active?'Live':'Hidden') + '</label></td>' +
+          '<td><button class="btn small ghost" data-dl>JSON</button></td>' +
+        '</tr>';
+      }).join('');
+      return '<div class="card"><div class="tablewrap"><table class="rows"><thead><tr>' +
+        '<th>Product</th><th class="num">Price</th>' +
+        '<th class="num" title="Product page views from tracked sessions">Views</th>' +
+        '<th class="num" title="WhatsApp handoffs that named this product">Handoffs</th>' +
+        '<th class="num" title="Conversations whose ref code resolved to this product">Convos</th>' +
+        '<th class="num">Sales</th><th class="num">Revenue</th><th>On site</th><th></th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
     }
 
     function card(p, diff) {
@@ -182,6 +291,25 @@
 
     function wire() {
       document.getElementById('dropZone').onclick = function () { document.getElementById('fileInput').click(); };
+      document.querySelectorAll('[data-view]').forEach(function (b) {
+        b.onclick = function () { state.view = b.getAttribute('data-view'); render(); };
+      });
+      document.querySelectorAll('[data-filter]').forEach(function (b) {
+        b.onclick = function () { state.filter = b.getAttribute('data-filter'); render(); };
+      });
+      var cq = document.getElementById('cq');
+      if (cq) cq.oninput = function () { var pos = cq.selectionStart; state.q = cq.value; render();
+        var n = document.getElementById('cq'); if (n) { n.focus(); n.setSelectionRange(pos,pos); } };
+      var cs = document.getElementById('csort');
+      if (cs) cs.onchange = function () { state.sort = cs.value; state.dir = (cs.value==='title') ? 1 : -1; render(); };
+      // Row view shares the same toggle/download handlers as the cards.
+      document.querySelectorAll('tr[data-id]').forEach(function (tr) {
+        var id = tr.getAttribute('data-id');
+        var t = tr.querySelector('[data-toggle]');
+        if (t) t.onclick = function () { setProd(id, function (p) { p.active = (p.active === false); }); };
+        var dl = tr.querySelector('[data-dl]');
+        if (dl) dl.onclick = function () { downloadJson(id); };
+      });
       document.querySelectorAll('.prod').forEach(function (el) {
         var id = el.getAttribute('data-id');
         el.querySelector('[data-toggle]').onclick = function () { setProd(id, function (p) { p.active = (p.active === false); }); };

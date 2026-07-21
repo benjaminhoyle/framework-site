@@ -6,216 +6,528 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Framework — Funnel Monitor</title>
   <style>
-    :root { --bg:#0f1115; --card:#171a21; --line:#262b36; --ink:#e6e9ef; --dim:#9aa4b2; --accent:#22c55e; --warn:#f59e0b; }
-    * { box-sizing: border-box; }
-    body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
-    header { padding:20px 24px; border-bottom:1px solid var(--line); }
-    h1 { margin:0 0 4px; font-size:18px; }
-    .sub { color:var(--dim); font-size:13px; }
-    main { padding:24px; max-width:1200px; margin:0 auto; }
-    .cards { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px; }
-    .stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 18px; min-width:150px; }
-    .stat .n { font-size:22px; font-weight:600; }
-    .stat .l { color:var(--dim); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
-    h2 { font-size:15px; margin:28px 0 12px; }
-    .panel { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; overflow-x:auto; }
-    table { border-collapse:collapse; width:100%; font-size:13px; white-space:nowrap; }
-    th,td { text-align:right; padding:7px 10px; border-bottom:1px solid var(--line); }
-    th:first-child,td:first-child { text-align:left; position:sticky; left:0; background:var(--card); }
-    th { color:var(--dim); font-weight:500; cursor:pointer; user-select:none; }
-    tr:hover td { background:#1c212b; }
-    .flag { color:var(--warn); font-size:11px; }
-    .pill { display:inline-block; padding:1px 7px; border-radius:20px; font-size:11px; border:1px solid var(--line); }
-    .ACTIVE { color:var(--accent); border-color:#14532d; }
-    svg text { fill:var(--dim); font-size:11px; }
-    .msg { padding:60px 24px; text-align:center; color:var(--dim); }
+    :root {
+      --bg:#0f1115; --card:#171a21; --line:#262b36; --line-soft:#1e222b;
+      --ink:#e6e9ef; --dim:#9aa4b2; --muted:#6b7480;
+      /* Status palette — fixed, never reused for series identity. */
+      --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+      /* Ordinal funnel ramp (one hue, light→dark) — validated on this surface. */
+      --f1:#cde2fb; --f2:#86b6ef; --f3:#3987e5; --f4:#184f95;
+      --o1:#9ec5f4; --o2:#3987e5; --o3:#184f95;
+      /* Categorical series (trend chart) — validated pair. */
+      --s1:#3987e5; --s2:#199e70;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink);
+      font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:inherit; }
+
+    header { padding:18px 28px; border-bottom:1px solid var(--line); display:flex;
+      align-items:baseline; gap:16px; flex-wrap:wrap; }
+    h1 { margin:0; font-size:17px; letter-spacing:-.01em; }
+    .nav { font-size:13px; color:var(--dim); text-decoration:none; }
+    .nav:hover { color:var(--ink); }
+    .freshness { margin-left:auto; font-size:12.5px; }
+
+    main { padding:24px 28px 72px; max-width:1240px; margin:0 auto; }
+    section { margin-bottom:34px; }
+    .sec-head { display:flex; align-items:baseline; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+    h2 { font-size:14px; margin:0; letter-spacing:.01em; }
+    .sec-note { font-size:12.5px; color:var(--muted); }
+    .sec-head .right { margin-left:auto; display:flex; gap:8px; align-items:center; }
+
+    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; }
+    .pad { padding:18px 20px; }
+
+    /* KPI row — the four numbers the weekly decision turns on. */
+    .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; }
+    .kpi { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:15px 17px; }
+    .kpi .label { font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+    .kpi .value { font-size:26px; font-weight:600; margin-top:5px; letter-spacing:-.02em; }
+    .kpi .sub { font-size:12px; color:var(--dim); margin-top:3px; }
+
+    /* Alerts */
+    .alert { border-radius:10px; padding:13px 16px; margin-bottom:12px; border:1px solid;
+      display:flex; gap:11px; align-items:flex-start; font-size:13.5px; }
+    .alert .ic { flex:0 0 auto; font-size:14px; line-height:1.35; }
+    .alert b { display:block; margin-bottom:2px; }
+    .alert.critical { border-color:var(--critical); background:rgba(208,59,59,.10); }
+    .alert.warn { border-color:var(--warning); background:rgba(250,178,25,.09); }
+    .alert.info { border-color:var(--line); background:var(--card); }
+
+    /* Controls */
+    .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+    .seg button { background:transparent; border:0; color:var(--dim); padding:6px 12px;
+      font-size:12.5px; cursor:pointer; font-family:inherit; }
+    .seg button + button { border-left:1px solid var(--line); }
+    .seg button.on { background:#212734; color:var(--ink); }
+    input[type=search], select { background:var(--bg); color:var(--ink); border:1px solid var(--line);
+      border-radius:8px; padding:6px 10px; font-size:12.5px; font-family:inherit; }
+    input[type=search]::placeholder { color:var(--muted); }
+
+    /* Table */
+    .tablewrap { overflow-x:auto; }
+    table { border-collapse:collapse; width:100%; font-size:13px; }
+    th, td { text-align:right; padding:9px 12px; white-space:nowrap; }
+    th:first-child, td:first-child { text-align:left; position:sticky; left:0; background:var(--card); }
+    thead th { color:var(--muted); font-weight:500; font-size:11.5px; text-transform:uppercase;
+      letter-spacing:.04em; cursor:pointer; user-select:none; border-bottom:1px solid var(--line); }
+    thead th:hover { color:var(--ink); }
+    thead th .arrow { opacity:.45; font-size:9px; }
+    tbody tr { border-bottom:1px solid var(--line-soft); }
+    tbody tr:hover td { background:#1c212b; }
+    tbody tr:hover td:first-child { background:#1c212b; }
+    td.num { font-variant-numeric:tabular-nums; }
+    .adname { font-weight:500; }
+    .adsub { font-size:11.5px; color:var(--muted); margin-top:1px; }
+    .lead { color:var(--ink); font-weight:600; }
+    .zero { color:var(--muted); }
+
+    .pill { display:inline-block; padding:1.5px 8px; border-radius:20px; font-size:11px;
+      border:1px solid var(--line); color:var(--dim); }
+    .pill.ACTIVE { color:var(--good); border-color:rgba(12,163,12,.45); }
+
+    .chips { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
+    .chip { font-size:10.5px; padding:1.5px 7px; border-radius:5px; border:1px solid; white-space:nowrap; }
+    .chip.warning { color:var(--warning); border-color:rgba(250,178,25,.4); }
+    .chip.serious { color:var(--serious); border-color:rgba(236,131,90,.4); }
+    .chip.info { color:var(--dim); border-color:var(--line); }
+    .chip.ok { color:var(--good); border-color:rgba(12,163,12,.35); }
+
+    /* Funnel */
+    .funnels { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width:860px) { .funnels { grid-template-columns:1fr; } }
+    .fn-title { font-size:12.5px; color:var(--ink); margin-bottom:2px; }
+    .fn-sub { font-size:11.5px; color:var(--muted); margin-bottom:14px; }
+    .stage { margin-bottom:11px; }
+    .stage .row1 { display:flex; justify-content:space-between; align-items:baseline; font-size:12.5px; margin-bottom:4px; }
+    .stage .nm { color:var(--dim); }
+    .stage .val { font-variant-numeric:tabular-nums; }
+    .stage .val b { font-size:14px; }
+    .stage .pct { color:var(--muted); font-size:11.5px; margin-left:6px; }
+    .bar { height:9px; border-radius:4px; background:#0d1017; overflow:hidden; }
+    .bar span { display:block; height:100%; border-radius:4px; }
+
+    /* Trend chart */
+    .legend { display:flex; gap:16px; font-size:12px; color:var(--dim); margin-bottom:10px; }
+    .legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; vertical-align:-1px; }
+    svg text { fill:var(--muted); font-size:10.5px; font-variant-numeric:tabular-nums; }
+    .tip { position:fixed; pointer-events:none; background:#0b0d12; border:1px solid var(--line);
+      border-radius:8px; padding:8px 11px; font-size:12px; z-index:50; opacity:0;
+      transition:opacity .09s; box-shadow:0 6px 22px rgba(0,0,0,.5); }
+    .tip .t { color:var(--muted); font-size:11px; margin-bottom:3px; }
+    .tip .r { display:flex; gap:12px; justify-content:space-between; }
+    .tip .r span:last-child { font-variant-numeric:tabular-nums; }
+
+    details { border-top:1px solid var(--line); padding-top:14px; margin-top:8px; }
+    details summary { cursor:pointer; font-size:13px; color:var(--dim); list-style:none; }
+    details summary::-webkit-details-marker { display:none; }
+    details summary:before { content:"▸ "; color:var(--muted); }
+    details[open] summary:before { content:"▾ "; }
+    details .inner { padding:14px 2px 4px; line-height:1.75; max-width:820px; }
+    code, .mono { font-family:ui-monospace,Menlo,monospace; }
+    .copyrow { display:flex; gap:8px; margin-top:6px; }
+    .copyrow textarea { flex:1; min-width:0; background:var(--bg); color:var(--ink);
+      border:1px solid var(--line); border-radius:7px; padding:8px; font-family:ui-monospace,Menlo,monospace;
+      font-size:11.5px; resize:none; }
+    .btn { background:var(--card); color:var(--ink); border:1px solid var(--line);
+      border-radius:7px; padding:6px 13px; cursor:pointer; font-size:12.5px; font-family:inherit; }
+    .btn:hover { border-color:var(--dim); }
+    .msg { padding:70px 24px; text-align:center; color:var(--dim); }
     .msg code { background:var(--card); padding:2px 6px; border-radius:5px; color:var(--ink); }
-    select { background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:5px 8px; }
-    .legend span { display:inline-flex; align-items:center; gap:5px; margin-right:14px; font-size:12px; color:var(--dim); }
-    .sw { width:11px; height:11px; border-radius:2px; display:inline-block; }
+    .empty { color:var(--muted); font-size:12.5px; padding:16px 2px; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Framework — Funnel Monitor <a id="navCatalog" href="#" style="font-size:12px;font-weight:400;color:var(--dim);margin-left:10px">→ Catalog Manager</a></h1>
-    <div class="sub" id="sub">Loading…</div>
+    <h1>Framework — Funnel Monitor</h1>
+    <a class="nav" id="navCatalog" href="#">→ Catalog Manager</a>
+    <div class="freshness" id="fresh"></div>
   </header>
   <main id="main"><div class="msg">Loading…</div></main>
+  <div class="tip" id="tip"></div>
 
   <script>
-    // Checkpoint palette (C1→C7).
-    var STAGES = [
-      { k:'arrive', label:'C1 Arrived', color:'#334155' },
-      { k:'product_view', label:'C2 Product view', color:'#3b82f6' },
-      { k:'engage', label:'C3 Engaged', color:'#6366f1' },
-      { k:'wa_handoff', label:'C4 WhatsApp handoff', color:'#a855f7' },
-      { k:'conversation', label:'C5 Conversation', color:'#14b8a6' },
-      { k:'quoted', label:'C6 Quoted', color:'#eab308' },
-      { k:'sale', label:'C7 Sale', color:'#22c55e' },
-    ];
-    var kes = function (n) { return 'KSh ' + Math.round(n||0).toLocaleString('en-US'); };
-    var esc = function (s) { return String(s==null?'':s).replace(/[&<>"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
+  (function () {
     var key = new URLSearchParams(location.search).get('key');
-
-    function show(html) { document.getElementById('main').innerHTML = html; }
+    var esc = function (s) { return String(s==null?'':s).replace(/[&<>"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
+    var kes = function (n) { return 'KSh ' + Math.round(Number(n)||0).toLocaleString('en-US'); };
+    var num = function (n) { return (Number(n)||0).toLocaleString('en-US'); };
+    var show = function (h) { document.getElementById('main').innerHTML = h; };
+    var D = null, view = { filter:'spending', sort:'spend30', dir:-1, q:'', month:null, trendTable:false };
 
     if (!key) {
-      show('<div class="msg">This dashboard is private. Add your key to the URL:<br><br><code>' + location.origin + '/metrics.html?key=YOUR_KEY</code></div>');
-    } else {
-      document.getElementById('navCatalog').href = '/catalog.html?key=' + encodeURIComponent(key);
-      fetch('/api/dashboard?key=' + encodeURIComponent(key))
-        .then(function (r) {
-          if (r.status === 401) throw new Error('Unauthorized — check your key.');
-          if (r.status === 404) throw new Error('No data yet. Run the sync (./run.command --no-scrape --commit) to publish the first snapshot.');
-          if (!r.ok) throw new Error('HTTP ' + r.status);
-          return r.json();
-        })
-        .then(render)
-        .catch(function (e) { show('<div class="msg">' + esc(e.message) + '</div>'); });
+      show('<div class="msg">This dashboard is private. Add your key to the URL:<br><br>' +
+           '<code>' + location.origin + '/metrics.html?key=YOUR_KEY</code></div>');
+      return;
+    }
+    document.getElementById('navCatalog').href = '/catalog.html?key=' + encodeURIComponent(key);
+
+    fetch('/api/dashboard?key=' + encodeURIComponent(key))
+      .then(function (r) {
+        if (r.status === 401) throw new Error('Unauthorized — check your key.');
+        if (r.status === 404) throw new Error('No data yet. Run the sync (double-click sync.command) to publish the first snapshot.');
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (d) { D = d; boot(); })
+      .catch(function (e) { show('<div class="msg">' + esc(e.message) + '</div>'); });
+
+    // ---- flag presentation: short label + severity, never colour alone ----
+    var FLAGS = {
+      delivery_stalled:        { s:'serious', t:'not delivering', d:'Reads ACTIVE but spent nothing in 3 days — check the account spend cap or schedule.' },
+      spend_no_conversations:  { s:'warning', t:'no conversations', d:'Spend > 0 in 30d with zero conversations started.' },
+      audience_network_on:     { s:'warning', t:'audience network', d:'Audience Network delivered spend in this window — off-platform junk inventory.' },
+      missing_url_tags:        { s:'warning', t:'no url_tags', d:'No url_tags, so conversations cannot be traced back to this ad.' },
+      no_catalog_anchor:       { s:'warning', t:'stale product', d:'Deep-links to a product no longer in the live catalog.' },
+      frequency_fatigue:       { s:'warning', t:'fatigue', d:'Frequency above 3.5 — the same people keep seeing it.' },
+      destination_not_deeplink:{ s:'info',    t:'no deep-link', d:'Lands on the bare catalog instead of a specific product.' }
+    };
+
+    function boot() {
+      var months = (D.cohorts||[]).map(function (c) { return c.month; });
+      var withSite = (D.cohorts||[]).filter(function (c) { return c.arrive > 0; });
+      view.month = withSite.length ? withSite[withSite.length-1].month : (months[months.length-1] || null);
+      render();
     }
 
-    function render(d) {
-      // Freshness indicator — how long since the last sync.
-      var gen = new Date(d.generatedAt);
+    function render() {
+      var gen = new Date(D.generatedAt);
       var days = Math.floor((Date.now() - gen.getTime()) / 86400000);
-      var label = days <= 0 ? 'Synced today' : days === 1 ? 'Synced yesterday' : 'Synced ' + days + ' days ago';
-      var color = days <= 2 ? 'var(--accent)' : days <= 7 ? 'var(--warn)' : '#ef4444';
-      var nudge = days > 7 ? ' — time to refresh (see bottom of page)' : '';
-      document.getElementById('sub').innerHTML =
-        '<span style="color:' + color + ';font-weight:600">● ' + label + nudge + '</span>' +
-        ' · <span style="color:var(--dim)">' + gen.toLocaleString() + ' · ' + d.perAd.length + ' ads</span>';
-      var t = d.totals || {};
-      // Account-level alerts (e.g. spend cap reached) come first — they explain a
-      // whole account going quiet while every ad still reads ACTIVE.
-      var html = '';
-      (d.alerts || []).forEach(function (a) {
-        var crit = a.level === 'critical';
-        html += '<div style="border:1px solid ' + (crit ? '#ef4444' : 'var(--warn)') + ';background:' + (crit ? 'rgba(239,68,68,.10)' : 'rgba(245,158,11,.10)') +
-          ';border-radius:10px;padding:14px 16px;margin-bottom:16px">' +
-          '<b style="color:' + (crit ? '#ef4444' : 'var(--warn)') + '">' + (crit ? '⛔ ' : '⚠ ') + esc(a.code.replace(/_/g, ' ')) + '</b><br>' + esc(a.message) + '</div>';
-      });
-      html += '<div class="cards">' +
-        stat(kes(t.spend30), 'Spend (30d)') +
-        stat(t.activeAds, 'Active ads') +
-        stat(kes(t.anSpend30), 'Audience Network (30d)') +
-        stat(t.flaggedAds, 'Ads with flags') +
-        '</div>';
+      var lbl = days <= 0 ? 'Synced today' : days === 1 ? 'Synced yesterday' : 'Synced ' + days + ' days ago';
+      var col = days <= 2 ? 'var(--good)' : days <= 7 ? 'var(--warning)' : 'var(--critical)';
+      document.getElementById('fresh').innerHTML =
+        '<span style="color:' + col + '">● ' + lbl + '</span>' +
+        '<span style="color:var(--muted)"> · ' + gen.toLocaleString() + '</span>';
 
-      html += '<h2>Monthly cohort funnel</h2>' + funnelPanel(d.cohorts);
-      html += '<h2>Per-ad economics <span class="sub">(the weekly reallocation view)</span></h2>' + tablePanel(d.perAd);
-      html += referencePanel(d.reference);
-      html += refreshPanel(days);
-      show(html);
-      wireSort(d.perAd);
-      window.__ref = d.reference; updateDeep();
+      var h = alerts() + kpis() + adTable() + funnels() + trend() + footerPanels();
+      show(h);
+      wire();
     }
 
-    function copyRow(text, id) {
-      return '<div style="display:flex;gap:8px;align-items:stretch;margin-top:6px">' +
-        '<textarea id="cp_' + id + '" readonly rows="2" style="flex:1;min-width:0;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;resize:none">' + esc(text) + '</textarea>' +
-        '<button onclick="copyBox(\'' + id + '\',this)" style="background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:0 14px;cursor:pointer">Copy</button></div>';
-    }
-    function copyBox(id, btn) {
-      var el = document.getElementById('cp_' + id); el.select();
-      try { navigator.clipboard.writeText(el.value); } catch (e) { document.execCommand('copy'); }
-      if (btn) { var o = btn.textContent; btn.textContent = 'Copied ✓'; setTimeout(function () { btn.textContent = o; }, 1200); }
-    }
-    function updateDeep() {
-      var ref = window.__ref; var sel = document.getElementById('cfgpick'); var box = document.getElementById('cp_deeplink');
-      if (!ref || !sel || !box) return;
-      box.value = ref.deeplinkBase + sel.value;
-    }
-    function referencePanel(ref) {
-      if (!ref) return '';
-      var opts = (ref.catalogIds || []).map(function (id) { return '<option value="' + esc(id) + '">' + esc(id) + '</option>'; }).join('');
-      return '<h2>Making a new ad? Setup reference</h2>' +
-        '<div class="panel" style="line-height:1.8;max-width:860px">' +
-        '<p><b>1 · URL parameters</b> — paste into the ad’s “URL parameters” field. This stamps the ad’s identity into the link so conversations trace back to it. Same string for every ad (Meta fills the {{…}} tokens):</p>' +
-        copyRow(ref.urlTags, 'urltags') +
-        '<p style="margin-top:18px"><b>2 · Destination link</b> — point the ad at a specific product, not the bare catalog. Pick the product and copy its link:</p>' +
-        '<div style="margin:6px 0"><select id="cfgpick" onchange="updateDeep()">' + opts + '</select></div>' +
-        copyRow('', 'deeplink') +
-        '<p style="color:var(--dim);margin-top:14px">url_tags = <b>which ad</b> · deep-link = <b>which product</b>. Put both on every new ad, and keep ad names consistent (the tags include the ad name).</p>' +
-        '</div>';
-    }
-
-    function stat(n, l) { return '<div class="stat"><div class="n">' + esc(n) + '</div><div class="l">' + esc(l) + '</div></div>'; }
-
-    function refreshPanel(days) {
-      var warn = days > 7 ? '<p style="color:#f59e0b;font-weight:600">These numbers are ' + days + ' days old — refresh them before making budget decisions.</p>' : '';
-      return '<h2>Keeping this up to date</h2>' +
-        '<div class="panel" style="line-height:1.8;max-width:760px">' + warn +
-        '<p>This page is a snapshot. To pull the latest ad spend and conversations:</p>' +
-        '<ol>' +
-        '<li>On the Mac, open Finder → <b>code</b> → <b>framework</b> → <b>mbs-scraper</b>.</li>' +
-        '<li>Double-click <b>sync.command</b>. A window opens and runs for about 30 seconds.</li>' +
-        '<li>When it says <b>“Press Enter to close this window”</b>, press Enter.</li>' +
-        '<li>Come back here and reload the page (<b>Cmd&nbsp;+&nbsp;R</b>). The badge up top should read <b>“Synced today”</b>.</li>' +
-        '</ol>' +
-        '<p style="color:var(--dim)">No login or typing needed — just the double-click. Do this about once a week, or any time you want fresh numbers before reallocating budget.</p>' +
-        '</div>';
-    }
-
-    function funnelPanel(cohorts) {
-      if (!cohorts || !cohorts.length) return '<div class="panel"><div class="msg">No funnel data yet — it fills in as site sessions and conversations accrue.</div></div>';
-      var W = Math.max(520, cohorts.length * 120), H = 260, padB = 34, padL = 40, padT = 10;
-      var maxV = 1;
-      cohorts.forEach(function (c) { STAGES.forEach(function (s) { maxV = Math.max(maxV, c[s.k] || 0); }); });
-      var bw = (W - padL) / cohorts.length * 0.6, gap = (W - padL) / cohorts.length;
-      var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMinYMin meet">';
-      // gridlines
-      for (var g = 0; g <= 4; g++) { var y = padT + (H-padT-padB) * g/4; var val = Math.round(maxV*(4-g)/4); svg += '<line x1="'+padL+'" y1="'+y+'" x2="'+W+'" y2="'+y+'" stroke="#262b36"/><text x="0" y="'+(y+4)+'">'+val+'</text>'; }
-      cohorts.forEach(function (c, i) {
-        var x = padL + i*gap + gap*0.2;
-        // grouped thin bars per stage (a funnel read left→right within the month)
-        var sw = bw / STAGES.length;
-        STAGES.forEach(function (s, si) {
-          var v = c[s.k] || 0;
-          var h = (H-padT-padB) * v / maxV;
-          var bx = x + si*sw;
-          svg += '<rect x="'+bx+'" y="'+(H-padB-h)+'" width="'+(sw-1)+'" height="'+h+'" fill="'+s.color+'"><title>'+s.label+' — '+v+' ('+c.month+')</title></rect>';
-        });
-        svg += '<text x="'+(x+bw/2)+'" y="'+(H-padB+16)+'" text-anchor="middle">'+c.month+'</text>';
-      });
-      svg += '</svg>';
-      var legend = '<div class="legend">' + STAGES.map(function (s) { return '<span><span class="sw" style="background:'+s.color+'"></span>'+s.label+'</span>'; }).join('') + '</div>';
-      return '<div class="panel">' + legend + svg + '</div>';
-    }
-
-    var COLS = [
-      { k:'name', l:'Ad', t:1 }, { k:'status', l:'Status', t:1 },
-      { k:'spend30', l:'Spend 30d', m:1 }, { k:'impressions30', l:'Impr' }, { k:'clicks30', l:'Clicks' },
-      { k:'convosMeta30', l:'Convos (Meta)' }, { k:'ourConversations', l:'Our convos' },
-      { k:'qualified', l:'Qualified' }, { k:'sales', l:'Sales' }, { k:'revenue', l:'Revenue', m:1 },
-      { k:'costPerConvo', l:'Cost/convo', m:1 }, { k:'flags', l:'Flags', t:1 },
-    ];
-    function tablePanel(rows) {
-      var head = '<tr>' + COLS.map(function (c) { return '<th data-k="'+c.k+'">'+c.l+'</th>'; }).join('') + '</tr>';
-      return '<div class="panel"><table id="tbl"><thead>' + head + '</thead><tbody>' + body(rows) + '</tbody></table></div>';
-    }
-    function body(rows) {
-      return rows.map(function (r) {
-        return '<tr>' + COLS.map(function (c) {
-          var v = r[c.k];
-          if (c.k === 'name') return '<td>'+esc(v)+'</td>';
-          if (c.k === 'status') return '<td><span class="pill '+esc(v)+'">'+esc(v)+'</span></td>';
-          if (c.k === 'flags') return '<td class="flag">'+esc((v||[]).join(', '))+'</td>';
-          if (c.m) return '<td>'+(v==null?'—':kes(v))+'</td>';
-          return '<td>'+(v==null?'—':v)+'</td>';
-        }).join('') + '</tr>';
+    // ---------- alerts ----------
+    function alerts() {
+      var a = D.alerts || [];
+      if (!a.length) return '';
+      return a.map(function (x) {
+        var cls = x.level === 'critical' ? 'critical' : x.level === 'warn' ? 'warn' : 'info';
+        var ic  = x.level === 'critical' ? '⛔' : x.level === 'warn' ? '⚠' : 'ⓘ';
+        return '<div class="alert ' + cls + '"><span class="ic">' + ic + '</span><span><b>' +
+          esc(String(x.code).replace(/_/g,' ')) + '</b>' + esc(x.message) + '</span></div>';
       }).join('');
     }
-    function wireSort(rows) {
-      var dir = {};
-      document.querySelectorAll('#tbl th').forEach(function (th) {
-        th.addEventListener('click', function () {
+
+    // ---------- KPI row ----------
+    function kpis() {
+      var t = D.totals || {};
+      var ads = D.perAd || [];
+      var convos = ads.reduce(function (s,p) { return s + (p.convosMeta30||0); }, 0);
+      var cpc    = convos ? t.spend30 / convos : null;
+      var anPct  = t.spend30 ? Math.round(100 * (t.anSpend30||0) / t.spend30) : 0;
+      // Ref-code matches are the NEW deterministic join; linkedToAd includes all
+      // historical CTWA/manual attribution. Never conflate the two.
+      var ref = t.refCodeMatched, linked = t.linkedToAd;
+      return '<section><div class="kpis">' +
+        kpi(kes(t.spend30), 'Spend · 30 days',
+            (t.activeAds||0) + ' active ad' + (t.activeAds===1?'':'s') +
+            (anPct ? ' · <span style="color:var(--warning)">' + anPct + '% Audience Network</span>' : '')) +
+        kpi(num(convos), 'Conversations · 30 days', 'started from ads, per Meta') +
+        kpi(cpc == null ? '—' : kes(cpc), 'Cost per conversation', cpc == null ? 'no conversations yet' : 'the reallocation number') +
+        kpi(num(ref == null ? 0 : ref), 'Matched by ref code',
+            (ref ? 'deterministic ad → WhatsApp joins' : 'none yet — the new join') +
+            (linked ? ' · ' + num(linked) + ' linked to an ad in total' : '')) +
+      '</div></section>';
+    }
+    function kpi(v, l, sub) {
+      return '<div class="kpi"><div class="label">' + esc(l) + '</div><div class="value">' + esc(v) +
+        '</div><div class="sub">' + (sub||'') + '</div></div>';
+    }
+
+    // ---------- per-ad table (the decision surface) ----------
+    var COLS = [
+      { k:'name',            l:'Ad',            t:1 },
+      { k:'spend30',         l:'Spend 30d',     m:1 },
+      { k:'clicks30',        l:'Clicks' },
+      { k:'convosMeta30',    l:'Convos' },
+      { k:'ourConversations',l:'Attributed' },
+      { k:'sales',           l:'Sales' },
+      { k:'revenue',         l:'Revenue',       m:1 },
+      { k:'costPerConvo',    l:'Cost/convo',    m:1, lead:1 },
+      { k:'flags',           l:'Flags',         t:1 }
+    ];
+    function visibleAds() {
+      var ads = (D.perAd || []).slice();
+      if (view.filter === 'spending') ads = ads.filter(function (p) { return (p.spend30||0) > 0; });
+      else if (view.filter === 'active') ads = ads.filter(function (p) { return p.status === 'ACTIVE'; });
+      if (view.q) {
+        var q = view.q.toLowerCase();
+        ads = ads.filter(function (p) { return ((p.name||'') + ' ' + (p.campaign||'')).toLowerCase().indexOf(q) >= 0; });
+      }
+      var k = view.sort, dir = view.dir;
+      ads.sort(function (a,b) {
+        var x = a[k], y = b[k];
+        if (k === 'flags') { x = (a.flags||[]).length; y = (b.flags||[]).length; }
+        if (typeof x === 'string' || typeof y === 'string') { x = String(x==null?'':x).toLowerCase(); y = String(y==null?'':y).toLowerCase(); return x>y?dir:x<y?-dir:0; }
+        x = x == null ? -1 : x; y = y == null ? -1 : y;
+        return (x-y) * dir;
+      });
+      return ads;
+    }
+    function adTable() {
+      var ads = visibleAds();
+      var total = (D.perAd||[]).length;
+      var counts = {
+        spending: (D.perAd||[]).filter(function(p){return (p.spend30||0)>0;}).length,
+        active:   (D.perAd||[]).filter(function(p){return p.status==='ACTIVE';}).length,
+        all: total
+      };
+      var head = '<section><div class="sec-head"><h2>Per-ad economics</h2>' +
+        '<span class="sec-note">where the money went, and what it bought</span>' +
+        '<span class="right">' +
+          '<input type="search" id="adq" placeholder="Filter ads…" value="' + esc(view.q) + '">' +
+          '<span class="seg">' +
+            segbtn('spending','Spending (' + counts.spending + ')') +
+            segbtn('active','Active (' + counts.active + ')') +
+            segbtn('all','All (' + counts.all + ')') +
+          '</span>' +
+        '</span></div>';
+
+      if (!ads.length) return head + '<div class="card pad"><div class="empty">No ads match this view.</div></div></section>';
+
+      var HINTS = {
+        convosMeta30: 'Conversations started, as counted by Meta (last 30 days).',
+        ourConversations: 'Conversations in Airtable carrying this ad’s Meta Ad ID — includes historical CTWA/manual attribution, not only ref-code matches.',
+        costPerConvo: 'Spend (30d) ÷ conversations attributed to this ad. The reallocation number.',
+        revenue: 'Revenue from orders on conversations attributed to this ad.',
+        spend30: 'Meta spend in the last 30 days.'
+      };
+      var th = COLS.map(function (c) {
+        var on = view.sort === c.k;
+        return '<th data-k="' + c.k + '"' + (HINTS[c.k] ? ' title="' + esc(HINTS[c.k]) + '"' : '') + '>' + esc(c.l) +
+          (on ? ' <span class="arrow">' + (view.dir < 0 ? '▼' : '▲') + '</span>' : '') + '</th>';
+      }).join('');
+
+      var rows = ads.map(function (p) {
+        return '<tr>' + COLS.map(function (c) {
+          if (c.k === 'name') {
+            return '<td><div class="adname">' + esc(p.name) + ' <span class="pill ' + esc(p.status) + '">' + esc(p.status) + '</span></div>' +
+                   '<div class="adsub">' + esc(p.campaign || '—') + '</div></td>';
+          }
+          if (c.k === 'flags') {
+            var f = p.flags || [];
+            if (!f.length) return '<td><span class="chips"><span class="chip ok">clean</span></span></td>';
+            return '<td><span class="chips">' + f.map(function (code) {
+              var meta = FLAGS[code] || { s:'info', t:code.replace(/_/g,' '), d:code };
+              return '<span class="chip ' + meta.s + '" title="' + esc(meta.d) + '">' + esc(meta.t) + '</span>';
+            }).join('') + '</span></td>';
+          }
+          var v = p[c.k];
+          var cls = 'num' + (c.lead ? ' lead' : '') + ((v == null || v === 0) ? ' zero' : '');
+          var txt = v == null ? '—' : (c.m ? kes(v) : num(v));
+          return '<td class="' + cls + '">' + txt + '</td>';
+        }).join('') + '</tr>';
+      }).join('');
+
+      return head + '<div class="card"><div class="tablewrap"><table id="adtable"><thead><tr>' + th +
+        '</tr></thead><tbody>' + rows + '</tbody></table></div></div></section>';
+    }
+    function segbtn(v, l) {
+      return '<button data-filter="' + v + '" class="' + (view.filter===v?'on':'') + '">' + esc(l) + '</button>';
+    }
+
+    // ---------- funnels ----------
+    function cohortFor(month) {
+      var cs = D.cohorts || [];
+      if (month === '__all') {
+        return cs.reduce(function (a,c) {
+          ['arrive','product_view','engage','wa_handoff','conversation','quoted','sale','revenue'].forEach(function (k) { a[k] = (a[k]||0) + (c[k]||0); });
+          return a;
+        }, { month:'__all' });
+      }
+      return cs.find(function (c) { return c.month === month; }) || {};
+    }
+    function funnels() {
+      var c = cohortFor(view.month);
+      var opts = (D.cohorts||[]).map(function (x) {
+        return '<option value="' + x.month + '"' + (x.month===view.month?' selected':'') + '>' + x.month + '</option>';
+      }).join('') + '<option value="__all"' + (view.month==='__all'?' selected':'') + '>All time</option>';
+
+      var site = [
+        { k:'arrive',       l:'Arrived',        c:'var(--f1)' },
+        { k:'product_view', l:'Saw a product',  c:'var(--f2)' },
+        { k:'engage',       l:'Engaged',        c:'var(--f3)' },
+        { k:'wa_handoff',   l:'WhatsApp handoff', c:'var(--f4)' }
+      ];
+      var out = [
+        { k:'conversation', l:'Conversation', c:'var(--o1)' },
+        { k:'quoted',       l:'Quoted',       c:'var(--o2)' },
+        { k:'sale',         l:'Sale',         c:'var(--o3)' }
+      ];
+
+      return '<section><div class="sec-head"><h2>Funnel</h2>' +
+        '<span class="sec-note">how far people get</span>' +
+        '<span class="right"><select id="fmonth">' + opts + '</select></span></div>' +
+        '<div class="funnels">' +
+          '<div class="card pad">' +
+            '<div class="fn-title">On-site journey</div>' +
+            '<div class="fn-sub">Tracked sessions on framework.co.ke.</div>' +
+            stages(site, c, c.arrive || 0) +
+          '</div>' +
+          '<div class="card pad">' +
+            '<div class="fn-title">Conversation outcomes</div>' +
+            '<div class="fn-sub">From Airtable — <b>all</b> conversations this month, not only tracked ones.</div>' +
+            stages(out, c, c.conversation || 0) +
+            (c.revenue ? '<div class="stage" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">' +
+              '<div class="row1"><span class="nm">Revenue</span><span class="val"><b>' + kes(c.revenue) + '</b></span></div></div>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="sec-note" style="margin-top:9px">These two are separate populations until ref codes join them — ' +
+          'the left is only sessions we tracked, the right is every conversation from any source.</div>' +
+      '</section>';
+    }
+    function stages(defs, c, base) {
+      if (!base) return '<div class="empty">Nothing recorded in this period.</div>';
+      return defs.map(function (s, i) {
+        var v = c[s.k] || 0;
+        var pct = base ? (100*v/base) : 0;
+        var prev = i ? (c[defs[i-1].k] || 0) : null;
+        var step = (i && prev) ? Math.round(100*v/prev) + '% of previous' : '';
+        return '<div class="stage"><div class="row1"><span class="nm">' + esc(s.l) + '</span>' +
+          '<span class="val"><b>' + num(v) + '</b><span class="pct">' + (i ? step : '100%') + '</span></span></div>' +
+          '<div class="bar"><span style="width:' + Math.max(pct,0.8) + '%;background:' + s.c + '"></span></div></div>';
+      }).join('');
+    }
+
+    // ---------- monthly trend ----------
+    function trend() {
+      var cs = (D.cohorts || []).slice(-12);
+      var head = '<section><div class="sec-head"><h2>Monthly trend</h2>' +
+        '<span class="sec-note">conversations and sales over time</span>' +
+        '<span class="right"><span class="seg">' +
+          '<button data-trend="chart" class="' + (view.trendTable?'':'on') + '">Chart</button>' +
+          '<button data-trend="table" class="' + (view.trendTable?'on':'') + '">Table</button>' +
+        '</span></span></div>';
+      if (!cs.length) return head + '<div class="card pad"><div class="empty">No monthly data yet.</div></div></section>';
+
+      if (view.trendTable) {
+        var rows = cs.slice().reverse().map(function (c) {
+          return '<tr><td>' + esc(c.month) + '</td><td class="num">' + num(c.arrive) + '</td><td class="num">' + num(c.wa_handoff) +
+            '</td><td class="num">' + num(c.conversation) + '</td><td class="num">' + num(c.quoted) + '</td><td class="num">' + num(c.sale) +
+            '</td><td class="num">' + kes(c.revenue) + '</td></tr>';
+        }).join('');
+        return head + '<div class="card"><div class="tablewrap"><table><thead><tr><th>Month</th><th>Arrived</th>' +
+          '<th>Handoffs</th><th>Conversations</th><th>Quoted</th><th>Sales</th><th>Revenue</th></tr></thead><tbody>' +
+          rows + '</tbody></table></div></div></section>';
+      }
+
+      var W = 980, H = 210, padL = 34, padB = 26, padT = 8;
+      var max = Math.max.apply(null, cs.map(function (c) { return Math.max(c.conversation||0, c.sale||0); }).concat([1]));
+      var plotH = H - padB - padT, step = (W - padL) / cs.length;
+      var bw = Math.min(16, step * 0.30);
+      var g = '';
+      for (var i = 0; i <= 3; i++) {
+        var y = padT + plotH * i/3, val = Math.round(max * (3-i)/3);
+        g += '<line x1="' + padL + '" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="#262b36" stroke-width="1"/>' +
+             '<text x="' + (padL-8) + '" y="' + (y+3.5) + '" text-anchor="end">' + val + '</text>';
+      }
+      var bars = cs.map(function (c, i) {
+        var x = padL + i*step + step/2;
+        var h1 = plotH * (c.conversation||0) / max, h2 = plotH * (c.sale||0) / max;
+        // 2px surface gap between the adjacent pair
+        var b = '<rect class="hit" x="' + (x - step/2) + '" y="' + padT + '" width="' + step + '" height="' + plotH +
+                '" fill="transparent" data-i="' + i + '"/>';
+        b += '<rect x="' + (x - bw - 1) + '" y="' + (padT + plotH - h1) + '" width="' + bw + '" height="' + Math.max(h1,0) +
+             '" rx="3" fill="var(--s1)" pointer-events="none"/>';
+        b += '<rect x="' + (x + 1) + '" y="' + (padT + plotH - h2) + '" width="' + bw + '" height="' + Math.max(h2,0) +
+             '" rx="3" fill="var(--s2)" pointer-events="none"/>';
+        b += '<text x="' + x + '" y="' + (H - padB + 15) + '" text-anchor="middle">' + esc(c.month.slice(2)) + '</text>';
+        return b;
+      }).join('');
+      return head + '<div class="card pad">' +
+        '<div class="legend"><span><i style="background:var(--s1)"></i>Conversations</span>' +
+        '<span><i style="background:var(--s2)"></i>Sales</span></div>' +
+        '<svg id="trendsvg" viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMinYMin meet">' +
+        g + bars + '</svg></div></section>';
+    }
+
+    // ---------- reference + refresh ----------
+    function footerPanels() {
+      var r = D.reference || {};
+      var opts = (r.catalogIds||[]).map(function (id) { return '<option value="' + esc(id) + '">' + esc(id) + '</option>'; }).join('');
+      return '<section>' +
+        '<details><summary>Making a new ad — the two things every ad needs</summary><div class="inner">' +
+          '<p><b>1 · URL parameters</b> — paste into the ad’s “URL parameters” field. Stamps the ad’s identity so conversations trace back to it. Same string for every ad.</p>' +
+          copyrow(r.urlTags || '', 'urltags') +
+          '<p style="margin-top:16px"><b>2 · Destination link</b> — point at a specific product, not the bare catalog.</p>' +
+          '<div style="margin:6px 0"><select id="cfgpick">' + opts + '</select></div>' +
+          copyrow('', 'deeplink') +
+        '</div></details>' +
+        '<details><summary>Refreshing this page</summary><div class="inner">' +
+          '<p>This is a snapshot. To pull the latest numbers:</p><ol>' +
+          '<li>On the Mac: Finder → <b>code</b> → <b>framework</b> → <b>mbs-scraper</b>.</li>' +
+          '<li>Double-click <b>sync.command</b> (about 30 seconds), then press Enter when it finishes.</li>' +
+          '<li>Reload this page — the badge up top should read “Synced today”.</li>' +
+          '</ol><p style="color:var(--muted)">To also pull new WhatsApp conversations, double-click <b>run.command</b> instead and press <b>y</b> when it asks.</p>' +
+        '</div></details></section>';
+    }
+    function copyrow(t, id) {
+      return '<div class="copyrow"><textarea id="cp_' + id + '" rows="2" readonly>' + esc(t) + '</textarea>' +
+        '<button class="btn" data-copy="' + id + '">Copy</button></div>';
+    }
+
+    // ---------- wiring ----------
+    function wire() {
+      var q = document.getElementById('adq');
+      if (q) q.oninput = function () { view.q = q.value; var s = q.selectionStart; render();
+        var n = document.getElementById('adq'); if (n) { n.focus(); n.setSelectionRange(s,s); } };
+      document.querySelectorAll('[data-filter]').forEach(function (b) {
+        b.onclick = function () { view.filter = b.getAttribute('data-filter'); render(); };
+      });
+      document.querySelectorAll('#adtable thead th').forEach(function (th) {
+        th.onclick = function () {
           var k = th.getAttribute('data-k');
-          dir[k] = !dir[k];
-          rows.sort(function (a, b) { var x=a[k], y=b[k]; if (typeof x==='string'||x==null) { x=String(x); y=String(y); } return (x>y?1:x<y?-1:0) * (dir[k]?1:-1); });
-          document.querySelector('#tbl tbody').innerHTML = body(rows);
+          if (view.sort === k) view.dir = -view.dir; else { view.sort = k; view.dir = -1; }
+          render();
+        };
+      });
+      var fm = document.getElementById('fmonth');
+      if (fm) fm.onchange = function () { view.month = fm.value; render(); };
+      document.querySelectorAll('[data-trend]').forEach(function (b) {
+        b.onclick = function () { view.trendTable = b.getAttribute('data-trend') === 'table'; render(); };
+      });
+      document.querySelectorAll('[data-copy]').forEach(function (b) {
+        b.onclick = function () {
+          var el = document.getElementById('cp_' + b.getAttribute('data-copy'));
+          el.select(); try { navigator.clipboard.writeText(el.value); } catch (e) { document.execCommand('copy'); }
+          var o = b.textContent; b.textContent = 'Copied ✓'; setTimeout(function(){ b.textContent = o; }, 1200);
+        };
+      });
+      var pick = document.getElementById('cfgpick'), dl = document.getElementById('cp_deeplink');
+      if (pick && dl) { var upd = function () { dl.value = (D.reference.deeplinkBase||'') + pick.value; }; pick.onchange = upd; upd(); }
+      trendHover();
+    }
+
+    function trendHover() {
+      var svg = document.getElementById('trendsvg'); if (!svg) return;
+      var cs = (D.cohorts || []).slice(-12), tip = document.getElementById('tip');
+      svg.querySelectorAll('.hit').forEach(function (r) {
+        r.style.cursor = 'default';
+        r.addEventListener('mousemove', function (e) {
+          var c = cs[Number(r.getAttribute('data-i'))]; if (!c) return;
+          tip.innerHTML = '<div class="t">' + esc(c.month) + '</div>' +
+            '<div class="r"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--s1);margin-right:6px"></i>Conversations</span><span>' + num(c.conversation) + '</span></div>' +
+            '<div class="r"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--s2);margin-right:6px"></i>Sales</span><span>' + num(c.sale) + '</span></div>' +
+            (c.revenue ? '<div class="r"><span>Revenue</span><span>' + kes(c.revenue) + '</span></div>' : '') +
+            (c.arrive ? '<div class="r"><span>Tracked arrivals</span><span>' + num(c.arrive) + '</span></div>' : '');
+          tip.style.opacity = 1;
+          var x = e.clientX + 14, y = e.clientY - 10;
+          if (x + 210 > window.innerWidth) x = e.clientX - 210;
+          tip.style.left = x + 'px'; tip.style.top = y + 'px';
         });
+        r.addEventListener('mouseleave', function () { tip.style.opacity = 0; });
       });
     }
+  })();
   </script>
 </body>
 </html>
