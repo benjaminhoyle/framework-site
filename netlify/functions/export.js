@@ -1,6 +1,6 @@
 // GET /api/export?since=YYYY-MM-DD&until=YYYY-MM-DD&key=<secret>[&events=all]
 //
-// Shared-secret export for the local reconciler (mbs-scraper). Returns the
+// Shared-secret export for the local reconciler (framework-ops). Returns the
 // `wa_handoff` events and the short-code payloads in the range; with events=all,
 // every checkpoint event (for the dashboard's cohort funnel + catalog stats).
 // No PII by construction. Auth is SITE_EXPORT_KEY; without it → 401.
