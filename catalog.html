@@ -179,8 +179,13 @@
       var pub = pubIndex();
       var gen = state.published.generatedAt ? new Date(state.published.generatedAt) : null;
       var nActive = state.working.filter(function(p){return p.active!==false;}).length;
+      // "Live on the site" is the PUBLISHED state — staged edits aren't live until
+      // Publish, so counting the working set here would overstate what's shipped.
+      var nLive = (state.published.products||[]).filter(function(p){return p.active!==false;}).length;
+      var nStaged = state.working.filter(function (p) { return !!diffState(p, pub); }).length;
       document.getElementById('sub').innerHTML = 'Source of truth: catalog.json · ' +
-        state.working.length + ' products · ' + nActive + ' live on the site' +
+        state.working.length + ' products · ' + nLive + ' live on the site' +
+        (nStaged ? ' · <span style="color:var(--warn)">' + nStaged + ' staged (' + nActive + ' after publish)</span>' : '') +
         (gen ? ' · <span style="color:var(--dim)">stats ' + gen.toLocaleString() + '</span>' : '');
 
       var counts = {
