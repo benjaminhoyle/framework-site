@@ -371,30 +371,36 @@
           '<div class="card pad">' +
             '<div class="fn-title">On-site journey</div>' +
             '<div class="fn-sub">Tracked sessions on framework.co.ke.</div>' +
-            stages(site, c, c.arrive || 0) +
+            stages(site, c, c.arrive || 0, 'arrivals') +
           '</div>' +
           '<div class="card pad">' +
             '<div class="fn-title">Conversation outcomes</div>' +
             '<div class="fn-sub">From Airtable — <b>all</b> conversations this month, not only tracked ones.</div>' +
-            stages(out, c, c.conversation || 0) +
+            stages(out, c, c.conversation || 0, 'conversations') +
             (c.revenue ? '<div class="stage" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">' +
               '<div class="row1"><span class="nm">Revenue</span><span class="val"><b>' + kes(c.revenue) + '</b></span></div></div>' : '') +
           '</div>' +
         '</div>' +
-        '<div class="sec-note" style="margin-top:9px">These two are separate populations until ref codes join them — ' +
-          'the left is only sessions we tracked, the right is every conversation from any source.</div>' +
+        '<div class="sec-note" style="margin-top:9px">Percentages are a share of the base, not of the stage above — ' +
+          'these milestones are not nested (someone can tap WhatsApp straight from arrival). ' +
+          'The two panels are separate populations until ref codes join them: the left is only sessions we tracked, ' +
+          'the right is every conversation from any source.</div>' +
       '</section>';
     }
-    function stages(defs, c, base) {
+    // Every stage is shown as a share of the BASE (arrivals / conversations), not
+    // of the previous stage. These milestones are not strictly nested — someone can
+    // tap WhatsApp straight from arrival without ever "engaging" (we record
+    // handoff_depth=arrived) — so "% of previous" can exceed 100% and implies a
+    // funnel shape the data doesn't have.
+    function stages(defs, c, base, baseLabel) {
       if (!base) return '<div class="empty">Nothing recorded in this period.</div>';
       return defs.map(function (s, i) {
         var v = c[s.k] || 0;
         var pct = base ? (100*v/base) : 0;
-        var prev = i ? (c[defs[i-1].k] || 0) : null;
-        var step = (i && prev) ? Math.round(100*v/prev) + '% of previous' : '';
+        var lab = i === 0 ? 'all ' + esc(baseLabel) : Math.round(pct) + '% of ' + esc(baseLabel);
         return '<div class="stage"><div class="row1"><span class="nm">' + esc(s.l) + '</span>' +
-          '<span class="val"><b>' + num(v) + '</b><span class="pct">' + (i ? step : '100%') + '</span></span></div>' +
-          '<div class="bar"><span style="width:' + Math.max(pct,0.8) + '%;background:' + s.c + '"></span></div></div>';
+          '<span class="val"><b>' + num(v) + '</b><span class="pct">' + lab + '</span></span></div>' +
+          '<div class="bar"><span style="width:' + Math.max(Math.min(pct,100),0.8) + '%;background:' + s.c + '"></span></div></div>';
       }).join('');
     }
 
