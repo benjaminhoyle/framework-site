@@ -29,22 +29,53 @@
     .nav:hover { color:var(--ink); }
     .freshness { margin-left:auto; font-size:12.5px; }
 
-    main { padding:24px 28px 72px; max-width:1240px; margin:0 auto; }
+    main { padding:24px 28px 72px; max-width:1280px; margin:0 auto; }
     section { margin-bottom:34px; }
     .sec-head { display:flex; align-items:baseline; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
     h2 { font-size:14px; margin:0; letter-spacing:.01em; }
     .sec-note { font-size:12.5px; color:var(--muted); }
-    .sec-head .right { margin-left:auto; display:flex; gap:8px; align-items:center; }
+    .sec-head .right { margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    /* Three control groups plus a search box overflow a phone; let them stack
+       rather than push the page into a horizontal scroll. The table keeps its own
+       scroll container — the body never scrolls sideways. */
+    @media (max-width:760px) {
+      .sec-head .right { width:100%; margin-left:0; }
+      .sec-head .right input[type=search] { flex:1 1 100%; }
+      .seg { flex:0 1 auto; }
+    }
 
     .card { background:var(--card); border:1px solid var(--line); border-radius:12px; }
     .pad { padding:18px 20px; }
 
-    /* KPI row — the four numbers the weekly decision turns on. */
-    .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; }
-    .kpi { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:15px 17px; }
-    .kpi .label { font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
-    .kpi .value { font-size:26px; font-weight:600; margin-top:5px; letter-spacing:-.02em; }
-    .kpi .sub { font-size:12px; color:var(--dim); margin-top:3px; }
+    /* Verdict — the top of the hierarchy. One question: is what's live working?
+       Everything below it is evidence for this answer, so it is the only thing on
+       the page allowed to be this loud. */
+    .verdict { background:var(--card); border:1px solid var(--line); border-left:3px solid var(--muted);
+      border-radius:12px; padding:19px 22px 20px; }
+    .verdict.not_working { border-left-color:var(--critical); }
+    .verdict.stalled     { border-left-color:var(--serious); }
+    .verdict.working     { border-left-color:var(--good); }
+    .verdict .eyebrow { font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+    .verdict .say { font-size:23px; font-weight:600; letter-spacing:-.02em; margin:5px 0 0; }
+    .verdict.not_working .say { color:var(--critical); }
+    .verdict.stalled .say     { color:var(--serious); }
+    .verdict.working .say     { color:var(--good); }
+    .verdict .setup { font-size:13px; color:var(--dim); margin-top:7px; font-variant-numeric:tabular-nums; }
+    .verdict .setup b { color:var(--ink); font-weight:600; }
+
+    /* The money chain: spend → conversations → sales, in one reading line. */
+    .chain { display:flex; align-items:stretch; gap:0; margin-top:17px; flex-wrap:wrap;
+      border-top:1px solid var(--line); padding-top:16px; }
+    .chain .step { padding-right:26px; }
+    .chain .step + .step { padding-left:26px; border-left:1px solid var(--line-soft); }
+    .chain .n { font-size:21px; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+    .chain .n.nil { color:var(--critical); }
+    .chain .k { font-size:11.5px; color:var(--muted); margin-top:2px; }
+
+    /* Trust check — only rendered when the two counts actually disagree. */
+    .trust { margin-top:15px; padding-top:14px; border-top:1px solid var(--line); font-size:13px; color:var(--dim); }
+    .trust b { color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
+    .trust .verdictline { color:var(--serious); margin-top:4px; }
 
     /* Alerts */
     .alert { border-radius:10px; padding:13px 16px; margin-bottom:12px; border:1px solid;
@@ -82,17 +113,34 @@
     .adsub { font-size:11.5px; color:var(--muted); margin-top:1px; }
     .lead { color:var(--ink); font-weight:600; }
     .zero { color:var(--muted); }
+    /* Ad / campaign / ad set names are long; keep the row scannable and put the
+       full text in the title attribute rather than wrapping the table out of shape. */
+    td.text { text-align:left; color:var(--dim); max-width:150px; overflow:hidden;
+      text-overflow:ellipsis; font-size:12.5px; }
+    th.text { text-align:left; }
+    /* Truncate the NAME, never the status pill or the ad count — those are the
+       parts that change what the row means. */
+    td:first-child { max-width:240px; }
+    td:first-child .adname { display:flex; align-items:center; gap:7px; }
+    td:first-child .adname .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+    td:first-child .adname .pill, td:first-child .adname .gcount { flex:0 0 auto; }
+    tbody tr.grouprow td:first-child { font-weight:600; }
+    .gcount { color:var(--muted); font-weight:400; font-size:11.5px; }
 
     .pill { display:inline-block; padding:1.5px 8px; border-radius:20px; font-size:11px;
       border:1px solid var(--line); color:var(--dim); }
     .pill.ACTIVE { color:var(--good); border-color:rgba(12,163,12,.45); }
 
-    .chips { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
+    /* nowrap: chips stacking inside a narrow column gave rows three different
+       heights, which reads as a broken table rather than as information. */
+    .chips { display:flex; gap:4px; flex-wrap:nowrap; justify-content:flex-end; }
     .chip { font-size:10.5px; padding:1.5px 7px; border-radius:5px; border:1px solid; white-space:nowrap; }
     .chip.warning { color:var(--warning); border-color:rgba(250,178,25,.4); }
     .chip.serious { color:var(--serious); border-color:rgba(236,131,90,.4); }
     .chip.info { color:var(--dim); border-color:var(--line); }
     .chip.ok { color:var(--good); border-color:rgba(12,163,12,.35); }
+    .chip.more { color:var(--muted); border-color:var(--line); }
+    .chips[title] { cursor:help; }
 
     /* Funnel */
     .funnels { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -154,7 +202,7 @@
     var kes = function (n) { return 'KSh ' + Math.round(Number(n)||0).toLocaleString('en-US'); };
     var num = function (n) { return (Number(n)||0).toLocaleString('en-US'); };
     var show = function (h) { document.getElementById('main').innerHTML = h; };
-    var D = null, view = { filter:'spending', sort:'spend30', dir:-1, q:'', month:null, trendTable:false };
+    var D = null, view = { filter:'spending', group:'ad', win:'30d', sort:'spend30', dir:-1, q:'', month:null, trendTable:false };
 
     if (!key) {
       show('<div class="msg">This dashboard is private. Add your key to the URL:<br><br>' +
@@ -174,10 +222,14 @@
       .catch(function (e) { show('<div class="msg">' + esc(e.message) + '</div>'); });
 
     // ---- flag presentation: short label + severity, never colour alone ----
+    // Severity ranks by "is this costing me money right now", because only one
+    // flag per row is shown and it should be the one that decides what you do.
+    // serious = money leaving with nothing coming back; warning = plumbing that
+    // will cost you later; info = worth fixing, not urgent.
     var FLAGS = {
       delivery_stalled:        { s:'serious', t:'not delivering', d:'Reads ACTIVE but spent nothing in 3 days — check the account spend cap or schedule.' },
-      spend_no_conversations:  { s:'warning', t:'no conversations', d:'Spend > 0 in 30d with zero conversations started.' },
-      audience_network_on:     { s:'warning', t:'audience network', d:'Audience Network delivered spend in this window — off-platform junk inventory.' },
+      spend_no_conversations:  { s:'serious', t:'no conversations', d:'Spend > 0 in 30d with zero conversations started.' },
+      audience_network_on:     { s:'serious', t:'audience network', d:'Audience Network is taking spend right now (last 7 days) — off-platform junk inventory. Historic Audience Network spend inside the 30-day window no longer raises this; only live delivery does.' },
       missing_url_tags:        { s:'warning', t:'no url_tags', d:'No url_tags, so conversations cannot be traced back to this ad.' },
       no_catalog_anchor:       { s:'warning', t:'stale product', d:'Deep-links to a product no longer in the live catalog.' },
       frequency_fatigue:       { s:'warning', t:'fatigue', d:'Frequency above 3.5 — the same people keep seeing it.' },
@@ -200,7 +252,7 @@
         '<span style="color:' + col + '">● ' + lbl + '</span>' +
         '<span style="color:var(--muted)"> · ' + gen.toLocaleString() + '</span>';
 
-      var h = alerts() + kpis() + adTable() + funnels() + trend() + footerPanels();
+      var h = verdict() + alerts() + adTable() + funnels() + trend() + footerPanels();
       show(h);
       wire();
     }
@@ -217,74 +269,169 @@
       }).join('');
     }
 
-    // ---------- KPI row ----------
-    function kpis() {
-      var t = D.totals || {};
-      var ads = D.perAd || [];
-      var convos = ads.reduce(function (s,p) { return s + (p.convosMeta30||0); }, 0);
-      var cpc    = convos ? t.spend30 / convos : null;
-      var anPct  = t.spend30 ? Math.round(100 * (t.anSpend30||0) / t.spend30) : 0;
-      // Ref-code matches are the NEW deterministic join; linkedToAd includes all
-      // historical CTWA/manual attribution. Never conflate the two.
-      var ref = t.refCodeMatched, linked = t.linkedToAd;
-      return '<section><div class="kpis">' +
-        kpi(kes(t.spend30), 'Spend · 30 days',
-            (t.activeAds||0) + ' active ad' + (t.activeAds===1?'':'s') +
-            (anPct ? ' · <span style="color:var(--warning)">' + anPct + '% Audience Network</span>' : '')) +
-        kpi(num(convos), 'Conversations · 30 days', 'started from ads, per Meta') +
-        kpi(cpc == null ? '—' : kes(cpc), 'Cost per conversation', cpc == null ? 'no conversations yet' : 'the reallocation number') +
-        kpi(num(ref == null ? 0 : ref), 'Matched by ref code',
-            (ref ? 'deterministic ad → WhatsApp joins' : 'none yet — the new join') +
-            (linked ? ' · ' + num(linked) + ' linked to an ad in total' : '')) +
+    // ---------- verdict: is what's live working? ----------
+    // Replaces the old four-KPI row. Those four numbers were true but answered
+    // nothing on their own — you still had to do the division in your head and
+    // then go hunting for whether the ads producing them were even running.
+    var SAY = {
+      working:      { t:'Live and working' },
+      not_working:  { t:'Live — not working' },
+      stalled:      { t:'Live but not delivering' },
+      nothing_live: { t:'Nothing is live' }
+    };
+    function verdict() {
+      var v = D.live; if (!v) return '';
+      var s = SAY[v.verdict] || SAY.nothing_live;
+
+      // Line 1 — the setup: what is running and how long it can keep running.
+      var setup = v.verdict === 'nothing_live'
+        ? 'No active ads. Nothing is spending.'
+        : '<b>' + num(v.activeAds) + '</b> active ad' + (v.activeAds===1?'':'s') +
+          (v.dailyBudget ? ' · <b>' + kes(v.dailyBudget) + '</b>/day' : '') +
+          (v.runwayDays != null ? ' · <b>' + v.runwayDays.toFixed(1) + '</b> days of runway' : '');
+
+      // Line 2 — the money chain. Zero at the end of the chain is the whole point,
+      // so it is coloured; every other number stays neutral.
+      var chain = v.verdict === 'nothing_live' ? '' :
+        '<div class="chain">' +
+          step(kes(v.spend30), 'spent · 30 days') +
+          step(num(v.convosMeta30), 'conversations', !v.convosMeta30) +
+          step(num(v.sales30), v.sales30 === 1 ? 'sale' : 'sales', !v.sales30) +
+          (v.revenue30 ? step(kes(v.revenue30), 'revenue') : '') +
+          (v.costPerConvo30 != null ? step(kes(v.costPerConvo30), 'per conversation') : '') +
+        '</div>';
+
+      return '<section><div class="verdict ' + esc(v.verdict) + '">' +
+        '<div class="eyebrow">Live right now</div>' +
+        '<div class="say">' + esc(s.t) + '</div>' +
+        '<div class="setup">' + setup + '</div>' +
+        chain + trustCheck(v) +
       '</div></section>';
     }
-    function kpi(v, l, sub) {
-      return '<div class="kpi"><div class="label">' + esc(l) + '</div><div class="value">' + esc(v) +
-        '</div><div class="sub">' + (sub||'') + '</div></div>';
+    function step(n, k, nil) {
+      return '<div class="step"><div class="n' + (nil?' nil':'') + '">' + esc(n) + '</div>' +
+        '<div class="k">' + esc(k) + '</div></div>';
     }
 
-    // ---------- per-ad table (the decision surface) ----------
-    var COLS = [
-      { k:'name',            l:'Ad',            t:1 },
-      { k:'spend30',         l:'Spend 30d',     m:1 },
-      { k:'clicks30',        l:'Clicks' },
-      { k:'convosMeta30',    l:'Convos' },
-      { k:'ourConversations',l:'Attributed' },
-      { k:'sales',           l:'Sales' },
-      { k:'revenue',         l:'Revenue',       m:1 },
-      { k:'costPerConvo',    l:'Cost/convo',    m:1, lead:1 },
-      { k:'flags',           l:'Flags',         t:1 }
-    ];
-    function visibleAds() {
+    // Meta counts a landing-page view off its own click; the site counts a session
+    // that actually loaded. When those two disagree badly the clicks were not
+    // people. Stays silent unless it has something to say — this is the one place
+    // a discrepancy is worth interrupting for.
+    function trustCheck(v) {
+      if (!v.metaLanding30) return '';
+      var ratio = v.metaLanding30 ? v.siteArrivals30 / v.metaLanding30 : 1;
+      var bad = v.metaLanding30 >= 200 && ratio < 0.5;
+      return '<div class="trust">Meta counted <b>' + num(v.metaLanding30) + '</b> landing views' +
+        '; your site recorded <b>' + num(v.siteArrivals30) + '</b> arrivals.' +
+        (bad ? '<div class="verdictline">Only ' + Math.round(ratio*100) + '% of those clicks became a real visit — ' +
+               'the rest never loaded the site.</div>' : '') +
+      '</div>';
+    }
+
+    // ---------- per-ad economics (the decision surface) ----------
+    // Campaign / ad set / ad are columns, and any of the three can be the row
+    // identity. Every metric column names its own window in the header, because
+    // 30d spend and lifetime revenue in one row is otherwise a trap.
+    var MEASURES = ['spend30','spendLife','convosMeta30','ourConversations','sales','sales30','revenue','revenue30'];
+
+    // One window at a time, chosen explicitly — rather than 30-day spend sitting
+    // next to lifetime revenue in the same row, which reads as a ratio and isn't
+    // one. Switching to Lifetime is also how the paused boosted posts become
+    // comparable: they have no 30-day anything, and all the revenue.
+    var WIN = {
+      '30d':  { spend:'spend30',   convos:'convosMeta30',     cpc:'costPerConvo30',
+                sales:'sales30',   revenue:'revenue30',
+                l:{ spend:'Spend 30d', convos:'Convos 30d', cpc:'Cost/convo', sales:'Sales 30d', revenue:'Revenue 30d' },
+                hint:{ convos:'Conversations started in the last 30 days, as counted by Meta.',
+                       cpc:'30-day spend ÷ 30-day conversations. Same window both sides.' } },
+      'life': { spend:'spendLife', convos:'ourConversations', cpc:'costPerConvoLife',
+                sales:'sales',     revenue:'revenue',
+                l:{ spend:'Spend life', convos:'Attributed', cpc:'Cost/convo', sales:'Sales', revenue:'Revenue' },
+                hint:{ convos:'Every conversation in Airtable carrying this Meta Ad ID, all time — Meta has no lifetime messaging data for boosted posts, our attribution does.',
+                       cpc:'Lifetime spend ÷ lifetime attributed conversations.' } }
+    };
+    function cols() {
+      var g = view.group, w = WIN[view.win];
+      var c = [{ k:'name', l: g==='campaign' ? 'Campaign' : g==='adset' ? 'Ad set' : 'Ad', t:1 }];
+      if (g === 'ad')    c.push({ k:'campaign', l:'Campaign', x:1 }, { k:'adset', l:'Ad set', x:1 });
+      if (g === 'adset') c.push({ k:'campaign', l:'Campaign', x:1 });
+      return c.concat([
+        { k:w.spend,   l:w.l.spend,   m:1 },
+        { k:w.convos,  l:w.l.convos },
+        { k:w.cpc,     l:w.l.cpc,     m:1, lead:1 },
+        { k:w.sales,   l:w.l.sales },
+        { k:w.revenue, l:w.l.revenue, m:1 },
+        { k:'flags',   l:'Flags',     t:1 }
+      ]);
+    }
+
+    // Roll a set of ads up onto one row. Ratios are recomputed from the summed
+    // parts (never averaged), and a group counts as ACTIVE if anything in it is.
+    function aggregate(ads, keyOf, nameOf) {
+      var m = new Map(), order = [];
+      ads.forEach(function (a) {
+        var k = String(keyOf(a) || '—'), g = m.get(k);
+        if (!g) {
+          g = { key:k, name:nameOf(a) || '—', campaign:a.campaign, adset:a.adset, n:0, status:'PAUSED', flags:[] };
+          MEASURES.forEach(function (f) { g[f] = 0; });
+          m.set(k, g); order.push(g);
+        }
+        g.n++;
+        MEASURES.forEach(function (f) { g[f] += Number(a[f]) || 0; });
+        if (a.status === 'ACTIVE') g.status = 'ACTIVE';
+        (a.flags||[]).forEach(function (f) { if (g.flags.indexOf(f) < 0) g.flags.push(f); });
+      });
+      order.forEach(function (g) {
+        ['spend30','spendLife','revenue','revenue30'].forEach(function (f) { g[f] = Math.round(g[f]*100)/100; });
+        // Recomputed from the summed parts, never averaged — and each ratio keeps
+        // both of its sides inside one window.
+        g.costPerConvo30   = g.convosMeta30     ? Math.round(g.spend30/g.convosMeta30*100)/100     : null;
+        g.costPerConvoLife = g.ourConversations ? Math.round(g.spendLife/g.ourConversations*100)/100 : null;
+      });
+      return order;
+    }
+
+    function visibleRows() {
       var ads = (D.perAd || []).slice();
       if (view.filter === 'spending') ads = ads.filter(function (p) { return (p.spend30||0) > 0; });
       else if (view.filter === 'active') ads = ads.filter(function (p) { return p.status === 'ACTIVE'; });
       if (view.q) {
         var q = view.q.toLowerCase();
-        ads = ads.filter(function (p) { return ((p.name||'') + ' ' + (p.campaign||'')).toLowerCase().indexOf(q) >= 0; });
+        ads = ads.filter(function (p) {
+          return ((p.name||'') + ' ' + (p.campaign||'') + ' ' + (p.adset||'')).toLowerCase().indexOf(q) >= 0;
+        });
       }
+      var rows = view.group === 'campaign'
+          ? aggregate(ads, function(a){return a.campaignId||a.campaign;}, function(a){return a.campaign;})
+        : view.group === 'adset'
+          ? aggregate(ads, function(a){return a.adsetId||a.adset;}, function(a){return a.adset;})
+        : ads;
+
       var k = view.sort, dir = view.dir;
-      ads.sort(function (a,b) {
+      rows.sort(function (a,b) {
         var x = a[k], y = b[k];
         if (k === 'flags') { x = (a.flags||[]).length; y = (b.flags||[]).length; }
         if (typeof x === 'string' || typeof y === 'string') { x = String(x==null?'':x).toLowerCase(); y = String(y==null?'':y).toLowerCase(); return x>y?dir:x<y?-dir:0; }
         x = x == null ? -1 : x; y = y == null ? -1 : y;
         return (x-y) * dir;
       });
-      return ads;
+      return rows;
     }
+
     function adTable() {
-      var ads = visibleAds();
-      var total = (D.perAd||[]).length;
+      var rows = visibleRows(), C = cols();
       var counts = {
         spending: (D.perAd||[]).filter(function(p){return (p.spend30||0)>0;}).length,
         active:   (D.perAd||[]).filter(function(p){return p.status==='ACTIVE';}).length,
-        all: total
+        all:      (D.perAd||[]).length
       };
+      var w = WIN[view.win];
       var head = '<section><div class="sec-head"><h2>Per-ad economics</h2>' +
         '<span class="sec-note">where the money went, and what it bought</span>' +
         '<span class="right">' +
-          '<input type="search" id="adq" placeholder="Filter ads…" value="' + esc(view.q) + '">' +
+          '<input type="search" id="adq" placeholder="Filter…" value="' + esc(view.q) + '">' +
+          '<span class="seg">' + winbtn('30d','30 days') + winbtn('life','Lifetime') + '</span>' +
+          '<span class="seg">' + grpbtn('ad','By ad') + grpbtn('adset','By ad set') + grpbtn('campaign','By campaign') + '</span>' +
           '<span class="seg">' +
             segbtn('spending','Spending (' + counts.spending + ')') +
             segbtn('active','Active (' + counts.active + ')') +
@@ -292,47 +439,71 @@
           '</span>' +
         '</span></div>';
 
-      if (!ads.length) return head + '<div class="card pad"><div class="empty">No ads match this view.</div></div></section>';
+      if (!rows.length) return head + '<div class="card pad"><div class="empty">Nothing matches this view.</div></div></section>';
 
       var HINTS = {
-        convosMeta30: 'Conversations started, as counted by Meta (last 30 days).',
-        ourConversations: 'Conversations in Airtable carrying this ad’s Meta Ad ID — includes historical CTWA/manual attribution, not only ref-code matches.',
-        costPerConvo: 'Spend (30d) ÷ conversations attributed to this ad. The reallocation number.',
-        revenue: 'Revenue from orders on conversations attributed to this ad.',
-        spend30: 'Meta spend in the last 30 days.'
+        spend30: 'Meta spend in the last 30 days.',
+        spendLife: 'Everything this ad has ever spent.',
+        revenue: 'All-time revenue from orders on conversations attributed here.',
+        revenue30: 'Revenue from conversations that started in the last 30 days. Sales close slowly, so this lags spend.',
+        sales30: 'Sales from conversations that started in the last 30 days.'
       };
-      var th = COLS.map(function (c) {
+      HINTS[w.convos] = w.hint.convos;
+      HINTS[w.cpc] = w.hint.cpc;
+      var th = C.map(function (c) {
         var on = view.sort === c.k;
-        return '<th data-k="' + c.k + '"' + (HINTS[c.k] ? ' title="' + esc(HINTS[c.k]) + '"' : '') + '>' + esc(c.l) +
+        return '<th data-k="' + c.k + '"' + (c.x ? ' class="text"' : '') +
+          (HINTS[c.k] ? ' title="' + esc(HINTS[c.k]) + '"' : '') + '>' + esc(c.l) +
           (on ? ' <span class="arrow">' + (view.dir < 0 ? '▼' : '▲') + '</span>' : '') + '</th>';
       }).join('');
 
-      var rows = ads.map(function (p) {
-        return '<tr>' + COLS.map(function (c) {
+      var grouped = view.group !== 'ad';
+      var body = rows.map(function (p) {
+        return '<tr' + (grouped ? ' class="grouprow"' : '') + '>' + C.map(function (c) {
           if (c.k === 'name') {
-            return '<td><div class="adname">' + esc(p.name) + ' <span class="pill ' + esc(p.status) + '">' + esc(p.status) + '</span></div>' +
-                   '<div class="adsub">' + esc(p.campaign || '—') + '</div></td>';
+            return '<td title="' + esc(p.name || '') + '"><div class="adname">' +
+              '<span class="nm">' + esc(p.name || '—') + '</span>' +
+              '<span class="pill ' + esc(p.status) + '">' + esc(p.status) + '</span>' +
+              (grouped ? '<span class="gcount">' + num(p.n) + ' ad' + (p.n===1?'':'s') + '</span>' : '') +
+              '</div></td>';
           }
-          if (c.k === 'flags') {
-            var f = p.flags || [];
-            if (!f.length) return '<td><span class="chips"><span class="chip ok">clean</span></span></td>';
-            return '<td><span class="chips">' + f.map(function (code) {
-              var meta = FLAGS[code] || { s:'info', t:code.replace(/_/g,' '), d:code };
-              return '<span class="chip ' + meta.s + '" title="' + esc(meta.d) + '">' + esc(meta.t) + '</span>';
-            }).join('') + '</span></td>';
-          }
+          if (c.x) { var t = p[c.k] || '—'; return '<td class="text" title="' + esc(t) + '">' + esc(t) + '</td>'; }
+          if (c.k === 'flags') return '<td>' + flagCell(p.flags || []) + '</td>';
           var v = p[c.k];
           var cls = 'num' + (c.lead ? ' lead' : '') + ((v == null || v === 0) ? ' zero' : '');
-          var txt = v == null ? '—' : (c.m ? kes(v) : num(v));
-          return '<td class="' + cls + '">' + txt + '</td>';
+          return '<td class="' + cls + '">' + (v == null ? '—' : (c.m ? kes(v) : num(v))) + '</td>';
         }).join('') + '</tr>';
       }).join('');
 
       return head + '<div class="card"><div class="tablewrap"><table id="adtable"><thead><tr>' + th +
-        '</tr></thead><tbody>' + rows + '</tbody></table></div></div></section>';
+        '</tr></thead><tbody>' + body + '</tbody></table></div></div></section>';
     }
+    // One chip per row: the worst thing wrong, plus a count of the rest. Three
+    // stacked chips per row was three lines of small print competing with the
+    // numbers — and the row's worst problem is the one that decides what you do.
+    // The full list stays one hover away.
+    var SEV = { serious:0, warning:1, info:2 };
+    function flagCell(f) {
+      if (!f.length) return '<span class="chips"><span class="chip ok">clean</span></span>';
+      var metas = f.map(function (code) {
+        return FLAGS[code] || { s:'info', t:code.replace(/_/g,' '), d:code };
+      }).sort(function (a,b) { return (SEV[a.s]==null?9:SEV[a.s]) - (SEV[b.s]==null?9:SEV[b.s]); });
+      var all = metas.map(function (m) { return '• ' + m.t + ' — ' + m.d; }).join('\n');
+      var top = metas[0], rest = metas.length - 1;
+      return '<span class="chips" title="' + esc(all) + '">' +
+        '<span class="chip ' + top.s + '">' + esc(top.t) + '</span>' +
+        (rest ? '<span class="chip more">+' + rest + '</span>' : '') +
+      '</span>';
+    }
+
     function segbtn(v, l) {
       return '<button data-filter="' + v + '" class="' + (view.filter===v?'on':'') + '">' + esc(l) + '</button>';
+    }
+    function grpbtn(v, l) {
+      return '<button data-group="' + v + '" class="' + (view.group===v?'on':'') + '">' + esc(l) + '</button>';
+    }
+    function winbtn(v, l) {
+      return '<button data-win="' + v + '" class="' + (view.win===v?'on':'') + '">' + esc(l) + '</button>';
     }
 
     // ---------- funnels ----------
@@ -482,12 +653,35 @@
     }
 
     // ---------- wiring ----------
+    function resetSort() { view.sort = WIN[view.win].spend; view.dir = -1; }
     function wire() {
       var q = document.getElementById('adq');
       if (q) q.oninput = function () { view.q = q.value; var s = q.selectionStart; render();
         var n = document.getElementById('adq'); if (n) { n.focus(); n.setSelectionRange(s,s); } };
       document.querySelectorAll('[data-filter]').forEach(function (b) {
         b.onclick = function () { view.filter = b.getAttribute('data-filter'); render(); };
+      });
+      document.querySelectorAll('[data-group]').forEach(function (b) {
+        b.onclick = function () {
+          view.group = b.getAttribute('data-group');
+          // Sorting by a column the new grouping doesn't have would silently
+          // scramble the order — fall back to the window's spend column.
+          if (view.sort === 'campaign' || view.sort === 'adset') resetSort();
+          render();
+        };
+      });
+      document.querySelectorAll('[data-win]').forEach(function (b) {
+        b.onclick = function () {
+          var prev = WIN[view.win];
+          view.win = b.getAttribute('data-win');
+          // Carry the sort across to the equivalent column in the new window, so
+          // switching windows doesn't silently reorder the table under you.
+          var role = null;
+          ['spend','convos','cpc','sales','revenue'].forEach(function (r) { if (prev[r] === view.sort) role = r; });
+          if (role) view.sort = WIN[view.win][role];
+          else if (view.sort !== 'name' && view.sort !== 'flags' && view.sort !== 'campaign' && view.sort !== 'adset') resetSort();
+          render();
+        };
       });
       document.querySelectorAll('#adtable thead th').forEach(function (th) {
         th.onclick = function () {
