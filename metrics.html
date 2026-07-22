@@ -156,6 +156,23 @@
     .bar { height:9px; border-radius:4px; background:#0d1017; overflow:hidden; }
     .bar span { display:block; height:100%; border-radius:4px; }
 
+    /* Day-by-day monitor.
+       Placement hues are categorical slots 1 + 6 (blue/orange) — a pair validated
+       for CVD separation (ΔE 26.8 protan). Audience Network deliberately wears
+       --warning instead of a categorical hue: for this account it is not another
+       platform, it is a fault state, and it ships with a ⚠ in the legend so the
+       colour never carries the meaning alone. */
+    :root { --p-ig:#3987e5; --p-fb:#d95926; --p-other:#4a5261; }
+    #dailysvg .rl { fill:var(--ink); font-size:12px; }
+    #dailysvg .rmax { fill:var(--muted); font-size:10.5px; font-variant-numeric:tabular-nums; }
+    #dailysvg .lg { fill:var(--dim); font-size:10.5px; }
+    /* Headers sit above the hit targets in paint order; without this their
+       glyphs would punch dead spots into the hover strip. */
+    #dailysvg .hdr { pointer-events:none; }
+    .daily-note { font-size:11.5px; color:var(--muted); margin-top:10px; line-height:1.6; }
+    svg .hit:hover { fill:rgba(255,255,255,.05); }
+    svg .colsep { stroke:var(--line-soft); stroke-width:1; }
+
     /* Trend chart */
     .legend { display:flex; gap:16px; font-size:12px; color:var(--dim); margin-bottom:10px; }
     .legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; vertical-align:-1px; }
@@ -164,7 +181,9 @@
       border-radius:8px; padding:8px 11px; font-size:12px; z-index:50; opacity:0;
       transition:opacity .09s; box-shadow:0 6px 22px rgba(0,0,0,.5); }
     .tip .t { color:var(--muted); font-size:11px; margin-bottom:3px; }
-    .tip .r { display:flex; gap:12px; justify-content:space-between; }
+    .tip .r { display:flex; gap:14px; justify-content:space-between; margin-top:3px; }
+    .tip .r small { font-size:10.5px; }
+    .tip .sub { color:var(--muted); font-size:10.5px; margin:1px 0 4px; max-width:270px; }
     .tip .r span:last-child { font-variant-numeric:tabular-nums; }
 
     details { border-top:1px solid var(--line); padding-top:14px; margin-top:8px; }
@@ -252,7 +271,7 @@
         '<span style="color:' + col + '">● ' + lbl + '</span>' +
         '<span style="color:var(--muted)"> · ' + gen.toLocaleString() + '</span>';
 
-      var h = verdict() + alerts() + adTable() + funnels() + trend() + footerPanels();
+      var h = verdict() + alerts() + dailyChart() + adTable() + funnels() + trend() + footerPanels();
       show(h);
       wire();
     }
@@ -326,6 +345,205 @@
         (bad ? '<div class="verdictline">Only ' + Math.round(ratio*100) + '% of those clicks became a real visit — ' +
                'the rest never loaded the site.</div>' : '') +
       '</div>';
+    }
+
+    // ---------- day by day (the daily check-in) ----------
+    // Three measures that share an x-axis but NOT a y-scale, drawn as aligned
+    // small multiples. Stacking KES on top of session counts would sum to
+    // nothing real, and a second y-axis is the one chart mistake never worth
+    // making — so each row keeps its own scale and the days stay in register.
+    //
+    // Every stack here is a true part-to-whole: placements sum to that day's
+    // spend, depth segments sum to that day's sessions.
+
+    // Fixed order, never cycled. Anything Meta reports that isn't Instagram,
+    // Facebook or Audience Network folds into "Other" rather than earning a new
+    // hue — a generated 5th hue would be indistinguishable under CVD.
+    var PLACEMENTS = [
+      { k:'instagram',        l:'Instagram',        c:'var(--p-ig)' },
+      { k:'facebook',         l:'Facebook',         c:'var(--p-fb)' },
+      { k:'other',            l:'Other',            c:'var(--p-other)' },
+      { k:'audience_network', l:'Audience Network', c:'var(--warning)', warn:1 }
+    ];
+    // Ordinal: one hue, light → dark, deepest on top. Reuses the funnel ramp
+    // already validated on this surface.
+    var DEPTHS = [
+      { k:'arrive',  l:'Arrived only',     c:'var(--f1)' },
+      { k:'product', l:'Saw a product',    c:'var(--f2)' },
+      { k:'engage',  l:'Engaged',          c:'var(--f3)' },
+      { k:'handoff', l:'WhatsApp handoff', c:'var(--f4)' }
+    ];
+
+    function foldPlacement(p) {
+      var out = { instagram:0, facebook:0, other:0, audience_network:0 };
+      for (var k in (p||{})) {
+        if (k === 'instagram' || k === 'facebook' || k === 'audience_network') out[k] += p[k];
+        else out.other += p[k];
+      }
+      return out;
+    }
+    function niceMax(v) {
+      if (!(v > 0)) return 1;
+      var mag = Math.pow(10, Math.floor(Math.log10(v)));
+      return Math.ceil(v / mag) * mag;
+    }
+    // Rounded at the data end only, square on the baseline.
+    function barPath(x, yTop, w, h, r) {
+      if (h <= 0) return '';
+      r = Math.min(r, w / 2, h);
+      var y2 = yTop + h;
+      if (r <= 0) return 'M' + x + ',' + yTop + 'h' + w + 'V' + y2 + 'H' + x + 'Z';
+      return 'M' + x + ',' + y2 + 'V' + (yTop + r) +
+             'a' + r + ',' + r + ' 0 0 1 ' + r + ',' + (-r) +
+             'h' + (w - 2*r) +
+             'a' + r + ',' + r + ' 0 0 1 ' + r + ',' + r +
+             'V' + y2 + 'Z';
+    }
+    function fmtDay(day) {
+      if (!day) return '—';
+      var d = new Date(day + 'T12:00:00Z');
+      return d.getUTCDate() + ' ' + MON[d.getUTCMonth()];
+    }
+    var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    // Row labels and legends live INSIDE the svg, so a row's title can never
+    // drift out of register with the band it names.
+    var DGEO = { W:1000, L:4, H:332, rows:[{ y:20, h:84 }, { y:136, h:84 }, { y:252, h:56 }] };
+
+    function dailyCoverage(D2, ds, n) {
+      var idxOf = function (day) { for (var i = 0; i < n; i++) if (ds[i].day === day) return i; return -1; };
+      var siteFrom = 0, convThru = n - 1;
+      if (D2.siteEventsFrom) {
+        var f = idxOf(D2.siteEventsFrom);
+        siteFrom = f >= 0 ? f : (D2.siteEventsFrom > ds[n-1].day ? n : 0);
+      }
+      if (D2.conversationsThrough) {
+        var t = idxOf(D2.conversationsThrough);
+        convThru = t >= 0 ? t : (D2.conversationsThrough < ds[0].day ? -1 : n - 1);
+      }
+      return { siteFrom: siteFrom, convThru: convThru };
+    }
+
+    function dailyChart() {
+      var D2 = D.daily; if (!D2 || !D2.days || !D2.days.length) return '';
+      var ds = D2.days, n = ds.length;
+      var W = DGEO.W, L = DGEO.L, PW = W - 8, col = PW / n, H = DGEO.H, R = DGEO.rows;
+      var barW = Math.min(46, col - 14), GAP = 2;
+      var xOf = function (i) { return L + col * i + (col - barW) / 2; };
+      var cov = dailyCoverage(D2, ds, n);
+
+      var maxSpend = niceMax(Math.max.apply(null, ds.map(function (d) { return d.spend || 0; })));
+      var maxSess  = niceMax(Math.max.apply(null, ds.map(function (d) { return d.sessions || 0; })));
+      var maxChat  = niceMax(Math.max.apply(null, ds.map(function (d) { return d.newChats || 0; })));
+      var svg = [];
+
+      // "Not measured" is not zero. Hatch the span each row cannot speak for, so
+      // tracking switching on can never be misread as traffic arriving.
+      svg.push('<defs><pattern id="nodata" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
+               '<line x1="0" y1="0" x2="0" y2="7" stroke="var(--muted)" stroke-width="1"/></pattern></defs>');
+      // Recessive but unmistakably present: quieter than any bar, loud enough
+      // that the eye never reads the span as a row of zeroes.
+      var hatch = function (band, a, b) {
+        if (b < a) return;
+        svg.push('<rect x="' + (L + col*a) + '" y="' + band.y + '" width="' + (col*(b-a+1)) +
+                 '" height="' + band.h + '" fill="url(#nodata)" opacity=".3"/>');
+      };
+      if (cov.siteFrom > 0) hatch(R[1], 0, Math.min(cov.siteFrom, n) - 1);
+      if (cov.convThru < n - 1) hatch(R[2], Math.max(cov.convThru + 1, 0), n - 1);
+
+      R.forEach(function (b) {
+        svg.push('<line x1="' + L + '" y1="' + (b.y + b.h) + '" x2="' + (L + PW) +
+                 '" y2="' + (b.y + b.h) + '" class="colsep"/>');
+      });
+
+      var stack = function (band, i, segs, max) {
+        var acc = 0, parts = [];
+        segs.forEach(function (s) { if (s.v > 0) { parts.push({ c:s.c, v:s.v, y0:acc }); acc += s.v; } });
+        parts.forEach(function (s, si) {
+          var full = (s.v / max) * band.h;
+          var yTop = band.y + band.h - ((s.y0 + s.v) / max) * band.h;
+          var isTop = si === parts.length - 1;
+          var h = Math.max(0, full - (isTop ? 0 : GAP));
+          svg.push('<path d="' + barPath(xOf(i), yTop, barW, h, isTop ? 4 : 0) + '" fill="' + s.c + '"/>');
+        });
+        return acc;
+      };
+
+      // Row 1 — spend by placement.
+      ds.forEach(function (d, i) {
+        var p = foldPlacement(d.placement);
+        var total = stack(R[0], i, PLACEMENTS.map(function (s) { return { c:s.c, v:p[s.k] || 0 }; }), maxSpend);
+        if (total === 0) svg.push('<line x1="' + xOf(i) + '" y1="' + (R[0].y + R[0].h) + '" x2="' + (xOf(i)+barW) +
+          '" y2="' + (R[0].y + R[0].h) + '" stroke="var(--line)" stroke-width="2"/>');
+      });
+      // Row 2 — visitors by deepest stage reached.
+      ds.forEach(function (d, i) {
+        if (i < cov.siteFrom) return;
+        stack(R[1], i, DEPTHS.map(function (s) { return { c:s.c, v:(d.depth && d.depth[s.k]) || 0 }; }), maxSess);
+      });
+      // Row 3 — new chats, with sales marked above (status token: a sale is a
+      // state, not a series).
+      ds.forEach(function (d, i) {
+        if (i > cov.convThru) return;
+        var v = d.newChats || 0;
+        if (v > 0) {
+          var h = (v / maxChat) * R[2].h;
+          svg.push('<path d="' + barPath(xOf(i), R[2].y + R[2].h - h, barW, h, 4) + '" fill="var(--s1)"/>');
+        }
+        if ((d.sales || 0) > 0) {
+          svg.push('<circle cx="' + (xOf(i) + barW/2) + '" cy="' + (R[2].y + 8) + '" r="5" fill="var(--good)" stroke="var(--card)" stroke-width="2"/>');
+        }
+      });
+
+      // Date axis — every other day, so ticks never collide. Today is named
+      // rather than dated: its bars are a partial day and shouldn't be read as a
+      // finished one.
+      ds.forEach(function (d, i) {
+        if (i % 2 !== (n - 1) % 2) return;
+        var last = i === n - 1;
+        svg.push('<text x="' + (xOf(i) + barW/2) + '" y="' + (H - 6) + '" text-anchor="middle"' +
+                 (last ? ' fill="var(--dim)"' : '') + '>' + (last ? 'today' : fmtDay(d.day)) + '</text>');
+      });
+      // One hit target per day spanning all three rows — they are read together,
+      // so they highlight and report together.
+      ds.forEach(function (d, i) {
+        svg.push('<rect class="hit" data-di="' + i + '" x="' + (L + col*i) + '" y="0" width="' + col +
+                 '" height="' + (H - 20) + '" fill="transparent"/>');
+      });
+
+      // Row header: name, peak, then the legend. A legend is present for every
+      // multi-series row so identity is never carried by colour alone.
+      var rowHead = function (band, label, max, unit, items) {
+        var y = band.y - 8;
+        var out = ['<text class="rl" x="' + L + '" y="' + y + '">' + esc(label) + '</text>',
+                   '<text class="rmax" x="' + (L + label.length * 6.6 + 10) + '" y="' + y + '">peak ' +
+                   esc(unit === 'kes' ? kes(max) : num(max)) + '</text>'];
+        var x = 250;
+        items.forEach(function (s) {
+          if (s.warn) { out.push('<text class="lg" x="' + x + '" y="' + y + '">⚠</text>'); x += 12; }
+          out.push('<rect x="' + x + '" y="' + (y - 7) + '" width="8" height="8" rx="2" fill="' + s.c + '"/>');
+          out.push('<text class="lg" x="' + (x + 12) + '" y="' + y + '">' + esc(s.l) + '</text>');
+          x += 12 + s.l.length * 5.6 + 18;
+        });
+        svg.push('<g class="hdr">' + out.join('') + '</g>');
+      };
+      rowHead(R[0], 'Spend', maxSpend, 'kes', PLACEMENTS);
+      rowHead(R[1], 'Visitors', maxSess, 'num', DEPTHS);
+      rowHead(R[2], 'New chats', maxChat, 'num', [{ l:'New chat', c:'var(--s1)' }, { l:'Sale', c:'var(--good)' }]);
+
+      // Notes only where a row genuinely cannot speak — not decoration.
+      var notes = [];
+      if (cov.siteFrom > 0) notes.push('Visitor tracking began ' + fmtDay(D2.siteEventsFrom) + ' — earlier days were not measured, not empty.');
+      if (cov.convThru < n - 1) notes.push('Conversations pulled through ' + fmtDay(D2.conversationsThrough) + ' — run <b>run.command</b> to fill in the rest.');
+
+      return '<section><div class="sec-head"><h2>Day by day</h2>' +
+        '<span class="sec-note">last ' + n + ' days · hover any day</span></div>' +
+        '<div class="card pad">' +
+          '<svg id="dailysvg" viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMinYMin meet">' +
+          svg.join('') + '</svg>' +
+          (notes.length ? '<div class="daily-note">' + notes.join('<br>') + '</div>' : '') +
+        '</div></section>';
     }
 
     // ---------- per-ad economics (the decision surface) ----------
@@ -705,6 +923,95 @@
       var pick = document.getElementById('cfgpick'), dl = document.getElementById('cp_deeplink');
       if (pick && dl) { var upd = function () { dl.value = (D.reference.deeplinkBase||'') + pick.value; }; pick.onchange = upd; upd(); }
       trendHover();
+      dailyHover();
+    }
+
+    // One tooltip for all three rows: the rows are aligned so they can be read
+    // as one day, so hovering reports the whole day rather than one measure.
+    // Each figure carries its change against the mean of the 7 days before it —
+    // that comparison is the entire point of checking this daily.
+    function dailyHover() {
+      var svg = document.getElementById('dailysvg'); if (!svg) return;
+      var D2 = D.daily, ds = D2.days, n = ds.length, tip = document.getElementById('tip');
+      var cov = dailyCoverage(D2, ds, n);
+
+      // Today is still in progress. Comparing a few hours against a run of whole
+      // days would show a scary minus every morning and mean nothing, so today
+      // gets no delta at all — it gets said out loud instead.
+      var delta = function (i, get, covered) {
+        if (!covered || i === n - 1) return '';
+        var prev = [], j = i - 1;
+        while (j >= 0 && prev.length < 7) { if (covered(j)) prev.push(get(ds[j])); j--; }
+        if (prev.length < 3) return ''; // too little history to compare honestly
+        var base = prev.reduce(function (a, b) { return a + b; }, 0) / prev.length;
+        var v = get(ds[i]);
+        if (base === 0) return v > 0 ? '<span style="color:var(--good)">new</span>' : '';
+        var pct = Math.round(((v - base) / base) * 100);
+        if (pct === 0) return '<span style="color:var(--muted)">flat</span>';
+        // Percentages off a near-zero base run to the thousands and stop meaning
+        // anything; cap the display rather than print noise.
+        var shown = Math.abs(pct) > 999 ? (pct > 0 ? '+999%+' : '-99%') : (pct > 0 ? '+' : '') + pct + '%';
+        return '<span style="color:' + (pct > 0 ? 'var(--good)' : 'var(--dim)') + '">' + shown + '</span>';
+      };
+      var rowLine = function (label, value, d) {
+        return '<div class="r"><span>' + label + '</span><span>' + value +
+               (d ? ' <small>' + d + '</small>' : '') + '</span></div>';
+      };
+
+      svg.querySelectorAll('.hit').forEach(function (r) {
+        r.style.cursor = 'default';
+        r.addEventListener('mousemove', function (e) {
+          var i = Number(r.getAttribute('data-di')), d = ds[i];
+          if (!d) return;
+          var dt = new Date(d.day + 'T12:00:00Z');
+          var p = foldPlacement(d.placement);
+          var anPct = d.spend ? Math.round(100 * (p.audience_network || 0) / d.spend) : 0;
+          var siteOk = i >= cov.siteFrom, convOk = i <= cov.convThru;
+
+          var isToday = i === n - 1;
+          var h = '<div class="t">' + DOW[dt.getUTCDay()] + ' ' + fmtDay(d.day) +
+                  (isToday ? ' <span style="color:var(--dim)">· so far today</span>' : '') + '</div>';
+          h += rowLine('Spend', kes(d.spend), delta(i, function (x) { return x.spend || 0; }, function () { return true; }));
+          if (d.spend > 0) {
+            // Round before filtering, so a 0.4 shilling sliver never prints as
+            // a segment reading "KSh 0".
+            var seg = PLACEMENTS.filter(function (s) { return Math.round(p[s.k] || 0) > 0; })
+              .map(function (s) { return esc(s.l) + ' ' + kes(p[s.k]); }).join(' · ');
+            if (seg) h += '<div class="sub">' + seg + '</div>';
+          }
+          if (anPct >= 15) h += '<div class="sub" style="color:var(--warning)">⚠ ' + anPct + '% went to Audience Network</div>';
+
+          h += siteOk
+            ? rowLine('Visitors', num(d.sessions), delta(i, function (x) { return x.sessions || 0; }, function (j) { return j >= cov.siteFrom; }))
+            : rowLine('Visitors', '<span style="color:var(--muted)">not tracked yet</span>', '');
+          if (siteOk && d.sessions > 0) {
+            h += '<div class="sub">' + DEPTHS.slice(1).filter(function (s) { return (d.depth[s.k] || 0) > 0; })
+              .map(function (s) { return esc(s.l) + ' ' + num(d.depth[s.k]); }).join(' · ') + '</div>';
+          }
+          // Meta's own click count lives here rather than as a fourth row: it is
+          // a cross-check on whether the traffic was real, not a daily target.
+          if (d.metaClicks) {
+            var reached = d.metaClicks ? Math.round(100 * (siteOk ? d.sessions : 0) / d.metaClicks) : 0;
+            h += '<div class="sub">Meta counted ' + num(d.metaClicks) + ' clicks' +
+                 (siteOk ? ' · ' + reached + '% reached the site' : '') + '</div>';
+          }
+
+          h += convOk
+            ? rowLine('New chats', num(d.newChats), delta(i, function (x) { return x.newChats || 0; }, function (j) { return j <= cov.convThru; }))
+            : rowLine('New chats', '<span style="color:var(--muted)">not pulled yet</span>', '');
+          if (convOk && (d.sales || d.revenue)) {
+            h += rowLine('<span style="color:var(--good)">Sales</span>', num(d.sales) + (d.revenue ? ' · ' + kes(d.revenue) : ''), '');
+          }
+
+          tip.innerHTML = h;
+          tip.style.opacity = 1;
+          var x = e.clientX + 16, y = e.clientY - 10;
+          if (x + 290 > window.innerWidth) x = e.clientX - 290;
+          if (y + 190 > window.innerHeight) y = window.innerHeight - 200;
+          tip.style.left = x + 'px'; tip.style.top = Math.max(8, y) + 'px';
+        });
+        r.addEventListener('mouseleave', function () { tip.style.opacity = 0; });
+      });
     }
 
     function trendHover() {
