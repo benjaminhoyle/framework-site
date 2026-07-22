@@ -169,6 +169,11 @@
     /* Headers sit above the hit targets in paint order; without this their
        glyphs would punch dead spots into the hover strip. */
     #dailysvg .hdr { pointer-events:none; }
+    /* On a phone the viewBox would scale three bands down to ~90px tall and the
+       labels to a few pixels. Hold a legible floor and let the chart scroll
+       inside its own box — the page body still never scrolls sideways. */
+    .chartwrap { overflow-x:auto; }
+    .chartwrap svg { display:block; min-width:720px; }
     .daily-note { font-size:11.5px; color:var(--muted); margin-top:10px; line-height:1.6; }
     svg .hit:hover { fill:rgba(255,255,255,.05); }
     svg .colsep { stroke:var(--line-soft); stroke-width:1; }
@@ -540,8 +545,8 @@
       return '<section><div class="sec-head"><h2>Day by day</h2>' +
         '<span class="sec-note">last ' + n + ' days · hover any day</span></div>' +
         '<div class="card pad">' +
-          '<svg id="dailysvg" viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMinYMin meet">' +
-          svg.join('') + '</svg>' +
+          '<div class="chartwrap"><svg id="dailysvg" viewBox="0 0 ' + W + ' ' + H +
+          '" width="100%" preserveAspectRatio="xMinYMin meet">' + svg.join('') + '</svg></div>' +
           (notes.length ? '<div class="daily-note">' + notes.join('<br>') + '</div>' : '') +
         '</div></section>';
     }
