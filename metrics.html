@@ -226,7 +226,7 @@
     var kes = function (n) { return 'KSh ' + Math.round(Number(n)||0).toLocaleString('en-US'); };
     var num = function (n) { return (Number(n)||0).toLocaleString('en-US'); };
     var show = function (h) { document.getElementById('main').innerHTML = h; };
-    var D = null, view = { filter:'spending', group:'ad', win:'30d', sort:'spend30', dir:-1, q:'', month:null, trendTable:false };
+    var D = null, view = { filter:'spending', group:'ad', win:'30d', sort:'spend30', dir:-1, q:'', month:null, trendTable:false, grain:'day' };
 
     if (!key) {
       show('<div class="msg">This dashboard is private. Add your key to the URL:<br><br>' +
@@ -410,29 +410,102 @@
       return d.getUTCDate() + ' ' + MON[d.getUTCMonth()];
     }
     var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var MONFULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     var DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
     // Row labels and legends live INSIDE the svg, so a row's title can never
     // drift out of register with the band it names.
     var DGEO = { W:1000, L:4, H:332, rows:[{ y:20, h:84 }, { y:136, h:84 }, { y:252, h:56 }] };
 
+    // How many buckets each grain shows, and what one bucket is called.
+    var GRAINS = {
+      day:   { n:14, unit:'days',   one:'day',   of:'' },
+      week:  { n:13, unit:'weeks',  one:'week',  of:'Week of ' },
+      month: { n:12, unit:'months', one:'month', of:'' }
+    };
+
+    function mondayOf(day) {
+      var d = new Date(day + 'T12:00:00Z');
+      d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); // ISO weeks start Monday
+      return d.toISOString().slice(0, 10);
+    }
+
+    // Roll the dense daily spine up to the chosen grain. Every field is additive
+    // — a session is credited to the day it started and an order to the day it
+    // began, so each belongs to exactly one bucket and nothing double-counts.
+    function dailySeries() {
+      var D2 = D.daily; if (!D2 || !D2.days || !D2.days.length) return null;
+      var grain = GRAINS[view.grain] ? view.grain : 'day', all = D2.days;
+      if (grain === 'day') return { ds: all.slice(-GRAINS.day.n), grain: grain, clipped: false };
+
+      var order = [], byKey = {};
+      all.forEach(function (d) {
+        var k = grain === 'week' ? mondayOf(d.day) : d.day.slice(0, 7);
+        var b = byKey[k];
+        if (!b) {
+          b = byKey[k] = { key:k, day:d.day, first:d.day, last:d.day, spend:0, placement:{},
+                           metaClicks:0, metaLanding:0, metaConvos:0, sessions:0,
+                           depth:{ arrive:0, product:0, engage:0, handoff:0 },
+                           newChats:0, quoted:0, sales:0, revenue:0, dayCount:0 };
+          order.push(b);
+        }
+        b.last = d.day; b.dayCount++;
+        b.spend += d.spend || 0; b.metaClicks += d.metaClicks || 0;
+        b.metaLanding += d.metaLanding || 0; b.metaConvos += d.metaConvos || 0;
+        b.sessions += d.sessions || 0; b.newChats += d.newChats || 0;
+        b.quoted += d.quoted || 0; b.sales += d.sales || 0; b.revenue += d.revenue || 0;
+        for (var pk in (d.placement || {})) b.placement[pk] = (b.placement[pk] || 0) + d.placement[pk];
+        for (var dk in b.depth) b.depth[dk] += (d.depth && d.depth[dk]) || 0;
+      });
+      order.forEach(function (b) {
+        b.spend = Math.round(b.spend * 100) / 100;
+        b.revenue = Math.round(b.revenue * 100) / 100;
+        for (var pk in b.placement) b.placement[pk] = Math.round(b.placement[pk] * 100) / 100;
+      });
+
+      // The oldest bucket is short whenever the spine starts mid-period — it
+      // would draw as a slump that never happened. Drop it rather than explain it.
+      var clipped = false;
+      if (order.length > 1) {
+        var f = order[0], starts = grain === 'week' ? f.key : f.key + '-01';
+        if (f.first > starts) { order.shift(); clipped = true; }
+      }
+      return { ds: order.slice(-GRAINS[grain].n), grain: grain, clipped: clipped };
+    }
+
+    // A bucket's own span decides coverage, so this reads the same for one day or
+    // a whole month.
     function dailyCoverage(D2, ds, n) {
-      var idxOf = function (day) { for (var i = 0; i < n; i++) if (ds[i].day === day) return i; return -1; };
+      var lo = function (b) { return b.first || b.day; }, hi = function (b) { return b.last || b.day; };
       var siteFrom = 0, convThru = n - 1;
       if (D2.siteEventsFrom) {
-        var f = idxOf(D2.siteEventsFrom);
-        siteFrom = f >= 0 ? f : (D2.siteEventsFrom > ds[n-1].day ? n : 0);
+        siteFrom = n;
+        for (var i = 0; i < n; i++) if (hi(ds[i]) >= D2.siteEventsFrom) { siteFrom = i; break; }
       }
       if (D2.conversationsThrough) {
-        var t = idxOf(D2.conversationsThrough);
-        convThru = t >= 0 ? t : (D2.conversationsThrough < ds[0].day ? -1 : n - 1);
+        convThru = -1;
+        for (var j = n - 1; j >= 0; j--) if (lo(ds[j]) <= D2.conversationsThrough) { convThru = j; break; }
       }
       return { siteFrom: siteFrom, convThru: convThru };
     }
 
+    // Axis label. The newest bucket is named rather than dated — it is a partial
+    // period and must not be read as a finished one.
+    function fmtBucket(b, grain, isLast) {
+      if (grain === 'day') return isLast ? 'today' : fmtDay(b.day);
+      if (grain === 'week') return isLast ? 'this week' : fmtDay(b.first);
+      if (isLast) return 'this month';
+      var d = new Date(b.first + 'T12:00:00Z');
+      return MON[d.getUTCMonth()] + (d.getUTCMonth() === 0 ? " '" + String(d.getUTCFullYear()).slice(2) : '');
+    }
+    function grainbtn(v, l) {
+      return '<button data-grain="' + v + '" class="' + (view.grain === v ? 'on' : '') + '">' + esc(l) + '</button>';
+    }
+
     function dailyChart() {
       var D2 = D.daily; if (!D2 || !D2.days || !D2.days.length) return '';
-      var ds = D2.days, n = ds.length;
+      var series = dailySeries(); if (!series) return '';
+      var ds = series.ds, n = ds.length, grain = series.grain, G = GRAINS[grain];
       var W = DGEO.W, L = DGEO.L, PW = W - 8, col = PW / n, H = DGEO.H, R = DGEO.rows;
       var barW = Math.min(46, col - 14), GAP = 2;
       var xOf = function (i) { return L + col * i + (col - barW) / 2; };
@@ -504,11 +577,14 @@
       // Date axis — every other day, so ticks never collide. Today is named
       // rather than dated: its bars are a partial day and shouldn't be read as a
       // finished one.
+      // Day labels would collide at 14 across; week and month bars are wide
+      // enough to name every one.
+      var step = grain === 'day' ? 2 : 1;
       ds.forEach(function (d, i) {
-        if (i % 2 !== (n - 1) % 2) return;
+        if (step > 1 && i % step !== (n - 1) % step) return;
         var last = i === n - 1;
         svg.push('<text x="' + (xOf(i) + barW/2) + '" y="' + (H - 6) + '" text-anchor="middle"' +
-                 (last ? ' fill="var(--dim)"' : '') + '>' + (last ? 'today' : fmtDay(d.day)) + '</text>');
+                 (last ? ' fill="var(--dim)"' : '') + '>' + esc(fmtBucket(d, grain, last)) + '</text>');
       });
       // One hit target per day spanning all three rows — they are read together,
       // so they highlight and report together.
@@ -539,11 +615,24 @@
 
       // Notes only where a row genuinely cannot speak — not decoration.
       var notes = [];
-      if (cov.siteFrom > 0) notes.push('Visitor tracking began ' + fmtDay(D2.siteEventsFrom) + ' — earlier days were not measured, not empty.');
+      if (cov.siteFrom > 0) notes.push('Visitor tracking began ' + fmtDay(D2.siteEventsFrom) + ' — earlier ' + G.unit + ' were not measured, not empty.');
       if (cov.convThru < n - 1) notes.push('Conversations pulled through ' + fmtDay(D2.conversationsThrough) + ' — run <b>run.command</b> to fill in the rest.');
+      // The newest bar is a period still running. At day grain that is obvious;
+      // across a month it reads as a collapse unless it is said.
+      if (grain !== 'day' && n) {
+        notes.push('This ' + G.one + ' is still in progress (' + ds[n-1].dayCount + ' of its days so far) — it is not a drop.');
+      }
+      // A part-covered bucket at the boundary reports only the days it can see.
+      if (grain !== 'day' && cov.siteFrom < n && D2.siteEventsFrom && (ds[cov.siteFrom].first || '') < D2.siteEventsFrom) {
+        notes.push('The ' + G.one + ' beginning ' + fmtDay(ds[cov.siteFrom].first) + ' is only part-tracked — visitors are counted from ' + fmtDay(D2.siteEventsFrom) + '.');
+      }
 
-      return '<section><div class="sec-head"><h2>Day by day</h2>' +
-        '<span class="sec-note">last ' + n + ' days · hover any day</span></div>' +
+      return '<section><div class="sec-head"><h2>' + esc(G.one.charAt(0).toUpperCase() + G.one.slice(1)) +
+        ' by ' + esc(G.one) + '</h2>' +
+        '<span class="sec-note">last ' + n + ' ' + G.unit + ' · hover any ' + G.one + '</span>' +
+        '<span class="right"><span class="seg">' +
+          grainbtn('day','Day') + grainbtn('week','Week') + grainbtn('month','Month') +
+        '</span></span></div>' +
         '<div class="card pad">' +
           '<div class="chartwrap"><svg id="dailysvg" viewBox="0 0 ' + W + ' ' + H +
           '" width="100%" preserveAspectRatio="xMinYMin meet">' + svg.join('') + '</svg></div>' +
@@ -918,6 +1007,9 @@
       document.querySelectorAll('[data-trend]').forEach(function (b) {
         b.onclick = function () { view.trendTable = b.getAttribute('data-trend') === 'table'; render(); };
       });
+      document.querySelectorAll('[data-grain]').forEach(function (b) {
+        b.onclick = function () { view.grain = b.getAttribute('data-grain'); render(); };
+      });
       document.querySelectorAll('[data-copy]').forEach(function (b) {
         b.onclick = function () {
           var el = document.getElementById('cp_' + b.getAttribute('data-copy'));
@@ -937,7 +1029,9 @@
     // that comparison is the entire point of checking this daily.
     function dailyHover() {
       var svg = document.getElementById('dailysvg'); if (!svg) return;
-      var D2 = D.daily, ds = D2.days, n = ds.length, tip = document.getElementById('tip');
+      var D2 = D.daily, series = dailySeries(); if (!series) return;
+      var ds = series.ds, n = ds.length, grain = series.grain, G = GRAINS[grain];
+      var tip = document.getElementById('tip');
       var cov = dailyCoverage(D2, ds, n);
 
       // Today is still in progress. Comparing a few hours against a run of whole
@@ -974,8 +1068,13 @@
           var siteOk = i >= cov.siteFrom, convOk = i <= cov.convThru;
 
           var isToday = i === n - 1;
-          var h = '<div class="t">' + DOW[dt.getUTCDay()] + ' ' + fmtDay(d.day) +
-                  (isToday ? ' <span style="color:var(--dim)">· so far today</span>' : '') + '</div>';
+          var title;
+          if (grain === 'day') title = DOW[dt.getUTCDay()] + ' ' + fmtDay(d.day);
+          else if (grain === 'week') title = 'Week of ' + fmtDay(d.first);
+          else title = MONFULL[new Date(d.first + 'T12:00:00Z').getUTCMonth()] + ' ' + d.first.slice(0, 4);
+          var h = '<div class="t">' + esc(title) +
+                  (isToday ? ' <span style="color:var(--dim)">· so far this ' + G.one + '</span>' : '') + '</div>';
+          if (grain !== 'day') h += '<div class="sub">' + fmtDay(d.first) + ' – ' + fmtDay(d.last) + '</div>';
           h += rowLine('Spend', kes(d.spend), delta(i, function (x) { return x.spend || 0; }, function () { return true; }));
           if (d.spend > 0) {
             // Round before filtering, so a 0.4 shilling sliver never prints as
