@@ -12,7 +12,14 @@
       /* Status palette — fixed, never reused for series identity. */
       --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
       /* Ordinal funnel ramp (one hue, light→dark) — validated on this surface. */
-      --f1:#cde2fb; --f2:#86b6ef; --f3:#3987e5; --f4:#184f95;
+      /* Funnel ramp, one hue, stepped for THIS surface rather than flipped from a
+         light one. It runs dark→light as depth increases: on a dark card the
+         light end is the loud end, and the deepest stage — the WhatsApp handoff —
+         is a two-pixel sliver that has to survive being the most important mark
+         on the row. Arrivals are the largest area and can afford to recede.
+         Validated ordinal: monotone L, adjacent ΔL >= .06, single hue, and
+         adjacent CVD separation ΔE 13.8 protan / 15.2 normal. */
+      --f1:#2b5c8f; --f2:#3987e5; --f3:#86b6ef; --f4:#cde2fb;
       --o1:#9ec5f4; --o2:#3987e5; --o3:#184f95;
       /* Categorical series (trend chart) — validated pair. */
       --s1:#3987e5; --s2:#199e70;
@@ -617,6 +624,14 @@
       var notes = [];
       if (cov.siteFrom > 0) notes.push('Visitor tracking began ' + fmtDay(D2.siteEventsFrom) + ' — earlier ' + G.unit + ' were not measured, not empty.');
       if (cov.convThru < n - 1) notes.push('Conversations pulled through ' + fmtDay(D2.conversationsThrough) + ' — run <b>run.command</b> to fill in the rest.');
+      // Unread conversations are deliberately not opened — reading one would clear
+      // the flag before the team sees it. That makes them invisible here unless
+      // said, and they are the ones with someone still waiting.
+      if (D.unread && D.unread.count > 0) {
+        notes.push('<b>' + num(D.unread.count) + ' conversation' + (D.unread.count === 1 ? '' : 's') +
+          ' not reviewed because unread</b> — left unread for your team' +
+          (D.unread.observedOn ? ', as of ' + fmtDay(D.unread.observedOn) : '') + '.');
+      }
       // The newest bar is a period still running. At day grain that is obvious;
       // across a month it reads as a collapse unless it is said.
       if (grain !== 'day' && n) {
@@ -847,6 +862,39 @@
         { k:'sale',         l:'Sale',         c:'var(--o3)' }
       ];
 
+      // The seam between the two panels above: tapping WhatsApp is the last thing
+      // the site can see, and the first message is the first thing we can. Three
+      // numbers, not a chart — at this volume a chart would dress up an n of 19.
+      function handoffSeam() {
+        var H = D.handoffSeam; if (!H || !H.handoffs) return '';
+        var missing = H.handoffs - H.codesArrived;
+        var pct = H.handoffs ? Math.round(100 * H.codesArrived / H.handoffs) : 0;
+        var cell = function (v, l, dim) {
+          return '<div style="flex:1 1 0;min-width:120px">' +
+            '<div style="font-size:22px;font-variant-numeric:tabular-nums' + (dim ? ';color:var(--muted)' : '') + '">' + v + '</div>' +
+            '<div class="fn-sub" style="margin:2px 0 0">' + l + '</div></div>';
+        };
+        // Which explanation the gap supports is computable, so compute it rather
+        // than leave the reader to guess between two very different problems.
+        var verdict = H.conversations < H.handoffs
+          ? 'Only <b>' + num(H.conversations) + '</b> conversation' + (H.conversations === 1 ? '' : 's') +
+            ' started at all in this period, from every source — so most of that gap is people not sending, ' +
+            'not codes being cleared.'
+          : 'Conversations started outnumber handoffs here, so the missing codes are mostly cleared prefills ' +
+            'rather than people dropping out.';
+        return '<div class="card pad" style="margin-top:12px">' +
+          '<div class="fn-title">Site → WhatsApp</div>' +
+          '<div class="fn-sub">The handoff seam, since ' + fmtDay(H.since) + '. Tapping WhatsApp is the last thing the site sees.</div>' +
+          '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:12px">' +
+            cell(num(H.handoffs), 'tapped through to WhatsApp') +
+            cell(num(H.codesArrived), 'arrived with their code · ' + pct + '%') +
+            cell(num(missing), 'no code reached us', true) +
+          '</div>' +
+          '<div class="sec-note" style="margin-top:10px">A code goes missing either because the person never sent the ' +
+            'prefilled message, or because they cleared it — indistinguishable from here. ' + verdict + '</div>' +
+        '</div>';
+      }
+
       return '<section><div class="sec-head"><h2>Funnel</h2>' +
         '<span class="sec-note">how far people get</span>' +
         '<span class="right"><select id="fmonth">' + opts + '</select></span></div>' +
@@ -864,6 +912,7 @@
               '<div class="row1"><span class="nm">Revenue</span><span class="val"><b>' + kes(c.revenue) + '</b></span></div></div>' : '') +
           '</div>' +
         '</div>' +
+        handoffSeam() +
         '<div class="sec-note" style="margin-top:9px">Percentages are a share of the base, not of the stage above — ' +
           'these milestones are not nested (someone can tap WhatsApp straight from arrival). ' +
           'The two panels are separate populations until ref codes join them: the left is only sessions we tracked, ' +
