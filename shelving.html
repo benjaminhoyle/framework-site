@@ -2328,13 +2328,31 @@
     // denominator: the card actually entered the viewport, not merely rendered.
     // Deduped in sessionStorage so scrolling a card in and out of view, or
     // expanding "see more" twice, doesn't inflate it.
+    //
+    // The observer fires for above-the-fold cards on first paint, which can be
+    // BEFORE the deferred site.js defines window.fwk. Those are the most-seen
+    // cards, so dropping them would gut the data. Queue when fwk isn't ready yet
+    // and flush the moment it is — the dedup mark is set at capture time, so a
+    // queued impression is neither lost nor duplicated.
+    var imprQueue = [];
+    function flushImpressions() {
+      if (!(window.fwk && window.fwk.track)) return false;
+      while (imprQueue.length) window.fwk.track('catalog_impression', imprQueue.shift());
+      return true;
+    }
+    var imprFlushTries = 0;
+    var imprFlushTimer = setInterval(function () {
+      if (flushImpressions() || ++imprFlushTries > 50) clearInterval(imprFlushTimer);
+    }, 200);
+
     function emitImpression(id, placement, dims) {
-      if (!id || !(window.fwk && window.fwk.track)) return;
+      if (!id) return;
       var key = 'fwk_impr_' + placement + '_' + id;
       try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch (e) { /* private mode */ }
       var d = { product_id: id, placement: placement };
       if (dims) for (var k in dims) d[k] = dims[k];
-      window.fwk.track('catalog_impression', d);
+      if (window.fwk && window.fwk.track) window.fwk.track('catalog_impression', d);
+      else imprQueue.push(d);
     }
 
     function slotOf(id) {
