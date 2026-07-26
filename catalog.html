@@ -139,6 +139,14 @@
         state.published = d.published || { products: [] };
         var base = (d.draft && Array.isArray(d.draft.products) && d.draft.products.length) ? d.draft.products : state.published.products;
         state.working = JSON.parse(JSON.stringify(base || []));
+        // Stats are live display data and always come from the latest published
+        // snapshot, keyed by id — never a draft's frozen copy. A saved draft
+        // serialises whatever stats it saw when staged, so without this the view
+        // counts freeze at the moment the draft was created and every later sync
+        // leaves them untouched.
+        var pubStats = {};
+        (state.published.products || []).forEach(function (p) { pubStats[p.id] = p.stats; });
+        state.working.forEach(function (p) { p.stats = pubStats[p.id] || p.stats || {}; });
         render();
       }).catch(function (e) { show('<div class="msg">' + esc(e.message) + '</div>'); });
     }
@@ -354,8 +362,12 @@
 
     var saveDraftDebounced = function () { clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft, 500); };
     function saveDraft() {
-      // Persist the working set (minus transient preview urls) as the draft overlay.
-      var payload = { products: state.working.map(function (p) { var c = Object.assign({}, p); delete c._file; return c; }) };
+      // Persist the working set (minus transient preview urls) as the draft
+      // overlay. Stats are deliberately dropped: the draft holds staged
+      // DEFINITION edits (title, price, active, description), and stats are
+      // overlaid fresh from the published snapshot on load. Storing them would
+      // re-freeze the view counts.
+      var payload = { products: state.working.map(function (p) { var c = Object.assign({}, p); delete c._file; delete c.stats; return c; }) };
       api('/api/catalog-draft', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(payload) }).catch(function(){});
     }
 
