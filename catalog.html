@@ -30,6 +30,10 @@
     table.rows tbody tr { border-bottom:1px solid #1e222b; }
     table.rows tbody tr:hover { background:#1c212b; }
     table.rows tr.dim { opacity:.55; }
+    table.rows td.num.sub, table.rows th.num.sub { color:#8a929e; font-size:12px; }
+    table.rows td.num.strong { font-weight:600; }
+    table.rows th.num.sub { color:#5a616c; }
+    table.rows .z { color:#3a404a; }
     .rthumb { width:34px; height:34px; border-radius:6px; object-fit:cover; background:#0b0d11; display:block; }
     .tcell { display:flex; align-items:center; gap:10px; }
     .tmeta { display:flex; flex-direction:column; }
@@ -213,7 +217,9 @@
         '</span>' +
         '<input type="search" id="cq" placeholder="Find a product…" value="' + esc(state.q) + '">' +
         '<select id="csort">' + [
-          ['views','Most viewed'],['handoffs','Most handoffs'],['conversations','Most conversations'],
+          ['views','Most viewed (all)'],['viewsGrid','Most browsed (catalog grid)'],
+          ['viewsFeatured','Most featured-tile clicks'],['designerOpens','Most designer opens'],
+          ['handoffs','Most handoffs'],['conversations','Most conversations'],
           ['revenue','Most revenue'],['priceValue','Price'],['title','Name']
         ].map(function (o) { return '<option value="' + o[0] + '"' + (state.sort===o[0]?' selected':'') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
         '<span class="seg" style="margin-left:auto">' +
@@ -248,19 +254,27 @@
             '<span class="tmeta"><span class="rtitle">' + esc(p.title||p.id) + ' ' + badge + '</span>' +
             '<span class="rid">' + esc(p.id) + ' · ' + esc(imgs.length) + ' image' + (imgs.length===1?'':'s') + '</span></span></td>' +
           '<td class="num">' + esc(p.price||'—') + '</td>' +
-          '<td class="num">' + (s.views||0) + '</td>' +
-          '<td class="num">' + (s.handoffs||0) + '</td>' +
-          '<td class="num">' + (s.conversations||0) + '</td>' +
-          '<td class="num">' + (s.sales||0) + '</td>' +
-          '<td class="num">' + (s.revenue ? kes(s.revenue) : '—') + '</td>' +
+          '<td class="num strong">' + gn(s.views) + '</td>' +
+          '<td class="num sub">' + gn(s.viewsGrid) + '</td>' +
+          '<td class="num sub">' + gn(s.viewsFeatured) + '</td>' +
+          '<td class="num sub">' + gn(s.viewsDeeplink) + '</td>' +
+          '<td class="num sub">' + gn(s.designerOpens) + '</td>' +
+          '<td class="num strong" title="' + (s.handoffs||0) + ' total · ' + (s.handoffsLightbox||0) + ' from the product lightbox, ' + (s.handoffsPage||0) + ' from a page link">' + gn(s.handoffs) + '</td>' +
+          '<td class="num">' + gn(s.conversations) + '</td>' +
+          '<td class="num">' + gn(s.sales) + '</td>' +
+          '<td class="num">' + (s.revenue ? kes(s.revenue) : '<span class="z">·</span>') + '</td>' +
           '<td><label class="switch ' + (active?'on':'') + '" data-toggle><span class="track"><span class="knob"></span></span>' + (active?'Live':'Hidden') + '</label></td>' +
           '<td><button class="btn small ghost" data-dl>JSON</button></td>' +
         '</tr>';
       }).join('');
       return '<div class="card"><div class="tablewrap"><table class="rows"><thead><tr>' +
         '<th>Product</th><th class="num">Price</th>' +
-        '<th class="num" title="Product page views from tracked sessions">Views</th>' +
-        '<th class="num" title="WhatsApp handoffs that named this product">Handoffs</th>' +
+        '<th class="num" title="Every time the product was opened, from any source">Views</th>' +
+        '<th class="num sub" title="Opened from a catalog-grid card — someone browsing the catalog. The closest thing to organic interest.">Grid</th>' +
+        '<th class="num sub" title="Opened from a featured tile on the landing page — promotion, not browsing.">Feat.</th>' +
+        '<th class="num sub" title="Landed straight on the product via a deep-link, usually an ad.">Deep</th>' +
+        '<th class="num sub" title="Clicked ‘Open in shelf designer’ from this product. Collected from 2026-07-26.">Design</th>' +
+        '<th class="num" title="WhatsApp handoffs naming this product. Hover a row for the lightbox / page split.">Handoffs</th>' +
         '<th class="num" title="Conversations whose ref code resolved to this product">Convos</th>' +
         '<th class="num">Sales</th><th class="num">Revenue</th><th>On site</th><th></th>' +
         '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
@@ -284,8 +298,10 @@
       }).join('') + '</div>' : '';
       var s = p.stats || {};
       var statHtml = '<div class="stats">' +
-        stat(s.views||0, 'views') + stat(s.handoffs||0, 'handoffs') + stat(s.conversations||0, 'convos') +
-        stat(s.sales||0, 'sales') + stat(kes(s.revenue||0), 'revenue') + '</div>';
+        stat(s.views||0, 'views') +
+        stat(s.viewsGrid||0, 'grid') + stat(s.viewsFeatured||0, 'featured') + stat(s.viewsDeeplink||0, 'deep-link') +
+        stat(s.designerOpens||0, 'designer') + stat(s.handoffs||0, 'handoffs') +
+        stat(s.conversations||0, 'convos') + stat(s.sales||0, 'sales') + stat(kes(s.revenue||0), 'revenue') + '</div>';
       return '<div class="prod ' + (active?'':'inactive ') + diff + '" data-id="' + esc(p.id) + '">' +
         '<div class="ph">' + img + placeholder + badge + count + '</div>' + strip +
         '<div class="body">' +
@@ -301,6 +317,9 @@
         '</div></div>';
     }
     function stat(v, l) { return '<span class="stat"><b>' + esc(v) + '</b> <span>' + esc(l) + '</span></span>'; }
+    // A count for the table: a real number, or a muted dot for zero so the
+    // granular columns don't fill the eye with noise in a sparse early dataset.
+    function gn(v) { v = Number(v) || 0; return v ? String(v) : '<span class="z">·</span>'; }
 
     function wire() {
       document.getElementById('dropZone').onclick = function () { document.getElementById('fileInput').click(); };

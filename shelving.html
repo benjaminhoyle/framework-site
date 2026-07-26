@@ -2255,9 +2255,17 @@
       if (config.designerUrl) {
         designerLinkEl.href = config.designerUrl;
         designerLinkEl.hidden = false;
+        // Opening the shelf designer from a product is a distinct, per-product
+        // intent signal — stronger than a view, different from a WhatsApp
+        // handoff. The session-level engage('designer') event can't be
+        // attributed to a product, so emit a dedicated one here that can.
+        designerLinkEl.onclick = function () {
+          if (window.fwk) window.fwk.track('designer_open', { product_id: config.id, source: 'lightbox' });
+        };
       } else {
         designerLinkEl.removeAttribute('href');
         designerLinkEl.hidden = true;
+        designerLinkEl.onclick = null;
       }
       document.getElementById('lb-product-count').textContent = (currentIndex + 1) + ' of ' + configurations.length;
 
