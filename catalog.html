@@ -34,6 +34,28 @@
     table.rows td.num.strong { font-weight:600; }
     table.rows th.num.sub { color:#5a616c; }
     table.rows .z { color:#3a404a; }
+    table.rows th.sortable { cursor:pointer; user-select:none; }
+    table.rows th.sortable:hover { color:var(--ink); }
+    table.rows th.active { color:var(--ink); }
+    table.rows tr.grp th { color:#5a616c; font-size:10px; letter-spacing:.06em; padding-top:8px; padding-bottom:2px; border-bottom:0; text-align:right; }
+    table.rows tr.grp th[colspan] { border-bottom:1px solid #262b36; }
+    .rexpand { display:flex; align-items:center; gap:9px; background:none; border:0; padding:0; cursor:pointer; text-align:left; color:inherit; font:inherit; width:100%; }
+    .rexpand:hover .rtitle { text-decoration:underline; }
+    tr.detailrow td { background:#14171d; padding:0; }
+    .detail { display:flex; flex-wrap:wrap; gap:22px; padding:14px 16px; }
+    .dsec h4 { margin:0 0 7px; font-size:11px; font-weight:600; color:#8a929e; text-transform:uppercase; letter-spacing:.04em; }
+    .dsec h4 span { text-transform:none; letter-spacing:0; color:#5a616c; font-weight:400; }
+    .dpill { display:inline-block; margin:0 6px 6px 0; padding:3px 9px; border:1px solid var(--line); border-radius:20px; font-size:12px; color:#c4ccd6; }
+    .dpill b { color:var(--ink); font-variant-numeric:tabular-nums; }
+    .dslots { margin-top:4px; font-size:11.5px; color:#8a929e; }
+    .dnote { flex:1 1 100%; margin:0; font-size:12px; color:#8a929e; }
+    .legendbar { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:8px; }
+    .legendhint { font-size:12px; color:#6b7480; }
+    .legend { background:#14171d; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:12px; }
+    .lgrow { display:grid; grid-template-columns:110px 1fr; gap:12px; padding:5px 0; font-size:12.5px; line-height:1.5; }
+    .lgrow + .lgrow { border-top:1px solid #1e222b; }
+    .lgrow b { color:var(--ink); }
+    .lgrow span { color:#aab2bd; }
     .rthumb { width:34px; height:34px; border-radius:6px; object-fit:cover; background:#0b0d11; display:block; }
     .tcell { display:flex; align-items:center; gap:10px; }
     .tmeta { display:flex; flex-direction:column; }
@@ -122,7 +144,7 @@
     var show = function (h) { document.getElementById('main').innerHTML = h; };
 
     var state = { published: null, working: [], objectUrls: {}, shown: {},
-      view:'grid', filter:'all', sort:'views', dir:-1, q:'' };
+      view:'grid', filter:'all', sort:'openedDirect', dir:-1, q:'', expanded:null, legend:false };
     var saveTimer = null;
 
     if (!key) {
@@ -178,10 +200,8 @@
       }
       var k = state.sort, dir = state.dir;
       list.sort(function (a, b) {
-        var x, y;
-        if (k === 'title' || k === 'id') { x = String(a[k]||'').toLowerCase(); y = String(b[k]||'').toLowerCase(); return x>y?dir:x<y?-dir:0; }
-        if (k === 'priceValue') { x = Number(a.priceValue)||0; y = Number(b.priceValue)||0; }
-        else { x = ((a.stats||{})[k])||0; y = ((b.stats||{})[k])||0; }
+        var x = sortVal(a, k), y = sortVal(b, k);
+        if (typeof x === 'string') return x > y ? dir : x < y ? -dir : 0;
         return (x - y) * dir;
       });
       return list;
@@ -217,10 +237,9 @@
         '</span>' +
         '<input type="search" id="cq" placeholder="Find a product…" value="' + esc(state.q) + '">' +
         '<select id="csort">' + [
-          ['views','Most viewed (all)'],['viewsGrid','Most browsed (catalog grid)'],
-          ['viewsFeatured','Most featured-tile clicks'],['designerOpens','Most designer opens'],
-          ['handoffs','Most handoffs'],['conversations','Most conversations'],
-          ['revenue','Most revenue'],['priceValue','Price'],['title','Name']
+          ['seen','Most seen'],['openedDirect','Most opened'],['openRate','Best open rate'],
+          ['handoffSessions','Most handoffs'],['conversations','Most conversations'],
+          ['revenue','Most revenue'],['promo','Most promoted'],['priceValue','Price'],['title','Name']
         ].map(function (o) { return '<option value="' + o[0] + '"' + (state.sort===o[0]?' selected':'') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
         '<span class="seg" style="margin-left:auto">' +
           '<button data-view="grid" class="' + (state.view==='grid'?'on':'') + '">Gallery</button>' +
@@ -243,41 +262,125 @@
     function fbtn(v, l) { return '<button data-filter="' + v + '" class="' + (state.filter===v?'on':'') + '">' + esc(l) + '</button>'; }
 
     // Dense row view — the right shape for comparing 25 products by performance.
+    // Derived rates, computed once per product. Gated: a ratio on a tiny sample
+    // is noise, so it is null (rendered "—") until the denominator is big enough.
+    // openRate answers "of the people who saw the card, how many opened it";
+    // promo answers "how much of the interest is placement/spend vs browsing".
+    var OPEN_RATE_MIN = 25, PROMO_MIN = 10;
+    function derived(s) {
+      s = s || {};
+      var openRate = (s.seen >= OPEN_RATE_MIN) ? (s.openedDirect || 0) / s.seen : null;
+      var opens = s.views || 0;
+      var promo = (opens >= PROMO_MIN) ? ((s.viewsFeatured || 0) + (s.viewsDeeplink || 0)) / opens : null;
+      return { openRate: openRate, promo: promo };
+    }
+    // One value for any sort key, including the derived rates (null sinks).
+    function sortVal(p, k) {
+      if (k === 'title' || k === 'id') return String(p[k] || '').toLowerCase();
+      if (k === 'priceValue') return Number(p.priceValue) || 0;
+      if (k === 'openRate' || k === 'promo') { var v = derived(p.stats)[k]; return v == null ? -1 : v; }
+      return ((p.stats || {})[k]) || 0;
+    }
+
+    // The column model — the single source of truth for the table header, the
+    // cells, the sort keys and the legend, so they can never drift apart.
+    var COLS = [
+      { k:'seen', label:'Seen', group:'Reach', kind:'num',
+        help:'Distinct visitors whose screen actually showed this card — a real impression, not merely present on the page. Below-the-fold items only count when someone scrolls to them. Collected from 26 Jul 2026, so it is still filling in.' },
+      { k:'openedDirect', label:'Opened', group:'Chose it', kind:'num',
+        help:'Distinct visitors who opened this product by choosing it — clicking its card or featured tile, or landing on it from an ad. Excludes anyone who only paged to it with the lightbox arrows (that is “scrolled”, shown in the row detail).' },
+      { k:'openRate', label:'Open %', group:'Chose it', kind:'rate',
+        help:'Opened ÷ Seen. The clearest single measure of pull, because it already accounts for how often the card was shown. Hidden until at least ' + OPEN_RATE_MIN + ' visitors have seen the card — a rate on fewer is noise.' },
+      { k:'handoffSessions', label:'Handoffs', group:'Messaged', kind:'num',
+        help:'Distinct visitors who clicked through to WhatsApp naming this product.' },
+      { k:'conversations', label:'Convos', group:'Outcome', kind:'num',
+        help:'Conversations whose ref code resolved to this product.' },
+      { k:'sales', label:'Sales', group:'Outcome', kind:'num', help:'Conversations for this product that converted.' },
+      { k:'revenue', label:'Revenue', group:'Outcome', kind:'kes', help:'Revenue from orders on conversations attributed to this product.' },
+      { k:'promo', label:'Promo %', group:'Context', kind:'rate',
+        help:'Share of this product’s opens that came from a featured tile or an ad deep-link rather than someone browsing the catalog. High means the attention is placement and spend, not organic demand. Hidden until at least ' + PROMO_MIN + ' opens.' }
+    ];
+    function fmtRate(v) { return v == null ? '<span class="z">—</span>' : Math.round(v * 100) + '%'; }
+    function cellVal(p, c) {
+      var s = p.stats || {};
+      if (c.kind === 'kes') return s.revenue ? kes(s.revenue) : '<span class="z">·</span>';
+      if (c.kind === 'rate') return fmtRate(derived(s)[c.k]);
+      return gn(s[c.k]);
+    }
+
     function rowsView(list, pub) {
       var rows = list.map(function (p) {
-        var d = diffState(p, pub), s = p.stats || {}, active = p.active !== false;
+        var d = diffState(p, pub), active = p.active !== false;
         var imgs = (p.images && p.images.length ? p.images : [p.image]).filter(Boolean);
         var thumb = state.objectUrls[p.id] || (imgs[0] ? '/' + imgs[0] : '');
         var badge = d === 'isnew' ? '<span class="rbadge new">NEW</span>' : d === 'changed' ? '<span class="rbadge changed">CHANGED</span>' : '';
+        var cells = COLS.map(function (c) {
+          return '<td class="num' + (c.group==='Reach'||c.k==='openedDirect'?' strong':'') + '" data-sk="' + c.k + '">' + cellVal(p, c) + '</td>';
+        }).join('');
         return '<tr class="' + (active?'':'dim') + '" data-id="' + esc(p.id) + '">' +
-          '<td class="tcell">' + (thumb ? '<img class="rthumb" src="' + esc(thumb) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '<span class="rthumb"></span>') +
+          '<td class="tcell"><button class="rexpand" data-expand title="Show this product’s detail">' + (thumb ? '<img class="rthumb" src="' + esc(thumb) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '<span class="rthumb"></span>') +
             '<span class="tmeta"><span class="rtitle">' + esc(p.title||p.id) + ' ' + badge + '</span>' +
-            '<span class="rid">' + esc(p.id) + ' · ' + esc(imgs.length) + ' image' + (imgs.length===1?'':'s') + '</span></span></td>' +
-          '<td class="num">' + esc(p.price||'—') + '</td>' +
-          '<td class="num strong">' + gn(s.views) + '</td>' +
-          '<td class="num sub">' + gn(s.viewsGrid) + '</td>' +
-          '<td class="num sub">' + gn(s.viewsFeatured) + '</td>' +
-          '<td class="num sub">' + gn(s.viewsDeeplink) + '</td>' +
-          '<td class="num sub">' + gn(s.designerOpens) + '</td>' +
-          '<td class="num strong" title="' + (s.handoffs||0) + ' total · ' + (s.handoffsLightbox||0) + ' from the product lightbox, ' + (s.handoffsPage||0) + ' from a page link">' + gn(s.handoffs) + '</td>' +
-          '<td class="num">' + gn(s.conversations) + '</td>' +
-          '<td class="num">' + gn(s.sales) + '</td>' +
-          '<td class="num">' + (s.revenue ? kes(s.revenue) : '<span class="z">·</span>') + '</td>' +
+            '<span class="rid">' + esc(p.id) + ' · ' + esc(imgs.length) + ' image' + (imgs.length===1?'':'s') + '</span></span></button></td>' +
+          '<td class="num" data-sk="priceValue">' + esc(p.price||'—') + '</td>' +
+          cells +
           '<td><label class="switch ' + (active?'on':'') + '" data-toggle><span class="track"><span class="knob"></span></span>' + (active?'Live':'Hidden') + '</label></td>' +
           '<td><button class="btn small ghost" data-dl>JSON</button></td>' +
-        '</tr>';
+        '</tr>' +
+        (state.expanded === p.id ? '<tr class="detailrow"><td colspan="' + (COLS.length + 4) + '">' + detailPanel(p) + '</td></tr>' : '');
       }).join('');
-      return '<div class="card"><div class="tablewrap"><table class="rows"><thead><tr>' +
-        '<th>Product</th><th class="num">Price</th>' +
-        '<th class="num" title="Every time the product was opened, from any source">Views</th>' +
-        '<th class="num sub" title="Opened from a catalog-grid card — someone browsing the catalog. The closest thing to organic interest.">Grid</th>' +
-        '<th class="num sub" title="Opened from a featured tile on the landing page — promotion, not browsing.">Feat.</th>' +
-        '<th class="num sub" title="Landed straight on the product via a deep-link, usually an ad.">Deep</th>' +
-        '<th class="num sub" title="Clicked ‘Open in shelf designer’ from this product. Collected from 2026-07-26.">Design</th>' +
-        '<th class="num" title="WhatsApp handoffs naming this product. Hover a row for the lightbox / page split.">Handoffs</th>' +
-        '<th class="num" title="Conversations whose ref code resolved to this product">Convos</th>' +
-        '<th class="num">Sales</th><th class="num">Revenue</th><th>On site</th><th></th>' +
-        '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+
+      // Grouped header: a group band over the sortable column headers, so a
+      // reader knows Seen/Opened/Handoffs are the same person counted once,
+      // while the raw source counts in the detail are per-event.
+      var groups = [], run = null;
+      COLS.forEach(function (c) { if (!run || run.g !== c.group) { run = { g: c.group, n: 0 }; groups.push(run); } run.n++; });
+      var arrow = function (k) { return state.sort === k ? (state.dir < 0 ? ' ▾' : ' ▴') : ''; };
+      var groupRow = '<tr class="grp"><th></th><th></th>' + groups.map(function (g) {
+        return '<th class="num" colspan="' + g.n + '">' + esc(g.g) + '</th>';
+      }).join('') + '<th></th><th></th></tr>';
+      var headRow = '<tr><th>Product</th><th class="num sortable' + (state.sort==='priceValue'?' active':'') + '" data-sortkey="priceValue">Price' + arrow('priceValue') + '</th>' +
+        COLS.map(function (c) {
+          return '<th class="num sortable' + (state.sort===c.k?' active':'') + '" data-sortkey="' + c.k + '">' + esc(c.label) + arrow(c.k) + '</th>';
+        }).join('') + '<th>On site</th><th></th></tr>';
+
+      return '<div class="legendbar"><button class="btn small ghost" id="legendToggle">ⓘ What do these columns mean?</button>' +
+          '<span class="legendhint">Click a header to sort · click a product to see its detail</span></div>' +
+        (state.legend ? legendPanel() : '') +
+        '<div class="card"><div class="tablewrap"><table class="rows"><thead>' + groupRow + headRow + '</thead><tbody>' + rows + '</tbody></table></div></div>';
+    }
+
+    function legendPanel() {
+      var rowsH = COLS.map(function (c) {
+        return '<div class="lgrow"><b>' + esc(c.label) + '</b><span>' + esc(c.help) + '</span></div>';
+      }).join('');
+      return '<div class="legend">' +
+        '<div class="lgrow"><b>Counting</b><span><b>Seen · Opened · Handoffs</b> count each visitor once (a session). <b>Convos · Sales</b> count conversations. The per-source splits in a product’s detail count every event, so a visitor who opens a product twice shows twice there.</span></div>' +
+        rowsH + '</div>';
+    }
+
+    // Per-product detail — the granular context, captured but deliberately kept
+    // out of the headline columns so the table isn’t a wall of easily-misread
+    // numbers. Everything here is descriptive, not a KPI.
+    function detailPanel(p) {
+      var s = p.stats || {}, dt = s.detail || {};
+      var pill = function (v, l) { return '<span class="dpill"><b>' + esc(v) + '</b> ' + esc(l) + '</span>'; };
+      var opensBySource = '<div class="dsec"><h4>Opens by source <span>(events)</span></h4>' +
+        pill(s.viewsGrid||0,'catalog grid') + pill(s.viewsFeatured||0,'featured tile') +
+        pill(s.viewsDeeplink||0,'ad deep-link') + pill(s.viewsNav||0,'paged in lightbox') + '</div>';
+      var lightbox = '<div class="dsec"><h4>Reached the lightbox <span>(visitors)</span></h4>' +
+        pill(s.openedDirect||0,'chose it directly') + pill(s.openedScrolled||0,'scrolled to it only') +
+        pill(s.designerOpens||0,'opened in designer') + '</div>';
+      var handoff = '<div class="dsec"><h4>WhatsApp <span>(events)</span></h4>' +
+        pill(dt.handoffOrder||0,'“Order”') + pill(dt.handoffCustomize||0,'“Customize”') +
+        pill(s.handoffsPage||0,'from a page link') + '</div>';
+      var slots = dt.impressionsBySlot || {};
+      var slotStr = ['1-4','5-8','9-12','13+'].filter(function (k) { return slots[k]; }).map(function (k) { return pill(slots[k], 'pos ' + k); }).join('');
+      var impr = '<div class="dsec"><h4>Where it was seen <span>(impressions)</span></h4>' +
+        pill(s.seenGrid||0,'in the grid') + pill(s.seenFeatured||0,'as a featured tile') +
+        pill(s.seenAboveFold||0,'above “see more”') + pill(dt.seenBelowFold||0,'below “see more”') +
+        (slotStr ? '<div class="dslots">grid position when seen: ' + slotStr + '</div>' : '') + '</div>';
+      var note = (!s.seen) ? '<p class="dnote">“Seen” impressions collect from 26 Jul 2026 — this product has none yet, so Open % is blank until it does.</p>' : '';
+      return '<div class="detail">' + impr + opensBySource + lightbox + handoff + note + '</div>';
     }
 
     function card(p, diff) {
@@ -296,12 +399,14 @@
         return '<button type="button" class="' + (i === shown ? 'sel' : '') + '" data-img-i="' + i + '" title="' + esc(src.split('/').pop()) + '">' +
           '<img src="/' + esc(src) + '" alt="" onerror="this.remove()"></button>';
       }).join('') + '</div>' : '';
-      var s = p.stats || {};
+      var s = p.stats || {}, dv = derived(s);
+      // The card mirrors the table funnel: reach → chose it → messaged → outcome.
       var statHtml = '<div class="stats">' +
-        stat(s.views||0, 'views') +
-        stat(s.viewsGrid||0, 'grid') + stat(s.viewsFeatured||0, 'featured') + stat(s.viewsDeeplink||0, 'deep-link') +
-        stat(s.designerOpens||0, 'designer') + stat(s.handoffs||0, 'handoffs') +
-        stat(s.conversations||0, 'convos') + stat(s.sales||0, 'sales') + stat(kes(s.revenue||0), 'revenue') + '</div>';
+        stat(s.seen||0, 'seen') + stat(s.openedDirect||0, 'opened') +
+        stat(dv.openRate==null?'—':Math.round(dv.openRate*100)+'%', 'open rate') +
+        stat(s.handoffSessions||0, 'handoffs') +
+        stat(s.conversations||0, 'convos') + stat(s.sales||0, 'sales') + stat(kes(s.revenue||0), 'revenue') +
+        stat(dv.promo==null?'—':Math.round(dv.promo*100)+'%', 'promoted') + '</div>';
       return '<div class="prod ' + (active?'':'inactive ') + diff + '" data-id="' + esc(p.id) + '">' +
         '<div class="ph">' + img + placeholder + badge + count + '</div>' + strip +
         '<div class="body">' +
@@ -334,6 +439,26 @@
         var n = document.getElementById('cq'); if (n) { n.focus(); n.setSelectionRange(pos,pos); } };
       var cs = document.getElementById('csort');
       if (cs) cs.onchange = function () { state.sort = cs.value; state.dir = (cs.value==='title') ? 1 : -1; render(); };
+      // Click a column header to sort by it; click the active one again to flip
+      // direction. Text sorts A→Z first, numbers high→low first.
+      document.querySelectorAll('th.sortable[data-sortkey]').forEach(function (th) {
+        th.onclick = function () {
+          var k = th.getAttribute('data-sortkey');
+          if (state.sort === k) state.dir = -state.dir;
+          else { state.sort = k; state.dir = (k === 'title') ? 1 : -1; }
+          render();
+        };
+      });
+      var lt = document.getElementById('legendToggle');
+      if (lt) lt.onclick = function () { state.legend = !state.legend; render(); };
+      // Click a product (its thumbnail/title) to expand its detail; click again to close.
+      document.querySelectorAll('[data-expand]').forEach(function (b) {
+        b.onclick = function () {
+          var id = b.closest('tr').getAttribute('data-id');
+          state.expanded = (state.expanded === id) ? null : id;
+          render();
+        };
+      });
       // Row view shares the same toggle/download handlers as the cards.
       document.querySelectorAll('tr[data-id]').forEach(function (tr) {
         var id = tr.getAttribute('data-id');

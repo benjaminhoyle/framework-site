@@ -1234,7 +1234,7 @@
         <h2>Product Details</h2>
       </div>
       <div class="featured-grid">
-        <button type="button" class="featured-item" onclick="openConfigById('stepped-display', 'featured_gallery')">
+        <button type="button" class="featured-item" data-fwk-featured-id="stepped-display" onclick="openConfigById('stepped-display', 'featured_gallery')">
           <img src="images/shelving/shelf (18).jpg"
                alt="Modular shelving system showing infinite expandability — stack vertically, extend horizontally, turn corners"
                class="featured-img"
@@ -1242,7 +1242,7 @@
                loading="lazy">
           <p class="featured-caption"><strong>Infinitely Expandable</strong><br>Our modular shelving system grows in any direction — stack vertically, extend horizontally, and turn corners. Perfect for Nairobi's diverse living spaces.</p>
         </button>
-        <button type="button" class="featured-item" onclick="openConfigById('triple', 'featured_gallery')">
+        <button type="button" class="featured-item" data-fwk-featured-id="triple" onclick="openConfigById('triple', 'featured_gallery')">
           <img src="images/shelving/configs/multicolor-stack-under-mdf.jpg"
                alt="Close-up of the steel and MDF shelving underside crafted in Nairobi"
                class="featured-img"
@@ -1250,7 +1250,7 @@
                loading="lazy">
           <p class="featured-caption"><strong>Made in Kenya</strong><br>Crafted in our Nairobi workshop, these steel-framed shelving units combine slim proportions with exceptional durability.</p>
         </button>
-        <button type="button" class="featured-item" onclick="openConfigById('multicolor-stack', 'featured_gallery')">
+        <button type="button" class="featured-item" data-fwk-featured-id="multicolor-stack" onclick="openConfigById('multicolor-stack', 'featured_gallery')">
           <img src="images/shelving/configs/multicolor-stack-populated.jpg"
                alt="Colorful customizable shelving in multiple color options"
                class="featured-img"
@@ -2323,20 +2323,65 @@
        ms_since_impression so catalog position/hesitation is measurable. */
     var catalogSeen = {};        // config id -> { at: first-visible ts, order: nth card seen }
     var catalogSeenCount = 0;
+
+    // Emit one impression per session per (product, placement) — the honest
+    // denominator: the card actually entered the viewport, not merely rendered.
+    // Deduped in sessionStorage so scrolling a card in and out of view, or
+    // expanding "see more" twice, doesn't inflate it.
+    function emitImpression(id, placement, dims) {
+      if (!id || !(window.fwk && window.fwk.track)) return;
+      var key = 'fwk_impr_' + placement + '_' + id;
+      try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch (e) { /* private mode */ }
+      var d = { product_id: id, placement: placement };
+      if (dims) for (var k in dims) d[k] = dims[k];
+      window.fwk.track('catalog_impression', d);
+    }
+
+    function slotOf(id) {
+      return configurations.findIndex(function(c) { return c.id === id; });
+    }
+
     var catalogObserver = ('IntersectionObserver' in window) ? new IntersectionObserver(function(entries) {
       entries.forEach(function(entry) {
         if (!entry.isIntersecting) return;
         var id = entry.target.getAttribute('data-clarity-config-id');
         if (id && !catalogSeen[id]) catalogSeen[id] = { at: Date.now(), order: catalogSeenCount++ };
+        if (id) {
+          var slot = slotOf(id);
+          emitImpression(id, 'grid', {
+            grid_index: slot >= 0 ? slot : null,
+            // Above the "See more" cut = in the initial visible set. A strong
+            // position signal: below-fold cards are only seen if you expand AND
+            // scroll to them, which the impression itself already reflects.
+            above_fold: slot >= 0 && slot < INITIAL_VISIBLE_CONFIGS
+          });
+        }
         catalogObserver.unobserve(entry.target);
       });
     }, { threshold: 0.5 }) : null;
 
-    function observeCatalogCards() {
-      if (!catalogObserver) return;
-      document.querySelectorAll('#catalog-grid .catalog-card').forEach(function(card) {
-        catalogObserver.observe(card);
+    // Featured tiles live at the top of the page in their own showcase, so their
+    // impressions are tracked separately from the catalog grid.
+    var featuredObserver = ('IntersectionObserver' in window) ? new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) return;
+        var id = entry.target.getAttribute('data-fwk-featured-id');
+        if (id) emitImpression(id, 'featured', {});
+        featuredObserver.unobserve(entry.target);
       });
+    }, { threshold: 0.5 }) : null;
+
+    function observeCatalogCards() {
+      if (catalogObserver) {
+        document.querySelectorAll('#catalog-grid .catalog-card').forEach(function(card) {
+          catalogObserver.observe(card);
+        });
+      }
+      if (featuredObserver) {
+        document.querySelectorAll('.featured-item[data-fwk-featured-id]').forEach(function(tile) {
+          featuredObserver.observe(tile);
+        });
+      }
     }
 
     function catalogViewDims(config) {
