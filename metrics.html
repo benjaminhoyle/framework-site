@@ -170,6 +170,12 @@
        platform, it is a fault state, and it ships with a ⚠ in the legend so the
        colour never carries the meaning alone. */
     :root { --p-ig:#3987e5; --p-fb:#d95926; --p-other:#4a5261; }
+    /* Message volume gets its own two hues rather than borrowing the funnel
+       ramp: a row about who is doing the talking is not a funnel stage. Violet
+       is unused elsewhere, so the client's half of an exchange can never be
+       confused with a placement, a funnel depth or a chat source; slate reads as
+       our own effort without competing for attention. */
+    :root { --m-in:#8b5cf6; --m-out:#9aa4b2; }
     #dailysvg .rl { fill:var(--ink); font-size:12px; }
     #dailysvg .rmax { fill:var(--muted); font-size:10.5px; font-variant-numeric:tabular-nums; }
     #dailysvg .lg { fill:var(--dim); font-size:10.5px; }
@@ -379,6 +385,27 @@
     ];
     // Ordinal: one hue, light → dark, deepest on top. Reuses the funnel ramp
     // already validated on this surface.
+    // Where a conversation came from. Two routes we can prove plus everything we
+    // can't — the blue family because these are chats, neutral slate for unknown
+    // so a large unknown share reads as absence of evidence, not as a category.
+    // Blue for the site route (matching the visitors row above it, which is the
+    // traffic those chats came out of), WhatsApp green for the ad route, slate
+    // for unknown so a large unknown share reads as absence of evidence rather
+    // than as a third category worth celebrating. Two blues were tried first and
+    // were indistinguishable at bar width — which defeated the whole point,
+    // since site-vs-ad is the comparison this row exists to make.
+    var SOURCES = [
+      { k:'site',        l:'From the site',  c:'var(--f2)' },
+      { k:'whatsapp_ad', l:'From a WA ad',   c:'var(--s2)' },
+      { k:'unknown',     l:'Unknown source', c:'var(--p-other)' }
+    ];
+    // Who is doing the talking. Not a funnel: a message from us and a message
+    // from a client are two sides of one exchange, so they stack to that period's
+    // total traffic.
+    var MSGDIRS = [
+      { k:'in',  l:'From clients', c:'var(--m-in)' },
+      { k:'out', l:'From us',      c:'var(--m-out)' }
+    ];
     var DEPTHS = [
       { k:'arrive',  l:'Arrived only',     c:'var(--f1)' },
       { k:'product', l:'Saw a product',    c:'var(--f2)' },
@@ -422,7 +449,7 @@
 
     // Row labels and legends live INSIDE the svg, so a row's title can never
     // drift out of register with the band it names.
-    var DGEO = { W:1000, L:4, H:332, rows:[{ y:20, h:84 }, { y:136, h:84 }, { y:252, h:56 }] };
+    var DGEO = { W:1000, L:4, H:420, rows:[{ y:20, h:84 }, { y:136, h:84 }, { y:252, h:56 }, { y:340, h:56 }] };
 
     // How many buckets each grain shows, and what one bucket is called.
     var GRAINS = {
@@ -443,7 +470,14 @@
     function dailySeries() {
       var D2 = D.daily; if (!D2 || !D2.days || !D2.days.length) return null;
       var grain = GRAINS[view.grain] ? view.grain : 'day', all = D2.days;
-      if (grain === 'day') return { ds: all.slice(-GRAINS.day.n), grain: grain, clipped: false };
+      if (grain === 'day') {
+        // Give day buckets the same shape rolled-up ones get, so everything
+        // downstream reads one contract rather than branching on grain.
+        var dd = all.slice(-GRAINS.day.n).map(function (d) {
+          return Object.assign({}, d, { dayCount: 1, msgDays: d.messagesCovered ? 1 : 0 });
+        });
+        return { ds: dd, grain: grain, clipped: false };
+      }
 
       var order = [], byKey = {};
       all.forEach(function (d) {
@@ -453,7 +487,9 @@
           b = byKey[k] = { key:k, day:d.day, first:d.day, last:d.day, spend:0, placement:{},
                            metaClicks:0, metaLanding:0, metaConvos:0, sessions:0,
                            depth:{ arrive:0, product:0, engage:0, handoff:0 },
-                           newChats:0, quoted:0, sales:0, revenue:0, dayCount:0 };
+                           newChats:0, source:{ site:0, whatsapp_ad:0, unknown:0 },
+                           messages:{ in:0, out:0 }, msgDays:0,
+                           quoted:0, sales:0, revenue:0, dayCount:0 };
           order.push(b);
         }
         b.last = d.day; b.dayCount++;
@@ -463,6 +499,13 @@
         b.quoted += d.quoted || 0; b.sales += d.sales || 0; b.revenue += d.revenue || 0;
         for (var pk in (d.placement || {})) b.placement[pk] = (b.placement[pk] || 0) + d.placement[pk];
         for (var dk in b.depth) b.depth[dk] += (d.depth && d.depth[dk]) || 0;
+        for (var sk in b.source) b.source[sk] += (d.source && d.source[sk]) || 0;
+        b.messages.in += (d.messages && d.messages.in) || 0;
+        b.messages.out += (d.messages && d.messages.out) || 0;
+        // Count the days a scrape actually covered. A week holding four covered
+        // days is not a quiet week, and rolling up hides that far better than the
+        // daily view does — so the bucket carries the count and says so.
+        if (d.messagesCovered) b.msgDays++;
       });
       order.forEach(function (b) {
         b.spend = Math.round(b.spend * 100) / 100;
@@ -521,6 +564,9 @@
       var maxSpend = niceMax(Math.max.apply(null, ds.map(function (d) { return d.spend || 0; })));
       var maxSess  = niceMax(Math.max.apply(null, ds.map(function (d) { return d.sessions || 0; })));
       var maxChat  = niceMax(Math.max.apply(null, ds.map(function (d) { return d.newChats || 0; })));
+      var maxMsg   = niceMax(Math.max.apply(null, ds.map(function (d) {
+        return ((d.messages && d.messages.in) || 0) + ((d.messages && d.messages.out) || 0);
+      })));
       var svg = [];
 
       // "Not measured" is not zero. Hatch the span each row cannot speak for, so
@@ -536,6 +582,15 @@
       };
       if (cov.siteFrom > 0) hatch(R[1], 0, Math.min(cov.siteFrom, n) - 1);
       if (cov.convThru < n - 1) hatch(R[2], Math.max(cov.convThru + 1, 0), n - 1);
+      // Message coverage is not a leading or trailing span — a week nobody ran
+      // the scrape leaves a hole in the MIDDLE. Hatch each run of uncovered
+      // buckets, so a collection gap can never be read as a quiet stretch.
+      for (var mi = 0; mi < n; mi++) {
+        if (ds[mi].msgDays > 0) continue;
+        var mj = mi; while (mj + 1 < n && ds[mj + 1].msgDays === 0) mj++;
+        hatch(R[3], mi, mj);
+        mi = mj;
+      }
 
       R.forEach(function (b) {
         svg.push('<line x1="' + L + '" y1="' + (b.y + b.h) + '" x2="' + (L + PW) +
@@ -567,18 +622,25 @@
         if (i < cov.siteFrom) return;
         stack(R[1], i, DEPTHS.map(function (s) { return { c:s.c, v:(d.depth && d.depth[s.k]) || 0 }; }), maxSess);
       });
-      // Row 3 — new chats, with sales marked above (status token: a sale is a
-      // state, not a series).
+      // Row 3 — new chats split by where they came from, with sales marked above
+      // (status token: a sale is a state, not a series). The split is a true
+      // part-to-whole — every conversation lands in exactly one of the three.
       ds.forEach(function (d, i) {
         if (i > cov.convThru) return;
-        var v = d.newChats || 0;
-        if (v > 0) {
-          var h = (v / maxChat) * R[2].h;
-          svg.push('<path d="' + barPath(xOf(i), R[2].y + R[2].h - h, barW, h, 4) + '" fill="var(--s1)"/>');
-        }
+        stack(R[2], i, SOURCES.map(function (t) { return { c:t.c, v:(d.source && d.source[t.k]) || 0 }; }), maxChat);
         if ((d.sales || 0) > 0) {
           svg.push('<circle cx="' + (xOf(i) + barW/2) + '" cy="' + (R[2].y + 8) + '" r="5" fill="var(--good)" stroke="var(--card)" stroke-width="2"/>');
         }
+      });
+      // Row 4 — messages exchanged, in threads of any age. The first three rows
+      // all count things that happen once, at the start; a period where nobody
+      // new arrives but the team is deep in negotiation with five existing
+      // buyers is identical to a dead one on every other row.
+      ds.forEach(function (d, i) {
+        if (!d.msgDays) return; // hatched above — no run covered this bucket
+        var total = stack(R[3], i, MSGDIRS.map(function (t) { return { c:t.c, v:(d.messages && d.messages[t.k]) || 0 }; }), maxMsg);
+        if (total === 0) svg.push('<line x1="' + xOf(i) + '" y1="' + (R[3].y + R[3].h) + '" x2="' + (xOf(i)+barW) +
+          '" y2="' + (R[3].y + R[3].h) + '" stroke="var(--line)" stroke-width="2"/>');
       });
 
       // Date axis — every other day, so ticks never collide. Today is named
@@ -593,7 +655,7 @@
         svg.push('<text x="' + (xOf(i) + barW/2) + '" y="' + (H - 6) + '" text-anchor="middle"' +
                  (last ? ' fill="var(--dim)"' : '') + '>' + esc(fmtBucket(d, grain, last)) + '</text>');
       });
-      // One hit target per day spanning all three rows — they are read together,
+      // One hit target per day spanning all four rows — they are read together,
       // so they highlight and report together.
       ds.forEach(function (d, i) {
         svg.push('<rect class="hit" data-di="' + i + '" x="' + (L + col*i) + '" y="0" width="' + col +
@@ -618,12 +680,28 @@
       };
       rowHead(R[0], 'Spend', maxSpend, 'kes', PLACEMENTS);
       rowHead(R[1], 'Visitors', maxSess, 'num', DEPTHS);
-      rowHead(R[2], 'New chats', maxChat, 'num', [{ l:'New chat', c:'var(--s1)' }, { l:'Sale', c:'var(--good)' }]);
+      rowHead(R[2], 'New chats', maxChat, 'num', SOURCES.concat([{ l:'Sale', c:'var(--good)' }]));
+      rowHead(R[3], 'Messages', maxMsg, 'num', MSGDIRS);
 
       // Notes only where a row genuinely cannot speak — not decoration.
       var notes = [];
       if (cov.siteFrom > 0) notes.push('Visitor tracking began ' + fmtDay(D2.siteEventsFrom) + ' — earlier ' + G.unit + ' were not measured, not empty.');
       if (cov.convThru < n - 1) notes.push('Conversations pulled through ' + fmtDay(D2.conversationsThrough) + ' — run <b>run.command</b> to fill in the rest.');
+      // Message counts come from scraped transcripts, so they only exist for
+      // periods a run actually covered. Hatching says WHERE; this says why, and
+      // that the gap is ours rather than the inbox's.
+      var msgGaps = ds.filter(function (d) { return !d.msgDays; }).length;
+      var msgPart = ds.filter(function (d) { return d.msgDays > 0 && d.msgDays < d.dayCount; }).length;
+      if (msgGaps) {
+        notes.push('<b>' + msgGaps + ' ' + (msgGaps === 1 ? G.one : G.unit) + ' with no message data</b> — ' +
+          'nobody ran <b>run.command</b> near ' + (msgGaps === 1 ? 'it' : 'them') + ', so the hatched ' +
+          (msgGaps === 1 ? 'bar is' : 'bars are') + ' uncollected, not silent.');
+      } else if (msgPart) {
+        // At week and month grain almost every bucket is partial, so counting
+        // them ("12 months only part-covered") is noise dressed as precision.
+        // Say the rule once and let the tooltip give the numbers per bucket.
+        notes.push('Messages count only the days a run covered — hover any ' + G.one + ' for how many.');
+      }
       // Unread conversations are deliberately not opened — reading one would clear
       // the flag before the team sees it. That makes them invisible here unless
       // said, and they are the ones with someone still waiting.
@@ -1152,15 +1230,36 @@
           h += convOk
             ? rowLine('New chats', num(d.newChats), delta(i, function (x) { return x.newChats || 0; }, function (j) { return j <= cov.convThru; }))
             : rowLine('New chats', '<span style="color:var(--muted)">not pulled yet</span>', '');
+          if (convOk && d.newChats > 0 && d.source) {
+            var src = SOURCES.filter(function (t) { return (d.source[t.k] || 0) > 0; })
+              .map(function (t) { return esc(t.l) + ' ' + num(d.source[t.k]); }).join(' · ');
+            if (src) h += '<div class="sub">' + src + '</div>';
+          }
           if (convOk && (d.sales || d.revenue)) {
             h += rowLine('<span style="color:var(--good)">Sales</span>', num(d.sales) + (d.revenue ? ' · ' + kes(d.revenue) : ''), '');
+          }
+
+          // Messages last: it is the only row about work inside existing threads
+          // rather than new arrivals, and it is the one whose blanks mean "not
+          // collected" rather than "nothing happened".
+          var mIn = (d.messages && d.messages.in) || 0, mOut = (d.messages && d.messages.out) || 0;
+          if (!d.msgDays) {
+            h += rowLine('Messages', '<span style="color:var(--muted)">no run covered this ' + G.one + '</span>', '');
+          } else {
+            h += rowLine('Messages', num(mIn + mOut),
+              delta(i, function (x) { return ((x.messages && x.messages.in) || 0) + ((x.messages && x.messages.out) || 0); },
+                    function (j) { return ds[j].msgDays > 0; }));
+            h += '<div class="sub">From clients ' + num(mIn) + ' · from us ' + num(mOut) + '</div>';
+            if (d.msgDays < d.dayCount) {
+              h += '<div class="sub" style="color:var(--muted)">covers ' + d.msgDays + ' of ' + d.dayCount + ' days</div>';
+            }
           }
 
           tip.innerHTML = h;
           tip.style.opacity = 1;
           var x = e.clientX + 16, y = e.clientY - 10;
           if (x + 290 > window.innerWidth) x = e.clientX - 290;
-          if (y + 190 > window.innerHeight) y = window.innerHeight - 200;
+          if (y + 260 > window.innerHeight) y = window.innerHeight - 270; // taller since the messages row
           tip.style.left = x + 'px'; tip.style.top = Math.max(8, y) + 'px';
         });
         r.addEventListener('mouseleave', function () { tip.style.opacity = 0; });
