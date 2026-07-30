@@ -53,9 +53,17 @@ scripts/test-new-designer.mjs
 scripts/fixtures/new-designer/ the pipeline's golden configs, as test fixtures
 ```
 
-`js/new-designer/*` and `css/new-designer.css` are loaded with a `?v=N` query.
-**Bump it when you change one of them**, otherwise a browser or CDN holding an
-older copy can pair new app code with an old renderer.
+Everything — scripts, stylesheet, catalogue and geometry — is loaded on one
+`?v=N`. **Bump it after changing any of them:**
+
+```bash
+node scripts/bump-new-designer-version.mjs
+```
+
+They have to move together: app code paired with a stale catalogue silently
+loses whatever the catalogue gained, which is what a CDN hands you minutes after
+a deploy. Use the script rather than editing by hand — a search-and-replace for
+the old number also rewrote two SVG path commands that contained it.
 
 ## Rebuilding the assets
 
@@ -78,6 +86,27 @@ drifts from what the Rhino/Blender pipeline considers buildable fails there rath
 than on a customer's phone. The suite also checks that the fast incremental
 placement check agrees with the authoritative full-state validation on every one
 of them.
+
+## Colours
+
+Two palettes, deliberately separate, joined by `siteTheme` in the pipeline's
+`shared/finishes.json`:
+
+- **`builder`** — read from `js/designer-engine.js`'s `THEME_*` sets, which is
+  what the existing `/designer` page draws with. This is what the viewport and
+  the swatches use, so the two site designers show the same product in the same
+  colours.
+- **`steelHex` / `mdfHex`** — the real material colours from the pipeline. Left
+  alone for Blender renders and the DAM.
+
+The builder colours are scaled up slightly before reaching the shader, because
+its light term lands a shelf top at ~0.94 of its base colour and a vertical post
+at ~0.79.
+
+The lamp shade is drawn **unlit**. It is a pleated ribbon of ~80 facets whose
+normals alternate in and out; at the size a shade occupies that is about two
+pixels per facet, so any normal-based shading aliases into vertical streaks, and
+single-sided shading additionally painted every other pleat black.
 
 ## Why it is built this way
 
@@ -124,6 +153,12 @@ designer-page exclusion list.
 - **Bookends** are priced and included in the WhatsApp order, but have no 3D
   model in the pipeline (`status: model-pending`), so they do not appear in the
   view.
+- **Eight pieces have no price** and read "on request": `booster_adapter`,
+  `broad_hanger`, `broad_spacer`, `broad_top_bar`, `compact_top_bar`,
+  `deep_top_bar`, `slim_spacer`, `slim_top_bar`. A trimmed cut inherits its full
+  unit's price and vice versa, so these are genuinely absent from
+  `shared/prices.json` rather than a mapping gap. They are excluded from the
+  total, which the summary says out loud.
 - **`noindex`.** Remove the meta tag in `new-designer.html` when this page
   replaces `/designer` or `/simplified-designer`, and add it to `sitemap.xml`
   then — not while both are live and competing for the same queries.

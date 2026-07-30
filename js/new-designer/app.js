@@ -52,14 +52,21 @@
   const FAMILY_ORDER = ["standard", "compact", "wide", "deep", "slim", "broad"];
 
   /*
-   * Render colours come from the catalog's real product hexes, so the swatch in
-   * the panel and the shelf in the viewport can never drift apart. They are
-   * scaled up first because the shader's light term lands a shelf top at about
-   * 0.94 of its base colour and a vertical steel tube at about 0.79 -- feeding
-   * the raw hex straight in makes every finish read a shade too dark.
+   * Render colours come from the catalogue's `builder` palette, which the build
+   * script reads out of the /designer page's own theme table -- so the two site
+   * designers show the same product in the same colours. The real material
+   * hexes (steelHex/mdfHex) stay reserved for Blender renders and the DAM.
+   *
+   * They are scaled up first because the shader's light term lands a shelf top
+   * at about 0.94 of its base colour and a vertical post at about 0.79; feeding
+   * the flat hex straight in makes every finish read a shade too dark.
    */
   const SURFACE_GAIN = 1.07;
   const STEEL_GAIN = 1.26;
+
+  function currentFinish() {
+    return ui.catalog.finishes.find((entry) => entry.id === ui.design.finish) || ui.catalog.finishes[0];
+  }
 
   function scaleHex(hex, gain) {
     const value = parseInt(String(hex).replace("#", ""), 16);
@@ -72,9 +79,11 @@
   const HISTORY_LIMIT = 40;
 
   // The lamp's arm reaches along +x when unrotated. Simple stands it on the back
-  // left upright, so a quarter turn back from there aims the shade diagonally in
-  // over the shelf instead of out into the room.
-  const LAMP_INWARD_DEG = 315;
+  // left upright. 315 degrees aims it diagonally in over the shelf, which is
+  // right on paper but happens to lie along the view direction, so the arm
+  // collapses to a vertical line on screen; one step anticlockwise from there
+  // gives the same reach with the arm clearly visible.
+  const LAMP_INWARD_DEG = 0;
 
   // ---------------------------------------------------------------- helpers --
 
@@ -132,6 +141,7 @@
     collapse: el("nd-collapse"),
     modes: el("nd-modes"),
     undo: el("nd-undo"),
+    redo: el("nd-redo"),
     zoomIn: el("nd-zoom-in"),
     zoomOut: el("nd-zoom-out"),
     fit: el("nd-fit"),
@@ -156,6 +166,7 @@
     renderer: null,
     design: null,
     history: [],
+    future: [],
     selectedId: null,
     activeModuleId: null, // Advanced: the piece whose placements are on screen
     previewCandidateId: null, // Advanced: the placement currently ghosted
@@ -166,6 +177,7 @@
     simple: { family: "standard", width: 1, levels: 2, lamp: false },
     search: "",
     actionMenu: null,
+    onModalDismiss: null,
     hintTimer: 0,
     dimensionsOn: false,
     dimensionsSvg: null
@@ -277,24 +289,39 @@
   function pushHistory() {
     ui.history.push(engine.serializeState(ui.design));
     if (ui.history.length > HISTORY_LIMIT) ui.history.shift();
-    dom.undo.disabled = ui.history.length === 0;
+    // A new edit is a new branch: whatever had been undone is no longer ahead.
+    ui.future.length = 0;
+    updateHistoryButtons();
   }
 
-  function undo() {
-    const previous = ui.history.pop();
-    if (!previous) return;
+  function updateHistoryButtons() {
+    dom.undo.disabled = ui.history.length === 0;
+    dom.redo.disabled = ui.future.length === 0;
+  }
+
+  /** Move one step along the history, pushing the current design the other way. */
+  function stepHistory(from, to) {
+    const target = from.pop();
+    if (!target) return;
+    let restored;
     try {
-      ui.design = engine.deserializeState(ui.catalog, previous);
+      restored = engine.deserializeState(ui.catalog, target);
     } catch (error) {
       console.error(error);
       return;
     }
-    dom.undo.disabled = ui.history.length === 0;
+    to.push(engine.serializeState(ui.design));
+    if (to.length > HISTORY_LIMIT) to.shift();
+    ui.design = restored;
+    updateHistoryButtons();
     ui.selectedId = null;
     ui.activeModuleId = null;
     if (ui.mode === "simple") ui.simple = deriveSimpleSpec(ui.design) || ui.simple;
     refresh({ fit: true });
   }
+
+  const undo = () => stepHistory(ui.history, ui.future);
+  const redo = () => stepHistory(ui.future, ui.history);
 
   function commit(nextDesign, options) {
     if (!nextDesign) {
@@ -614,12 +641,17 @@
   const DIM_LABEL_PX = 13; // dimension line -> the number
   const DIM_TICK_PX = 5;
 
+  // Width and depth run along an edge of the envelope. Height does not: a run of
+  // units of different heights has no single height, so heights are called out
+  // per stack instead (see drawHeightCallouts), which is how /designer does it.
   // [measured axis, offset axis, sign, which corner of the box to run along]
   const DIMENSION_SPECS = [
     { axis: 0, offsetAxis: 2, sign: -1, at: { 1: "min", 2: "min" } },
-    { axis: 1, offsetAxis: 0, sign: 1, at: { 0: "max", 2: "min" } },
-    { axis: 2, offsetAxis: 0, sign: -1, at: { 0: "min", 1: "min" } }
+    { axis: 1, offsetAxis: 0, sign: 1, at: { 0: "max", 2: "min" } }
   ];
+  const CALLOUT_TAIL_PX = 46;
+  const CALLOUT_HEAD_PX = 9;
+  const CALLOUT_ARROW_PX = 5;
 
   function svgNode(name, attributes) {
     const node = document.createElementNS(SVG_NS, name);
@@ -702,15 +734,77 @@
       }
 
       const mid = { x: (lineFrom.x + lineTo.x) / 2, y: (lineFrom.y + lineTo.y) / 2 };
-      const label = svgNode("text", {
-        class: "nd-dim-text",
-        x: mid.x + dir.x * DIM_LABEL_PX,
-        y: mid.y + dir.y * DIM_LABEL_PX,
-        "text-anchor": "middle",
-        "dominant-baseline": "middle"
-      });
-      label.textContent = `${mmToCm(valueMm)} cm`;
-      svg.appendChild(label);
+      svg.appendChild(dimensionLabel(mid.x + dir.x * DIM_LABEL_PX, mid.y + dir.y * DIM_LABEL_PX, valueMm));
+    }
+
+    drawHeightCallouts(svg);
+  }
+
+  function dimensionLabel(x, y, valueMm) {
+    const label = svgNode("text", {
+      class: "nd-dim-text", x, y, "text-anchor": "middle", "dominant-baseline": "middle"
+    });
+    label.textContent = `${mmToCm(valueMm)} cm`;
+    return label;
+  }
+
+  /**
+   * One height callout per distinct stack height: the number above the stack with
+   * a short arrow pointing down at its top, centred on the stack it measures.
+   *
+   * Floor-to-top is implicit, so there is no line spanning the whole height --
+   * that would run down through the shelf. Stacks of equal height share a single
+   * callout, so a symmetric run reads as one number rather than four.
+   */
+  function drawHeightCallouts(svg) {
+    const { groups } = engine.stacksOf(ui.design);
+    const byHeight = new Map();
+    groups.forEach((ids) => {
+      const bounds = stackBounds(ids, { excludeLamps: true });
+      if (!bounds) return;
+      const valueMm = Math.round(bounds[5] - Math.min(0, bounds[2]));
+      if (valueMm < 50) return;
+      const centreX = (bounds[0] + bounds[3]) / 2;
+      const key = mmToCm(valueMm);
+      const existing = byHeight.get(key);
+      if (!existing || centreX < existing.centreX) {
+        byHeight.set(key, {
+          valueMm,
+          centreX,
+          // Anchor in from the stack's left edge rather than dead centre: the
+          // centre of the top face is where a lamp stands and where Standard's
+          // "add on top" button sits.
+          anchorX: bounds[0] + Math.min(140, (bounds[3] - bounds[0]) * 0.22),
+          centreY: (bounds[1] + bounds[4]) / 2,
+          topZ: bounds[5]
+        });
+      }
+    });
+
+    const up = axisScreenDirection(2);
+    const stageTop = 0;
+    for (const stack of byHeight.values()) {
+      const top = ui.renderer.project([stack.anchorX, stack.centreY, stack.topZ]);
+      // Shorten the tail rather than let the number ride up out of the viewport.
+      const room = Math.max(0, top.y - (stageTop + 24));
+      const tailLength = Math.min(CALLOUT_TAIL_PX, 12 + room);
+      const tail = { x: top.x + up.x * tailLength, y: top.y + up.y * tailLength };
+      const head = { x: top.x + up.x * CALLOUT_HEAD_PX, y: top.y + up.y * CALLOUT_HEAD_PX };
+      svg.appendChild(svgNode("line", {
+        class: "nd-dim-line", x1: tail.x, y1: tail.y, x2: head.x, y2: head.y
+      }));
+      // Arrowhead at the model end.
+      const side = { x: -up.y, y: up.x };
+      const back = { x: head.x + up.x * CALLOUT_ARROW_PX * 1.6, y: head.y + up.y * CALLOUT_ARROW_PX * 1.6 };
+      for (const sign of [1, -1]) {
+        svg.appendChild(svgNode("line", {
+          class: "nd-dim-line",
+          x1: head.x, y1: head.y,
+          x2: back.x + side.x * CALLOUT_ARROW_PX * sign,
+          y2: back.y + side.y * CALLOUT_ARROW_PX * sign
+        }));
+      }
+      svg.appendChild(dimensionLabel(tail.x + up.x * DIM_LABEL_PX, tail.y + up.y * DIM_LABEL_PX, stack.valueMm));
     }
   }
 
@@ -837,12 +931,14 @@
     });
   }
 
-  function stackBounds(ids) {
+  function stackBounds(ids, options) {
     const set = new Set(ids);
+    const skipLamps = Boolean(options && options.excludeLamps);
     const bounds = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
     let any = false;
     for (const instance of ui.design.instances) {
       if (!set.has(instance.id)) continue;
+      if (skipLamps && ui.catalog.modules[instance.moduleId].role === "lamp") continue;
       const box = engine.instanceBounds(ui.catalog, instance);
       any = true;
       for (let axis = 0; axis < 3; axis += 1) {
@@ -1290,9 +1386,47 @@
     }
   }
 
+  /**
+   * A yes/no dialog in the same sheet the piece picker uses. Deliberately not
+   * window.confirm(): that blocks the WebGL loop and, on Android, renders as a
+   * browser-chrome alert with the page's own name in it.
+   */
+  function openConfirm(options) {
+    dom.modalTitle.textContent = options.title;
+    clear(dom.modalBody);
+    dom.modalBody.appendChild(make("p", "nd-note", options.body));
+
+    const row = make("div", "nd-button-row nd-confirm-row");
+    const cancel = make("button", "nd-button", options.cancelLabel || "Cancel");
+    cancel.type = "button";
+    const confirm = make("button", "nd-button is-primary", options.confirmLabel || "Continue");
+    confirm.type = "button";
+
+    let settled = false;
+    const finish = (handler) => {
+      if (settled) return;
+      settled = true;
+      closePicker();
+      if (handler) handler();
+    };
+    cancel.addEventListener("click", () => finish(options.onCancel));
+    confirm.addEventListener("click", () => finish(options.onConfirm));
+    // Dismissing by backdrop, close button or Escape all mean "no".
+    ui.onModalDismiss = () => finish(options.onCancel);
+
+    row.appendChild(cancel);
+    row.appendChild(confirm);
+    dom.modalBody.appendChild(row);
+    dom.modal.hidden = false;
+    confirm.focus();
+  }
+
   function closePicker() {
     dom.modal.hidden = true;
     clear(dom.modalBody);
+    const dismiss = ui.onModalDismiss;
+    ui.onModalDismiss = null;
+    if (dismiss) dismiss();
   }
 
   // ---------------------------------------------------------------- pricing --
@@ -1497,9 +1631,9 @@
       swatch.setAttribute("aria-pressed", String(ui.design.finish === finish.id));
       const chip = make("span", "nd-swatch-chip");
       const steel = make("span");
-      steel.style.background = finish.steelHex;
+      steel.style.background = finish.builder.steel;
       const mdf = make("span");
-      mdf.style.background = finish.mdfHex;
+      mdf.style.background = finish.builder.surface;
       chip.appendChild(steel);
       chip.appendChild(mdf);
       swatch.appendChild(chip);
@@ -1750,6 +1884,7 @@
 
   function applyMode(mode, options) {
     const next = MODES.indexOf(mode) >= 0 ? mode : "simple";
+    const previous = ui.mode;
     ui.mode = next;
     dom.app.dataset.mode = next;
     dom.panelTitle.textContent = next === "simple" ? "Build" : next === "standard" ? "Shelf" : "Pieces";
@@ -1758,25 +1893,53 @@
     });
     ui.selectedId = null;
     ui.activeModuleId = null;
-    if (options && options.silent) return;
+    if (options && options.silent) {
+      // keepDesign is the "stay put" path out of the Simple confirmation: the
+      // interface has to be put back on screen, just without rebuilding.
+      if (options.keepDesign) refresh({ fit: true });
+      return;
+    }
 
     if (next === "simple") {
-      // Simple can only express a plain run, so entering it rebuilds the shelf
-      // from the nearest simple spec. Say so rather than quietly discarding work.
       const derived = deriveSimpleSpec(ui.design);
-      const before = ui.design.instances.length;
       if (derived) {
-        ui.simple = derived;
-        const rebuilt = buildSimpleDesign(ui.simple, ui.design.finish, ui.design.bookends);
-        const changed = rebuilt.instances.length !== before;
-        pushHistory();
-        ui.design = rebuilt;
-        if (changed) {
-          setHint(`Simple shows plain runs, so this is now ${ui.simple.width} unit${ui.simple.width === 1 ? "" : "s"} wide and ${ui.simple.levels} high. Undo to go back.`);
+        const rebuilt = buildSimpleDesign(derived, ui.design.finish, ui.design.bookends);
+        // Simple can only express a plain run. If the current design is not one,
+        // switching would silently throw pieces away, so ask first.
+        if (rebuilt.instances.length !== ui.design.instances.length) {
+          confirmSimpleRebuild(derived, rebuilt, previous);
+          return;
         }
+        ui.simple = derived;
       }
     }
     refresh({ fit: true });
+  }
+
+  /**
+   * Ask before Simple discards pieces it cannot express.
+   *
+   * Staying put on cancel matters: the switch has to be genuinely abandonable,
+   * not merely undoable, or the mode buttons become a thing people are afraid to
+   * touch.
+   */
+  function confirmSimpleRebuild(spec, rebuilt, previousMode) {
+    const losing = ui.design.instances.length - rebuilt.instances.length;
+    const pieces = losing === 1 ? "1 piece that Simple cannot describe" : `${losing} pieces that Simple cannot describe`;
+    openConfirm({
+      title: "Simple view only shows plain runs",
+      body: `This design uses ${pieces}. Switching rebuilds it as ${spec.width} unit${spec.width === 1 ? "" : "s"} wide and ${spec.levels} high, and ${losing === 1 ? "that piece" : "those pieces"} will be removed.`,
+      confirmLabel: "Rebuild it",
+      cancelLabel: "Stay in " + (previousMode === "advanced" ? "Advanced" : "Standard"),
+      onConfirm: () => {
+        ui.simple = spec;
+        pushHistory();
+        ui.design = rebuilt;
+        refresh({ fit: true });
+        setHint("Rebuilt as a plain run. Undo to go back.");
+      },
+      onCancel: () => applyMode(previousMode, { silent: true, keepDesign: true })
+    });
   }
 
   // ----------------------------------------------------------------- refresh --
@@ -1785,10 +1948,10 @@
     const settings = options || {};
     computeCandidateCache();
 
-    const finish = ui.catalog.finishes.find((entry) => entry.id === ui.design.finish) || ui.catalog.finishes[0];
+    const finish = currentFinish();
     ui.renderer.setPalette({
-      surface: scaleHex(finish.mdfHex, SURFACE_GAIN),
-      steel: scaleHex(finish.steelHex, STEEL_GAIN)
+      surface: scaleHex(finish.builder.surface, SURFACE_GAIN),
+      steel: scaleHex(finish.builder.steel, STEEL_GAIN)
     });
 
     const needed = Array.from(new Set(ui.design.instances.map((instance) => instance.moduleId)));
@@ -1851,6 +2014,7 @@
     });
 
     dom.undo.addEventListener("click", undo);
+    dom.redo.addEventListener("click", redo);
     dom.zoomIn.addEventListener("click", () => ui.renderer.zoomBy(1.25));
     dom.zoomOut.addEventListener("click", () => ui.renderer.zoomBy(1 / 1.25));
     dom.fit.addEventListener("click", () => ui.renderer.fit());
@@ -1877,6 +2041,12 @@
     });
 
     window.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+        return;
+      }
       if (event.key === "Escape") {
         if (!dom.modal.hidden) return closePicker();
         if (ui.previewCandidateId) return clearGhost();
