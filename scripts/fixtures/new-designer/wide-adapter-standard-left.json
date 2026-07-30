@@ -1,0 +1,28 @@
+{
+  "id": "wide-adapter-standard-left",
+  "output_name": "wide-adapter-standard-left",
+  "description": "wide adapter supports a standard-width module on its left pair",
+  "modules": [
+    {
+      "id": "base",
+      "type": "wide_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "adapter",
+      "type": "wide_adapter_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": "base"
+    },
+    {
+      "id": "standard_extension",
+      "type": "standard_extension_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": "adapter"
+    }
+  ]
+}

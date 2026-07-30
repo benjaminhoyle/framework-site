@@ -1,0 +1,45 @@
+{
+  "id": "deep-adapter-compact-booster-bridge",
+  "output_name": "deep-adapter-compact-booster-bridge",
+  "description": "deep adapter split into deep booster plus compact extension, then bridged by a deep extension",
+  "modules": [
+    {
+      "id": "base",
+      "type": "deep_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "adapter",
+      "type": "deep_adapter_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": "base"
+    },
+    {
+      "id": "booster",
+      "type": "deep_booster",
+      "x": 0,
+      "y": 0,
+      "on": "adapter"
+    },
+    {
+      "id": "compact_extension",
+      "type": "compact_extension_trimmed",
+      "x": 703,
+      "y": 0,
+      "on": "adapter"
+    },
+    {
+      "id": "deep_bridge",
+      "type": "deep_extension_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": [
+        "booster",
+        "compact_extension"
+      ]
+    }
+  ]
+}

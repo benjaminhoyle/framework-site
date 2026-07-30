@@ -1,0 +1,21 @@
+{
+  "id": "compact-base-extension",
+  "output_name": "compact-base-extension",
+  "description": "compact base with matching extension",
+  "modules": [
+    {
+      "id": "base",
+      "type": "compact_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "extension",
+      "type": "compact_extension_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": "base"
+    }
+  ]
+}

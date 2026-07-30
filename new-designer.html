@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Shelf Designer | Framework</title>
+    <meta name="description"
+        content="Design your Framework shelving in 3D — pick a size, stack it how you like, see the price, and order on WhatsApp.">
+    <meta name="theme-color" content="#ffffff">
+    <!-- Running in parallel with /designer and /simplified-designer while it is
+         evaluated. Keep it out of search until it replaces one of them, so the
+         two do not compete for the same queries. -->
+    <meta name="robots" content="noindex">
+    <link rel="icon" href="images/global/fwk-icon-lg.png">
+
+    <!-- Fonts and the app's own data are fetched from the same connections the
+         rest of the site uses; preconnect so the handshake overlaps the parse. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
+    <link rel="stylesheet" href="css/new-designer.css?v=22">
+
+    <!--
+      Nothing can render until the catalogue arrives, and the app's own scripts
+      are deferred, so waiting for them to parse before even asking for it costs
+      a round trip. Start the request here, in the head, and hand the promise to
+      app.js. (A <link rel=preload as=fetch> was the obvious way to do this, but
+      it kept downloading the file a second time rather than being reused.)
+    -->
+    <script>
+        // One version for every part of the designer -- scripts, stylesheet,
+        // catalogue and geometry. They have to move together: app code paired
+        // with a stale catalogue silently loses whatever the catalogue gained,
+        // which is exactly what a CDN or a browser cache will hand you a few
+        // minutes after a deploy. Bump this whenever any of them changes.
+        window.frameworkDesignerVersion = '22';
+        window.frameworkDesignerCatalog =
+            fetch('assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
+                .then(function (response) {
+                    if (!response.ok) throw new Error('catalogue HTTP ' + response.status);
+                    return response.json();
+                });
+        // app.js reports the failure to the user; this just stops the browser
+        // logging an unhandled rejection before app.js has attached.
+        window.frameworkDesignerCatalog.catch(function () { });
+    </script>
+</head>
+
+<body>
+    <div class="nd-app" id="nd-app" data-mode="simple" data-panel="open">
+        <header class="nd-top">
+            <a class="nd-brand" href="index.html">
+                <img src="images/global/fwk-icon.png" alt="" width="28" height="28">
+                <span>Shelf Designer</span>
+            </a>
+
+            <div class="nd-modes" role="tablist" aria-label="Interface level" id="nd-modes">
+                <button type="button" role="tab" data-mode="simple" aria-selected="true">Simple</button>
+                <button type="button" role="tab" data-mode="standard" aria-selected="false">Standard</button>
+                <button type="button" role="tab" data-mode="advanced" aria-selected="false">Advanced</button>
+            </div>
+
+            <button type="button" class="nd-iconbutton" id="nd-undo" title="Undo" aria-label="Undo" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 7v6h6" />
+                    <path d="M3 13a9 9 0 1 0 3-7.7L3 8" />
+                </svg>
+            </button>
+        </header>
+
+        <main class="nd-main">
+            <section class="nd-stage" id="nd-stage" aria-label="Shelf preview">
+                <canvas id="nd-canvas"></canvas>
+                <div class="nd-overlay" id="nd-overlay"></div>
+
+                <div class="nd-stage-tools">
+                    <button type="button" id="nd-zoom-in" aria-label="Zoom in">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" aria-hidden="true">
+                            <path d="M12 5v14M5 12h14" />
+                        </svg>
+                    </button>
+                    <button type="button" id="nd-zoom-out" aria-label="Zoom out">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" aria-hidden="true">
+                            <path d="M5 12h14" />
+                        </svg>
+                    </button>
+                    <button type="button" id="nd-dimensions" aria-label="Show dimensions" aria-pressed="false"
+                        title="Show dimensions">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 7v10M21 7v10M3 12h18" />
+                        </svg>
+                    </button>
+                    <button type="button" id="nd-fit" aria-label="Fit shelf to view">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+                        </svg>
+                    </button>
+                </div>
+
+                <p class="nd-hint" id="nd-hint" hidden></p>
+                <div class="nd-busy" id="nd-busy" hidden>Loading…</div>
+
+                <div class="nd-fallback" id="nd-fallback" hidden>
+                    <strong id="nd-fallback-title">Loading the designer…</strong>
+                    <p class="nd-note" id="nd-fallback-body">One moment.</p>
+                </div>
+            </section>
+
+            <aside class="nd-panel" aria-label="Shelf options">
+                <div class="nd-panel-head">
+                    <h2 id="nd-panel-title">Build</h2>
+                    <button type="button" class="nd-collapse" id="nd-collapse" aria-expanded="true"
+                        aria-controls="nd-controls" aria-label="Hide options">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M6 9l6 6 6-6" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="nd-panel-body" id="nd-controls"></div>
+
+                <div class="nd-summary">
+                    <div class="nd-total">
+                        <strong class="nd-total-amount" id="nd-total">KSh 0</strong>
+                        <span class="nd-total-note" id="nd-total-note">VAT inclusive</span>
+                    </div>
+                    <a class="nd-order" id="nd-order" href="#" target="_blank" rel="noopener noreferrer"
+                        aria-disabled="true">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                                d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.3-1.4A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.34-2 1.38-.51.04-1.16.06-1.87-.12a15.6 15.6 0 0 1-6.8-5.9c-.5-.83-.83-1.8-.83-2.74 0-.94.5-1.4.67-1.6.18-.2.4-.25.53-.25h.38c.12 0 .29-.05.45.34l.62 1.5c.05.12.09.26 0 .41l-.24.36-.35.38c-.11.12-.23.25-.1.48.13.24.58 1 1.25 1.6.86.77 1.58 1.01 1.8 1.13.23.12.36.1.5-.06l.7-.82c.16-.2.3-.15.5-.08l1.42.67c.2.1.35.15.4.23.05.09.05.5-.2 1.2Z" />
+                        </svg>
+                        Order on WhatsApp
+                    </a>
+                </div>
+            </aside>
+        </main>
+
+        <div class="nd-modal" id="nd-modal" hidden role="dialog" aria-modal="true" aria-labelledby="nd-modal-title">
+            <div class="nd-modal-panel">
+                <div class="nd-modal-head">
+                    <strong id="nd-modal-title">Choose a piece</strong>
+                    <button type="button" class="nd-modal-close" id="nd-modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="nd-modal-body" id="nd-modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/new-designer/engine.js?v=22" defer></script>
+    <script src="js/new-designer/geometry.js?v=22" defer></script>
+    <script src="js/new-designer/renderer.js?v=22" defer></script>
+    <script src="js/new-designer/app.js?v=22" defer></script>
+
+    <!--
+      Analytics loads after the designer is interactive. On a mid-range phone
+      the pixel/tag bundles cost more parse time than this entire app, and the
+      point of the page is that the shelf appears fast.
+    -->
+    <script>
+        window.addEventListener('load', function () {
+            var start = function () {
+                window.dataLayer = window.dataLayer || [];
+                window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+                gtag('js', new Date());
+                gtag('config', 'AW-16875113878');
+                gtag('config', 'G-HXHT6KGZT3');
+                // The Meta stub has to exist and be initialised BEFORE its
+                // script loads, otherwise the real pixel initialises itself and
+                // then replays our queue, which logs a conflicting-pixel error.
+                if (!window.fbq) {
+                    window.fbq = function () {
+                        (window.fbq.queue = window.fbq.queue || []).push(arguments);
+                    };
+                    window.fbq.push = window.fbq;
+                    window.fbq.loaded = true;
+                    window.fbq.version = '2.0';
+                    window.fbq.queue = [];
+                    window.fbq('init', '1492649948884685');
+                    window.fbq('track', 'PageView');
+                }
+                [
+                    'https://www.googletagmanager.com/gtag/js?id=AW-16875113878',
+                    'https://connect.facebook.net/en_US/fbevents.js'
+                ].forEach(function (src) {
+                    var script = document.createElement('script');
+                    script.async = true;
+                    script.src = src;
+                    document.head.appendChild(script);
+                });
+            };
+            if ('requestIdleCallback' in window) window.requestIdleCallback(start, { timeout: 3000 });
+            else window.setTimeout(start, 1500);
+        });
+    </script>
+</body>
+
+</html>

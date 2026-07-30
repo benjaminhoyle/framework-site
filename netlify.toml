@@ -23,6 +23,27 @@
   to = "/simplified-designer.html"
   status = 200
 
+[[redirects]]
+  from = "/new-designer"
+  to = "/new-designer.html"
+  status = 200
+
+# --- /new-designer runtime assets ------------------------------------------
+# The geometry bundles are content-built by
+# scripts/build-new-designer-assets.mjs and only change when the Rhino pipeline
+# does, so they can be cached hard. They are JSON (not raw binary) specifically
+# so Netlify's edge brotli applies -- application/octet-stream is served
+# uncompressed, which quadrupled the download.
+[[headers]]
+  for = "/assets/shelving/modules/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/assets/shelving/catalog.json"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
 # --- Keep internal-only paths out of the public site ---
 # These live in the repo for handoff/tooling but must not be served.
 # force = true makes the redirect win over the real static file.

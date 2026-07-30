@@ -1,0 +1,21 @@
+{
+  "id": "wide-display-bar-back-row",
+  "output_name": "wide-display-bar-back-row",
+  "description": "wide display/top bar consumes the matching back two sockets",
+  "modules": [
+    {
+      "id": "base",
+      "type": "wide_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "top_bar",
+      "type": "wide_top_bar",
+      "x": 0,
+      "y": 256.999,
+      "on": "base"
+    }
+  ]
+}

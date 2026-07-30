@@ -1,0 +1,38 @@
+{
+  "id": "deep-to-standard-depth-booster-adapters",
+  "output_name": "deep-to-standard-depth-booster-adapters",
+  "description": "two booster adapters consume a deep-width unit and provide shifted standard-depth rows",
+  "modules": [
+    {
+      "id": "base",
+      "type": "deep_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "left_adapter",
+      "type": "booster_adapter",
+      "x": 0,
+      "y": 0,
+      "on": "base"
+    },
+    {
+      "id": "right_adapter",
+      "type": "booster_adapter",
+      "x": 1143,
+      "y": 0,
+      "on": "base"
+    },
+    {
+      "id": "wide_extension",
+      "type": "wide_extension_trimmed",
+      "x": 0,
+      "y": 170.116,
+      "on": [
+        "left_adapter",
+        "right_adapter"
+      ]
+    }
+  ]
+}

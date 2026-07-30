@@ -1,0 +1,28 @@
+{
+  "id": "deep-spacer-stack",
+  "output_name": "deep-spacer-stack",
+  "description": "deep spacer behaves like a same-depth extension",
+  "modules": [
+    {
+      "id": "base",
+      "type": "deep_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "spacer",
+      "type": "deep_spacer",
+      "x": 0,
+      "y": 0,
+      "on": "base"
+    },
+    {
+      "id": "extension",
+      "type": "deep_extension_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": "spacer"
+    }
+  ]
+}

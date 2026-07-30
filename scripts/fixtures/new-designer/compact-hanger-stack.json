@@ -1,0 +1,28 @@
+{
+  "id": "compact-hanger-stack",
+  "output_name": "compact-hanger-stack",
+  "description": "compact hanger exposes the same structural sockets as an extension",
+  "modules": [
+    {
+      "id": "base",
+      "type": "compact_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "hanger",
+      "type": "compact_hanger",
+      "x": 0,
+      "y": 0,
+      "on": "base"
+    },
+    {
+      "id": "extension",
+      "type": "compact_extension_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": "hanger"
+    }
+  ]
+}

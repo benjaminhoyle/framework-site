@@ -1,0 +1,21 @@
+{
+  "id": "standard-display-bar-back-row",
+  "output_name": "standard-display-bar-back-row",
+  "description": "standard display/top bar consumes the matching back two sockets",
+  "modules": [
+    {
+      "id": "base",
+      "type": "standard_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "top_bar",
+      "type": "standard_top_bar",
+      "x": 0,
+      "y": 256.999,
+      "on": "base"
+    }
+  ]
+}

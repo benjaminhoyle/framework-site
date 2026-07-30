@@ -1,0 +1,21 @@
+{
+  "id": "broad-base-extension",
+  "output_name": "broad-base-extension",
+  "description": "broad base with matching extension",
+  "modules": [
+    {
+      "id": "base",
+      "type": "broad_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "extension",
+      "type": "broad_extension_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": "base"
+    }
+  ]
+}
