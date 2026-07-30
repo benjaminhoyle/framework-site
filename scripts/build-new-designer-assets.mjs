@@ -46,8 +46,9 @@ const FORMAT = "framework-module-geometry@1";
 // here so the runtime never has to measure a mesh to decide how to paint it.
 const ROLE_STEEL = 0;
 const ROLE_SURFACE = 1;
-const ROLE_FOOT = 2;
+const ROLE_FOOT = 2; // black rubber: the feet
 const ROLE_PAPER = 3;
+const ROLE_CORD = 4; // dark grey flex: the lamp cord
 const SHELF_ROLES = new Set(["base", "extension", "adapter"]);
 
 // Corner modules have no placement rules in the engine yet (generateCandidates
@@ -398,6 +399,54 @@ function decimate(positions, normals, indices) {
   };
 }
 
+/**
+ * Average normals across coincident vertices, so a faceted surface shades as the
+ * smooth form it approximates.
+ *
+ * The lamp shade is a fluted paper shell -- 80 flat facets whose radius swings
+ * between 91mm and 106mm -- and each facet arrives with its own unwelded
+ * vertices and its own flat normal. At the size a shade occupies on screen those
+ * facets alias into the irregular vertical streaking that made it look broken.
+ * Welding by position and averaging keeps the fluted silhouette while shading it
+ * like the cylinder it reads as.
+ *
+ * Normals more than 90 degrees apart are not averaged together: the shell's
+ * inside and outside meet at the rim, and blending those would light the rim
+ * from nowhere.
+ */
+function smoothCoincidentNormals(positions, normals) {
+  const groups = new Map();
+  const count = positions.length / 3;
+  for (let i = 0; i < count; i += 1) {
+    const key = `${Math.round(positions[i * 3] * 20)},${Math.round(positions[i * 3 + 1] * 20)},${Math.round(positions[i * 3 + 2] * 20)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(i);
+  }
+  for (const members of groups.values()) {
+    if (members.length < 2) continue;
+    // Cluster the members by facing, then average within each cluster.
+    const clusters = [];
+    for (const index of members) {
+      const n = [normals[index * 3], normals[index * 3 + 1], normals[index * 3 + 2]];
+      const cluster = clusters.find((entry) =>
+        entry.sum[0] * n[0] + entry.sum[1] * n[1] + entry.sum[2] * n[2] > 0);
+      if (cluster) {
+        cluster.members.push(index);
+        for (let axis = 0; axis < 3; axis += 1) cluster.sum[axis] += n[axis];
+      } else {
+        clusters.push({ members: [index], sum: n.slice() });
+      }
+    }
+    for (const cluster of clusters) {
+      const length = Math.hypot(cluster.sum[0], cluster.sum[1], cluster.sum[2]);
+      if (length < 1e-9) continue;
+      for (const index of cluster.members) {
+        for (let axis = 0; axis < 3; axis += 1) normals[index * 3 + axis] = cluster.sum[axis] / length;
+      }
+    }
+  }
+}
+
 /** One reusable primitive, in its own local mm space, ready to quantise. */
 function preparePart(primitive) {
   const vertexCount = primitive.positions.length / 3;
@@ -532,26 +581,29 @@ function lampFlexPart(parts, instances, placementBounds) {
     }
   });
   if (!shade) return null;
+  // The cord hangs on the shade's own axis. (An earlier version took the x
+  // centre of whichever steel part it found above the shade, which matched the
+  // long horizontal arm and put the cord halfway back along it.)
   const centreX = (shade[0] + shade[3]) / 2;
   const centreY = (shade[1] + shade[4]) / 2;
 
-  // The stub is the lowest steel geometry sitting directly over the shade.
+  // Where it meets the arm: the lowest steel geometry the shade's axis passes
+  // through, so the cord stops at the arm rather than inside or beyond it.
   instances.forEach((instance, index) => {
     const bounds = placementBounds[index];
     if (parts[instance.part].role !== ROLE_STEEL) return;
-    if (bounds[2] < shade[5]) return; // not above the shade
-    if (centreX < bounds[0] - 40 || centreX > bounds[3] + 40) return; // not over its axis
+    if (bounds[5] < shade[5]) return; // not above the shade
+    if (centreX < bounds[0] || centreX > bounds[3]) return; // axis misses it
+    if (centreY < bounds[1] || centreY > bounds[4]) return;
     if (!stub || bounds[2] < stub[2]) stub = bounds.slice();
   });
-  if (!stub) return null;
 
-  // Start at the shade's mid-height (where a bulb would hang) so the cord reads
-  // as continuous through the shade's open bottom, and finish a little inside
-  // the stub so there is no seam.
+  // Start at the shade's mid-height, where a bulb would hang, so the cord reads
+  // as continuous through the shade's open bottom.
   const z0 = (shade[2] + shade[5]) / 2;
-  const z1 = stub[2] + 8;
+  const z1 = (stub ? stub[2] : shade[5] + 120) + 8;
   if (z1 <= z0) return null;
-  return cylinderPart(ROLE_FOOT, (stub[0] + stub[3]) / 2, centreY, z0, z1, LAMP_FLEX_DIAMETER_MM / 2, 10);
+  return cylinderPart(ROLE_CORD, centreX, centreY, z0, z1, LAMP_FLEX_DIAMETER_MM / 2, 10);
 }
 
 /**
@@ -856,6 +908,57 @@ function trim(value, places = 2) {
   return value;
 }
 
+
+/**
+ * Builder colours, read from the /designer page's own theme table.
+ *
+ * Two palettes serve two purposes and are deliberately kept apart:
+ *
+ *   - `steelHex` / `mdfHex` come from the pipeline's shared/finishes.json and
+ *     are the real material colours the Blender renders and the DAM use. Those
+ *     must not drift.
+ *   - `builder` comes from designer-engine.js's THEME_* sets, which is what the
+ *     existing /designer page draws with. Using them here means the two site
+ *     designers look like the same product.
+ *
+ * finishes.json's `siteTheme` is the join between them, so neither side has to
+ * know about the other.
+ */
+function loadDesignerThemeColors() {
+  const file = path.join(SITE_ROOT, "js", "designer-engine.js");
+  const source = fs.readFileSync(file, "utf8");
+  const themes = {};
+  // Each THEME_n block up to the next one; pull the fills we need by set name.
+  const blocks = source.split(/\n\s*(THEME_\d+):\s*\{/).slice(1);
+  for (let i = 0; i < blocks.length; i += 2) {
+    const name = blocks[i];
+    const body = blocks[i + 1];
+    const pick = (set) => {
+      const match = body.match(new RegExp(`${set}:\\s*\\{[^}]*fill:\\s*'(#[0-9a-fA-F]{3,8})'`));
+      return match ? match[1] : null;
+    };
+    const surface = pick("SET_1");
+    const steel = pick("SET_4");
+    if (!surface || !steel) throw new Error(`${file}: ${name} is missing SET_1/SET_4 fills`);
+    themes[name] = { surface, steel, edge: pick("SET_2"), postBase: pick("SET_5") };
+  }
+  if (!Object.keys(themes).length) throw new Error(`${file}: found no THEME_* palettes`);
+  return themes;
+}
+
+/**
+ * Price for a module, filling in from its other cut where the list is missing
+ * one. A trimmed cut is the same unit shortened and sells for the same money,
+ * so the two are always priced together -- but the generated list only carries
+ * whichever one the shop happens to have listed, which left pieces reading
+ * "on request" in the designer for no real reason.
+ */
+function priceFor(prices, id) {
+  if (prices[id] != null) return prices[id];
+  const pair = id.endsWith("_trimmed") ? id.slice(0, -"_trimmed".length) : `${id}_trimmed`;
+  return prices[pair] ?? null;
+}
+
 /** Front-to-back span of a module's own support sockets, in mm. */
 function depthSpan(module) {
   const sockets = rotationSockets(module);
@@ -874,6 +977,7 @@ function buildCatalog(pipeline, builtModules, rotationShifts) {
   const finishes = JSON.parse(fs.readFileSync(path.join(PIPELINE, "shared", "finishes.json"), "utf8"));
   const vocabulary = JSON.parse(fs.readFileSync(path.join(PIPELINE, "shared", "module-vocabulary.json"), "utf8"));
   const displayNames = new Map(vocabulary.types.map((type) => [type.type, type.displayName]));
+  const themes = loadDesignerThemeColors();
 
   const modules = {};
   for (const [id, module] of Object.entries(pipeline.modules)) {
@@ -909,7 +1013,7 @@ function buildCatalog(pipeline, builtModules, rotationShifts) {
         normalized_mm: socket.normalized_mm
       })),
       horizontalBoxes: (module.horizontalBoxes || []).map((box) => ({ kind: box.kind, bbox: box.bbox })),
-      priceKsh: prices.prices[id] ?? null
+      priceKsh: priceFor(prices.prices, id)
     });
   }
 
@@ -924,12 +1028,19 @@ function buildCatalog(pipeline, builtModules, rotationShifts) {
     units: "millimetres",
     currency: prices.currency || "KSh",
     accessoryPrices: { bookend: prices.prices.bookend ?? null },
-    finishes: finishes.finishes.map((finish) => ({
-      id: finish.id,
-      displayName: finish.displayName,
-      steelHex: finish.steelHex,
-      mdfHex: finish.mdfHex
-    })),
+    finishes: finishes.finishes.map((finish) => {
+      const theme = themes[finish.siteTheme];
+      if (!theme) throw new Error(`no ${finish.siteTheme} palette in designer-engine.js for finish "${finish.id}"`);
+      return {
+        id: finish.id,
+        displayName: finish.displayName,
+        // Real material colours, for renders and the DAM.
+        steelHex: finish.steelHex,
+        mdfHex: finish.mdfHex,
+        // Screen colours, matching the /designer page.
+        builder: theme
+      };
+    }),
     aliases,
     modules
   };
@@ -998,7 +1109,10 @@ function main() {
       const key = `${placement.primitive.key}:${role}`;
       if (!partIndex.has(key)) {
         partIndex.set(key, parts.length);
-        parts.push(Object.assign(preparePart(placement.primitive), { role }));
+        const part = Object.assign(preparePart(placement.primitive), { role });
+        // The fluted lamp shade is the one surface fine enough to alias.
+        if (role === ROLE_PAPER) smoothCoincidentNormals(part.positions, part.normals);
+        parts.push(part);
       }
       instances.push({ part: partIndex.get(key), matrix: placement.matrix });
       placementBounds.push(placed);

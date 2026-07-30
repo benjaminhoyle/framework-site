@@ -114,8 +114,10 @@ button { cursor: pointer; }
   box-shadow: 0 1px 2px rgba(32, 36, 36, .12);
 }
 
+.nd-history { display: flex; gap: 4px; flex: 0 0 auto; }
+
 .nd-iconbutton {
-  width: var(--nd-tap);
+  width: 38px;
   height: 38px;
   border: 1px solid var(--nd-line);
   border-radius: var(--nd-radius);
@@ -509,6 +511,13 @@ button { cursor: pointer; }
 }
 .nd-button:disabled { opacity: .4; cursor: default; }
 .nd-button-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.nd-confirm-row { margin-top: 6px; }
+.nd-button.is-primary {
+  background: var(--nd-accent);
+  border-color: var(--nd-accent);
+  color: #fff;
+  font-weight: 700;
+}
 .nd-button-row .nd-button { flex: 1 1 auto; }
 
 /* Module list (Advanced). */
