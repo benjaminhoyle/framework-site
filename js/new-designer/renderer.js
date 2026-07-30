@@ -632,6 +632,92 @@ window.FrameworkDesignerRenderer = (function () {
       getViewMode: () => state.viewMode,
 
       /**
+       * Draw one frame at an arbitrary size and hand back its pixels.
+       *
+       * Used by the Present view to compose a share image. The canvas is resized,
+       * framed and drawn, then read and put straight back, all without returning
+       * to the event loop: the context is created without preserveDrawingBuffer,
+       * so the pixels are only there until the browser next composites. That is
+       * also why this reads with readPixels rather than toDataURL.
+       *
+       * Rows come back bottom-up, the way GL stores them.
+       */
+      snapshot(options) {
+        const settings = options || {};
+        const width = Math.max(1, Math.round(settings.width || 1080));
+        const height = Math.max(1, Math.round(settings.height || 1080));
+        const saved = {
+          width: state.width,
+          height: state.height,
+          cssWidth: state.cssWidth,
+          cssHeight: state.cssHeight,
+          canvasWidth: state.canvas.width,
+          canvasHeight: state.canvas.height,
+          target: state.target.slice(),
+          halfHeight: state.halfHeight
+        };
+
+        state.canvas.width = width;
+        state.canvas.height = height;
+        state.width = width;
+        state.height = height;
+        state.cssWidth = width;
+        state.cssHeight = height;
+
+        // Always framed from the design, never from wherever the live view has
+        // been panned or zoomed to.
+        const bounds = settings.boundsMm || sceneBounds(state);
+        if (bounds && state.viewMode !== "perspective") {
+          state.target = [
+            (bounds[0] + bounds[3]) / 2,
+            (bounds[1] + bounds[4]) / 2,
+            (bounds[2] + bounds[5]) / 2
+          ];
+          const camera = viewProjection(state);
+          let halfAcross = 0;
+          let halfUp = 0;
+          for (const x of [bounds[0], bounds[3]]) {
+            for (const y of [bounds[1], bounds[4]]) {
+              for (const z of [bounds[2], bounds[5]]) {
+                const dx = x - state.target[0];
+                const dy = y - state.target[1];
+                const dz = z - state.target[2];
+                halfAcross = Math.max(halfAcross, Math.abs(camera.right[0] * dx + camera.right[1] * dy + camera.right[2] * dz));
+                halfUp = Math.max(halfUp, Math.abs(camera.up[0] * dx + camera.up[1] * dy + camera.up[2] * dz));
+              }
+            }
+          }
+          state.halfHeight = Math.max(halfUp, halfAcross / (width / height), 120) * (settings.padding || FIT_PADDING);
+        }
+
+        const gl = state.gl;
+        gl.viewport(0, 0, width, height);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        const camera = viewProjection(state);
+        state.camera = camera;
+        gl.disable(gl.BLEND);
+        for (const instance of state.instances) {
+          const batches = state.uploads.get(instance.moduleId);
+          const geometry = state.geometry.get(instance.moduleId);
+          if (!batches || !geometry) continue;
+          drawBatches(state, camera, instance, geometry, batches, 1, null);
+        }
+        const pixels = new Uint8Array(width * height * 4);
+        gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+        state.canvas.width = saved.canvasWidth;
+        state.canvas.height = saved.canvasHeight;
+        state.width = saved.width;
+        state.height = saved.height;
+        state.cssWidth = saved.cssWidth;
+        state.cssHeight = saved.cssHeight;
+        state.target = saved.target;
+        state.halfHeight = saved.halfHeight;
+        requestFrame(state);
+        return { width, height, pixels };
+      },
+
+      /**
        * Switch between the isometric and the fixed front perspective view. The
        * perspective camera derives everything from the design, so there is
        * nothing to pan or zoom -- it is a viewpoint, not a way to inspect.

@@ -621,6 +621,43 @@ button { cursor: pointer; }
   color: var(--nd-muted);
 }
 
+/* Secondary action beside Order: makes the client-facing image. */
+.nd-present {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: var(--nd-tap);
+  padding: 0 14px;
+  border: 1px solid var(--nd-line-strong);
+  border-radius: var(--nd-radius);
+  background: var(--nd-panel);
+  font-size: .9rem;
+  font-weight: 600;
+}
+.nd-present svg { width: 17px; height: 17px; }
+.nd-present:disabled { opacity: .4; cursor: default; }
+
+/* The share image itself: shown rather than downloaded, so it can be
+   long-pressed on a phone or right-clicked on a desktop. */
+.nd-modal-image .nd-modal-panel { max-height: 92vh; max-height: 92dvh; }
+.nd-present-frame {
+  display: flex;
+  justify-content: center;
+  background: var(--nd-soft);
+  border: 1px solid var(--nd-line);
+  border-radius: var(--nd-radius);
+  padding: 8px;
+}
+.nd-present-frame img {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(32, 36, 36, .14);
+}
+
 .nd-order {
   flex: 0 0 auto;
   display: inline-flex;
@@ -713,7 +750,44 @@ button { cursor: pointer; }
 
   .nd-panel-body { padding: 16px; gap: 18px; }
   .nd-summary { padding: 14px 16px; flex-wrap: wrap; }
-  .nd-order { flex: 1 1 100%; justify-content: center; }
+  /* Secondary action beside Order: makes the client-facing image. */
+.nd-present {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: var(--nd-tap);
+  padding: 0 14px;
+  border: 1px solid var(--nd-line-strong);
+  border-radius: var(--nd-radius);
+  background: var(--nd-panel);
+  font-size: .9rem;
+  font-weight: 600;
+}
+.nd-present svg { width: 17px; height: 17px; }
+.nd-present:disabled { opacity: .4; cursor: default; }
+
+/* The share image itself: shown rather than downloaded, so it can be
+   long-pressed on a phone or right-clicked on a desktop. */
+.nd-modal-image .nd-modal-panel { max-height: 92vh; max-height: 92dvh; }
+.nd-present-frame {
+  display: flex;
+  justify-content: center;
+  background: var(--nd-soft);
+  border: 1px solid var(--nd-line);
+  border-radius: var(--nd-radius);
+  padding: 8px;
+}
+.nd-present-frame img {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(32, 36, 36, .14);
+}
+
+.nd-order { flex: 1 1 100%; justify-content: center; }
 
   .nd-modal { align-items: center; }
   .nd-modal-panel {

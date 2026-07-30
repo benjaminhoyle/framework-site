@@ -158,7 +158,12 @@
     modalBody: el("nd-modal-body"),
     modalClose: el("nd-modal-close"),
     dimensions: el("nd-dimensions"),
-    perspective: el("nd-perspective")
+    perspective: el("nd-perspective"),
+    present: el("nd-present"),
+    presentModal: el("nd-present-modal"),
+    presentImage: el("nd-present-image"),
+    presentClose: el("nd-present-close"),
+    presentHint: el("nd-present-hint")
   };
 
   const ui = {
@@ -1575,6 +1580,7 @@
     dom.totalNote.textContent = notes.join(" · ");
 
     const empty = ui.design.instances.length === 0;
+    dom.present.disabled = empty;
     dom.order.setAttribute("aria-disabled", empty ? "true" : "false");
     dom.order.href = empty ? "#" : whatsappUrl(total);
   }
@@ -1597,6 +1603,103 @@
       // are deliberate blank lines in the WhatsApp message.
     ].filter((line) => line !== null).join("\n");
     return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+  }
+
+  // ------------------------------------------------------------- present --
+
+  /*
+   * The share image. Composed by present.js; this side gathers what it says and
+   * takes the snapshot.
+   *
+   * Shown on screen rather than downloaded: on a phone a long-press on an <img>
+   * offers "copy image" and "save", which is what actually gets a design into a
+   * WhatsApp conversation. A download would land in Files and need finding again.
+   */
+  const PRESENT_LOGO_SRC = "images/global/fwk-icon.png";
+  let presentLogo = null;
+
+  function loadPresentLogo() {
+    if (presentLogo) return Promise.resolve(presentLogo);
+    return new Promise((resolve) => {
+      const image = new Image();
+      // Same-origin, so this does not taint the canvas.
+      image.onload = () => {
+        presentLogo = image;
+        resolve(image);
+      };
+      image.onerror = () => resolve(null); // the image is fine without the mark
+      image.src = PRESENT_LOGO_SRC;
+    });
+  }
+
+  /**
+   * A short, stable reference for a design.
+   *
+   * Derived from the design itself, so the same shelf always gets the same code
+   * and two shares of one design are recognisably the same. It goes on the image
+   * small and grey: it is not clickable in a chat, it is there so that when we
+   * look back through a conversation we can tell which designs a client saw.
+   */
+  function designCode() {
+    const source = JSON.stringify(engine.serializeState(ui.design));
+    // FNV-1a, 32-bit: short, well spread, and four lines of code.
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < source.length; i += 1) {
+      hash ^= source.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return hash.toString(36).toUpperCase().padStart(7, "0").slice(-7);
+  }
+
+  function presentContent() {
+    const breakdown = priceBreakdown();
+    const finish = currentFinish();
+    return {
+      sizeLabel: sizeLabel(),
+      finishName: finish ? finish.displayName : null,
+      totalLabel: formatKsh(breakdown.total),
+      totalNote: breakdown.unpriced
+        ? `VAT inclusive · ${breakdown.unpriced} piece${breakdown.unpriced === 1 ? "" : "s"} quoted separately`
+        : "VAT inclusive",
+      lines: breakdown.lines.map((line) => ({
+        label: line.label,
+        quantity: line.quantity,
+        amount: line.amount == null ? null : formatKsh(line.amount)
+      })),
+      code: designCode(),
+      codeUrl: `framework.co.ke/new-designer · ${designCode()}`
+    };
+  }
+
+  function openPresent() {
+    if (!ui.design.instances.length) return;
+    dom.present.disabled = true;
+    loadPresentLogo().then((logo) => {
+      try {
+        const composer = window.FrameworkDesignerPresent;
+        // Snapshot at the art box's own aspect, at 2x for a crisp downscale.
+        const snapshot = ui.renderer.snapshot({
+          width: composer.WIDTH * 2,
+          height: composer.ART_HEIGHT * 2,
+          boundsMm: engine.designBounds(ui.catalog, ui.design),
+          padding: 1.14
+        });
+        const canvas = composer.compose(snapshot, presentContent(), logo);
+        dom.presentImage.src = canvas.toDataURL("image/png");
+        dom.presentModal.hidden = false;
+        track("designer_present", { mode: ui.mode, view: ui.renderer.getViewMode() });
+      } catch (error) {
+        console.error(error);
+        setHint("The image could not be created. Try again.", true);
+      } finally {
+        dom.present.disabled = false;
+      }
+    });
+  }
+
+  function closePresent() {
+    dom.presentModal.hidden = true;
+    dom.presentImage.removeAttribute("src");
   }
 
   // ------------------------------------------------------ share / URL state --
@@ -2115,6 +2218,11 @@
       window.requestAnimationFrame(() => ui.renderer.fit());
     });
 
+    dom.present.addEventListener("click", openPresent);
+    dom.presentClose.addEventListener("click", closePresent);
+    dom.presentModal.addEventListener("click", (event) => {
+      if (event.target === dom.presentModal) closePresent();
+    });
     dom.modalClose.addEventListener("click", closePicker);
     dom.modal.addEventListener("click", (event) => {
       if (event.target === dom.modal) closePicker();
@@ -2133,6 +2241,7 @@
         return;
       }
       if (event.key === "Escape") {
+        if (!dom.presentModal.hidden) return closePresent();
         if (!dom.modal.hidden) return closePicker();
         if (ui.previewCandidateId) return clearGhost();
         if (ui.activeModuleId || ui.selectedId) {

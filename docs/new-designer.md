@@ -87,6 +87,37 @@ than on a customer's phone. The suite also checks that the fast incremental
 placement check agrees with the authoritative full-state validation on every one
 of them.
 
+## Present
+
+The Present button composes a client-facing image: the shelf, its size, the
+finish, the module breakdown, the total, the Framework mark, and a short design
+reference. `js/new-designer/present.js` does the composition; `app.js` gathers the
+content and takes the snapshot.
+
+- **1080 × 1350**, WhatsApp's portrait format — shown large in a chat without the
+  preview being cropped, and 1080 wide is the most WhatsApp keeps before
+  re-encoding.
+- The shelf always gets the same box and is **always re-fitted into it**, so an
+  image never inherits wherever the live view happened to be panned or zoomed.
+  It does follow whether the isometric or the front view is selected.
+- The `+` affordances are absent because the snapshot draws placed instances
+  only; there is nothing to hide.
+- **Shown, not downloaded.** On a phone a long-press on an `<img>` offers "copy
+  image", which is what actually gets a design into a conversation; a download
+  lands in Files and has to be found again.
+- The **design reference** (e.g. `1JALY1R`) is an FNV-1a hash of the serialised
+  design, so the same shelf always gets the same code and two shares of one
+  design are recognisably the same. It is small and grey on purpose: it is not
+  clickable in a chat, it is there so that reading back through a conversation
+  later tells us which designs a client was shown. It is not yet resolvable back
+  to a configuration — see "Not done yet".
+
+The snapshot itself comes from `renderer.snapshot()`, which resizes the canvas,
+frames, draws and reads back without returning to the event loop. The context is
+created without `preserveDrawingBuffer`, so the pixels only exist until the
+browser next composites — which is also why it uses `readPixels` rather than
+`toDataURL`.
+
 ## Colours
 
 Two palettes, deliberately separate, joined by `siteTheme` in the pipeline's
@@ -159,6 +190,11 @@ designer-page exclusion list.
   unit's price and vice versa, so these are genuinely absent from
   `shared/prices.json` rather than a mapping gap. They are excluded from the
   total, which the summary says out loud.
+- **The design reference is not resolvable.** It identifies a design but does
+  not link back to one; that needs somewhere to store the mapping. The full
+  shareable link (the URL hash) is what carries a design today.
+- **Per-module colour** and **Download/Upload plus Create link** are requested
+  but not built.
 - **`noindex`.** Remove the meta tag in `new-designer.html` when this page
   replaces `/designer` or `/simplified-designer`, and add it to `sitemap.xml`
   then — not while both are live and competing for the same queries.
