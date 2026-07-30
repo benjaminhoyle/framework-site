@@ -307,6 +307,15 @@ button { cursor: pointer; }
   paint-order: stroke fill;
 }
 
+/* The front view frames itself, so pan/zoom/dimensions have nothing to act on. */
+.nd-app[data-view="perspective"] #nd-zoom-in,
+.nd-app[data-view="perspective"] #nd-zoom-out,
+.nd-app[data-view="perspective"] #nd-dimensions,
+.nd-app[data-view="perspective"] #nd-fit {
+  opacity: .35;
+  pointer-events: none;
+}
+
 .nd-stage-tools button.is-active {
   background: var(--nd-accent);
   border-color: var(--nd-accent);

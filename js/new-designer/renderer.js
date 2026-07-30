@@ -25,6 +25,15 @@ window.FrameworkDesignerRenderer = (function () {
   // the "+" affordances that hang off its edges.
   const FIT_PADDING = 1.2;
 
+  /*
+   * The optional second view: standing in front of the shelf, at eye height,
+   * looking at it. Fixed -- there is no orbit here either, it is a presentation
+   * viewpoint rather than a way to inspect the model.
+   */
+  const EYE_HEIGHT_MM = 1700;
+  const PERSPECTIVE_FOV_DEG = 38;
+  const PERSPECTIVE_PADDING = 1.24;
+
   const ROLE_FOOT = 2;
   const ROLE_PAPER = 3;
   const ROLE_CORD = 4;
@@ -120,6 +129,7 @@ window.FrameworkDesignerRenderer = (function () {
       palette: null,
       target: [500, 130, 400],
       halfHeight: 900,
+      viewMode: "iso",
       pixelRatio: 1,
       width: 1,
       height: 1,
@@ -257,7 +267,7 @@ window.FrameworkDesignerRenderer = (function () {
   }
 
   /** Orthographic view-projection for the locked isometric camera. */
-  function viewProjection(state) {
+  function isometricProjection(state) {
     const aspect = state.width / Math.max(1, state.height);
     const halfHeight = state.halfHeight;
     const halfWidth = halfHeight * aspect;
@@ -273,15 +283,6 @@ window.FrameworkDesignerRenderer = (function () {
       state.target[1] - forward[1] * reach,
       state.target[2] - forward[2] * reach
     ];
-    const view = new Float32Array([
-      right[0], up[0], -forward[0], 0,
-      right[1], up[1], -forward[1], 0,
-      right[2], up[2], -forward[2], 0,
-      -(right[0] * eye[0] + right[1] * eye[1] + right[2] * eye[2]),
-      -(up[0] * eye[0] + up[1] * eye[1] + up[2] * eye[2]),
-      forward[0] * eye[0] + forward[1] * eye[1] + forward[2] * eye[2],
-      1
-    ]);
     const near = 1;
     const far = reach * 2;
     const projection = new Float32Array([
@@ -291,12 +292,93 @@ window.FrameworkDesignerRenderer = (function () {
       0, 0, -(far + near) / (far - near), 1
     ]);
     return {
-      matrix: multiply(new Float32Array(16), projection, view),
+      matrix: multiply(new Float32Array(16), projection, viewMatrix(right, up, forward, eye)),
       right,
       up,
       forward,
-      eye
+      eye,
+      perspective: false
     };
+  }
+
+  function viewMatrix(right, up, forward, eye) {
+    return new Float32Array([
+      right[0], up[0], -forward[0], 0,
+      right[1], up[1], -forward[1], 0,
+      right[2], up[2], -forward[2], 0,
+      -(right[0] * eye[0] + right[1] * eye[1] + right[2] * eye[2]),
+      -(up[0] * eye[0] + up[1] * eye[1] + up[2] * eye[2]),
+      forward[0] * eye[0] + forward[1] * eye[1] + forward[2] * eye[2],
+      1
+    ]);
+  }
+
+  /**
+   * Standing in front of the shelf at eye height, far enough back that it fills
+   * the frame.
+   *
+   * The distance comes from the design's bounding sphere and the narrower of the
+   * two field-of-view angles, so it fits on both axes without having to solve the
+   * box projection: over-estimating slightly is exactly what "breathing room"
+   * wants anyway.
+   */
+  function perspectiveProjection(state) {
+    const aspect = state.width / Math.max(1, state.height);
+    const bounds = sceneBounds(state) || [0, 0, 0, 1000, 300, 800];
+    const centre = [
+      (bounds[0] + bounds[3]) / 2,
+      (bounds[1] + bounds[4]) / 2,
+      (bounds[2] + bounds[5]) / 2
+    ];
+    const halfWidth = Math.max(60, (bounds[3] - bounds[0]) / 2);
+    const halfHeight = Math.max(60, (bounds[5] - bounds[2]) / 2);
+    const halfDepth = Math.max(30, (bounds[4] - bounds[1]) / 2);
+    const radius = Math.max(120, Math.hypot(halfWidth, halfHeight, halfDepth));
+
+    const halfV = (PERSPECTIVE_FOV_DEG * Math.PI) / 360;
+    const halfH = Math.atan(Math.tan(halfV) * aspect);
+    // Fit the box itself, not a sphere around it: a shelf run is wide and flat,
+    // and the enclosing sphere is far bigger than the shelf, which left it
+    // filling about 60% of the frame instead of most of it. Whichever axis needs
+    // more room sets the distance; the near face gets cleared on top of that.
+    const distance = PERSPECTIVE_PADDING * (halfDepth + Math.max(
+      halfHeight / Math.tan(halfV),
+      halfWidth / Math.tan(halfH)
+    ));
+
+    // Eye height is fixed, so only the horizontal stand-off is free. If the
+    // design is so tall that eye height alone already exceeds the needed range,
+    // keep a minimum stand-off rather than ending up inside it.
+    const rise = EYE_HEIGHT_MM - centre[2];
+    const horizontal = Math.max(radius * 0.6, Math.sqrt(Math.max(0, distance * distance - rise * rise)));
+    // In front of the shelf: front is the low-depth side.
+    const eye = [centre[0], centre[1] - horizontal, EYE_HEIGHT_MM];
+
+    const forward = normalise([centre[0] - eye[0], centre[1] - eye[1], centre[2] - eye[2]]);
+    const right = normalise(cross(forward, WORLD_UP));
+    const up = cross(right, forward);
+
+    const near = Math.max(50, distance - radius * 2);
+    const far = distance + radius * 4;
+    const focal = 1 / Math.tan(halfV);
+    const projection = new Float32Array([
+      focal / aspect, 0, 0, 0,
+      0, focal, 0, 0,
+      0, 0, (far + near) / (near - far), -1,
+      0, 0, (2 * far * near) / (near - far), 0
+    ]);
+    return {
+      matrix: multiply(new Float32Array(16), projection, viewMatrix(right, up, forward, eye)),
+      right,
+      up,
+      forward,
+      eye,
+      perspective: true
+    };
+  }
+
+  function viewProjection(state) {
+    return state.viewMode === "perspective" ? perspectiveProjection(state) : isometricProjection(state);
   }
 
   function resize(state) {
@@ -538,9 +620,27 @@ window.FrameworkDesignerRenderer = (function () {
         const clip = camera.matrix;
         const x = clip[0] * pointMm[0] + clip[4] * pointMm[1] + clip[8] * pointMm[2] + clip[12];
         const y = clip[1] * pointMm[0] + clip[5] * pointMm[1] + clip[9] * pointMm[2] + clip[13];
+        // w is 1 under the orthographic camera and the perspective divide under
+        // the other, so this covers both.
+        const w = clip[3] * pointMm[0] + clip[7] * pointMm[1] + clip[11] * pointMm[2] + clip[15];
+        const divisor = Math.abs(w) > 1e-6 ? w : 1;
         const width = state.cssWidth || state.width;
         const height = state.cssHeight || state.height;
-        return { x: (x + 1) * 0.5 * width, y: (1 - y) * 0.5 * height };
+        return { x: (x / divisor + 1) * 0.5 * width, y: (1 - y / divisor) * 0.5 * height };
+      },
+
+      getViewMode: () => state.viewMode,
+
+      /**
+       * Switch between the isometric and the fixed front perspective view. The
+       * perspective camera derives everything from the design, so there is
+       * nothing to pan or zoom -- it is a viewpoint, not a way to inspect.
+       */
+      setViewMode(mode) {
+        const next = mode === "perspective" ? "perspective" : "iso";
+        if (next === state.viewMode) return;
+        state.viewMode = next;
+        requestFrame(state);
       },
 
       /**

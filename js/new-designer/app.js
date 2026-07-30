@@ -157,7 +157,8 @@
     modalTitle: el("nd-modal-title"),
     modalBody: el("nd-modal-body"),
     modalClose: el("nd-modal-close"),
-    dimensions: el("nd-dimensions")
+    dimensions: el("nd-dimensions"),
+    perspective: el("nd-perspective")
   };
 
   const ui = {
@@ -583,7 +584,10 @@
     if (ui.renderer) ui.renderer.setGhost(null);
     ui.previewCandidateId = null;
 
-    if (ui.mode !== "simple") {
+    // The front view is for looking, not building: its perspective projection
+    // would put the "+" anchors and the dimension witness lines at angles that
+    // parallel-projection maths cannot produce.
+    if (ui.mode !== "simple" && !isPerspective()) {
       if (ui.activeModuleId) buildCandidateMarkers();
       else buildAddButtons();
       if (ui.selectedId) buildActionMenu();
@@ -675,7 +679,7 @@
     if (!ui.dimensionsSvg) return;
     const svg = ui.dimensionsSvg;
     while (svg.firstChild) svg.removeChild(svg.firstChild);
-    const bounds = ui.dimensionsOn ? shelfBounds() : null;
+    const bounds = ui.dimensionsOn && !isPerspective() ? shelfBounds() : null;
     if (!bounds) return;
 
     const width = dom.stage.clientWidth;
@@ -813,6 +817,27 @@
   // Dimension lines and their numbers hang outside the model, so the view needs
   // more margin than usual while they are showing.
   const DIMENSION_FIT_PADDING = 1.36;
+
+  function isPerspective() {
+    return Boolean(ui.renderer) && ui.renderer.getViewMode() === "perspective";
+  }
+
+  /**
+   * The front view frames itself from the design, so there is no pan or zoom to
+   * preserve; switching back to isometric re-fits rather than restoring whatever
+   * the camera happened to be doing before.
+   */
+  function setPerspective(on) {
+    ui.renderer.setViewMode(on ? "perspective" : "iso");
+    dom.perspective.setAttribute("aria-pressed", String(Boolean(on)));
+    dom.perspective.classList.toggle("is-active", Boolean(on));
+    dom.app.dataset.view = on ? "perspective" : "iso";
+    if (!on) ui.renderer.fit(null, ui.dimensionsOn ? DIMENSION_FIT_PADDING : null);
+    ui.selectedId = null;
+    ui.activeModuleId = null;
+    buildOverlay();
+    drawDimensions();
+  }
 
   function setDimensions(on) {
     ui.dimensionsOn = Boolean(on);
@@ -2074,10 +2099,11 @@
 
     dom.undo.addEventListener("click", undo);
     dom.redo.addEventListener("click", redo);
-    dom.zoomIn.addEventListener("click", () => ui.renderer.zoomBy(1.25));
-    dom.zoomOut.addEventListener("click", () => ui.renderer.zoomBy(1 / 1.25));
+    dom.zoomIn.addEventListener("click", () => { if (!isPerspective()) ui.renderer.zoomBy(1.25); });
+    dom.zoomOut.addEventListener("click", () => { if (!isPerspective()) ui.renderer.zoomBy(1 / 1.25); });
     dom.fit.addEventListener("click", () => ui.renderer.fit());
     dom.dimensions.addEventListener("click", () => setDimensions(!ui.dimensionsOn));
+    dom.perspective.addEventListener("click", () => setPerspective(!isPerspective()));
 
     dom.collapse.addEventListener("click", () => {
       const collapsed = dom.app.dataset.panel === "collapsed";
@@ -2136,6 +2162,7 @@
   }
 
   function onPointerDown(event) {
+    if (isPerspective()) return;
     try {
       // Capture keeps a pan tracking even when the finger leaves the canvas.
       // It throws if the pointer is already gone, which must not abort the tap.
@@ -2196,7 +2223,7 @@
   }
 
   function handleTap(clientX, clientY) {
-    if (ui.mode === "simple") return; // Simple is driven entirely from the panel
+    if (ui.mode === "simple" || isPerspective()) return; // panel-driven, or view-only
     if (ui.activeModuleId) {
       // Tapping empty space backs out: first out of a pending preview, then out
       // of placing the piece at all.
@@ -2217,6 +2244,7 @@
   }
 
   function onWheel(event) {
+    if (isPerspective()) return;
     event.preventDefault();
     const factor = Math.exp(-event.deltaY * (event.deltaMode === 1 ? 0.05 : 0.0016));
     ui.renderer.zoomBy(factor, event.clientX, event.clientY);
