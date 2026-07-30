@@ -436,7 +436,7 @@ window.FrameworkDesignerRenderer = (function () {
       },
 
       /** Frame the given bounds (or the current scene) with a little margin. */
-      fit(boundsMm) {
+      fit(boundsMm, padding) {
         const bounds = boundsMm || sceneBounds(state);
         resize(state);
         if (!bounds) {
@@ -465,7 +465,7 @@ window.FrameworkDesignerRenderer = (function () {
           }
         }
         const aspect = state.width / Math.max(1, state.height);
-        state.halfHeight = Math.max(halfHeight, halfWidth / aspect, 120) * FIT_PADDING;
+        state.halfHeight = Math.max(halfHeight, halfWidth / aspect, 120) * (padding || FIT_PADDING);
         requestFrame(state);
       },
 

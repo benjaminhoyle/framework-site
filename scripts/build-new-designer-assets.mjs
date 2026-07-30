@@ -270,11 +270,75 @@ function classifyPrimitive(bbox, moduleRole) {
  */
 const DECIMATE_MIN_TRIANGLES = 300;
 const DECIMATE_MIN_SAVING = 0.25;
-// Cells across the shortest axis. Higher keeps rounder tubes and costs bytes;
-// 6 keeps a 20mm leg hexagonal, which reads as round at any builder zoom.
-const DECIMATE_CELLS_ACROSS = 6;
+// Cells across the shortest axis. Higher keeps rounder tubes and costs bytes.
+const DECIMATE_CELLS_ACROSS = 8;
 const DECIMATE_CELL_MIN_MM = 1.2;
-const DECIMATE_CELL_MAX_MM = 8;
+const DECIMATE_CELL_MAX_MM = 6;
+// A grid cell that is coarse next to the local wall thickness welds a hollow
+// shell's inside to its outside, which is what wrecked the lamp shade: its
+// bounding box is 220mm across so the cell came out at the 8mm cap, but the
+// paper is about a millimetre thick. Collapsing a surface destroys area, so
+// comparing surface area before and after catches it without having to measure
+// thickness. A faceted tube loses a few percent; a welded shell loses a third.
+const DECIMATE_MIN_AREA_KEPT = 0.82;
+
+function surfaceArea(positions, indices) {
+  let area = 0;
+  for (let i = 0; i < indices.length; i += 3) {
+    const a = indices[i] * 3;
+    const b = indices[i + 1] * 3;
+    const c = indices[i + 2] * 3;
+    const ux = positions[b] - positions[a];
+    const uy = positions[b + 1] - positions[a + 1];
+    const uz = positions[b + 2] - positions[a + 2];
+    const vx = positions[c] - positions[a];
+    const vy = positions[c + 1] - positions[a + 1];
+    const vz = positions[c + 2] - positions[a + 2];
+    area += Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx) * 0.5;
+  }
+  return area;
+}
+
+/**
+ * Smooth vertex normals from the faces that actually exist.
+ *
+ * Decimation moves vertices, so carrying the original normals across leaves
+ * shading that disagrees with the new surface -- which is exactly the streaking
+ * that showed up along the legs and the lamp shade. Recomputing them from the
+ * decimated faces (area-weighted, which falls out of using the uncrossed
+ * normal) makes a faceted tube read as round again.
+ */
+function recomputeNormals(positions, indices) {
+  const normals = new Float32Array(positions.length);
+  for (let i = 0; i < indices.length; i += 3) {
+    const a = indices[i] * 3;
+    const b = indices[i + 1] * 3;
+    const c = indices[i + 2] * 3;
+    const ux = positions[b] - positions[a];
+    const uy = positions[b + 1] - positions[a + 1];
+    const uz = positions[b + 2] - positions[a + 2];
+    const vx = positions[c] - positions[a];
+    const vy = positions[c + 1] - positions[a + 1];
+    const vz = positions[c + 2] - positions[a + 2];
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    for (const vertex of [a, b, c]) {
+      normals[vertex] += nx;
+      normals[vertex + 1] += ny;
+      normals[vertex + 2] += nz;
+    }
+  }
+  for (let i = 0; i < normals.length; i += 3) {
+    const length = Math.hypot(normals[i], normals[i + 1], normals[i + 2]);
+    if (length > 1e-9) {
+      normals[i] /= length;
+      normals[i + 1] /= length;
+      normals[i + 2] /= length;
+    }
+  }
+  return normals;
+}
 
 function decimate(positions, normals, indices) {
   const bounds = boundsOf(positions);
@@ -292,27 +356,19 @@ function decimate(positions, normals, indices) {
     const key = `${Math.floor((positions[i * 3] - bounds[0]) / cell)},${Math.floor((positions[i * 3 + 1] - bounds[1]) / cell)},${Math.floor((positions[i * 3 + 2] - bounds[2]) / cell)}`;
     let entry = cells.get(key);
     if (!entry) {
-      entry = { index: cells.size, position: [0, 0, 0], normal: [0, 0, 0], count: 0 };
+      entry = { index: cells.size, position: [0, 0, 0], count: 0 };
       cells.set(key, entry);
     }
     entry.position[0] += positions[i * 3];
     entry.position[1] += positions[i * 3 + 1];
     entry.position[2] += positions[i * 3 + 2];
-    entry.normal[0] += normals[i * 3];
-    entry.normal[1] += normals[i * 3 + 1];
-    entry.normal[2] += normals[i * 3 + 2];
     entry.count += 1;
     vertexCell[i] = entry.index;
   }
 
   const outPositions = new Float32Array(cells.size * 3);
-  const outNormals = new Float32Array(cells.size * 3);
   for (const entry of cells.values()) {
     for (let axis = 0; axis < 3; axis += 1) outPositions[entry.index * 3 + axis] = entry.position[axis] / entry.count;
-    const length = Math.hypot(entry.normal[0], entry.normal[1], entry.normal[2]);
-    for (let axis = 0; axis < 3; axis += 1) {
-      outNormals[entry.index * 3 + axis] = length > 1e-6 ? entry.normal[axis] / length : 0;
-    }
   }
 
   const outIndices = [];
@@ -330,14 +386,16 @@ function decimate(positions, normals, indices) {
   if (!outIndices.length) return null;
   if (outIndices.length / indices.length > 1 - DECIMATE_MIN_SAVING) return null;
 
-  const result = {
+  const decimatedIndices = Uint32Array.from(outIndices);
+  const areaKept = surfaceArea(outPositions, decimatedIndices) / (surfaceArea(positions, indices) || 1);
+  if (areaKept < DECIMATE_MIN_AREA_KEPT) return null; // the shape did not survive
+
+  return {
     positions: outPositions,
-    normals: outNormals,
-    indices: Uint32Array.from(outIndices),
+    normals: recomputeNormals(outPositions, decimatedIndices),
+    indices: decimatedIndices,
     vertexCount: cells.size
   };
-  fillMissingNormals(result.positions, result.normals, result.indices);
-  return result;
 }
 
 /** One reusable primitive, in its own local mm space, ready to quantise. */
@@ -401,6 +459,167 @@ function faceNormal(positions, a, b, c) {
   const nz = ux * vy - uy * vx;
   const length = Math.hypot(nx, ny, nz) || 1;
   return [nx / length, ny / length, nz / length];
+}
+
+// ---------------------------------------------------------------------------
+// Generated geometry
+// ---------------------------------------------------------------------------
+
+/** A closed vertical cylinder, as a standalone part. */
+function cylinderPart(role, centreX, centreY, z0, z1, radius, segments) {
+  const rings = segments;
+  const positions = [];
+  const normals = [];
+  const indices = [];
+  for (let i = 0; i < rings; i += 1) {
+    const angle = (i / rings) * Math.PI * 2;
+    const nx = Math.cos(angle);
+    const ny = Math.sin(angle);
+    const x = centreX + nx * radius;
+    const y = centreY + ny * radius;
+    positions.push(x, y, z0, x, y, z1);
+    normals.push(nx, ny, 0, nx, ny, 0);
+  }
+  for (let i = 0; i < rings; i += 1) {
+    const a = i * 2;
+    const b = a + 1;
+    const c = ((i + 1) % rings) * 2;
+    const d = c + 1;
+    indices.push(a, b, d, a, d, c);
+  }
+  // Caps, so the flex reads as solid where it meets the shade and the arm.
+  const capBottom = positions.length / 3;
+  positions.push(centreX, centreY, z0);
+  normals.push(0, 0, -1);
+  const capTop = positions.length / 3;
+  positions.push(centreX, centreY, z1);
+  normals.push(0, 0, 1);
+  for (let i = 0; i < rings; i += 1) {
+    const a = i * 2;
+    const c = ((i + 1) % rings) * 2;
+    indices.push(capBottom, c, a);
+    indices.push(capTop, a + 1, c + 1);
+  }
+  return {
+    role,
+    vertexCount: positions.length / 3,
+    positions: Float32Array.from(positions),
+    normals: Float32Array.from(normals),
+    indices: Uint32Array.from(indices)
+  };
+}
+
+const LAMP_FLEX_DIAMETER_MM = 5;
+
+/**
+ * The lamp's flex: the pipeline model has the shade hanging in mid-air below the
+ * arm with nothing joining them. Add a black cord on the shade's axis, from
+ * inside the shade up to the arm's downward stub.
+ *
+ * Derived from the geometry rather than hard-coded numbers, so it still lands
+ * correctly if the lamp model changes.
+ */
+function lampFlexPart(parts, instances, placementBounds) {
+  let shade = null;
+  let stub = null;
+  instances.forEach((instance, index) => {
+    const bounds = placementBounds[index];
+    if (parts[instance.part].role === ROLE_PAPER) {
+      shade = shade
+        ? [Math.min(shade[0], bounds[0]), Math.min(shade[1], bounds[1]), Math.min(shade[2], bounds[2]),
+          Math.max(shade[3], bounds[3]), Math.max(shade[4], bounds[4]), Math.max(shade[5], bounds[5])]
+        : bounds.slice();
+    }
+  });
+  if (!shade) return null;
+  const centreX = (shade[0] + shade[3]) / 2;
+  const centreY = (shade[1] + shade[4]) / 2;
+
+  // The stub is the lowest steel geometry sitting directly over the shade.
+  instances.forEach((instance, index) => {
+    const bounds = placementBounds[index];
+    if (parts[instance.part].role !== ROLE_STEEL) return;
+    if (bounds[2] < shade[5]) return; // not above the shade
+    if (centreX < bounds[0] - 40 || centreX > bounds[3] + 40) return; // not over its axis
+    if (!stub || bounds[2] < stub[2]) stub = bounds.slice();
+  });
+  if (!stub) return null;
+
+  // Start at the shade's mid-height (where a bulb would hang) so the cord reads
+  // as continuous through the shade's open bottom, and finish a little inside
+  // the stub so there is no seam.
+  const z0 = (shade[2] + shade[5]) / 2;
+  const z1 = stub[2] + 8;
+  if (z1 <= z0) return null;
+  return cylinderPart(ROLE_FOOT, (stub[0] + stub[3]) / 2, centreY, z0, z1, LAMP_FLEX_DIAMETER_MM / 2, 10);
+}
+
+/**
+ * How much of a module's shape actually moves when it is turned 180 degrees
+ * about its socket pivot, as a fraction of its vertices.
+ *
+ * This is what decides whether the UI offers a Rotate action. The socket layout
+ * is the wrong test: a top bar's two sockets swap places under a half turn, so
+ * they look unchanged, while its cross bar flips from pointing forwards to
+ * pointing backwards -- the single most important thing to be able to rotate.
+ */
+function rotationShift(parts, instances, pivot) {
+  const points = new Set();
+  const list = [];
+  for (const instance of instances) {
+    const part = parts[instance.part];
+    const m = instance.matrix || instance.m;
+    for (let v = 0; v < part.vertexCount; v += 1) {
+      const [x, y, z] = transformPoint(m.length === 12 ? threeByFourToMatrix(m) : m,
+        part.positions[v * 3], part.positions[v * 3 + 1], part.positions[v * 3 + 2]);
+      const key = `${Math.round(x * 2)},${Math.round(y * 2)},${Math.round(z * 2)}`;
+      if (!points.has(key)) {
+        points.add(key);
+        list.push([x, y, z]);
+      }
+    }
+  }
+  if (!list.length) return 0;
+  let moved = 0;
+  for (const [x, y, z] of list) {
+    const key = `${Math.round((2 * pivot[0] - x) * 2)},${Math.round((2 * pivot[1] - y) * 2)},${Math.round(z * 2)}`;
+    if (!points.has(key)) moved += 1;
+  }
+  return moved / list.length;
+}
+
+function threeByFourToMatrix(m) {
+  return [m[0], m[1], m[2], 0, m[3], m[4], m[5], 0, m[6], m[7], m[8], 0, m[9], m[10], m[11], 1];
+}
+
+// --- socket-derived geometry shared with the runtime -----------------------
+
+function socketsOfKind(module, kind) {
+  return (module.sockets || []).filter((socket) => socket.kind === kind);
+}
+
+function rotationSockets(module) {
+  const bottom = socketsOfKind(module, "bottom");
+  if (bottom.length) return bottom;
+  const floor = socketsOfKind(module, "floor");
+  if (floor.length) return floor;
+  return socketsOfKind(module, "top");
+}
+
+/** The point a module turns about, in its own local mm. Mirrors the engine. */
+function localPivot(module) {
+  const sockets = rotationSockets(module);
+  if (!sockets.length) return [0, 0];
+  const xs = sockets.map((socket) => socket.normalized_mm[0]);
+  const ys = sockets.map((socket) => socket.normalized_mm[1]);
+  const pivotX = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const pivotY = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const origin = sockets.find((socket) =>
+    Math.abs(socket.normalized_mm[0]) < 1 && Math.abs(socket.normalized_mm[1]) < 1) || sockets[0];
+  return [
+    origin.local_mm[0] + pivotX - origin.normalized_mm[0],
+    origin.local_mm[1] + pivotY - origin.normalized_mm[1]
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -637,7 +856,20 @@ function trim(value, places = 2) {
   return value;
 }
 
-function buildCatalog(pipeline, builtModules) {
+/** Front-to-back span of a module's own support sockets, in mm. */
+function depthSpan(module) {
+  const sockets = rotationSockets(module);
+  if (!sockets.length) return 0;
+  const ys = sockets.map((socket) => socket.normalized_mm[1]);
+  return Math.max(...ys) - Math.min(...ys);
+}
+
+function bottomRowCount(module) {
+  const rows = new Set(rotationSockets(module).map((socket) => Math.round(socket.normalized_mm[1])));
+  return rows.size;
+}
+
+function buildCatalog(pipeline, builtModules, rotationShifts) {
   const prices = JSON.parse(fs.readFileSync(path.join(PIPELINE, "shared", "prices.json"), "utf8"));
   const finishes = JSON.parse(fs.readFileSync(path.join(PIPELINE, "shared", "finishes.json"), "utf8"));
   const vocabulary = JSON.parse(fs.readFileSync(path.join(PIPELINE, "shared", "module-vocabulary.json"), "utf8"));
@@ -656,8 +888,20 @@ function buildCatalog(pipeline, builtModules) {
       depthKind: module.depthKind || null,
       trimmed: id.endsWith("_trimmed"),
       widthSpanMm: module.widthSpanMm || 0,
+      // How far the module's own sockets span front to back. Used to line up
+      // the BACKS of units of different depths against a wall, rather than
+      // their fronts.
+      depthSpanMm: depthSpan(module),
+      // Distinct depth rows the module rests on. A piece with only one (a top
+      // bar, a lamp) has to be turned to face into the shelf depending on
+      // whether it lands on the front row or the back row.
+      bottomRowCount: bottomRowCount(module),
+      // Fraction of the module's shape that moves under a half turn; the UI
+      // offers a Rotate action above a threshold. See rotationShift().
+      rotation180Shift: rotationShifts.get(id) || 0,
       dimensionsMm: module.dimensionsMm || null,
       bboxMm: module.bboxMm || null,
+      localPivotMm: localPivot(module),
       sockets: (module.sockets || []).map((socket) => ({
         id: socket.id,
         kind: socket.kind,
@@ -704,6 +948,7 @@ function main() {
   const pipeline = loadPipelineCatalog();
   const built = new Set();
   const report = [];
+  const rotationShifts = new Map();
   let totalBytes = 0;
 
   for (const [id, module] of Object.entries(pipeline.modules)) {
@@ -728,6 +973,7 @@ function main() {
     const parts = [];
     const partIndex = new Map();
     const instances = [];
+    const placementBounds = [];
     const bbox = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
 
     for (const placement of placements) {
@@ -755,7 +1001,22 @@ function main() {
         parts.push(Object.assign(preparePart(placement.primitive), { role }));
       }
       instances.push({ part: partIndex.get(key), matrix: placement.matrix });
+      placementBounds.push(placed);
     }
+
+    // The pipeline lamp has no cord between its shade and its arm; add one.
+    if (module.role === "lamp") {
+      const flex = lampFlexPart(parts, instances, placementBounds);
+      if (flex) {
+        parts.push(flex);
+        instances.push({ part: parts.length - 1, matrix: IDENTITY });
+        placementBounds.push(boundsOf(flex.positions));
+      } else {
+        console.warn(`${id}: could not work out where the lamp flex goes`);
+      }
+    }
+
+    rotationShifts.set(id, rotationShift(parts, instances, localPivot(module)));
 
     const deduped = dedupeParts(parts, instances);
     const bundle = buildModuleBundle(
@@ -782,7 +1043,7 @@ function main() {
     });
   }
 
-  const catalog = buildCatalog(pipeline, built);
+  const catalog = buildCatalog(pipeline, built, rotationShifts);
   fs.writeFileSync(path.join(OUT_DIR, "catalog.json"), JSON.stringify(catalog));
 
   report.sort((a, b) => b.kb - a.kb);

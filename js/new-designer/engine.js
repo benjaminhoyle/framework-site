@@ -351,10 +351,33 @@
     return next;
   }
 
+  /**
+   * Place a candidate.
+   *
+   * `fields.rotationDeg` is only safe for a rotation the module's own socket
+   * layout is invariant under -- otherwise the candidate's consumed sockets,
+   * computed at rotation 0, would no longer be the ones the piece rests on.
+   * Callers get that guarantee from rotationKeepsSockets().
+   */
   function applyCandidate(catalog, state, candidate, fields) {
     return addInstance(catalog, state, candidate.moduleId, candidate.originWorldMm[0], candidate.originWorldMm[1], {
       id: fields && fields.id,
-      placement: candidate.placement
+      placement: candidate.placement,
+      rotationDeg: (fields && fields.rotationDeg) || 0
+    });
+  }
+
+  /** True when turning `module` by `degrees` maps its socket set onto itself. */
+  function rotationKeepsSockets(module, degrees) {
+    const sockets = module.sockets || [];
+    if (!sockets.length) return true;
+    const keys = new Set(sockets.map((socket) => {
+      const [x, y] = socket.normalized_mm || [0, 0];
+      return `${socket.kind}:${rounded(x, 1)}:${rounded(y, 1)}`;
+    }));
+    return sockets.every((socket) => {
+      const [x, y] = rotatedOffset(module, socket, degrees);
+      return keys.has(`${socket.kind}:${rounded(x, 1)}:${rounded(y, 1)}`);
     });
   }
 
@@ -623,6 +646,21 @@
     candidates.push(candidate);
   }
 
+  /**
+   * Where a new base sits front-to-back next to an existing one.
+   *
+   * Units of different depths line up on their BACKS, not their fronts: a run
+   * stands against a wall, so a deeper unit should grow forwards into the room
+   * rather than push its back through the wall. `depthSpanMm` is the module's
+   * own front-to-back socket span, so this is the offset that makes the two
+   * back rows coincide.
+   */
+  function backAlignedOriginY(catalog, baseInstance, baseModule, module) {
+    const baseSpan = Number(baseModule.depthSpanMm || 0);
+    const newSpan = Number(module.depthSpanMm || 0);
+    return rounded(baseInstance.originWorldMm[1] + baseSpan - newSpan);
+  }
+
   function baseOrigins(catalog, state, module, options) {
     const origins = [];
     const baseInstances = state.instances.filter((instance) => moduleFor(catalog, instance.moduleId).role === "base");
@@ -632,15 +670,16 @@
     }
     for (const base of baseInstances) {
       const baseModule = moduleFor(catalog, base.moduleId);
+      const originY = backAlignedOriginY(catalog, base, baseModule, module);
       const baseRange = baseXRange(baseModule, base.originWorldMm[0], base.originWorldMm[1]);
       origins.push({
-        x: baseOriginForLeftEdge(module, baseRange.right + ADJACENT_BASE_GAP_MM, base.originWorldMm[1]),
-        y: base.originWorldMm[1],
+        x: baseOriginForLeftEdge(module, baseRange.right + ADJACENT_BASE_GAP_MM, originY),
+        y: originY,
         kind: "adjacent_right"
       });
       origins.push({
-        x: baseOriginForRightEdge(module, baseRange.left - ADJACENT_BASE_GAP_MM, base.originWorldMm[1]),
-        y: base.originWorldMm[1],
+        x: baseOriginForRightEdge(module, baseRange.left - ADJACENT_BASE_GAP_MM, originY),
+        y: originY,
         kind: "adjacent_left"
       });
 
@@ -648,25 +687,34 @@
       // whole stack, not just the base footprint.
       const stackRange = stackXRange(catalog, state, base, baseModule);
       origins.push({
-        x: baseOriginForLeftEdge(module, stackRange.right + ADJACENT_BASE_GAP_MM, base.originWorldMm[1]),
-        y: base.originWorldMm[1],
+        x: baseOriginForLeftEdge(module, stackRange.right + ADJACENT_BASE_GAP_MM, originY),
+        y: originY,
         kind: "adjacent_stack_right"
       });
       origins.push({
-        x: baseOriginForRightEdge(module, stackRange.left - ADJACENT_BASE_GAP_MM, base.originWorldMm[1]),
-        y: base.originWorldMm[1],
+        x: baseOriginForRightEdge(module, stackRange.left - ADJACENT_BASE_GAP_MM, originY),
+        y: originY,
         kind: "adjacent_stack_left"
       });
 
       // Gapped placements exist so a later bridging span has two owned columns
-      // to land on. They are an Advanced-only affordance: the /designer page
-      // has never offered them and they read as a mistake in a simple UI.
+      // to land on, and so a run can be broken up deliberately. Advanced only:
+      // /designer has never offered them and they read as a mistake in a
+      // simple UI.
       if (!options.adjacentBasesOnly) {
         const baseSpan = Number(baseModule.widthSpanMm || 0);
         const newSpan = Number(module.widthSpanMm || 0);
         for (const span of BASE_INTERVALS_MM) {
-          origins.push({ x: base.originWorldMm[0] + baseSpan + span, y: base.originWorldMm[1], kind: `interval_right_${span}` });
-          origins.push({ x: base.originWorldMm[0] - newSpan - span, y: base.originWorldMm[1], kind: `interval_left_${span}` });
+          origins.push({
+            x: rounded(base.originWorldMm[0] + baseSpan + span),
+            y: originY,
+            kind: `interval_right_${span}`
+          });
+          origins.push({
+            x: rounded(base.originWorldMm[0] - newSpan - span),
+            y: originY,
+            kind: `interval_left_${span}`
+          });
         }
       }
     }
@@ -906,6 +954,7 @@
     removeInstance,
     replaceInstance,
     rotateInstance,
+    rotationKeepsSockets,
     serializeState,
     stacksOf,
     validateAddition,

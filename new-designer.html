@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="css/new-designer.css?v=16">
+    <link rel="stylesheet" href="css/new-designer.css?v=22">
 
     <!--
       Nothing can render until the catalogue arrives, and the app's own scripts
@@ -30,10 +30,18 @@
       it kept downloading the file a second time rather than being reused.)
     -->
     <script>
-        window.frameworkDesignerCatalog = fetch('assets/shelving/catalog.json').then(function (response) {
-            if (!response.ok) throw new Error('catalogue HTTP ' + response.status);
-            return response.json();
-        });
+        // One version for every part of the designer -- scripts, stylesheet,
+        // catalogue and geometry. They have to move together: app code paired
+        // with a stale catalogue silently loses whatever the catalogue gained,
+        // which is exactly what a CDN or a browser cache will hand you a few
+        // minutes after a deploy. Bump this whenever any of them changes.
+        window.frameworkDesignerVersion = '22';
+        window.frameworkDesignerCatalog =
+            fetch('assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
+                .then(function (response) {
+                    if (!response.ok) throw new Error('catalogue HTTP ' + response.status);
+                    return response.json();
+                });
         // app.js reports the failure to the user; this just stops the browser
         // logging an unhandled rejection before app.js has attached.
         window.frameworkDesignerCatalog.catch(function () { });
@@ -79,6 +87,13 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" aria-hidden="true">
                             <path d="M5 12h14" />
+                        </svg>
+                    </button>
+                    <button type="button" id="nd-dimensions" aria-label="Show dimensions" aria-pressed="false"
+                        title="Show dimensions">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 7v10M21 7v10M3 12h18" />
                         </svg>
                     </button>
                     <button type="button" id="nd-fit" aria-label="Fit shelf to view">
@@ -140,10 +155,10 @@
         </div>
     </div>
 
-    <script src="js/new-designer/engine.js?v=16" defer></script>
-    <script src="js/new-designer/geometry.js?v=16" defer></script>
-    <script src="js/new-designer/renderer.js?v=16" defer></script>
-    <script src="js/new-designer/app.js?v=16" defer></script>
+    <script src="js/new-designer/engine.js?v=22" defer></script>
+    <script src="js/new-designer/geometry.js?v=22" defer></script>
+    <script src="js/new-designer/renderer.js?v=22" defer></script>
+    <script src="js/new-designer/app.js?v=22" defer></script>
 
     <!--
       Analytics loads after the designer is interactive. On a mid-range phone

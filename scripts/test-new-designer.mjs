@@ -193,6 +193,37 @@ test("adjacentBasesOnly drops gapped placements but keeps butted ones", () => {
   assert.ok(Math.abs(second[0] - first[3] - engine.ADJACENT_BASE_GAP_MM) < 1.5, "neighbour is not butted up");
 });
 
+test("units of different depths line up on their backs", () => {
+  let state = engine.createState(catalog);
+  state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, "standard_base")[0]);
+  const deep = engine.generateCandidates(catalog, state, "deep_base", { adjacentBasesOnly: true })
+    .find((candidate) => candidate.placement.basePlacementKind === "adjacent_right");
+  assert.ok(deep, "a deeper unit should still fit alongside");
+  const placed = engine.applyCandidate(catalog, state, deep);
+  const [shallow, deeper] = placed.instances.map((instance) => engine.instanceBounds(catalog, instance));
+  // Backs (max depth) coincide; the deeper unit grows forwards into the room.
+  assert.ok(Math.abs(deeper[4] - shallow[4]) < 12, `backs not aligned: ${shallow[4]} vs ${deeper[4]}`);
+  assert.ok(deeper[1] < shallow[1] - 50, "the deeper unit should extend further forward");
+});
+
+test("rotationKeepsSockets tells safe default rotations from unsafe ones", () => {
+  // A spacer's four sockets map onto themselves under a half turn, so it can be
+  // placed pre-rotated. A booster adapter's do not.
+  assert.equal(engine.rotationKeepsSockets(catalog.modules.standard_spacer, 180), true);
+  assert.equal(engine.rotationKeepsSockets(catalog.modules.lamp, 45), true);
+  assert.equal(engine.rotationKeepsSockets(catalog.modules.booster_adapter, 180), false);
+});
+
+test("a pre-rotated spacer still validates and keeps its supports", () => {
+  let state = engine.createState(catalog);
+  state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, "standard_base")[0]);
+  const spacer = engine.generateCandidates(catalog, state, "standard_spacer")[0];
+  assert.ok(spacer, "a spacer should fit on a base");
+  const placed = engine.applyCandidate(catalog, state, spacer, { rotationDeg: 180 });
+  assert.equal(placed.instances[1].rotationDeg, 180);
+  assert.equal(engine.validateState(catalog, placed).isValid, true);
+});
+
 test("a base, a shelf on top and a neighbouring unit all place", () => {
   let state = engine.createState(catalog);
   for (const moduleId of ["standard_base", "standard_extension", "standard_base"]) {

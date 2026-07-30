@@ -159,9 +159,10 @@ window.FrameworkDesignerGeometry = (function () {
    * cached rather than the result, so two near-simultaneous requests for the
    * same module share a single download.
    */
-  function load(baseUrl, moduleId) {
+  function load(baseUrl, moduleId, version) {
     if (!cache.has(moduleId)) {
-      const promise = fetch(`${baseUrl}/${encodeURIComponent(moduleId)}.json`)
+      const suffix = version ? `?v=${encodeURIComponent(version)}` : "";
+      const promise = fetch(`${baseUrl}/${encodeURIComponent(moduleId)}.json${suffix}`)
         .then((response) => {
           if (!response.ok) throw new Error(`${moduleId}: HTTP ${response.status}`);
           return response.json();

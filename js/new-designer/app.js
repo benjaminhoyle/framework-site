@@ -23,7 +23,9 @@
   const geometryLoader = window.FrameworkDesignerGeometry;
   const rendererFactory = window.FrameworkDesignerRenderer;
 
-  const CATALOG_URL = "assets/shelving/catalog.json";
+  // Set by the page; see the note there about keeping every asset on one version.
+  const ASSET_VERSION = window.frameworkDesignerVersion || "";
+  const CATALOG_URL = `assets/shelving/catalog.json?v=${ASSET_VERSION}`;
   const MODULE_BASE_URL = "assets/shelving/modules";
   const WHATSAPP_PHONE = "254783891005";
 
@@ -68,6 +70,11 @@
 
   const SIMPLE_LIMITS = { width: [1, 6], levels: [1, 6] };
   const HISTORY_LIMIT = 40;
+
+  // The lamp's arm reaches along +x when unrotated. Simple stands it on the back
+  // left upright, so a quarter turn back from there aims the shade diagonally in
+  // over the shelf instead of out into the room.
+  const LAMP_INWARD_DEG = 315;
 
   // ---------------------------------------------------------------- helpers --
 
@@ -139,7 +146,8 @@
     modal: el("nd-modal"),
     modalTitle: el("nd-modal-title"),
     modalBody: el("nd-modal-body"),
-    modalClose: el("nd-modal-close")
+    modalClose: el("nd-modal-close"),
+    dimensions: el("nd-dimensions")
   };
 
   const ui = {
@@ -150,6 +158,7 @@
     history: [],
     selectedId: null,
     activeModuleId: null, // Advanced: the piece whose placements are on screen
+    previewCandidateId: null, // Advanced: the placement currently ghosted
     candidates: [],
     candidateContext: null,
     candidateCache: new Map(),
@@ -157,7 +166,9 @@
     simple: { family: "standard", width: 1, levels: 2, lamp: false },
     search: "",
     actionMenu: null,
-    hintTimer: 0
+    hintTimer: 0,
+    dimensionsOn: false,
+    dimensionsSvg: null
   };
 
   function showFallback(title, body) {
@@ -233,6 +244,10 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowEnd ? 1.5 : 2));
 
     dom.fallback.hidden = true;
+    ui.dimensionsSvg = document.createElementNS(SVG_NS, "svg");
+    ui.dimensionsSvg.setAttribute("class", "nd-dim-layer");
+    ui.dimensionsSvg.setAttribute("aria-hidden", "true");
+    dom.stage.insertBefore(ui.dimensionsSvg, dom.overlay);
     bindEvents();
 
     // Support hook: lets us inspect or reproduce a customer's design from the
@@ -335,13 +350,18 @@
     if (spec.lamp && ui.catalog.modules.lamp) {
       const candidates = engine.generateCandidates(ui.catalog, state, "lamp");
       if (candidates.length) {
-        // Highest, then left-most: a lamp belongs on top of the run.
+        // Top of the run, on the back left upright: highest support plane, then
+        // furthest back, then furthest left.
         const pick = candidates.reduce((best, candidate) => {
-          if (candidate.supportPlaneZ > best.supportPlaneZ) return candidate;
-          if (candidate.supportPlaneZ < best.supportPlaneZ) return best;
+          if (candidate.supportPlaneZ !== best.supportPlaneZ) {
+            return candidate.supportPlaneZ > best.supportPlaneZ ? candidate : best;
+          }
+          if (candidate.originWorldMm[1] !== best.originWorldMm[1]) {
+            return candidate.originWorldMm[1] > best.originWorldMm[1] ? candidate : best;
+          }
           return candidate.originWorldMm[0] < best.originWorldMm[0] ? candidate : best;
         });
-        state = engine.applyCandidate(ui.catalog, state, pick);
+        state = engine.applyCandidate(ui.catalog, state, pick, { rotationDeg: LAMP_INWARD_DEG });
       }
     }
     return state;
@@ -485,7 +505,7 @@
     wanted.forEach((id) => ui.pendingModules.add(id));
     setBusy(true);
     Promise.all(wanted.map((id) =>
-      geometryLoader.load(MODULE_BASE_URL, id)
+      geometryLoader.load(MODULE_BASE_URL, id, ASSET_VERSION)
         .then((geometry) => ui.renderer.addModule(id, geometry))
         .catch((error) => {
           console.error(error);
@@ -532,6 +552,9 @@
     clear(dom.overlay);
     overlayItems = [];
     ui.actionMenu = null;
+    // The markers the ghost belonged to have just been thrown away.
+    if (ui.renderer) ui.renderer.setGhost(null);
+    ui.previewCandidateId = null;
 
     if (ui.mode !== "simple") {
       if (ui.activeModuleId) buildCandidateMarkers();
@@ -549,6 +572,7 @@
 
   function positionOverlays() {
     if (!ui.renderer) return;
+    drawDimensions();
     const width = dom.stage.clientWidth;
     const height = dom.stage.clientHeight;
     for (const item of overlayItems) {
@@ -568,6 +592,140 @@
     return [(bounds[0] + bounds[3]) / 2, (bounds[1] + bounds[4]) / 2, (bounds[2] + bounds[5]) / 2];
   }
 
+  // ------------------------------------------------------------ dimensions --
+
+  /*
+   * Drafting-style dimensions on the design's envelope: width along the bottom
+   * front edge, depth along the bottom right edge, height up the front left
+   * corner.
+   *
+   * Every witness line runs along a world axis, so nothing sits at an arbitrary
+   * screen angle, and each dimension is pushed clear of the model along a
+   * *different* axis from the one it measures. Because the camera is a locked
+   * isometric, those screen directions are constant and the three never collide.
+   *
+   * Offsets are in screen pixels rather than millimetres so the gap stays the
+   * same at any zoom.
+   */
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const DIM_GAP_PX = 10; // model edge -> start of the witness line
+  const DIM_OFFSET_PX = 34; // model edge -> the dimension line
+  const DIM_OVERSHOOT_PX = 7; // witness line past the dimension line
+  const DIM_LABEL_PX = 13; // dimension line -> the number
+  const DIM_TICK_PX = 5;
+
+  // [measured axis, offset axis, sign, which corner of the box to run along]
+  const DIMENSION_SPECS = [
+    { axis: 0, offsetAxis: 2, sign: -1, at: { 1: "min", 2: "min" } },
+    { axis: 1, offsetAxis: 0, sign: 1, at: { 0: "max", 2: "min" } },
+    { axis: 2, offsetAxis: 0, sign: -1, at: { 0: "min", 1: "min" } }
+  ];
+
+  function svgNode(name, attributes) {
+    const node = document.createElementNS(SVG_NS, name);
+    for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
+    return node;
+  }
+
+  /** Unit screen vector for a world axis, under the current camera. */
+  function axisScreenDirection(axis) {
+    const origin = ui.renderer.project([0, 0, 0]);
+    const tip = [0, 0, 0];
+    tip[axis] = 1000;
+    const end = ui.renderer.project(tip);
+    const dx = end.x - origin.x;
+    const dy = end.y - origin.y;
+    const length = Math.hypot(dx, dy) || 1;
+    return { x: dx / length, y: dy / length };
+  }
+
+  function drawDimensions() {
+    if (!ui.dimensionsSvg) return;
+    const svg = ui.dimensionsSvg;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    const bounds = ui.dimensionsOn ? shelfBounds() : null;
+    if (!bounds) return;
+
+    const width = dom.stage.clientWidth;
+    const height = dom.stage.clientHeight;
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", width);
+    svg.setAttribute("height", height);
+
+    for (const spec of DIMENSION_SPECS) {
+      const from = [0, 0, 0];
+      const to = [0, 0, 0];
+      for (let axis = 0; axis < 3; axis += 1) {
+        const pick = spec.at[axis];
+        const low = bounds[axis];
+        const high = bounds[axis + 3];
+        from[axis] = axis === spec.axis ? low : (pick === "max" ? high : low);
+        to[axis] = axis === spec.axis ? high : (pick === "max" ? high : low);
+      }
+      const valueMm = bounds[spec.axis + 3] - bounds[spec.axis];
+      if (valueMm < 20) continue;
+
+      const screenFrom = ui.renderer.project(from);
+      const screenTo = ui.renderer.project(to);
+      const raw = axisScreenDirection(spec.offsetAxis);
+      const dir = { x: raw.x * spec.sign, y: raw.y * spec.sign };
+      const along = {
+        x: (screenTo.x - screenFrom.x) / (Math.hypot(screenTo.x - screenFrom.x, screenTo.y - screenFrom.y) || 1),
+        y: (screenTo.y - screenFrom.y) / (Math.hypot(screenTo.x - screenFrom.x, screenTo.y - screenFrom.y) || 1)
+      };
+
+      const lineFrom = { x: screenFrom.x + dir.x * DIM_OFFSET_PX, y: screenFrom.y + dir.y * DIM_OFFSET_PX };
+      const lineTo = { x: screenTo.x + dir.x * DIM_OFFSET_PX, y: screenTo.y + dir.y * DIM_OFFSET_PX };
+
+      for (const end of [screenFrom, screenTo]) {
+        svg.appendChild(svgNode("line", {
+          class: "nd-dim-witness",
+          x1: end.x + dir.x * DIM_GAP_PX,
+          y1: end.y + dir.y * DIM_GAP_PX,
+          x2: end.x + dir.x * (DIM_OFFSET_PX + DIM_OVERSHOOT_PX),
+          y2: end.y + dir.y * (DIM_OFFSET_PX + DIM_OVERSHOOT_PX)
+        }));
+      }
+      svg.appendChild(svgNode("line", {
+        class: "nd-dim-line", x1: lineFrom.x, y1: lineFrom.y, x2: lineTo.x, y2: lineTo.y
+      }));
+      // Slanted ticks at each end, the drafting convention, instead of arrows:
+      // they stay legible at one pixel wide on a phone.
+      for (const [end, direction] of [[lineFrom, 1], [lineTo, -1]]) {
+        svg.appendChild(svgNode("line", {
+          class: "nd-dim-line",
+          x1: end.x - (along.x * direction - dir.x) * DIM_TICK_PX,
+          y1: end.y - (along.y * direction - dir.y) * DIM_TICK_PX,
+          x2: end.x + (along.x * direction - dir.x) * DIM_TICK_PX,
+          y2: end.y + (along.y * direction - dir.y) * DIM_TICK_PX
+        }));
+      }
+
+      const mid = { x: (lineFrom.x + lineTo.x) / 2, y: (lineFrom.y + lineTo.y) / 2 };
+      const label = svgNode("text", {
+        class: "nd-dim-text",
+        x: mid.x + dir.x * DIM_LABEL_PX,
+        y: mid.y + dir.y * DIM_LABEL_PX,
+        "text-anchor": "middle",
+        "dominant-baseline": "middle"
+      });
+      label.textContent = `${mmToCm(valueMm)} cm`;
+      svg.appendChild(label);
+    }
+  }
+
+  // Dimension lines and their numbers hang outside the model, so the view needs
+  // more margin than usual while they are showing.
+  const DIMENSION_FIT_PADDING = 1.36;
+
+  function setDimensions(on) {
+    ui.dimensionsOn = Boolean(on);
+    dom.dimensions.setAttribute("aria-pressed", String(ui.dimensionsOn));
+    dom.dimensions.classList.toggle("is-active", ui.dimensionsOn);
+    ui.renderer.fit(null, ui.dimensionsOn ? DIMENSION_FIT_PADDING : null);
+    drawDimensions();
+  }
+
   function candidateBounds(candidate) {
     return engine.instanceBounds(ui.catalog, {
       moduleId: candidate.moduleId,
@@ -582,6 +740,23 @@
    * Each carries every piece that legally fits at that spot, so tapping it
    * opens a short list instead of the app guessing.
    */
+  /** Clear space between the existing run and where this unit would stand. */
+  function sideGapMm(candidate, side) {
+    const design = engine.designBounds(ui.catalog, ui.design);
+    if (!design) return 0;
+    const box = candidateBounds(candidate);
+    return Math.max(0, Math.round(side === "right" ? box[0] - design[3] : design[0] - box[3]));
+  }
+
+  /** "Standard Base" vs "Standard Base · 44 cm gap". */
+  function sideOptionLabel(entry) {
+    const label = moduleLabel(entry.module);
+    // The engine leaves 30mm of working clearance even between touching units,
+    // so anything at or under that is "against the neighbour", not a gap.
+    if (entry.gapMm <= engine.ADJACENT_BASE_GAP_MM + 6) return label;
+    return `${label} · ${mmToCm(entry.gapMm)} cm gap`;
+  }
+
   function buildAddButtons() {
     const groupedSide = { left: [], right: [] };
     const groupedTop = new Map();
@@ -603,14 +778,21 @@
           }
           const side = candidate.originWorldMm[0] > maxX ? "right" : candidate.originWorldMm[0] < minX ? "left" : null;
           if (!side) continue;
-          // Keep only the nearest origin per piece per side: the further
-          // gapped offsets are the same action, just spaced out.
-          const existing = groupedSide[side].find((entry) => entry.module.id === id);
-          const closer = side === "right"
-            ? (!existing || candidate.originWorldMm[0] < existing.candidate.originWorldMm[0])
-            : (!existing || candidate.originWorldMm[0] > existing.candidate.originWorldMm[0]);
-          if (existing && closer) existing.candidate = candidate;
-          else if (!existing) groupedSide[side].push({ module, candidate });
+          const gap = sideGapMm(candidate, side);
+          const existing = groupedSide[side].find((entry) =>
+            entry.module.id === id
+            // Advanced offers each spacing as its own option, so a run can be
+            // deliberately broken up; Simple and Standard only ever butt units
+            // together, so there the nearest spot is the only one that matters.
+            && (ui.mode !== "advanced" || Math.abs(entry.gapMm - gap) < 10));
+          if (existing) {
+            if (gap < existing.gapMm) {
+              existing.candidate = candidate;
+              existing.gapMm = gap;
+            }
+          } else {
+            groupedSide[side].push({ module, candidate, gapMm: gap, side });
+          }
         } else {
           const consumed = candidate.consumedSockets || [];
           if (!consumed.length) continue;
@@ -631,15 +813,15 @@
       if (!options.length) return;
       // Anchor on whichever option is nearest the current run, so the button
       // sits where the new unit would actually appear.
-      const anchor = options.reduce((best, entry) =>
-        Math.abs(entry.candidate.originWorldMm[0]) < Math.abs(best.candidate.originWorldMm[0]) ? entry : best);
+      const anchor = options.reduce((best, entry) => (entry.gapMm < best.gapMm ? entry : best));
       const spot = centreOf(candidateBounds(anchor.candidate));
       // Level with the middle of the existing run rather than the middle of the
       // new unit. In an isometric view those differ, and the low one lands in
       // the bottom-right corner underneath the zoom controls.
       if (designBounds) spot[2] = (designBounds[2] + designBounds[5]) / 2;
       const label = ui.design.instances.length ? "Add a unit here" : "Start your shelf";
-      addOverlay(plusButton(label, options), spot);
+      addOverlay(plusButton(label, options.map((entry) =>
+        Object.assign({}, entry, { label: sideOptionLabel(entry) }))), spot);
     });
 
     groups.forEach((ids, root) => {
@@ -680,6 +862,7 @@
       event.stopPropagation();
       openPicker(label, options.map((entry) => ({
         module: entry.module,
+        label: entry.label,
         onPick: () => placeCandidate(entry.candidate)
       })));
     });
@@ -687,9 +870,12 @@
   }
 
   function placeCandidate(candidate) {
+    const module = ui.catalog.modules[candidate.moduleId];
     let next = null;
     try {
-      next = engine.applyCandidate(ui.catalog, ui.design, candidate);
+      next = engine.applyCandidate(ui.catalog, ui.design, candidate, {
+        rotationDeg: defaultRotationFor(module, candidate)
+      });
     } catch (error) {
       console.error(error);
     }
@@ -708,7 +894,10 @@
    * mode switch every spot collapsed to the same point and three of the lamp's
    * four positions silently disappeared.
    */
-  const CANDIDATE_MERGE_MM = 40;
+  // Distinct spacings for a neighbouring unit are at least 160mm apart and the
+  // two depth rows at least 257mm, so this merges genuine near-duplicates
+  // without hiding a real choice.
+  const CANDIDATE_MERGE_MM = 120;
 
   function buildCandidateMarkers() {
     const candidates = ui.candidateCache.get(ui.activeModuleId) || [];
@@ -729,15 +918,108 @@
       button.type = "button";
       button.title = `Put the ${moduleLabel(module)} here`;
       button.setAttribute("aria-label", button.title);
+
+      // A "+" alone does not say which way round the piece goes -- a booster
+      // over a base could sit on either column. Previewing the actual piece in
+      // place answers that. With a mouse, hovering previews and the click
+      // places. Touch has no hover, so the first tap previews and turns the
+      // button into a confirm; a second tap commits.
+      // Keyed by module AND candidate: candidate ids restart at candidate_001
+      // for every module, so the bare id would let a preview of one piece
+      // satisfy the confirm check of a different one and place it on first tap.
+      const key = `${candidate.moduleId}#${candidate.id}`;
+      const preview = () => {
+        if (ui.previewCandidateId === key) return false;
+        ui.previewCandidateId = key;
+        showGhost(candidate);
+        markConfirm(key);
+        return true;
+      };
+      button.addEventListener("pointerenter", (event) => {
+        if (event.pointerType === "mouse") preview();
+      });
+      button.addEventListener("focus", preview);
       button.addEventListener("click", (event) => {
         event.stopPropagation();
+        if (preview()) return; // first tap: show what will happen
         placeCandidate(candidate);
       });
+      button.dataset.candidateId = key;
       addOverlay(button, point);
     }
+    markConfirm(ui.previewCandidateId);
     setHint(placed.length
-      ? `Tap a + to place the ${moduleLabel(module)}.`
+      ? `Tap a + to preview the ${moduleLabel(module)} there, then tap again to place it.`
       : `The ${moduleLabel(module)} does not fit anywhere yet.`);
+  }
+
+  /**
+   * Frame the shelf together with every place the chosen piece could go, so all
+   * the markers are on screen before the first tap. Without this, choosing a
+   * piece whose spots reach past the current view left some markers clipped and
+   * the reframe only happened once one of them was previewed.
+   */
+  function fitToCandidates(moduleId) {
+    const candidates = ui.candidateCache.get(moduleId) || [];
+    if (!candidates.length) return;
+    const union = engine.designBounds(ui.catalog, ui.design);
+    const bounds = union ? union.slice() : null;
+    for (const candidate of candidates) {
+      const box = candidateBounds(candidate);
+      if (!bounds) continue;
+      for (let axis = 0; axis < 3; axis += 1) {
+        bounds[axis] = Math.min(bounds[axis], box[axis]);
+        bounds[axis + 3] = Math.max(bounds[axis + 3], box[axis + 3]);
+      }
+    }
+    ui.renderer.fit(bounds, ui.dimensionsOn ? DIMENSION_FIT_PADDING : null);
+  }
+
+  /** Show the chosen piece translucently exactly where it would land. */
+  function showGhost(candidate) {
+    if (!candidate) {
+      ui.renderer.setGhost(null);
+      return;
+    }
+    const module = ui.catalog.modules[candidate.moduleId];
+    const pivot = engine.localPivot(module);
+    const translation = [candidate.transform.x, candidate.transform.y, candidate.transform.z];
+    ui.renderer.setGhost({
+      moduleId: candidate.moduleId,
+      translation,
+      rotationDeg: defaultRotationFor(module, candidate),
+      pivotMm: [translation[0] + pivot[0], translation[1] + pivot[1]]
+    });
+    ensureGeometry([candidate.moduleId]);
+
+    // A preview that lands off-screen answers nothing. Widen the view to take in
+    // both the shelf and the ghost when it would not otherwise be visible.
+    const ghostBounds = candidateBounds(candidate);
+    if (!ui.renderer.containsBounds(ghostBounds)) {
+      const design = engine.designBounds(ui.catalog, ui.design);
+      const union = design ? design.slice() : ghostBounds.slice();
+      for (let axis = 0; axis < 3; axis += 1) {
+        union[axis] = Math.min(union[axis], ghostBounds[axis]);
+        union[axis + 3] = Math.max(union[axis + 3], ghostBounds[axis + 3]);
+      }
+      ui.renderer.fit(union, ui.dimensionsOn ? DIMENSION_FIT_PADDING : null);
+      positionOverlays();
+    }
+  }
+
+  /** Mark the previewed marker so it reads as "tap again to place". */
+  function markConfirm(candidateId) {
+    Array.prototype.forEach.call(dom.overlay.querySelectorAll(".nd-plus[data-candidate-id]"), (node) => {
+      const isConfirm = Boolean(candidateId) && node.dataset.candidateId === candidateId;
+      node.classList.toggle("is-confirm", isConfirm);
+      node.textContent = isConfirm ? "✓" : "+";
+    });
+  }
+
+  function clearGhost() {
+    ui.previewCandidateId = null;
+    if (ui.renderer) ui.renderer.setGhost(null);
+    markConfirm(null);
   }
 
   function buildActionMenu() {
@@ -761,12 +1043,12 @@
       });
       menu.appendChild(swap);
     }
-    if (ui.mode === "advanced" && rotateStep) {
+    if (rotateStep) {
       const rotate = make("button", null, "Rotate");
       rotate.type = "button";
       rotate.addEventListener("click", (event) => {
         event.stopPropagation();
-        commit(engine.rotateInstance(ui.catalog, ui.design, instance.id, rotateStep), {});
+        rotateInstance(instance);
       });
       menu.appendChild(rotate);
     }
@@ -798,11 +1080,101 @@
     });
   }
 
+  /*
+   * Turning a piece.
+   *
+   * Whether rotating is worth offering is decided by how much of the piece's
+   * shape actually moves (rotation180Shift, baked into the catalogue), not by
+   * whether its sockets move. A top bar's two sockets swap places under a half
+   * turn so they look unchanged, while its cross bar flips from pointing
+   * forwards to backwards -- the single most useful thing to be able to turn.
+   * Conversely an extension only shifts a couple of small brackets, and offering
+   * Rotate there is noise.
+   */
+  const ROTATION_SHIFT_THRESHOLD = 0.09;
+
   function rotationStepFor(instance) {
     const module = ui.catalog.modules[instance.moduleId];
     if (!module) return 0;
     if (module.role === "lamp") return 45;
-    return engine.moduleHasDistinctRotation(module) ? 180 : 0;
+    return (module.rotation180Shift || 0) >= ROTATION_SHIFT_THRESHOLD ? 180 : 0;
+  }
+
+  /**
+   * Pieces that reach out to one side of a single row of sockets -- a top bar,
+   * a lamp arm -- have to face into the shelf, so their correct rotation depends
+   * on whether they land on the front row or the back row.
+   */
+  function facesIntoShelf(module) {
+    return module.bottomRowCount === 1 && (module.rotation180Shift || 0) >= ROTATION_SHIFT_THRESHOLD;
+  }
+
+  /**
+   * The rotation a piece should be placed at.
+   *
+   * Zero for almost everything. A spacer reads better turned round, which is
+   * free because its sockets are unchanged by a half turn. A front-mounted top
+   * bar has to be flipped so its cross bar reaches back over the shelf instead
+   * of jutting out into the room.
+   */
+  function defaultRotationFor(module, candidate) {
+    if (!engine.rotationKeepsSockets(module, 180)) return 0;
+    if (facesIntoShelf(module)) return onFrontRow(candidate) ? 180 : 0;
+    if (module.role === "spacer") return 180;
+    return 0;
+  }
+
+  /** Is this candidate resting on the front row of its supporting stack? */
+  function onFrontRow(candidate) {
+    const supports = candidate.consumedSockets || [];
+    if (!supports.length) return false;
+    const provider = ui.design.instances.find((instance) => instance.id === supports[0].instanceId);
+    if (!provider) return false;
+    const providerModule = ui.catalog.modules[provider.moduleId];
+    const span = Number(providerModule && providerModule.depthSpanMm) || 0;
+    if (!span) return false;
+    // Depth grows towards the back, so a support below the provider's midpoint
+    // is on the front row.
+    return candidate.originWorldMm[1] - provider.originWorldMm[1] < span / 2;
+  }
+
+  /**
+   * Turning a face-into-the-shelf piece means moving it to the opposite depth
+   * row and flipping it, not spinning it where it stands: a top bar rotated in
+   * place would point its cross bar out into the room. Falls back to an in-place
+   * turn when the opposite row has nowhere to go.
+   */
+  function flippedToOppositeRow(instance) {
+    const module = ui.catalog.modules[instance.moduleId];
+    const vacated = engine.removeInstance(ui.catalog, ui.design, instance.id);
+    if (!vacated) return null;
+    const wasFront = instance.rotationDeg === 180;
+    const options = engine.generateCandidates(ui.catalog, vacated, instance.moduleId, {
+      adjacentBasesOnly: ui.mode !== "advanced"
+    }).filter((candidate) =>
+      // Same height and same position along the run, but the opposite depth row.
+      Math.abs(candidate.supportPlaneZ - instance.supportPlaneZ) < 2
+      && Math.abs(candidate.originWorldMm[0] - instance.originWorldMm[0]) < 2
+      && onFrontRow(candidate) !== wasFront);
+    if (!options.length) return null;
+    const target = options[0];
+    try {
+      return engine.applyCandidate(ui.catalog, vacated, target, {
+        rotationDeg: defaultRotationFor(module, target)
+      });
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function rotateInstance(instance) {
+    const module = ui.catalog.modules[instance.moduleId];
+    if (facesIntoShelf(module) && module.role !== "lamp") {
+      const flipped = flippedToOppositeRow(instance);
+      if (flipped) return commit(flipped, {});
+    }
+    const step = rotationStepFor(instance);
+    return commit(step ? engine.rotateInstance(ui.catalog, ui.design, instance.id, step) : null, {});
   }
 
   /**
@@ -898,7 +1270,7 @@
     const needle = String(query || "").trim().toLowerCase();
     const matches = options.filter((option) => {
       if (!needle) return true;
-      const haystack = `${option.module.id} ${moduleLabel(option.module)} ${option.module.family || ""} ${option.module.role}`;
+      const haystack = `${option.module.id} ${option.label || moduleLabel(option.module)} ${option.module.family || ""} ${option.module.role}`;
       return haystack.toLowerCase().indexOf(needle) >= 0;
     });
     if (!matches.length) {
@@ -908,7 +1280,7 @@
     for (const option of matches) {
       const row = make("button", "nd-list-row");
       row.type = "button";
-      row.appendChild(make("b", null, moduleLabel(option.module)));
+      row.appendChild(make("b", null, option.label || moduleLabel(option.module)));
       row.appendChild(make("small", null, option.module.priceKsh != null ? formatKsh(option.module.priceKsh) : "on request"));
       row.addEventListener("click", () => {
         closePicker();
@@ -960,7 +1332,7 @@
   }
 
   function sizeLabel() {
-    const bounds = engine.designBounds(ui.catalog, ui.design);
+    const bounds = shelfBounds();
     if (!bounds) return null;
     return `${mmToCm(bounds[3] - bounds[0])} × ${mmToCm(bounds[4] - bounds[1])} × ${mmToCm(bounds[5] - Math.min(0, bounds[2]))} cm`;
   }
@@ -968,9 +1340,11 @@
   /**
    * The shelf's own envelope, ignoring a lamp.
    *
-   * Simple's Width/Height/Depth read out what its steppers control. A lamp adds
-   * 77cm of arm and shade, so including it made "Height 149 cm" appear next to a
-   * button that only ever adds a 30cm shelf level.
+   * This is the size quoted everywhere -- Simple's steppers, the summary line
+   * and the dimension overlay -- so they always agree. A lamp adds 77cm of arm
+   * and shade over the top, which would put "Height 149 cm" next to a button
+   * that only ever adds a 30cm shelf level, and is an accessory hanging above
+   * the furniture rather than part of its footprint.
    */
   function shelfBounds() {
     const shelfOnly = ui.design.instances.filter((instance) => ui.catalog.modules[instance.moduleId].role !== "lamp");
@@ -1120,15 +1494,18 @@
     for (const finish of ui.catalog.finishes) {
       const swatch = make("button", "nd-swatch");
       swatch.type = "button";
-      swatch.title = finish.displayName;
-      swatch.setAttribute("aria-label", finish.displayName);
       swatch.setAttribute("aria-pressed", String(ui.design.finish === finish.id));
+      const chip = make("span", "nd-swatch-chip");
       const steel = make("span");
       steel.style.background = finish.steelHex;
       const mdf = make("span");
       mdf.style.background = finish.mdfHex;
-      swatch.appendChild(steel);
-      swatch.appendChild(mdf);
+      chip.appendChild(steel);
+      chip.appendChild(mdf);
+      swatch.appendChild(chip);
+      // Named, not just coloured: two of the four read similarly at chip size,
+      // and the name is what people say when they order.
+      swatch.appendChild(make("span", "nd-swatch-name", finish.displayName));
       swatch.addEventListener("click", () => {
         if (ui.design.finish === finish.id) return;
         pushHistory();
@@ -1325,7 +1702,12 @@
       row.addEventListener("click", () => {
         ui.activeModuleId = ui.activeModuleId === module.id ? null : module.id;
         ui.selectedId = null;
-        if (ui.activeModuleId) ensureGeometry([ui.activeModuleId]);
+        if (ui.activeModuleId) {
+          ensureGeometry([ui.activeModuleId]);
+          fitToCandidates(ui.activeModuleId);
+        } else {
+          ui.renderer.fit(null, ui.dimensionsOn ? DIMENSION_FIT_PADDING : null);
+        }
         buildOverlay();
         renderModuleList();
       });
@@ -1415,10 +1797,15 @@
 
     dom.panelTitle.textContent = ui.mode === "simple" ? "Build" : ui.mode === "standard" ? "Shelf" : "Pieces";
     const body = dom.controls;
+    // The panel is rebuilt wholesale on every change, which resets its scroll.
+    // Nudging the bookend stepper near the bottom of the list would jump you
+    // back to the top of the form, so put the scroll position back.
+    const scrollTop = body.scrollTop;
     clear(body);
     if (ui.mode === "simple") renderSimplePanel(body);
     else if (ui.mode === "standard") renderStandardPanel(body);
     else renderAdvancedPanel(body);
+    body.scrollTop = scrollTop;
 
     updateSummary();
 
@@ -1427,7 +1814,7 @@
     // Re-frame on an explicit request (mode change, load, Simple rebuild), or
     // when the edit just made pushed part of the shelf out of view.
     if (settings.fit || !ui.renderer.containsBounds(engine.designBounds(ui.catalog, ui.design))) {
-      ui.renderer.fit();
+      ui.renderer.fit(null, ui.dimensionsOn ? DIMENSION_FIT_PADDING : null);
     } else {
       ui.renderer.invalidate();
     }
@@ -1467,6 +1854,7 @@
     dom.zoomIn.addEventListener("click", () => ui.renderer.zoomBy(1.25));
     dom.zoomOut.addEventListener("click", () => ui.renderer.zoomBy(1 / 1.25));
     dom.fit.addEventListener("click", () => ui.renderer.fit());
+    dom.dimensions.addEventListener("click", () => setDimensions(!ui.dimensionsOn));
 
     dom.collapse.addEventListener("click", () => {
       const collapsed = dom.app.dataset.panel === "collapsed";
@@ -1491,6 +1879,7 @@
     window.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         if (!dom.modal.hidden) return closePicker();
+        if (ui.previewCandidateId) return clearGhost();
         if (ui.activeModuleId || ui.selectedId) {
           ui.activeModuleId = null;
           ui.selectedId = null;
@@ -1580,7 +1969,12 @@
   function handleTap(clientX, clientY) {
     if (ui.mode === "simple") return; // Simple is driven entirely from the panel
     if (ui.activeModuleId) {
-      // Tapping empty space is how you back out of placing a piece.
+      // Tapping empty space backs out: first out of a pending preview, then out
+      // of placing the piece at all.
+      if (ui.previewCandidateId) {
+        clearGhost();
+        return;
+      }
       ui.activeModuleId = null;
       buildOverlay();
       renderModuleList();
