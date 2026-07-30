@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="css/new-designer.css?v=38">
+    <link rel="stylesheet" href="css/new-designer.css?v=39">
 
     <!--
       Nothing can render until the catalogue arrives, and the app's own scripts
@@ -35,7 +35,7 @@
         // with a stale catalogue silently loses whatever the catalogue gained,
         // which is exactly what a CDN or a browser cache will hand you a few
         // minutes after a deploy. Bump this whenever any of them changes.
-        window.frameworkDesignerVersion = '38';
+        window.frameworkDesignerVersion = '39';
         window.frameworkDesignerCatalog =
             fetch('assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
                 .then(function (response) {
@@ -199,11 +199,11 @@
         </div>
     </div>
 
-    <script src="js/new-designer/engine.js?v=38" defer></script>
-    <script src="js/new-designer/geometry.js?v=38" defer></script>
-    <script src="js/new-designer/renderer.js?v=38" defer></script>
-    <script src="js/new-designer/present.js?v=38" defer></script>
-    <script src="js/new-designer/app.js?v=38" defer></script>
+    <script src="js/new-designer/engine.js?v=39" defer></script>
+    <script src="js/new-designer/geometry.js?v=39" defer></script>
+    <script src="js/new-designer/renderer.js?v=39" defer></script>
+    <script src="js/new-designer/present.js?v=39" defer></script>
+    <script src="js/new-designer/app.js?v=39" defer></script>
 
     <!--
       Analytics loads after the designer is interactive. On a mid-range phone

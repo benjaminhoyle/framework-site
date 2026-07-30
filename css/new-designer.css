@@ -604,7 +604,17 @@ button { cursor: pointer; }
   padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
 }
 
-.nd-total { flex: 1 1 auto; min-width: 0; }
+.nd-total { flex: 1 1 auto; min-width: 8rem; }
+
+/* Narrow phones: the price gets its own line and the two actions share the
+   next. Three items on one row crushed .nd-total to a few pixels, and it wrapped
+   one character per line, which pushed the whole summary bar taller than the
+   panel. */
+@media (max-width: 620px) {
+  .nd-summary { flex-wrap: wrap; }
+  .nd-total { flex: 1 1 100%; min-width: 0; }
+  .nd-order { flex: 1 1 auto; justify-content: center; }
+}
 .nd-total-amount {
   display: block;
   font-size: 1.15rem;
