@@ -560,6 +560,13 @@ button { cursor: pointer; }
 }
 .nd-list-row b { flex: 1 1 auto; font-weight: 500; font-size: .9rem; }
 .nd-list-row small { color: var(--nd-muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+/* Secondary detail on a row — set apart from the piece name so a spacing choice
+   does not read as part of the product's name. */
+.nd-list-row .nd-list-note {
+  font-size: .75rem;
+  font-style: italic;
+  opacity: .85;
+}
 .nd-list-empty { color: var(--nd-muted); font-size: .85rem; padding: 8px 2px; }
 
 /* Line-item breakdown. */

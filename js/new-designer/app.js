@@ -844,13 +844,47 @@
     return Math.max(0, Math.round(side === "right" ? box[0] - design[3] : design[0] - box[3]));
   }
 
-  /** "Standard Base" vs "Standard Base · 44 cm gap". */
-  function sideOptionLabel(entry) {
-    const label = moduleLabel(entry.module);
-    // The engine leaves 30mm of working clearance even between touching units,
-    // so anything at or under that is "against the neighbour", not a gap.
-    if (entry.gapMm <= engine.ADJACENT_BASE_GAP_MM + 6) return label;
-    return `${label} · ${mmToCm(entry.gapMm)} cm gap`;
+  /*
+   * Spacing between neighbouring units, named rather than measured.
+   *
+   * The engine offers four spacings, and listing them as "43 cm gap" made the
+   * picker a wall of numbers nobody was choosing between. Naming them turns it
+   * into a decision -- and it becomes a second step, so choosing a piece stays a
+   * list of pieces.
+   *
+   * The engine leaves 30mm of working clearance even between touching units, so
+   * anything at or under that is "against its neighbour", not a gap.
+   */
+  const GAP_NAMES = ["No gap", "Small gap", "Medium gap", "Large gap"];
+
+  function gapName(index) {
+    return GAP_NAMES[Math.min(index, GAP_NAMES.length - 1)];
+  }
+
+  function isTouching(gapMm) {
+    return gapMm <= engine.ADJACENT_BASE_GAP_MM + 6;
+  }
+
+  /**
+   * One picker row per piece. Where a piece can go at more than one spacing, the
+   * row opens a short second picker of named spacings instead of placing it.
+   */
+  function sideOption(entry) {
+    const spacings = (entry.spacings || []).slice().sort((a, b) => a.gapMm - b.gapMm);
+    if (spacings.length < 2) {
+      return { module: entry.module, onPick: () => placeCandidate(entry.candidate) };
+    }
+    return {
+      module: entry.module,
+      note: `${spacings.length} spacings`,
+      onPick: () => openPicker(`${moduleLabel(entry.module)} — spacing`, spacings.map((spacing, index) => ({
+        module: entry.module,
+        label: gapName(index),
+        note: isTouching(spacing.gapMm) ? "against its neighbour" : `${mmToCm(spacing.gapMm)} cm clear`,
+        hidePrice: true,
+        onPick: () => placeCandidate(spacing.candidate)
+      })))
+    };
   }
 
   function buildAddButtons() {
@@ -875,19 +909,22 @@
           const side = candidate.originWorldMm[0] > maxX ? "right" : candidate.originWorldMm[0] < minX ? "left" : null;
           if (!side) continue;
           const gap = sideGapMm(candidate, side);
-          const existing = groupedSide[side].find((entry) =>
-            entry.module.id === id
-            // Advanced offers each spacing as its own option, so a run can be
-            // deliberately broken up; Simple and Standard only ever butt units
-            // together, so there the nearest spot is the only one that matters.
-            && (ui.mode !== "advanced" || Math.abs(entry.gapMm - gap) < 10));
-          if (existing) {
-            if (gap < existing.gapMm) {
-              existing.candidate = candidate;
-              existing.gapMm = gap;
+          let entry = groupedSide[side].find((option) => option.module.id === id);
+          if (!entry) {
+            entry = { module, candidate, gapMm: gap, side, spacings: [] };
+            groupedSide[side].push(entry);
+          }
+          // One row per piece, with its spacings collected behind it. Simple and
+          // Standard only ever butt units together, so they keep just the
+          // nearest; Advanced offers the lot as a second step.
+          if (ui.mode === "advanced" || isTouching(gap)) {
+            if (!entry.spacings.some((spacing) => Math.abs(spacing.gapMm - gap) < 10)) {
+              entry.spacings.push({ gapMm: gap, candidate });
             }
-          } else {
-            groupedSide[side].push({ module, candidate, gapMm: gap, side });
+          }
+          if (gap < entry.gapMm) {
+            entry.candidate = candidate;
+            entry.gapMm = gap;
           }
         } else {
           const consumed = candidate.consumedSockets || [];
@@ -916,8 +953,7 @@
       // the bottom-right corner underneath the zoom controls.
       if (designBounds) spot[2] = (designBounds[2] + designBounds[5]) / 2;
       const label = ui.design.instances.length ? "Add a unit here" : "Start your shelf";
-      addOverlay(plusButton(label, options.map((entry) =>
-        Object.assign({}, entry, { label: sideOptionLabel(entry) }))), spot);
+      addOverlay(plusButton(label, options.map(sideOption)), spot);
     });
 
     groups.forEach((ids, root) => {
@@ -926,7 +962,10 @@
       const bounds = stackBounds(ids);
       if (!bounds) return;
       addOverlay(
-        plusButton("Add on top", options),
+        plusButton("Add on top", options.map((entry) => ({
+          module: entry.module,
+          onPick: () => placeCandidate(entry.candidate)
+        }))),
         [(bounds[0] + bounds[3]) / 2, (bounds[1] + bounds[4]) / 2, bounds[5]],
         [0, -26]
       );
@@ -951,6 +990,12 @@
     return any ? bounds : null;
   }
 
+  /**
+   * `options` are passed to the picker unchanged, so a caller can give a row its
+   * own action -- opening a second picker of spacings, say -- rather than every
+   * row meaning "place this now". (Rebuilding them here is what silently
+   * discarded the spacing sub-picker.)
+   */
   function plusButton(label, options) {
     const button = make("button", "nd-plus", "+");
     button.type = "button";
@@ -958,11 +1003,7 @@
     button.setAttribute("aria-label", label);
     button.addEventListener("click", (event) => {
       event.stopPropagation();
-      openPicker(label, options.map((entry) => ({
-        module: entry.module,
-        label: entry.label,
-        onPick: () => placeCandidate(entry.candidate)
-      })));
+      openPicker(label, options);
     });
     return button;
   }
@@ -1379,7 +1420,10 @@
       const row = make("button", "nd-list-row");
       row.type = "button";
       row.appendChild(make("b", null, option.label || moduleLabel(option.module)));
-      row.appendChild(make("small", null, option.module.priceKsh != null ? formatKsh(option.module.priceKsh) : "on request"));
+      if (option.note) row.appendChild(make("small", "nd-list-note", option.note));
+      if (!option.hidePrice) {
+        row.appendChild(make("small", null, option.module.priceKsh != null ? formatKsh(option.module.priceKsh) : "on request"));
+      }
       row.addEventListener("click", () => {
         closePicker();
         option.onPick();
