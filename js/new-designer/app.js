@@ -755,28 +755,30 @@
    * Floor-to-top is implicit, so there is no line spanning the whole height --
    * that would run down through the shelf. Stacks of equal height share a single
    * callout, so a symmetric run reads as one number rather than four.
+   *
+   * A lamp counts towards the height, because it genuinely is how tall the thing
+   * is. The arrow is still anchored over the centre of the *unit*, not of the
+   * unit-plus-lamp: a lamp pivots out to one side, and following it would drag
+   * the callout off the piece it is measuring.
    */
   function drawHeightCallouts(svg) {
     const { groups } = engine.stacksOf(ui.design);
     const byHeight = new Map();
     groups.forEach((ids) => {
-      const bounds = stackBounds(ids, { excludeLamps: true });
-      if (!bounds) return;
-      const valueMm = Math.round(bounds[5] - Math.min(0, bounds[2]));
+      const unit = stackBounds(ids, { excludeLamps: true });
+      const full = stackBounds(ids);
+      if (!unit || !full) return;
+      const valueMm = Math.round(full[5] - Math.min(0, full[2]));
       if (valueMm < 50) return;
-      const centreX = (bounds[0] + bounds[3]) / 2;
+      const centreX = (unit[0] + unit[3]) / 2;
       const key = mmToCm(valueMm);
       const existing = byHeight.get(key);
       if (!existing || centreX < existing.centreX) {
         byHeight.set(key, {
           valueMm,
           centreX,
-          // Anchor in from the stack's left edge rather than dead centre: the
-          // centre of the top face is where a lamp stands and where Standard's
-          // "add on top" button sits.
-          anchorX: bounds[0] + Math.min(140, (bounds[3] - bounds[0]) * 0.22),
-          centreY: (bounds[1] + bounds[4]) / 2,
-          topZ: bounds[5]
+          centreY: (unit[1] + unit[4]) / 2,
+          topZ: full[5]
         });
       }
     });
@@ -784,7 +786,7 @@
     const up = axisScreenDirection(2);
     const stageTop = 0;
     for (const stack of byHeight.values()) {
-      const top = ui.renderer.project([stack.anchorX, stack.centreY, stack.topZ]);
+      const top = ui.renderer.project([stack.centreX, stack.centreY, stack.topZ]);
       // Shorten the tail rather than let the number ride up out of the viewport.
       const room = Math.max(0, top.y - (stageTop + 24));
       const tailLength = Math.min(CALLOUT_TAIL_PX, 12 + room);
@@ -1465,10 +1467,18 @@
     return { lines, total, unpriced };
   }
 
+  /**
+   * Width x depth x height, in cm.
+   *
+   * Width and depth come from the shelf's own footprint: a lamp pivoted out over
+   * the front is not something the furniture takes up floor space for. Height
+   * includes it, because that is genuinely how tall the assembly stands.
+   */
   function sizeLabel() {
-    const bounds = shelfBounds();
-    if (!bounds) return null;
-    return `${mmToCm(bounds[3] - bounds[0])} × ${mmToCm(bounds[4] - bounds[1])} × ${mmToCm(bounds[5] - Math.min(0, bounds[2]))} cm`;
+    const footprint = shelfBounds();
+    if (!footprint) return null;
+    const full = engine.designBounds(ui.catalog, ui.design) || footprint;
+    return `${mmToCm(footprint[3] - footprint[0])} × ${mmToCm(footprint[4] - footprint[1])} × ${mmToCm(full[5] - Math.min(0, full[2]))} cm`;
   }
 
   /**
@@ -1653,7 +1663,8 @@
   }
 
   function bookendField() {
-    return stepper(
+    const field = make("div", "nd-field nd-field-tight");
+    field.appendChild(stepper(
       "Bookends",
       { n: ui.design.bookends || 0, text: String(ui.design.bookends || 0) },
       0,
@@ -1663,7 +1674,11 @@
         ui.design = Object.assign({}, ui.design, { bookends: Math.max(0, next) });
         refresh({});
       }
-    );
+    ));
+    // Bookends are priced and go on the order, but the pipeline has no model for
+    // them yet, so say plainly that they will not appear in a shared image.
+    field.appendChild(make("small", "nd-subtext", "Priced and ordered, but not shown in the image"));
+    return field;
   }
 
   function breakdownSection() {

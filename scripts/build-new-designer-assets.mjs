@@ -400,50 +400,43 @@ function decimate(positions, normals, indices) {
 }
 
 /**
- * Average normals across coincident vertices, so a faceted surface shades as the
- * smooth form it approximates.
+ * Re-aim a lathed surface's normals at its own axis, so it shades as the smooth
+ * form it represents.
  *
- * The lamp shade is a fluted paper shell -- 80 flat facets whose radius swings
- * between 91mm and 106mm -- and each facet arrives with its own unwelded
- * vertices and its own flat normal. At the size a shade occupies on screen those
- * facets alias into the irregular vertical streaking that made it look broken.
- * Welding by position and averaging keeps the fluted silhouette while shading it
- * like the cylinder it reads as.
+ * The lamp shade is a pleated ribbon: ~80 flat facets whose normals alternate
+ * between pointing out of and into the shade. Lit normally, every other pleat
+ * faced away from the light and went black; at the size a shade occupies that is
+ * about two pixels per facet, so it read as irregular vertical streaking rather
+ * than as a shade.
  *
- * Normals more than 90 degrees apart are not averaged together: the shell's
- * inside and outside meet at the rim, and blending those would light the rim
- * from nowhere.
+ * Pointing every wall normal radially outward makes the shade shade exactly like
+ * the round vertical posts do: smoothly, because the radial direction varies
+ * smoothly with angle. Every facet, not just the ones that happened to face out.
+ * Preserving which side of the sheet a facet was on -- the obvious thing to do --
+ * is wrong here: it leaves neighbouring facets 180 degrees apart, which is a
+ * harder edge than the pleat angle it replaced. The pleats stay in the
+ * silhouette either way.
+ *
+ * Normals that are mostly vertical belong to the rim and caps, not the wall, and
+ * are left alone.
  */
-function smoothCoincidentNormals(positions, normals) {
-  const groups = new Map();
-  const count = positions.length / 3;
-  for (let i = 0; i < count; i += 1) {
-    const key = `${Math.round(positions[i * 3] * 20)},${Math.round(positions[i * 3 + 1] * 20)},${Math.round(positions[i * 3 + 2] * 20)}`;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(i);
-  }
-  for (const members of groups.values()) {
-    if (members.length < 2) continue;
-    // Cluster the members by facing, then average within each cluster.
-    const clusters = [];
-    for (const index of members) {
-      const n = [normals[index * 3], normals[index * 3 + 1], normals[index * 3 + 2]];
-      const cluster = clusters.find((entry) =>
-        entry.sum[0] * n[0] + entry.sum[1] * n[1] + entry.sum[2] * n[2] > 0);
-      if (cluster) {
-        cluster.members.push(index);
-        for (let axis = 0; axis < 3; axis += 1) cluster.sum[axis] += n[axis];
-      } else {
-        clusters.push({ members: [index], sum: n.slice() });
-      }
-    }
-    for (const cluster of clusters) {
-      const length = Math.hypot(cluster.sum[0], cluster.sum[1], cluster.sum[2]);
-      if (length < 1e-9) continue;
-      for (const index of cluster.members) {
-        for (let axis = 0; axis < 3; axis += 1) normals[index * 3 + axis] = cluster.sum[axis] / length;
-      }
-    }
+const LATHE_WALL_THRESHOLD = 0.5;
+
+function cylindricalNormals(positions, normals) {
+  const bounds = boundsOf(positions);
+  const axisX = (bounds[0] + bounds[3]) / 2;
+  const axisY = (bounds[1] + bounds[4]) / 2;
+  for (let i = 0; i < positions.length; i += 3) {
+    const nx = normals[i];
+    const ny = normals[i + 1];
+    if (Math.hypot(nx, ny) < LATHE_WALL_THRESHOLD) continue; // rim or cap
+    const rx = positions[i] - axisX;
+    const ry = positions[i + 1] - axisY;
+    const radius = Math.hypot(rx, ry);
+    if (radius < 1e-6) continue; // on the axis; nothing to aim at
+    normals[i] = rx / radius;
+    normals[i + 1] = ry / radius;
+    normals[i + 2] = 0;
   }
 }
 
@@ -598,9 +591,9 @@ function lampFlexPart(parts, instances, placementBounds) {
     if (!stub || bounds[2] < stub[2]) stub = bounds.slice();
   });
 
-  // Start at the shade's mid-height, where a bulb would hang, so the cord reads
-  // as continuous through the shade's open bottom.
-  const z0 = (shade[2] + shade[5]) / 2;
+  // Start above the shade's mid-height: high enough to read as a cord
+  // disappearing into the shade rather than a rod propping it up.
+  const z0 = shade[2] + (shade[5] - shade[2]) * 0.72;
   const z1 = (stub ? stub[2] : shade[5] + 120) + 8;
   if (z1 <= z0) return null;
   return cylinderPart(ROLE_CORD, centreX, centreY, z0, z1, LAMP_FLEX_DIAMETER_MM / 2, 10);
@@ -1110,8 +1103,8 @@ function main() {
       if (!partIndex.has(key)) {
         partIndex.set(key, parts.length);
         const part = Object.assign(preparePart(placement.primitive), { role });
-        // The fluted lamp shade is the one surface fine enough to alias.
-        if (role === ROLE_PAPER) smoothCoincidentNormals(part.positions, part.normals);
+        // The pleated lamp shade is the one surface fine enough to alias.
+        if (role === ROLE_PAPER) cylindricalNormals(part.positions, part.normals);
         parts.push(part);
       }
       instances.push({ part: partIndex.get(key), matrix: placement.matrix });

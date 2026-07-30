@@ -382,6 +382,15 @@ button { cursor: pointer; }
 }
 
 .nd-field { display: flex; flex-direction: column; gap: 6px; }
+.nd-field-tight { gap: 0; }
+
+/* Quiet caveat under a control, e.g. bookends not appearing in the render. */
+.nd-subtext {
+  font-size: .72rem;
+  line-height: 1.35;
+  color: var(--nd-muted);
+  margin-top: -2px;
+}
 
 .nd-label {
   font-size: .78rem;

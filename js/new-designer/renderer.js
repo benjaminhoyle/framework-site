@@ -51,26 +51,9 @@ window.FrameworkDesignerRenderer = (function () {
     "precision mediump float;",
     "uniform vec3 uColor;",
     "uniform float uAlpha;",
-    "uniform float uUnlit;",
     "varying vec3 vNormal;",
     "void main() {",
-    // The lamp shade is a pleated ribbon of about 80 facets whose normals
-    // alternate in and out. At the size a shade occupies it is two pixels per
-    // facet, so any normal-based shading aliases into vertical streaks -- and
-    // single-sided shading additionally painted every other pleat black. A paper
-    // shade lit from inside reads as one even, luminous form, so draw it flat and
-    // let the silhouette do the work. Robust at every zoom and on every device.
-    "  if (uUnlit > 0.5) {",
-    "    gl_FragColor = vec4(uColor, uAlpha);",
-    "    return;",
-    "  }",
     "  vec3 n = normalize(vNormal);",
-    // The lamp shade is a pleated ribbon: its facets alternate between facing
-    // out and facing in, so single-sided shading painted every other pleat
-    // black and the shade came out as irregular vertical streaks. Paper is lit
-    // through from both sides anyway, so turn any normal pointing away from the
-    // camera back towards it. The camera is orthographic, so one constant
-    // direction is all this needs.
     "  float key = max(dot(n, vec3(0.42, -0.55, 0.72)), 0.0);",
     "  float rim = max(dot(n, vec3(-0.60, 0.35, 0.25)), 0.0);",
     "  float sky = 0.5 + 0.5 * n.z;",
@@ -198,8 +181,7 @@ window.FrameworkDesignerRenderer = (function () {
         modelViewProjection: gl.getUniformLocation(program, "uModelViewProjection"),
         normalMatrix: gl.getUniformLocation(program, "uNormalMatrix"),
         color: gl.getUniformLocation(program, "uColor"),
-        alpha: gl.getUniformLocation(program, "uAlpha"),
-        unlit: gl.getUniformLocation(program, "uUnlit")
+        alpha: gl.getUniformLocation(program, "uAlpha")
       }
     };
   }
@@ -358,7 +340,6 @@ window.FrameworkDesignerRenderer = (function () {
     for (const batch of batches) {
       const color = overrideColor || state.palette[batch.role] || state.palette[0];
       gl.uniform3fv(mesh.uniforms.color, color);
-      gl.uniform1f(mesh.uniforms.unlit, batch.role === ROLE_PAPER ? 1 : 0);
       gl.bindBuffer(gl.ARRAY_BUFFER, batch.positions);
       gl.vertexAttribPointer(mesh.attributes.position, 3, gl.UNSIGNED_SHORT, false, 0, 0);
       gl.bindBuffer(gl.ARRAY_BUFFER, batch.normals);
