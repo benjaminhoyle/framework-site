@@ -1,0 +1,31 @@
+{
+  "id": "standard-bases-shared-extension-span",
+  "output_name": "standard-bases-shared-extension-span",
+  "description": "two standard bases provide the closest leg pairs for a spanning standard extension",
+  "modules": [
+    {
+      "id": "left_base",
+      "type": "standard_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "right_base",
+      "type": "standard_base_trimmed",
+      "x": 1406,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "bridge_extension",
+      "type": "standard_extension_trimmed",
+      "x": 703,
+      "y": 0,
+      "on": [
+        "left_base",
+        "right_base"
+      ]
+    }
+  ]
+}

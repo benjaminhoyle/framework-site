@@ -1,0 +1,73 @@
+{
+  "id": "wacky-deep-accessory-stack",
+  "output_name": "wacky-deep-accessory-stack",
+  "description": "deep stack mixing adapter split, hanger, display bar, lamp, and bridge support",
+  "modules": [
+    {
+      "id": "base",
+      "type": "deep_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "spacer",
+      "type": "deep_spacer",
+      "x": 0,
+      "y": 0,
+      "on": "base"
+    },
+    {
+      "id": "adapter",
+      "type": "deep_adapter_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": "spacer"
+    },
+    {
+      "id": "booster",
+      "type": "deep_booster",
+      "x": 0,
+      "y": 0,
+      "on": "adapter"
+    },
+    {
+      "id": "compact",
+      "type": "compact_extension_trimmed",
+      "x": 703,
+      "y": 0,
+      "on": "adapter"
+    },
+    {
+      "id": "bridge",
+      "type": "deep_extension_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": [
+        "booster",
+        "compact"
+      ]
+    },
+    {
+      "id": "hanger",
+      "type": "deep_hanger",
+      "x": 0,
+      "y": 0,
+      "on": "bridge"
+    },
+    {
+      "id": "bar",
+      "type": "deep_top_bar",
+      "x": 0,
+      "y": 427,
+      "on": "hanger"
+    },
+    {
+      "id": "lamp",
+      "type": "lamp",
+      "x": 1143,
+      "y": 427,
+      "on": "hanger"
+    }
+  ]
+}

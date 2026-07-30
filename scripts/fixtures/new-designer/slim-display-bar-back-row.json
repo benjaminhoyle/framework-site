@@ -1,0 +1,21 @@
+{
+  "id": "slim-display-bar-back-row",
+  "output_name": "slim-display-bar-back-row",
+  "description": "slim display/top bar consumes the matching back two sockets",
+  "modules": [
+    {
+      "id": "base",
+      "type": "slim_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "top_bar",
+      "type": "slim_top_bar",
+      "x": 0,
+      "y": 256.999,
+      "on": "base"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "wide-base-extension",
+  "output_name": "wide-base-extension",
+  "description": "wide base with matching extension",
+  "modules": [
+    {
+      "id": "base",
+      "type": "wide_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "extension",
+      "type": "wide_extension_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": "base"
+    }
+  ]
+}

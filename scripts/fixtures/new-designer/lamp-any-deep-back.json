@@ -1,0 +1,21 @@
+{
+  "id": "lamp-any-deep-back",
+  "output_name": "lamp-any-deep-back",
+  "description": "lamp can consume a deep back socket",
+  "modules": [
+    {
+      "id": "base",
+      "type": "deep_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "lamp_back_right",
+      "type": "lamp",
+      "x": 1143,
+      "y": 426.999,
+      "on": "base"
+    }
+  ]
+}

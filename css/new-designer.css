@@ -1,0 +1,635 @@
+/*
+ * Shelf designer — Simple / Standard / Advanced.
+ *
+ * One layout for all three interfaces: the same viewport, the same control
+ * column, the same summary bar. Switching interface changes what is inside the
+ * control column, never where things live, so someone who starts in Simple and
+ * moves up does not have to relearn the page.
+ *
+ * Mobile-first. The one structural difference on a wide screen is that the
+ * control column moves from under the viewport to beside it.
+ */
+
+:root {
+  --nd-ink: #202424;
+  --nd-muted: #68726f;
+  --nd-line: #dde3e0;
+  --nd-line-strong: #c3ccc8;
+  --nd-panel: #ffffff;
+  --nd-soft: #f4f7f5;
+  --nd-accent: #245d5f;
+  --nd-accent-soft: #e6f0ee;
+  --nd-danger: #a34034;
+  --nd-whatsapp: #25d366;
+  --nd-radius: 10px;
+  --nd-tap: 44px;
+  --nd-shadow: 0 1px 2px rgba(32, 36, 36, .06), 0 8px 24px rgba(32, 36, 36, .08);
+  --nd-panel-h: min(46vh, 400px);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--nd-soft);
+  color: var(--nd-ink);
+  font-family: 'Red Hat Display', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+/* Focus is only drawn for keyboard users: a persistent ring after every tap
+   reads as a stuck button on a phone. */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--nd-accent); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- shell -- */
+
+.nd-app {
+  display: flex;
+  flex-direction: column;
+  /* dvh tracks the collapsing mobile URL bar; vh is the fallback. */
+  height: 100vh;
+  height: 100dvh;
+}
+
+.nd-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--nd-panel);
+  border-bottom: 1px solid var(--nd-line);
+  flex: 0 0 auto;
+}
+
+.nd-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+  flex: 0 0 auto;
+}
+.nd-brand img { display: block; width: 28px; height: auto; }
+.nd-brand span { font-weight: 700; font-size: .95rem; letter-spacing: .01em; }
+
+@media (max-width: 420px) {
+  .nd-brand span { display: none; }
+}
+
+/* Interface switch — the one control that is identical in all three modes. */
+.nd-modes {
+  display: flex;
+  margin: 0 auto;
+  background: var(--nd-soft);
+  border: 1px solid var(--nd-line);
+  border-radius: 999px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.nd-modes button {
+  border: 0;
+  background: transparent;
+  color: var(--nd-muted);
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: .85rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.nd-modes button[aria-selected="true"] {
+  background: var(--nd-panel);
+  color: var(--nd-ink);
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(32, 36, 36, .12);
+}
+
+.nd-iconbutton {
+  width: var(--nd-tap);
+  height: 38px;
+  border: 1px solid var(--nd-line);
+  border-radius: var(--nd-radius);
+  background: var(--nd-panel);
+  color: var(--nd-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.nd-iconbutton:disabled { opacity: .35; cursor: default; }
+.nd-iconbutton svg { width: 18px; height: 18px; }
+
+.nd-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ---------------------------------------------------------------- stage -- */
+
+.nd-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #fff;
+  overflow: hidden;
+  /* The canvas handles its own panning, so the browser must not also scroll
+     or double-tap-zoom the page under the finger. */
+  touch-action: none;
+}
+
+.nd-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.nd-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.nd-overlay > * { pointer-events: auto; }
+
+/* In-viewport "add here" affordance. */
+.nd-plus {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  margin: -19px 0 0 -19px;
+  border-radius: 50%;
+  border: 2px solid var(--nd-panel);
+  background: var(--nd-accent);
+  color: #fff;
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(32, 36, 36, .3);
+  padding: 0;
+  transition: transform .12s ease;
+}
+.nd-plus:active { transform: scale(.92); }
+
+/* Comfortable touch target without a 44px disc cluttering the model. */
+.nd-plus::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+
+.nd-actions {
+  position: absolute;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--nd-panel);
+  border: 1px solid var(--nd-line);
+  border-radius: var(--nd-radius);
+  box-shadow: var(--nd-shadow);
+}
+.nd-actions button {
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: .85rem;
+  font-weight: 500;
+  min-height: 36px;
+  white-space: nowrap;
+}
+.nd-actions button:hover { background: var(--nd-soft); }
+.nd-actions button.is-danger { color: var(--nd-danger); }
+
+/* Top-right, not bottom-right: in this isometric view a run grows towards the
+   lower right, so that corner is exactly where the "add a unit" affordance
+   travels to as the shelf gets wider. */
+.nd-stage-tools {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.nd-stage-tools button {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--nd-radius);
+  border: 1px solid var(--nd-line);
+  background: rgba(255, 255, 255, .94);
+  color: var(--nd-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(32, 36, 36, .12);
+}
+.nd-stage-tools svg { width: 17px; height: 17px; }
+
+.nd-hint {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  right: 60px;
+  font-size: .8rem;
+  color: var(--nd-muted);
+  background: rgba(255, 255, 255, .92);
+  border-radius: 8px;
+  padding: 6px 10px;
+  pointer-events: none;
+}
+.nd-hint[hidden] { display: none; }
+.nd-hint.is-error { color: var(--nd-danger); background: #fdeceb; }
+
+.nd-busy {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(32, 36, 36, .85);
+  color: #fff;
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: .78rem;
+  pointer-events: none;
+}
+.nd-busy[hidden] { display: none; }
+
+/* Dimension callouts (Advanced). */
+.nd-dim {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--nd-ink);
+  background: rgba(255, 255, 255, .9);
+  border-radius: 4px;
+  padding: 1px 5px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.nd-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  background: var(--nd-soft);
+  color: var(--nd-muted);
+}
+.nd-fallback[hidden] { display: none; }
+.nd-fallback strong { color: var(--nd-ink); font-size: 1.05rem; }
+
+/* ---------------------------------------------------------------- panel -- */
+
+.nd-panel {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--nd-panel);
+  border-top: 1px solid var(--nd-line);
+  max-height: var(--nd-panel-h);
+  min-height: 0;
+}
+
+.nd-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--nd-line);
+  flex: 0 0 auto;
+}
+.nd-panel-head h2 {
+  margin: 0;
+  font-size: .8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--nd-muted);
+  flex: 1 1 auto;
+}
+
+.nd-collapse {
+  border: 0;
+  background: transparent;
+  color: var(--nd-muted);
+  padding: 6px;
+  display: flex;
+}
+.nd-collapse svg { width: 18px; height: 18px; transition: transform .18s ease; }
+.nd-app[data-panel="collapsed"] .nd-collapse svg { transform: rotate(180deg); }
+.nd-app[data-panel="collapsed"] .nd-panel-body { display: none; }
+
+.nd-panel-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.nd-field { display: flex; flex-direction: column; gap: 6px; }
+
+.nd-label {
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--nd-muted);
+}
+
+.nd-select {
+  width: 100%;
+  min-height: var(--nd-tap);
+  padding: 0 34px 0 12px;
+  border: 1px solid var(--nd-line-strong);
+  border-radius: var(--nd-radius);
+  background: var(--nd-panel) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2368726f' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 10px center;
+  background-size: 16px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Stepper: label, value, minus/plus. */
+.nd-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--nd-tap);
+}
+.nd-stepper .nd-label { flex: 1 1 auto; }
+.nd-stepper-value {
+  min-width: 4.4em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.nd-stepper-buttons { display: flex; gap: 6px; }
+.nd-stepper-buttons button {
+  width: var(--nd-tap);
+  height: var(--nd-tap);
+  border: 1px solid var(--nd-line-strong);
+  border-radius: var(--nd-radius);
+  background: var(--nd-panel);
+  font-size: 1.2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nd-stepper-buttons button:disabled { opacity: .35; cursor: default; }
+
+.nd-swatches { display: flex; gap: 10px; }
+.nd-swatch {
+  flex: 1 1 0;
+  height: var(--nd-tap);
+  border: 2px solid transparent;
+  border-radius: var(--nd-radius);
+  box-shadow: inset 0 0 0 1px rgba(32, 36, 36, .14);
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+.nd-swatch span {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.nd-swatch span + span { left: 50%; }
+.nd-swatch[aria-pressed="true"] {
+  border-color: var(--nd-ink);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .7);
+}
+
+.nd-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--nd-tap);
+  cursor: pointer;
+}
+.nd-toggle input { width: 20px; height: 20px; accent-color: var(--nd-accent); flex: 0 0 auto; }
+.nd-toggle span { font-size: .92rem; }
+
+.nd-note {
+  font-size: .78rem;
+  line-height: 1.45;
+  color: var(--nd-muted);
+  margin: 0;
+}
+
+.nd-button {
+  min-height: var(--nd-tap);
+  padding: 0 14px;
+  border: 1px solid var(--nd-line-strong);
+  border-radius: var(--nd-radius);
+  background: var(--nd-panel);
+  font-size: .9rem;
+  font-weight: 500;
+}
+.nd-button:disabled { opacity: .4; cursor: default; }
+.nd-button-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.nd-button-row .nd-button { flex: 1 1 auto; }
+
+/* Module list (Advanced). */
+.nd-search {
+  width: 100%;
+  min-height: var(--nd-tap);
+  padding: 0 12px;
+  border: 1px solid var(--nd-line-strong);
+  border-radius: var(--nd-radius);
+  background: var(--nd-panel);
+  -webkit-appearance: none;
+}
+
+.nd-list { display: flex; flex-direction: column; gap: 4px; }
+.nd-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--nd-tap);
+  padding: 6px 10px;
+  border: 1px solid var(--nd-line);
+  border-radius: var(--nd-radius);
+  background: var(--nd-panel);
+  text-align: left;
+}
+.nd-list-row:hover { border-color: var(--nd-line-strong); }
+.nd-list-row[aria-pressed="true"] {
+  border-color: var(--nd-accent);
+  background: var(--nd-accent-soft);
+}
+.nd-list-row b { flex: 1 1 auto; font-weight: 500; font-size: .9rem; }
+.nd-list-row small { color: var(--nd-muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.nd-list-empty { color: var(--nd-muted); font-size: .85rem; padding: 8px 2px; }
+
+/* Line-item breakdown. */
+.nd-lines { display: flex; flex-direction: column; gap: 3px; }
+.nd-line {
+  display: flex;
+  gap: 8px;
+  font-size: .85rem;
+  padding: 3px 0;
+}
+.nd-line span:first-child { flex: 1 1 auto; }
+.nd-line .nd-qty { color: var(--nd-muted); font-variant-numeric: tabular-nums; }
+.nd-line .nd-amount { font-variant-numeric: tabular-nums; min-width: 5.5em; text-align: right; }
+.nd-line.is-unpriced .nd-amount { color: var(--nd-muted); }
+
+/* --------------------------------------------------------------- summary -- */
+
+.nd-summary {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--nd-line);
+  background: var(--nd-panel);
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+}
+
+.nd-total { flex: 1 1 auto; min-width: 0; }
+.nd-total-amount {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+/* Wraps rather than truncates: on a narrow phone the size and the VAT note do
+   not fit on one line, and the size is the part people check. */
+.nd-total-note {
+  display: block;
+  font-size: .72rem;
+  line-height: 1.35;
+  color: var(--nd-muted);
+}
+
+.nd-order {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--nd-tap);
+  padding: 0 16px;
+  border-radius: var(--nd-radius);
+  background: var(--nd-whatsapp);
+  color: #fff;
+  font-weight: 700;
+  font-size: .92rem;
+  text-decoration: none;
+}
+.nd-order svg { width: 18px; height: 18px; fill: currentColor; }
+.nd-order[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+
+/* ---------------------------------------------------------------- modal -- */
+
+.nd-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(32, 36, 36, .42);
+}
+.nd-modal[hidden] { display: none; }
+
+.nd-modal-panel {
+  width: 100%;
+  max-height: 82vh;
+  max-height: 82dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--nd-panel);
+  border-radius: 16px 16px 0 0;
+  box-shadow: var(--nd-shadow);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.nd-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 14px 10px;
+  flex: 0 0 auto;
+}
+.nd-modal-head strong { flex: 1 1 auto; font-size: 1rem; }
+.nd-modal-close {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: var(--nd-soft);
+  border-radius: 50%;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--nd-muted);
+}
+
+.nd-modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* --------------------------------------------------------------- desktop -- */
+
+@media (min-width: 860px) {
+  .nd-main { flex-direction: row; }
+
+  .nd-stage { flex: 1 1 auto; }
+
+  .nd-panel {
+    flex: 0 0 340px;
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid var(--nd-line);
+  }
+
+  /* Collapsing is a small-screen affordance; a side column always has room. */
+  .nd-collapse { display: none; }
+  .nd-app[data-panel="collapsed"] .nd-panel-body { display: flex; }
+
+  .nd-panel-body { padding: 16px; gap: 18px; }
+  .nd-summary { padding: 14px 16px; flex-wrap: wrap; }
+  .nd-order { flex: 1 1 100%; justify-content: center; }
+
+  .nd-modal { align-items: center; }
+  .nd-modal-panel {
+    width: min(460px, 92vw);
+    max-height: min(560px, 82vh);
+    border-radius: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "deep-base-extension",
+  "output_name": "deep-base-extension",
+  "description": "deep base with matching extension",
+  "modules": [
+    {
+      "id": "base",
+      "type": "deep_base_trimmed",
+      "x": 0,
+      "y": 0,
+      "placement": "floor"
+    },
+    {
+      "id": "extension",
+      "type": "deep_extension_trimmed",
+      "x": 0,
+      "y": 0,
+      "on": "base"
+    }
+  ]
+}
