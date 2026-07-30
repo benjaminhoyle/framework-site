@@ -89,12 +89,24 @@ Needs:
 - Add **Create link to design**, with a copy button once generated. Use the same
   code as the Present image (`designCode()` in `app.js`).
 - When a link is created, store it: the design, the code, session details, and
-  some basics about how the user arrived at it. The repo already has Netlify
-  Functions with Blobs (`netlify/functions/`, see `track.js`) — follow that
-  pattern rather than inventing one.
+  some basics about how the user arrived at it.
+
+**Netlify Blobs is already on and in production use — there is nothing to
+enable.** `@netlify/blobs` is a dependency in `package.json`, and six functions
+already use `getStore()` across five stores: `events` and `codes`
+(`track.js`, `export.js`), `catalog` (`catalog.js`, `catalog-data.js`,
+`catalog-draft.js`), `catalog-uploads` (`catalog-upload.js`) and `dashboard`
+(`dashboard.js`, `dashboard-data.js`). Verified live: `/api/catalog` returns 401
+behind its auth gate and `/api/track` returns 405 to a GET — both real function
+responses.
+
+So add a `design` store and an `/api/design` function following `track.js`,
+including its `export const config = { path: '/api/design' }` routing. Do not
+invent a new persistence mechanism.
 
 This is also what makes the Present image's code **resolvable** (see B3): today
-the code identifies a design but cannot be turned back into one.
+the code identifies a design but cannot be turned back into one. **Do A2 and B3
+together** — B3's proper answer depends on this existing.
 
 ---
 
@@ -108,7 +120,11 @@ a floor, not a solution. Wanted:
 - A denser format, roughly `2 × Broad Base — KSh 5,000 each`, possibly in **two
   columns**.
 - Beyond that, a layout that **is guaranteed to fit** — shrink type, split
-  columns, whatever it takes — with "+ X more modules" only as a last resort.
+  columns, whatever it takes.
+- **Truncating past ~25 distinct module types is fine** (decided): a design with
+  more than that is not going to happen in practice. Note that is 25 *types*,
+  not 25 pieces — the list is one row per module type with a quantity, so a
+  30-unit run of the same three parts is three rows.
 - Worth testing against a 20+ piece Advanced design, not a 3-piece Simple one.
 
 `js/new-designer/present.js` owns the layout; `presentContent()` in `app.js`
@@ -127,9 +143,10 @@ reads as part of a URL and the whole thing is ambiguous. Expected something like
 
 - Make it unambiguous as a link. **The code may be larger** than the URL, as
   long as it stays clear which part is the address.
-- That path form does not resolve today. Either make it resolve (A2 plus a
-  `/new-designer/*` redirect that hands the code to the app), or print a form
-  that is honestly not a link. Do not print a URL that 404s.
+- That path form does not resolve today, but the storage it needs already
+  exists (see A2), so **make it resolve**: the `/api/design` function, plus a
+  `/new-designer/*` redirect in `netlify.toml` that hands the code to the app to
+  look up. Do not print a URL that 404s.
 
 `compose()` in `present.js` draws it; `presentContent()` in `app.js` builds the
 string.
