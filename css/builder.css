@@ -538,6 +538,38 @@ button { cursor: pointer; }
 }
 .nd-button-row .nd-button { flex: 1 1 auto; }
 
+/* Download / Upload / Start again are team tools, not customer ones, so they
+   read as secondary. Still a full tap target -- smaller type, not a smaller
+   button. */
+.nd-button.is-small {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: .78rem;
+  color: var(--nd-muted);
+}
+.nd-button-row-small { gap: 6px; margin-top: 2px; }
+
+/* The created link, with its copy button. */
+.nd-link-out {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.nd-link-url {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--nd-line-strong);
+  border-radius: var(--nd-radius);
+  background: var(--nd-panel);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .78rem;
+  /* The code is the part that matters; let the address wrap rather than clip. */
+  overflow-wrap: anywhere;
+}
+.nd-link-out .nd-button { flex: 0 0 auto; }
+
 /* Module list (Advanced). */
 .nd-search {
   width: 100%;
@@ -568,6 +600,9 @@ button { cursor: pointer; }
   background: var(--nd-accent-soft);
 }
 .nd-list-row b { flex: 1 1 auto; font-weight: 500; font-size: .9rem; }
+/* The colour sheet reuses these rows, so a swatch has to sit in one without
+   stretching the way it does in the field of four. */
+.nd-list-row .nd-swatch-chip { flex: 0 0 34px; width: 34px; height: 18px; }
 .nd-list-row small { color: var(--nd-muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
 /* Secondary detail on a row — set apart from the piece name so a spacing choice
    does not read as part of the product's name. */

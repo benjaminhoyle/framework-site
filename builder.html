@@ -12,7 +12,7 @@
          evaluated. Keep it out of search until it replaces one of them, so the
          two do not compete for the same queries. -->
     <meta name="robots" content="noindex">
-    <link rel="icon" href="images/global/fwk-icon-lg.png">
+    <link rel="icon" href="/images/global/fwk-icon-lg.png">
 
     <!-- Fonts and the app's own data are fetched from the same connections the
          rest of the site uses; preconnect so the handshake overlaps the parse. -->
@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="css/new-designer.css?v=39">
+    <link rel="stylesheet" href="/css/builder.css?v=54">
 
     <!--
       Nothing can render until the catalogue arrives, and the app's own scripts
@@ -35,9 +35,9 @@
         // with a stale catalogue silently loses whatever the catalogue gained,
         // which is exactly what a CDN or a browser cache will hand you a few
         // minutes after a deploy. Bump this whenever any of them changes.
-        window.frameworkDesignerVersion = '39';
+        window.frameworkDesignerVersion = '54';
         window.frameworkDesignerCatalog =
-            fetch('assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
+            fetch('/assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
                 .then(function (response) {
                     if (!response.ok) throw new Error('catalogue HTTP ' + response.status);
                     return response.json();
@@ -51,8 +51,8 @@
 <body>
     <div class="nd-app" id="nd-app" data-mode="simple" data-panel="open">
         <header class="nd-top">
-            <a class="nd-brand" href="index.html">
-                <img src="images/global/fwk-icon.png" alt="" width="28" height="28">
+            <a class="nd-brand" href="/index.html">
+                <img src="/images/global/fwk-icon.png" alt="" width="28" height="28">
                 <span>Shelf Designer</span>
             </a>
 
@@ -199,11 +199,11 @@
         </div>
     </div>
 
-    <script src="js/new-designer/engine.js?v=39" defer></script>
-    <script src="js/new-designer/geometry.js?v=39" defer></script>
-    <script src="js/new-designer/renderer.js?v=39" defer></script>
-    <script src="js/new-designer/present.js?v=39" defer></script>
-    <script src="js/new-designer/app.js?v=39" defer></script>
+    <script src="/js/builder/engine.js?v=54" defer></script>
+    <script src="/js/builder/geometry.js?v=54" defer></script>
+    <script src="/js/builder/renderer.js?v=54" defer></script>
+    <script src="/js/builder/present.js?v=54" defer></script>
+    <script src="/js/builder/app.js?v=54" defer></script>
 
     <!--
       Analytics loads after the designer is interactive. On a mid-range phone

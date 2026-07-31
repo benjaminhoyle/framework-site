@@ -4,7 +4,8 @@
   "private": true,
   "description": "Framework Designs static site + Netlify Functions (WS1 event lake collector).",
   "scripts": {
-    "test": "node scripts/test-whatsapp-links.js && node scripts/test-track-emitter.js"
+    "test": "node scripts/test-whatsapp-links.js && node scripts/test-track-emitter.js && node scripts/test-builder.mjs",
+    "dev": "node scripts/dev-builder.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^8.1.0"

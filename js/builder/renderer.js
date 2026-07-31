@@ -38,7 +38,10 @@ window.FrameworkDesignerRenderer = (function () {
   const ROLE_PAPER = 3;
   const ROLE_CORD = 4;
   const FOOT_COLOR = "#15181a";
-  const PAPER_COLOR = "#f6f1e6";
+  // A warm paper cream. The first pass was a near-grey off-white, which read as
+  // drab next to the finishes; this is the same lightness family with the hue
+  // pulled towards orange and rather more of it.
+  const PAPER_COLOR = "#fdf3e3";
   const CORD_COLOR = "#4c5254";
 
   const VERTEX_SHADER = [
@@ -94,6 +97,23 @@ window.FrameworkDesignerRenderer = (function () {
     return out;
   }
 
+  /**
+   * World point (mm) -> pixels, against an explicit camera and viewport.
+   *
+   * Taken as arguments rather than read off the live state because the share
+   * image projects through the snapshot's camera and size, which only exist
+   * inside snapshot().
+   */
+  function projectWith(clip, width, height, pointMm) {
+    const x = clip[0] * pointMm[0] + clip[4] * pointMm[1] + clip[8] * pointMm[2] + clip[12];
+    const y = clip[1] * pointMm[0] + clip[5] * pointMm[1] + clip[9] * pointMm[2] + clip[13];
+    // w is 1 under the orthographic camera and the perspective divide under the
+    // other, so this covers both.
+    const w = clip[3] * pointMm[0] + clip[7] * pointMm[1] + clip[11] * pointMm[2] + clip[15];
+    const divisor = Math.abs(w) > 1e-6 ? w : 1;
+    return { x: (x / divisor + 1) * 0.5 * width, y: (1 - y / divisor) * 0.5 * height };
+  }
+
   function hexToRgb(hex) {
     const value = parseInt(String(hex).replace("#", ""), 16);
     return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
@@ -127,6 +147,7 @@ window.FrameworkDesignerRenderer = (function () {
       instances: [],
       ghost: null,
       palette: null,
+      palettes: new Map(), // per-instance colour overrides, hex pair -> role map
       target: [500, 130, 400],
       halfHeight: 900,
       viewMode: "iso",
@@ -406,9 +427,34 @@ window.FrameworkDesignerRenderer = (function () {
     });
   }
 
+  /**
+   * The role -> colour table an instance paints with.
+   *
+   * The design's own palette unless the piece was given a colour of its own, in
+   * which case only steel and surface move: a rubber foot, a paper shade and a
+   * lamp flex are the colours of the materials themselves, not of the finish.
+   *
+   * Cached by the hex pair, because this runs once per instance per frame and a
+   * design rarely holds more than a handful of distinct colours.
+   */
+  function paletteFor(state, palette) {
+    if (!palette) return state.palette;
+    const key = `${palette.steel}|${palette.surface}`;
+    let resolved = state.palettes.get(key);
+    if (!resolved) {
+      resolved = Object.assign({}, state.palette, {
+        0: hexToRgb(palette.steel),
+        1: hexToRgb(palette.surface)
+      });
+      state.palettes.set(key, resolved);
+    }
+    return resolved;
+  }
+
   function drawBatches(state, camera, instance, geometry, batches, alpha, overrideColor) {
     const gl = state.gl;
     const mesh = state.meshProgram;
+    const palette = paletteFor(state, instance.palette);
     const model = modelMatrix(instance, geometry);
     const mvp = multiply(new Float32Array(16), camera.matrix, model);
 
@@ -420,7 +466,7 @@ window.FrameworkDesignerRenderer = (function () {
     gl.enableVertexAttribArray(mesh.attributes.normal);
 
     for (const batch of batches) {
-      const color = overrideColor || state.palette[batch.role] || state.palette[0];
+      const color = overrideColor || palette[batch.role] || palette[0];
       gl.uniform3fv(mesh.uniforms.color, color);
       gl.bindBuffer(gl.ARRAY_BUFFER, batch.positions);
       gl.vertexAttribPointer(mesh.attributes.position, 3, gl.UNSIGNED_SHORT, false, 0, 0);
@@ -498,6 +544,8 @@ window.FrameworkDesignerRenderer = (function () {
           [ROLE_PAPER]: hexToRgb(PAPER_COLOR),
           [ROLE_CORD]: hexToRgb(CORD_COLOR)
         };
+        // Per-instance palettes are derived from this one, so they go with it.
+        state.palettes.clear();
         state.ghostColor = hexToRgb(palette.ghost || "#2f8f6f");
         state.highlightColor = hexToRgb(palette.highlight || "#f0932b");
         requestFrame(state);
@@ -617,19 +665,59 @@ window.FrameworkDesignerRenderer = (function () {
       /** Project a world point (mm) to CSS pixels relative to the canvas. */
       project(pointMm) {
         const camera = state.camera || viewProjection(state);
-        const clip = camera.matrix;
-        const x = clip[0] * pointMm[0] + clip[4] * pointMm[1] + clip[8] * pointMm[2] + clip[12];
-        const y = clip[1] * pointMm[0] + clip[5] * pointMm[1] + clip[9] * pointMm[2] + clip[13];
-        // w is 1 under the orthographic camera and the perspective divide under
-        // the other, so this covers both.
-        const w = clip[3] * pointMm[0] + clip[7] * pointMm[1] + clip[11] * pointMm[2] + clip[15];
-        const divisor = Math.abs(w) > 1e-6 ? w : 1;
-        const width = state.cssWidth || state.width;
-        const height = state.cssHeight || state.height;
-        return { x: (x / divisor + 1) * 0.5 * width, y: (1 - y / divisor) * 0.5 * height };
+        return projectWith(camera.matrix, state.cssWidth || state.width, state.cssHeight || state.height, pointMm);
       },
 
       getViewMode: () => state.viewMode,
+
+      /**
+       * The world point of these instances that sits highest on screen.
+       *
+       * Bounding boxes cannot answer this. Under this camera the top of the
+       * picture is not the greatest z, and a lamp shows why twice over: its box
+       * is inflated by a shade that hangs out to one side and well below the
+       * arm, and even its true highest point -- the far end of the arm, over the
+       * shade -- is not what the eye reads as the top, because the elbow where
+       * the arm meets the post is nearer the viewer and so sits higher up the
+       * picture.
+       *
+       * The screen axes are linear in world position here, so this is a plain
+       * maximum over the vertices: no projection, and the answer holds at any
+       * pan or zoom. Callers pass one stack's worth of instances, which is a
+       * couple of thousand vertices.
+       */
+      highestOnScreen(instanceIds) {
+        const camera = state.camera || viewProjection(state);
+        const wanted = new Set(instanceIds);
+        const up = camera.up;
+        let best = null;
+        let bestHeight = -Infinity;
+        for (const instance of state.instances) {
+          if (!wanted.has(instance.id)) continue;
+          const geometry = state.geometry.get(instance.moduleId);
+          if (!geometry) continue;
+          // Dequantisation is folded into the model matrix, so the raw uint16
+          // vertex data reads here exactly as it does in the shader.
+          const m = modelMatrix(instance, geometry);
+          for (const batch of geometry.batches) {
+            const positions = batch.positions;
+            for (let i = 0; i < positions.length; i += 3) {
+              const vx = positions[i];
+              const vy = positions[i + 1];
+              const vz = positions[i + 2];
+              const x = m[0] * vx + m[4] * vy + m[8] * vz + m[12];
+              const y = m[1] * vx + m[5] * vy + m[9] * vz + m[13];
+              const z = m[2] * vx + m[6] * vy + m[10] * vz + m[14];
+              const height = up[0] * x + up[1] * y + up[2] * z;
+              if (height > bestHeight) {
+                bestHeight = height;
+                best = [x, y, z];
+              }
+            }
+          }
+        }
+        return best;
+      },
 
       /**
        * Draw one frame at an arbitrary size and hand back its pixels.
@@ -714,7 +802,15 @@ window.FrameworkDesignerRenderer = (function () {
         state.target = saved.target;
         state.halfHeight = saved.halfHeight;
         requestFrame(state);
-        return { width, height, pixels };
+        // The camera and size that framed these pixels are gone by the time the
+        // caller sees them, so hand back a projector holding on to both. It is
+        // what lets the share image put a dimension overlay over the snapshot.
+        return {
+          width,
+          height,
+          pixels,
+          project: (pointMm) => projectWith(camera.matrix, width, height, pointMm)
+        };
       },
 
       /**

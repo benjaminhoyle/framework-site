@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Build the /new-designer runtime assets from the shelving-3d-pipeline repo.
+ * Build the /builder runtime assets from the shelving-3d-pipeline repo.
  *
- *   node scripts/build-new-designer-assets.mjs [--pipeline /path/to/shelving-3d-pipeline]
+ *   node scripts/build-builder-assets.mjs [--pipeline /path/to/shelving-3d-pipeline]
  *
  * Produces:
  *   assets/shelving/catalog.json        module metadata + sockets + prices + finishes
@@ -268,9 +268,15 @@ function classifyPrimitive(bbox, moduleRole) {
  * the longest would collapse a 20mm-diameter, 400mm-long leg tube into a flat
  * ribbon. Parts that do not shrink much are left untouched, so shelf boards and
  * other already-simple geometry keep their exact shape.
+ *
+ * A square grid cannot, on its own, keep a round thing round -- see
+ * latheOf() and snapToShell() below, which put the tubes back on their circles.
  */
 const DECIMATE_MIN_TRIANGLES = 300;
 const DECIMATE_MIN_SAVING = 0.25;
+// What a part costs in the bundle: a vertex is 3 x uint16 of position plus
+// 4 x int8 of normal, and an index is a uint16.
+const bundleBytes = (vertices, indices) => vertices * 10 + indices * 2;
 // Cells across the shortest axis. Higher keeps rounder tubes and costs bytes.
 const DECIMATE_CELLS_ACROSS = 8;
 const DECIMATE_CELL_MIN_MM = 1.2;
@@ -282,6 +288,134 @@ const DECIMATE_CELL_MAX_MM = 6;
 // comparing surface area before and after catches it without having to measure
 // thickness. A faceted tube loses a few percent; a welded shell loses a third.
 const DECIMATE_MIN_AREA_KEPT = 0.82;
+/*
+ * Putting a decimated tube back on its circle.
+ *
+ * The legs are lathed at roughly 500 segments around and two rings tall, so all
+ * of their redundancy is circumferential -- and a square grid is the wrong tool
+ * for reducing a circle. At a 2.5mm cell across a 20mm leg, each surviving
+ * vertex is the average of the arc that happened to fall in its cell, and how
+ * far that average sits inside the true circle depends on where the cell edges
+ * cut the arc. The radii came out between 7.9mm and 10.6mm on a 10mm tube: not a
+ * lower-poly leg but a visibly dented one, which is the broken faceted seam down
+ * the front of a compact base.
+ *
+ * Regular is what matters here, not fine: a 20-sided leg reads as round at any
+ * zoom this tool offers, provided all twenty sides are the same. So after
+ * decimating, push each wall vertex back out to the mean radius of its own ring.
+ * Same idea as cylindricalNormals(), which already does this for the shading.
+ *
+ * Detected from the source, where a lathed section is exactly circular, and
+ * applied ring by ring so a tube that genuinely changes radius over its length
+ * keeps doing so.
+ */
+const LATHE_BIN_MM = 0.05; // radii this close together are the same shell
+const LATHE_MIN_SHELL_SHARE = 0.02; // a shell holds at least 2% of the vertices
+const LATHE_MIN_COVERAGE = 0.9; // and between them they account for the part
+const LATHE_SECTORS = 16; // a round outline reaches most of the way round
+const LATHE_MIN_SECTORS = 13;
+/*
+ * Two things go wrong when a square grid meets a turned part, and both are
+ * fixed by knowing which shell each vertex belongs to.
+ *
+ * A leg is a pipe: 514 vertices at 10.00mm and 514 at 8.50mm. At a 2.5mm cell
+ * the grid welds the two walls together wherever a cell straddles them, and
+ * separately dents each circle, because how far a cell's average falls inside
+ * the true arc depends on where the cell edges cut it. The radii came out
+ * between 7.9mm and 10.6mm on a 10mm tube: not a lower-poly leg but a visibly
+ * dented one, which is the broken faceted seam down the front of a compact base.
+ *
+ * So the shell goes into the cell key -- an inner-wall vertex and an outer-wall
+ * one are never the same point, however coarse the grid -- and afterwards each
+ * surviving vertex is pushed back out to its own shell's exact radius.
+ *
+ * Keeping the walls apart does mean keeping both, where welding them used to
+ * throw one away, so everything inside the outer shell is decimated far harder.
+ * Only the outer shell is ever looked at: the inside of a leg is visible, if at
+ * all, down an open tube end a few pixels across, and the two walls are separate
+ * surfaces with no triangles between them. That is what stops this costing a
+ * third of the payload.
+ */
+const LATHE_INNER_COARSENING = 3;
+
+/**
+ * Is this part turned on a lathe, and about which axis?
+ *
+ * Returns the axis, the section centre and the exact radii it is built from --
+ * a leg comes back as two shells at 10.00mm and 8.50mm, 514 vertices each. Read
+ * from the source, where those numbers are still exact.
+ */
+function latheOf(positions) {
+  const bounds = boundsOf(positions);
+  const count = positions.length / 3;
+  for (let axis = 0; axis < 3; axis += 1) {
+    const [u, v] = [(axis + 1) % 3, (axis + 2) % 3];
+    const spanU = bounds[u + 3] - bounds[u];
+    const spanV = bounds[v + 3] - bounds[v];
+    // A round section is square in its own bounding box.
+    if (spanU < 1 || spanV < 1 || Math.abs(spanU - spanV) > spanU * 0.05) continue;
+    const centreU = (bounds[u] + bounds[u + 3]) / 2;
+    const centreV = (bounds[v] + bounds[v + 3]) / 2;
+
+    const shells = new Map();
+    const sectors = new Set();
+    const outer = spanU / 2;
+    for (let i = 0; i < positions.length; i += 3) {
+      const du = positions[i + u] - centreU;
+      const dv = positions[i + v] - centreV;
+      const radius = Math.hypot(du, dv);
+      const bin = Math.round(radius / LATHE_BIN_MM);
+      shells.set(bin, (shells.get(bin) || 0) + 1);
+      if (radius > outer * 0.98) {
+        sectors.add(Math.floor(((Math.atan2(dv, du) + Math.PI) / (Math.PI * 2)) * LATHE_SECTORS));
+      }
+    }
+    // A square post would sit in one bin per corner distance and reach only
+    // four sectors; a turned one reaches most of the way round.
+    if (sectors.size < LATHE_MIN_SECTORS) continue;
+
+    const radii = [...shells.entries()]
+      .filter(([, n]) => n >= count * LATHE_MIN_SHELL_SHARE)
+      .map(([bin, n]) => ({ radius: bin * LATHE_BIN_MM, count: n }))
+      .sort((a, b) => a.radius - b.radius);
+    const covered = radii.reduce((sum, shell) => sum + shell.count, 0);
+    if (covered < count * LATHE_MIN_COVERAGE) continue;
+    if (!radii.length || radii[radii.length - 1].radius < outer * 0.9) continue;
+
+    return { axis, u, v, centreU, centreV, radii: radii.map((shell) => shell.radius) };
+  }
+  return null;
+}
+
+/** Which shell a vertex sits on: the index of the radius nearest to it. */
+function shellIndex(lathe, positions, vertex) {
+  const du = positions[vertex * 3 + lathe.u] - lathe.centreU;
+  const dv = positions[vertex * 3 + lathe.v] - lathe.centreV;
+  const radius = Math.hypot(du, dv);
+  let best = 0;
+  for (let i = 1; i < lathe.radii.length; i += 1) {
+    if (Math.abs(lathe.radii[i] - radius) < Math.abs(lathe.radii[best] - radius)) best = i;
+  }
+  return best;
+}
+
+/**
+ * Put one decimated vertex back on its circle: it keeps the angle and the
+ * position along the axis that the averaging gave it, and takes its shell's
+ * exact radius.
+ *
+ * Regular is what matters here, not fine. A twenty-sided leg reads as round at
+ * every zoom this tool offers, as long as all twenty sides are the same.
+ */
+function snapToShell(positions, index, lathe, shell) {
+  const du = positions[index * 3 + lathe.u] - lathe.centreU;
+  const dv = positions[index * 3 + lathe.v] - lathe.centreV;
+  const radius = Math.hypot(du, dv);
+  if (radius < 1e-6) return; // on the axis: a cap centre, with no angle to keep
+  const scale = lathe.radii[shell] / radius;
+  positions[index * 3 + lathe.u] = lathe.centreU + du * scale;
+  positions[index * 3 + lathe.v] = lathe.centreV + dv * scale;
+}
 
 function surfaceArea(positions, indices) {
   let area = 0;
@@ -344,8 +478,12 @@ function recomputeNormals(positions, indices) {
 function decimate(positions, normals, indices) {
   const bounds = boundsOf(positions);
   const extents = [bounds[3] - bounds[0], bounds[4] - bounds[1], bounds[5] - bounds[2]];
+  if (!extents.some((value) => value > 0.01)) return null;
+
   const shortest = Math.min(...extents.filter((value) => value > 0.01));
   if (!Number.isFinite(shortest) || shortest <= 0) return null;
+  // Worked out from the source, where a lathed section is still exactly round.
+  const lathe = latheOf(positions);
   const cell = Math.min(
     DECIMATE_CELL_MAX_MM,
     Math.max(DECIMATE_CELL_MIN_MM, shortest / DECIMATE_CELLS_ACROSS)
@@ -354,10 +492,15 @@ function decimate(positions, normals, indices) {
   const cells = new Map();
   const vertexCell = new Uint32Array(positions.length / 3);
   for (let i = 0; i < positions.length / 3; i += 1) {
-    const key = `${Math.floor((positions[i * 3] - bounds[0]) / cell)},${Math.floor((positions[i * 3 + 1] - bounds[1]) / cell)},${Math.floor((positions[i * 3 + 2] - bounds[2]) / cell)}`;
+    // The shell is part of the key, so a pipe's two walls can never collapse
+    // into one point however coarse the grid is -- and an inner wall, which is
+    // barely ever seen, gets a much coarser grid than the outer one.
+    const shell = lathe ? shellIndex(lathe, positions, i) : 0;
+    const size = lathe && shell < lathe.radii.length - 1 ? cell * LATHE_INNER_COARSENING : cell;
+    const key = `${Math.floor((positions[i * 3] - bounds[0]) / size)},${Math.floor((positions[i * 3 + 1] - bounds[1]) / size)},${Math.floor((positions[i * 3 + 2] - bounds[2]) / size)},${shell}`;
     let entry = cells.get(key);
     if (!entry) {
-      entry = { index: cells.size, position: [0, 0, 0], count: 0 };
+      entry = { index: cells.size, position: [0, 0, 0], count: 0, shell };
       cells.set(key, entry);
     }
     entry.position[0] += positions[i * 3];
@@ -371,6 +514,8 @@ function decimate(positions, normals, indices) {
   for (const entry of cells.values()) {
     for (let axis = 0; axis < 3; axis += 1) outPositions[entry.index * 3 + axis] = entry.position[axis] / entry.count;
   }
+  // The grid has just dented every circle in this part; put them back.
+  if (lathe) for (const entry of cells.values()) snapToShell(outPositions, entry.index, lathe, entry.shell);
 
   const outIndices = [];
   const seen = new Set();
@@ -385,7 +530,12 @@ function decimate(positions, normals, indices) {
     outIndices.push(a, b, c);
   }
   if (!outIndices.length) return null;
-  if (outIndices.length / indices.length > 1 - DECIMATE_MIN_SAVING) return null;
+  // Measured in bytes, not triangles. A tube wall loses most of its vertices
+  // while keeping nearly all of its triangles, and at 10 bytes a vertex against
+  // 6 a triangle that is still half the part -- counting triangles alone rejected
+  // exactly the legs this is for, at 77% of the triangles for 39% of the size.
+  if (bundleBytes(cells.size, outIndices.length) / bundleBytes(positions.length / 3, indices.length)
+      > 1 - DECIMATE_MIN_SAVING) return null;
 
   const decimatedIndices = Uint32Array.from(outIndices);
   const areaKept = surfaceArea(outPositions, decimatedIndices) / (surfaceArea(positions, indices) || 1);
@@ -552,6 +702,15 @@ function cylinderPart(role, centreX, centreY, z0, z1, radius, segments) {
 }
 
 const LAMP_FLEX_DIAMETER_MM = 5;
+// How far off the cord's axis a steel vertex still counts as "the arm directly
+// above the cord". The end fitting the cord runs up into is a ~19mm tube, so
+// its wall vertices sit about 10mm out; anything under that finds nothing at
+// all. Measured min z is stable from 10mm right out to 30mm, so 14 has margin
+// on both sides.
+const LAMP_FLEX_REACH_MM = 14;
+// How far the cord carries on up inside the arm once it has met it, so the two
+// read as joined rather than as two surfaces touching exactly.
+const LAMP_FLEX_OVERLAP_MM = 8;
 
 /**
  * The lamp's flex: the pipeline model has the shade hanging in mid-air below the
@@ -580,21 +739,48 @@ function lampFlexPart(parts, instances, placementBounds) {
   const centreX = (shade[0] + shade[3]) / 2;
   const centreY = (shade[1] + shade[4]) / 2;
 
-  // Where it meets the arm: the lowest steel geometry the shade's axis passes
-  // through, so the cord stops at the arm rather than inside or beyond it.
+  // Where it meets the arm: the lowest steel *vertex* near the cord's axis.
+  //
+  // Bounding boxes are no good for this. The obvious reading -- the floor of the
+  // lowest steel box the axis passes through -- lands on the arm, which is one
+  // long part running from the upright out over the shade and sloping as it
+  // goes. Its box floor is 19mm below where its underside actually is above the
+  // cord, and the cord stopped short by exactly that, which is the gap that was
+  // visible between the two.
+  let stubZ = null;
   instances.forEach((instance, index) => {
-    const bounds = placementBounds[index];
-    if (parts[instance.part].role !== ROLE_STEEL) return;
-    if (bounds[5] < shade[5]) return; // not above the shade
-    if (centreX < bounds[0] || centreX > bounds[3]) return; // axis misses it
-    if (centreY < bounds[1] || centreY > bounds[4]) return;
-    if (!stub || bounds[2] < stub[2]) stub = bounds.slice();
+    const part = parts[instance.part];
+    if (part.role !== ROLE_STEEL) return;
+    if (placementBounds[index][5] < shade[5]) return; // not above the shade
+    const matrix = instance.matrix || instance.m;
+    for (let vertex = 0; vertex < part.vertexCount; vertex += 1) {
+      const [x, y, z] = transformPoint(
+        matrix.length === 12 ? threeByFourToMatrix(matrix) : matrix,
+        part.positions[vertex * 3], part.positions[vertex * 3 + 1], part.positions[vertex * 3 + 2]
+      );
+      if (z <= shade[5]) continue; // level with the shade or below it
+      if (Math.hypot(x - centreX, y - centreY) > LAMP_FLEX_REACH_MM) continue;
+      if (stubZ === null || z < stubZ) stubZ = z;
+    }
   });
+  // Nothing found near the axis means the lamp is not the shape this expects;
+  // fall back to the box reading rather than dropping the cord altogether.
+  if (stubZ === null) {
+    instances.forEach((instance, index) => {
+      const bounds = placementBounds[index];
+      if (parts[instance.part].role !== ROLE_STEEL) return;
+      if (bounds[5] < shade[5]) return;
+      if (centreX < bounds[0] || centreX > bounds[3]) return;
+      if (centreY < bounds[1] || centreY > bounds[4]) return;
+      if (!stub || bounds[2] < stub[2]) stub = bounds.slice();
+    });
+    stubZ = stub ? stub[2] : shade[5] + 120;
+  }
 
   // Start above the shade's mid-height: high enough to read as a cord
   // disappearing into the shade rather than a rod propping it up.
   const z0 = shade[2] + (shade[5] - shade[2]) * 0.72;
-  const z1 = (stub ? stub[2] : shade[5] + 120) + 8;
+  const z1 = stubZ + LAMP_FLEX_OVERLAP_MM;
   if (z1 <= z0) return null;
   return cylinderPart(ROLE_CORD, centreX, centreY, z0, z1, LAMP_FLEX_DIAMETER_MM / 2, 10);
 }
@@ -1016,7 +1202,7 @@ function buildCatalog(pipeline, builtModules, rotationShifts) {
   }
 
   return {
-    schema: "framework-new-designer-catalog@1",
+    schema: "framework-builder-catalog@1",
     generatedAt: new Date().toISOString().slice(0, 10),
     units: "millimetres",
     currency: prices.currency || "KSh",

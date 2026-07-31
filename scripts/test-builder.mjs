@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Engine + asset tests for /new-designer.
+ * Engine + asset tests for /builder.
  *
- *   node scripts/test-new-designer.mjs
+ *   node scripts/test-builder.mjs
  *
- * The fixtures in scripts/fixtures/new-designer/ are the shelving pipeline's
+ * The fixtures in scripts/fixtures/builder/ are the shelving pipeline's
  * own golden configs (generated/validation/configs), so a placement rule that
  * drifts away from what the Rhino/Blender pipeline considers buildable fails
  * here rather than on a customer's phone.
@@ -18,13 +18,13 @@ import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const engine = require(path.join(ROOT, "js/new-designer/engine.js"));
+const engine = require(path.join(ROOT, "js/builder/engine.js"));
 
 const catalog = engine.normalizeCatalog(
   JSON.parse(fs.readFileSync(path.join(ROOT, "assets/shelving/catalog.json"), "utf8"))
 );
 
-const FIXTURES = path.join(ROOT, "scripts/fixtures/new-designer");
+const FIXTURES = path.join(ROOT, "scripts/fixtures/builder");
 // This fixture exists in the pipeline precisely because it is illegal: two
 // accessories fight over one support socket.
 const EXPECTED_INVALID = new Set(["wacky-deep-accessory-stack"]);
@@ -33,6 +33,17 @@ let failures = 0;
 function test(name, fn) {
   try {
     fn();
+    console.log(`  ok  ${name}`);
+  } catch (error) {
+    failures += 1;
+    console.error(`FAIL  ${name}\n      ${error.message}`);
+  }
+}
+
+/** Same, for the handler tests, which have to await a Response. */
+async function asyncTest(name, fn) {
+  try {
+    await fn();
     console.log(`  ok  ${name}`);
   } catch (error) {
     failures += 1;
@@ -272,8 +283,163 @@ test("candidate generation stays fast on a large design", () => {
   console.log(`      (${state.instances.length} modules, ${ids.length}-module sweep in ${elapsed}ms)`);
 });
 
+/**
+ * The legs, posts and rails are lathed tubes, and the decimation grid used to
+ * leave them 19% out of round -- 8.6mm to 10.6mm on a 10mm tube, which reads as
+ * a broken faceted seam down the front of a unit rather than as a low-poly leg.
+ * Regular matters more than fine here, so this asserts the shape, not the count.
+ */
+test("round parts come out round", () => {
+  const decode = (text, Type) => {
+    const bytes = Buffer.from(text, "base64");
+    return new Type(bytes.buffer, bytes.byteOffset, bytes.byteLength / Type.BYTES_PER_ELEMENT);
+  };
+  let worst = { spread: 0, where: "none" };
+  for (const id of Object.keys(catalog.modules)) {
+    const bundle = JSON.parse(fs.readFileSync(path.join(ROOT, "assets/shelving/modules", `${id}.json`), "utf8"));
+    bundle.parts.forEach((part, index) => {
+      const positions = decode(part.positions, Uint16Array);
+      const points = [];
+      const box = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+      for (let i = 0; i < part.vertexCount; i += 1) {
+        const point = [0, 1, 2].map((axis) => positions[i * 3 + axis] * part.scale + part.offset[axis]);
+        points.push(point);
+        for (let axis = 0; axis < 3; axis += 1) {
+          if (point[axis] < box[axis]) box[axis] = point[axis];
+          if (point[axis] > box[axis + 3]) box[axis + 3] = point[axis];
+        }
+      }
+      // Upright, slim, and square in plan: a leg, a post or a rail.
+      const extent = [0, 1, 2].map((axis) => box[axis + 3] - box[axis]);
+      if (!(extent[2] > 60 && extent[0] < 60 && extent[1] < 60)) return;
+      if (Math.abs(extent[0] - extent[1]) > extent[0] * 0.06) return;
+
+      const centreX = (box[0] + box[3]) / 2;
+      const centreY = (box[1] + box[4]) / 2;
+      const outer = extent[0] / 2;
+      // The outer shell only: a tube's inner wall is deliberately much coarser.
+      const radii = points
+        .map((point) => Math.hypot(point[0] - centreX, point[1] - centreY))
+        .filter((radius) => radius > outer * 0.9);
+      if (radii.length < 8) return;
+      const spread = (Math.max(...radii) - Math.min(...radii)) / Math.max(...radii);
+      if (spread > worst.spread) worst = { spread, where: `${id} part${index}` };
+    });
+  }
+  assert.ok(worst.spread < 0.05, `${worst.where} is ${(worst.spread * 100).toFixed(1)}% out of round`);
+  console.log(`      (worst round part is ${(worst.spread * 100).toFixed(2)}% out: ${worst.where})`);
+});
+
+test("a piece keeps a colour of its own through every rebuild", () => {
+  let state = engine.createState(catalog, { finish: "sage" });
+  state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, "standard_base")[0]);
+  state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, "standard_extension")[0]);
+  const [base, extension] = state.instances;
+
+  const tinted = engine.setInstanceFinish(catalog, state, extension.id, "marine");
+  assert.ok(tinted, "colouring a piece must not make the design illegal");
+  assert.equal(tinted.instances[1].finish, "marine");
+  assert.equal(tinted.instances[0].finish, null, "only the named piece changes");
+
+  // The rebuilds every other edit goes through must carry it.
+  const rotated = engine.rotateInstance(catalog, tinted, base.id, 180) || tinted;
+  assert.equal(rotated.instances[1].finish, "marine", "lost through a rotation");
+  const roundTrip = engine.deserializeState(catalog, JSON.parse(JSON.stringify(engine.serializeState(tinted))));
+  assert.equal(roundTrip.instances[1].finish, "marine", "lost through serialisation");
+
+  // And "match the rest" has to actually clear it.
+  const cleared = engine.setInstanceFinish(catalog, tinted, extension.id, null);
+  assert.equal(cleared.instances[1].finish, null);
+  assert.ok(!("finish" in engine.serializeState(cleared).instances[1]), "a plain piece serialises with no finish key");
+});
+
+// ---------------------------------------------------------------------------
+// /api/design — the saved-design store behind framework.co.ke/builder/CODE
+//
+// The handler is run for real, with Netlify Blobs swapped for a Map. Its import
+// is stripped the way test-track-emitter.js runs site.js's emitter: the point is
+// to exercise the shipped code, not a copy of it.
+
+async function designHandler() {
+  const source = fs.readFileSync(path.join(ROOT, "netlify/functions/design.js"), "utf8")
+    // The Blobs import and the route declaration are the deployment's business;
+    // everything between them is the logic under test.
+    .replace(/^import \{ getStore \} from '@netlify\/blobs';$/m, "")
+    .replace(/^export const config = .*$/m, "")
+    // `export default` cannot be re-exported from a wrapper, so name it.
+    .replace("export default async (req, context) =>", "const handler = async (req, context) =>");
+
+  const blobs = new Map();
+  const getStore = () => ({
+    get: async (key, options) => {
+      if (!blobs.has(key)) return null;
+      return options && options.type === "json" ? JSON.parse(blobs.get(key)) : blobs.get(key);
+    },
+    setJSON: async (key, value) => { blobs.set(key, JSON.stringify(value)); }
+  });
+
+  const wrapper = `export const make = (getStore) => {${source}\nreturn handler;};`;
+  const built = await import(`data:text/javascript;base64,${Buffer.from(wrapper).toString("base64")}`);
+  return { handler: built.make(getStore), blobs };
+}
+
+const DESIGN = { schemaVersion: 1, finish: "sage", bookends: 0, instances: [] };
+
+await asyncTest("/api/design rejects anything that is not a design code", async () => {
+  const { handler } = await designHandler();
+  assert.equal((await handler(new Request("https://x/api/design?code=nope"))).status, 400);
+  assert.equal((await handler(new Request("https://x/api/design"))).status, 400);
+  assert.equal((await handler(new Request("https://x/api/design", { method: "PUT" }))).status, 405);
+});
+
+await asyncTest("/api/design stores a design and resolves its code again", async () => {
+  const { handler } = await designHandler();
+  const post = await handler(new Request("https://x/api/design", {
+    method: "POST",
+    body: JSON.stringify({ code: "1Y3MK7P", hash: "WzEs", design: DESIGN, mode: "advanced", pieces: 3 })
+  }), {});
+  assert.equal(post.status, 200);
+  assert.equal((await post.json()).code, "1Y3MK7P");
+
+  const get = await handler(new Request("https://x/api/design?code=1y3mk7p"));
+  assert.equal(get.status, 200);
+  const body = await get.json();
+  assert.equal(body.hash, "WzEs", "the hash is what the page reads back");
+  assert.equal(body.mode, "advanced");
+  assert.deepEqual(body.design, DESIGN);
+});
+
+await asyncTest("/api/design never overwrites a code that already exists", async () => {
+  const { handler, blobs } = await designHandler();
+  const write = (referrer) => handler(new Request("https://x/api/design", {
+    method: "POST",
+    body: JSON.stringify({ code: "AAAAAAA", hash: "h", design: DESIGN, referrer })
+  }), {});
+  await write("https://first.example");
+  const second = await write("https://second.example");
+  assert.equal((await second.json()).deduped, true);
+  // The code is a hash of the design, so a repeat POST is the same shelf; the
+  // arrival details of whoever saved it first are the ones worth keeping.
+  assert.equal(JSON.parse(blobs.get("AAAAAAA")).referrer, "https://first.example");
+});
+
+await asyncTest("/api/design says not found rather than inventing a design", async () => {
+  const { handler } = await designHandler();
+  const missing = await handler(new Request("https://x/api/design?code=ZZZZZZZ"));
+  assert.equal(missing.status, 404);
+  assert.equal((await missing.json()).ok, false);
+});
+
+await asyncTest("/api/design refuses a body with no design in it", async () => {
+  const { handler } = await designHandler();
+  const bad = await handler(new Request("https://x/api/design", {
+    method: "POST", body: JSON.stringify({ code: "1Y3MK7P", hash: "h" })
+  }), {});
+  assert.equal(bad.status, 422);
+});
+
 if (failures) {
   console.error(`\n${failures} failing test${failures === 1 ? "" : "s"}`);
   process.exit(1);
 }
-console.log("\nall new-designer tests passed");
+console.log("\nall builder tests passed");

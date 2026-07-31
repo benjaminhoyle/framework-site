@@ -1,5 +1,5 @@
 /**
- * Loader for module geometry bundles (see scripts/build-new-designer-assets.mjs).
+ * Loader for module geometry bundles (see scripts/build-builder-assets.mjs).
  *
  * A bundle stores each distinct sub-mesh once plus a list of placements, which
  * is how the Rhino models were authored (four legs = one mesh, four

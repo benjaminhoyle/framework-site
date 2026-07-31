@@ -24,10 +24,22 @@
   const rendererFactory = window.FrameworkDesignerRenderer;
 
   // Set by the page; see the note there about keeping every asset on one version.
+  // Root-absolute, not relative: a saved design is served at
+  // /builder/<CODE>, one level down, where "assets/..." would resolve
+  // inside that directory and 404.
   const ASSET_VERSION = window.frameworkDesignerVersion || "";
-  const CATALOG_URL = `assets/shelving/catalog.json?v=${ASSET_VERSION}`;
-  const MODULE_BASE_URL = "assets/shelving/modules";
+  const CATALOG_URL = `/assets/shelving/catalog.json?v=${ASSET_VERSION}`;
+  const MODULE_BASE_URL = "/assets/shelving/modules";
   const WHATSAPP_PHONE = "254783891005";
+
+  /*
+   * Where a saved design lives. Written on the share image and handed out by
+   * "Create link", so it is the production address rather than whatever host
+   * the page happens to be served from -- an image shared from a preview build
+   * still has to point somewhere a client can reach.
+   */
+  const DESIGN_LINK_HOME = "framework.co.ke/builder";
+  const DESIGN_API = "/api/design";
 
   const MODES = ["simple", "standard", "advanced"];
 
@@ -65,7 +77,38 @@
   const STEEL_GAIN = 1.26;
 
   function currentFinish() {
-    return ui.catalog.finishes.find((entry) => entry.id === ui.design.finish) || ui.catalog.finishes[0];
+    return finishById(ui.design.finish);
+  }
+
+  function finishById(id) {
+    return ui.catalog.finishes.find((entry) => entry.id === id) || ui.catalog.finishes[0];
+  }
+
+  /** The scaled hexes the shader wants, for one finish. */
+  function shaderPalette(finish) {
+    return {
+      surface: scaleHex(finish.builder.surface, SURFACE_GAIN),
+      steel: scaleHex(finish.builder.steel, STEEL_GAIN)
+    };
+  }
+
+  /**
+   * Every finish actually on screen, the design's first.
+   *
+   * Used wherever the colour has to be named rather than shown -- the share
+   * image and the WhatsApp order -- because with per-piece colours "Sage" alone
+   * would be a half-truth.
+   */
+  function finishesInUse() {
+    const ids = [ui.design.finish];
+    for (const instance of ui.design.instances) {
+      if (instance.finish && ids.indexOf(instance.finish) < 0) ids.push(instance.finish);
+    }
+    return ids.map(finishById);
+  }
+
+  function finishLabel() {
+    return finishesInUse().map((finish) => finish.displayName).join(" & ");
   }
 
   function scaleHex(hex, gain) {
@@ -183,6 +226,7 @@
     simple: { family: "standard", width: 1, levels: 2, lamp: false },
     search: "",
     actionMenu: null,
+    savedCode: null, // the last design given a link, so the panel can show it again
     onModalDismiss: null,
     hintTimer: 0,
     dimensionsOn: false,
@@ -288,6 +332,12 @@
     }
     applyMode(ui.mode, { silent: true });
     refresh({ fit: true });
+
+    // A hash in the URL is the live state and always wins; a code in the path is
+    // only consulted when there is no hash, which is the case for the link off a
+    // share image. Resolving it is a round trip, so the shelf above is already
+    // on screen by the time this lands.
+    if (!restored && savedCodeInPath()) loadSavedDesign(savedCodeInPath());
   }
 
   // ------------------------------------------------------------ design state --
@@ -334,11 +384,15 @@
       setHint("That does not fit here.", true);
       return false;
     }
+    const settings = options || {};
     pushHistory();
     ui.design = nextDesign;
-    ui.selectedId = null;
+    // An edit normally means the piece is done with. Colour is the exception:
+    // people try two or three before settling, and closing the menu each time
+    // means finding the piece again.
+    if (!settings.keepSelection) ui.selectedId = null;
     ui.activeModuleId = null;
-    refresh(options || {});
+    refresh(settings);
     return true;
   }
 
@@ -564,7 +618,10 @@
       // does, otherwise a rotated piece and its sockets would disagree.
       pivotMm: [instance.translation[0] + pivot[0], instance.translation[1] + pivot[1]],
       boundsMm: engine.instanceBounds(ui.catalog, instance),
-      highlight: instance.id === ui.selectedId
+      highlight: instance.id === ui.selectedId,
+      // Null for almost every piece, which is what tells the renderer to use the
+      // design's own palette rather than build a second one.
+      palette: instance.finish ? shaderPalette(finishById(instance.finish)) : null
     };
   }
 
@@ -649,6 +706,11 @@
   const DIM_OVERSHOOT_PX = 7; // witness line past the dimension line
   const DIM_LABEL_PX = 13; // dimension line -> the number
   const DIM_TICK_PX = 5;
+  // Matches .nd-dim-text in the stylesheet, which is where the live overlay gets
+  // it. Needed here too because the share image draws the same numbers onto a
+  // canvas, where there is no CSS -- and because everything in the overlay has
+  // to scale together, or the numbers crowd the lines they belong to.
+  const DIM_FONT_PX = 11.5;
 
   // Width and depth run along an edge of the envelope. Height does not: a run of
   // units of different heights has no single height, so heights are called out
@@ -668,30 +730,44 @@
     return node;
   }
 
-  /** Unit screen vector for a world axis, under the current camera. */
-  function axisScreenDirection(axis) {
-    const origin = ui.renderer.project([0, 0, 0]);
+  /** Unit screen vector for a world axis, under the given projection. */
+  function axisScreenDirection(axis, project) {
+    const origin = project([0, 0, 0]);
     const tip = [0, 0, 0];
     tip[axis] = 1000;
-    const end = ui.renderer.project(tip);
+    const end = project(tip);
     const dx = end.x - origin.x;
     const dy = end.y - origin.y;
     const length = Math.hypot(dx, dy) || 1;
     return { x: dx / length, y: dy / length };
   }
 
-  function drawDimensions() {
-    if (!ui.dimensionsSvg) return;
-    const svg = ui.dimensionsSvg;
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
-    const bounds = ui.dimensionsOn && !isPerspective() ? shelfBounds() : null;
-    if (!bounds) return;
+  /**
+   * The whole overlay as plain screen geometry: line segments and numbers, in
+   * the pixel space of whatever projected them.
+   *
+   * Built once and drawn twice, through two different cameras. The live overlay
+   * follows the viewport's pan and zoom; the share image re-frames the design
+   * into its own box and is a different size again. Taking the projector as an
+   * argument is what lets the second one reuse all of this rather than
+   * re-deriving it.
+   *
+   * `scale` multiplies every offset. They are in screen pixels so the drawing
+   * keeps its proportions at any zoom, but the share image is a large canvas
+   * that gets looked at small, so it asks for the whole overlay bigger.
+   */
+  function dimensionGeometry(project, scale) {
+    const lines = [];
+    const labels = [];
+    const bounds = shelfBounds();
+    if (!bounds) return { lines, labels };
 
-    const width = dom.stage.clientWidth;
-    const height = dom.stage.clientHeight;
-    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    svg.setAttribute("width", width);
-    svg.setAttribute("height", height);
+    const size = scale || 1;
+    const gapPx = DIM_GAP_PX * size;
+    const offsetPx = DIM_OFFSET_PX * size;
+    const overshootPx = DIM_OVERSHOOT_PX * size;
+    const labelPx = DIM_LABEL_PX * size;
+    const tickPx = DIM_TICK_PX * size;
 
     for (const spec of DIMENSION_SPECS) {
       const from = [0, 0, 0];
@@ -706,55 +782,78 @@
       const valueMm = bounds[spec.axis + 3] - bounds[spec.axis];
       if (valueMm < 20) continue;
 
-      const screenFrom = ui.renderer.project(from);
-      const screenTo = ui.renderer.project(to);
-      const raw = axisScreenDirection(spec.offsetAxis);
+      const screenFrom = project(from);
+      const screenTo = project(to);
+      const raw = axisScreenDirection(spec.offsetAxis, project);
       const dir = { x: raw.x * spec.sign, y: raw.y * spec.sign };
       const along = {
         x: (screenTo.x - screenFrom.x) / (Math.hypot(screenTo.x - screenFrom.x, screenTo.y - screenFrom.y) || 1),
         y: (screenTo.y - screenFrom.y) / (Math.hypot(screenTo.x - screenFrom.x, screenTo.y - screenFrom.y) || 1)
       };
 
-      const lineFrom = { x: screenFrom.x + dir.x * DIM_OFFSET_PX, y: screenFrom.y + dir.y * DIM_OFFSET_PX };
-      const lineTo = { x: screenTo.x + dir.x * DIM_OFFSET_PX, y: screenTo.y + dir.y * DIM_OFFSET_PX };
+      const lineFrom = { x: screenFrom.x + dir.x * offsetPx, y: screenFrom.y + dir.y * offsetPx };
+      const lineTo = { x: screenTo.x + dir.x * offsetPx, y: screenTo.y + dir.y * offsetPx };
 
       for (const end of [screenFrom, screenTo]) {
-        svg.appendChild(svgNode("line", {
-          class: "nd-dim-witness",
-          x1: end.x + dir.x * DIM_GAP_PX,
-          y1: end.y + dir.y * DIM_GAP_PX,
-          x2: end.x + dir.x * (DIM_OFFSET_PX + DIM_OVERSHOOT_PX),
-          y2: end.y + dir.y * (DIM_OFFSET_PX + DIM_OVERSHOOT_PX)
-        }));
+        lines.push({
+          witness: true,
+          x1: end.x + dir.x * gapPx,
+          y1: end.y + dir.y * gapPx,
+          x2: end.x + dir.x * (offsetPx + overshootPx),
+          y2: end.y + dir.y * (offsetPx + overshootPx)
+        });
       }
-      svg.appendChild(svgNode("line", {
-        class: "nd-dim-line", x1: lineFrom.x, y1: lineFrom.y, x2: lineTo.x, y2: lineTo.y
-      }));
+      lines.push({ x1: lineFrom.x, y1: lineFrom.y, x2: lineTo.x, y2: lineTo.y });
       // Slanted ticks at each end, the drafting convention, instead of arrows:
       // they stay legible at one pixel wide on a phone.
       for (const [end, direction] of [[lineFrom, 1], [lineTo, -1]]) {
-        svg.appendChild(svgNode("line", {
-          class: "nd-dim-line",
-          x1: end.x - (along.x * direction - dir.x) * DIM_TICK_PX,
-          y1: end.y - (along.y * direction - dir.y) * DIM_TICK_PX,
-          x2: end.x + (along.x * direction - dir.x) * DIM_TICK_PX,
-          y2: end.y + (along.y * direction - dir.y) * DIM_TICK_PX
-        }));
+        lines.push({
+          x1: end.x - (along.x * direction - dir.x) * tickPx,
+          y1: end.y - (along.y * direction - dir.y) * tickPx,
+          x2: end.x + (along.x * direction - dir.x) * tickPx,
+          y2: end.y + (along.y * direction - dir.y) * tickPx
+        });
       }
 
       const mid = { x: (lineFrom.x + lineTo.x) / 2, y: (lineFrom.y + lineTo.y) / 2 };
-      svg.appendChild(dimensionLabel(mid.x + dir.x * DIM_LABEL_PX, mid.y + dir.y * DIM_LABEL_PX, valueMm));
+      labels.push({
+        x: mid.x + dir.x * labelPx,
+        y: mid.y + dir.y * labelPx,
+        text: `${mmToCm(valueMm)} cm`
+      });
     }
 
-    drawHeightCallouts(svg);
+    addHeightCallouts(lines, labels, project, size);
+    return { lines, labels, fontPx: DIM_FONT_PX * size };
   }
 
-  function dimensionLabel(x, y, valueMm) {
-    const label = svgNode("text", {
-      class: "nd-dim-text", x, y, "text-anchor": "middle", "dominant-baseline": "middle"
-    });
-    label.textContent = `${mmToCm(valueMm)} cm`;
-    return label;
+  function drawDimensions() {
+    if (!ui.dimensionsSvg) return;
+    const svg = ui.dimensionsSvg;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    if (!ui.dimensionsOn || isPerspective()) return;
+
+    const width = dom.stage.clientWidth;
+    const height = dom.stage.clientHeight;
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", width);
+    svg.setAttribute("height", height);
+
+    const { lines, labels } = dimensionGeometry(ui.renderer.project);
+    for (const line of lines) {
+      svg.appendChild(svgNode("line", {
+        class: line.witness ? "nd-dim-witness" : "nd-dim-line",
+        x1: line.x1, y1: line.y1, x2: line.x2, y2: line.y2
+      }));
+    }
+    for (const label of labels) {
+      const node = svgNode("text", {
+        class: "nd-dim-text", x: label.x, y: label.y,
+        "text-anchor": "middle", "dominant-baseline": "middle"
+      });
+      node.textContent = label.text;
+      svg.appendChild(node);
+    }
   }
 
   /**
@@ -766,11 +865,15 @@
    * callout, so a symmetric run reads as one number rather than four.
    *
    * A lamp counts towards the height, because it genuinely is how tall the thing
-   * is. The arrow is still anchored over the centre of the *unit*, not of the
-   * unit-plus-lamp: a lamp pivots out to one side, and following it would drag
-   * the callout off the piece it is measuring.
+   * is -- and when one is what makes a stack tall, the arrow moves onto the lamp
+   * so that it touches the thing the number is measuring. Over the unit's centre
+   * it did not: the centre column runs up through the shade, which hangs a long
+   * way below the arm, so the arrow stopped in mid-air short of the top.
+   *
+   * Without a lamp nothing rises above the unit and the arrow stays where it
+   * was, centred over the stack and pointing down at its top surface.
    */
-  function drawHeightCallouts(svg) {
+  function addHeightCallouts(lines, labels, project, scale) {
     const { groups } = engine.stacksOf(ui.design);
     const byHeight = new Map();
     groups.forEach((ids) => {
@@ -785,6 +888,12 @@
       if (!existing || centreX < existing.centreX) {
         byHeight.set(key, {
           valueMm,
+          // Only the pieces standing above the unit -- a lamp -- and only when
+          // there are any. They are what the arrow has to reach.
+          aboveIds: full[5] > unit[5] + 1
+            ? ids.filter((id) => ui.catalog.modules[ui.design.instances
+              .find((instance) => instance.id === id).moduleId].role === "lamp")
+            : [],
           centreX,
           centreY: (unit[1] + unit[4]) / 2,
           topZ: full[5]
@@ -792,30 +901,41 @@
       }
     });
 
-    const up = axisScreenDirection(2);
-    const stageTop = 0;
+    const size = scale || 1;
+    const tailPx = CALLOUT_TAIL_PX * size;
+    const headPx = CALLOUT_HEAD_PX * size;
+    const arrowPx = CALLOUT_ARROW_PX * size;
+    const up = axisScreenDirection(2, project);
     for (const stack of byHeight.values()) {
-      const top = ui.renderer.project([stack.centreX, stack.centreY, stack.topZ]);
-      // Shorten the tail rather than let the number ride up out of the viewport.
-      const room = Math.max(0, top.y - (stageTop + 24));
-      const tailLength = Math.min(CALLOUT_TAIL_PX, 12 + room);
+      const centre = [stack.centreX, stack.centreY, stack.topZ];
+      const top = project(
+        (stack.aboveIds.length && ui.renderer.highestOnScreen(stack.aboveIds)) || centre
+      );
+      // Shorten the tail rather than let the number ride up out of the view.
+      // The number is what has to stay inside, so the room it needs is measured
+      // to the top of the type, not to the end of the arrow -- reserving only
+      // the arrow's length is what let a callout on a wide design, where the
+      // model reaches nearly to the frame, put its number above the frame edge.
+      const labelRoom = (DIM_LABEL_PX + DIM_FONT_PX) * size;
+      const tailLength = Math.min(tailPx, Math.max(headPx + 2, top.y - labelRoom));
       const tail = { x: top.x + up.x * tailLength, y: top.y + up.y * tailLength };
-      const head = { x: top.x + up.x * CALLOUT_HEAD_PX, y: top.y + up.y * CALLOUT_HEAD_PX };
-      svg.appendChild(svgNode("line", {
-        class: "nd-dim-line", x1: tail.x, y1: tail.y, x2: head.x, y2: head.y
-      }));
+      const head = { x: top.x + up.x * headPx, y: top.y + up.y * headPx };
+      lines.push({ x1: tail.x, y1: tail.y, x2: head.x, y2: head.y });
       // Arrowhead at the model end.
       const side = { x: -up.y, y: up.x };
-      const back = { x: head.x + up.x * CALLOUT_ARROW_PX * 1.6, y: head.y + up.y * CALLOUT_ARROW_PX * 1.6 };
+      const back = { x: head.x + up.x * arrowPx * 1.6, y: head.y + up.y * arrowPx * 1.6 };
       for (const sign of [1, -1]) {
-        svg.appendChild(svgNode("line", {
-          class: "nd-dim-line",
+        lines.push({
           x1: head.x, y1: head.y,
-          x2: back.x + side.x * CALLOUT_ARROW_PX * sign,
-          y2: back.y + side.y * CALLOUT_ARROW_PX * sign
-        }));
+          x2: back.x + side.x * arrowPx * sign,
+          y2: back.y + side.y * arrowPx * sign
+        });
       }
-      svg.appendChild(dimensionLabel(tail.x + up.x * DIM_LABEL_PX, tail.y + up.y * DIM_LABEL_PX, stack.valueMm));
+      labels.push({
+        x: tail.x + up.x * DIM_LABEL_PX * size,
+        y: tail.y + up.y * DIM_LABEL_PX * size,
+        text: `${mmToCm(stack.valueMm)} cm`
+      });
     }
   }
 
@@ -1221,6 +1341,17 @@
       });
       menu.appendChild(rotate);
     }
+    // Not four swatches inline: the menu is a floating popout anchored on a
+    // piece and has to stay thumb-sized. A single entry opening the picker sheet
+    // is the shape that already fits.
+    const colour = make("button", null, "Colour");
+    colour.type = "button";
+    colour.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openPicker(`Colour of this ${moduleLabel(ui.catalog.modules[instance.moduleId])}`, finishOptions(instance));
+    });
+    menu.appendChild(colour);
+
     if (canRemove) {
       const remove = make("button", "is-danger", "Remove");
       remove.type = "button";
@@ -1400,6 +1531,42 @@
     return Array.from(byModule.values());
   }
 
+  /**
+   * The colour rows for one piece: "Match the rest" first, then every finish.
+   *
+   * The design's own colour is offered explicitly as well as through "Match the
+   * rest", and the two are not the same thing -- a piece pinned to Sage stays
+   * Sage when the design moves to Marine, which is the whole point of an
+   * override.
+   */
+  function finishOptions(instance) {
+    const options = [{
+      label: "Match the rest",
+      note: currentFinish().displayName,
+      hidePrice: true,
+      selected: !instance.finish,
+      onPick: () => setPieceFinish(instance.id, null)
+    }];
+    for (const finish of ui.catalog.finishes) {
+      options.push({
+        label: finish.displayName,
+        hidePrice: true,
+        swatch: finish.builder,
+        selected: instance.finish === finish.id,
+        onPick: () => setPieceFinish(instance.id, finish.id)
+      });
+    }
+    return options;
+  }
+
+  function setPieceFinish(instanceId, finishId) {
+    const next = engine.setInstanceFinish(ui.catalog, ui.design, instanceId, finishId);
+    if (!next) return;
+    // Keep the piece selected: picking a colour is the sort of thing people do
+    // twice before settling, and losing the menu each time is a nuisance.
+    commit(next, { keepSelection: true });
+  }
+
   function swapGroup(role) {
     if (role === "base") return "base";
     if (["extension", "spacer", "hanger"].indexOf(role) >= 0) return "shelf";
@@ -1437,21 +1604,37 @@
     if (!list) return;
     clear(list);
     const needle = String(query || "").trim().toLowerCase();
+    // Rows are not always modules -- the colour sheet uses the same list -- so
+    // everything about the module is optional from here down.
     const matches = options.filter((option) => {
       if (!needle) return true;
-      const haystack = `${option.module.id} ${option.label || moduleLabel(option.module)} ${option.module.family || ""} ${option.module.role}`;
+      const module = option.module;
+      const haystack = module
+        ? `${module.id} ${option.label || moduleLabel(module)} ${module.family || ""} ${module.role}`
+        : String(option.label || "");
       return haystack.toLowerCase().indexOf(needle) >= 0;
     });
     if (!matches.length) {
-      list.appendChild(make("p", "nd-list-empty", "No matching pieces."));
+      list.appendChild(make("p", "nd-list-empty", "Nothing matches."));
       return;
     }
     for (const option of matches) {
       const row = make("button", "nd-list-row");
       row.type = "button";
+      if (option.selected) row.setAttribute("aria-pressed", "true");
+      if (option.swatch) {
+        const chip = make("span", "nd-swatch-chip");
+        const steel = make("span");
+        steel.style.background = option.swatch.steel;
+        const surface = make("span");
+        surface.style.background = option.swatch.surface;
+        chip.appendChild(steel);
+        chip.appendChild(surface);
+        row.appendChild(chip);
+      }
       row.appendChild(make("b", null, option.label || moduleLabel(option.module)));
       if (option.note) row.appendChild(make("small", "nd-list-note", option.note));
-      if (!option.hidePrice) {
+      if (!option.hidePrice && option.module) {
         row.appendChild(make("small", null, option.module.priceKsh != null ? formatKsh(option.module.priceKsh) : "on request"));
       }
       row.addEventListener("click", () => {
@@ -1588,21 +1771,39 @@
   function whatsappUrl(total) {
     const { lines } = priceBreakdown();
     const parts = lines.map((line) => `${line.quantity} x ${line.label}`);
-    const finish = (ui.catalog.finishes.find((entry) => entry.id === ui.design.finish) || {}).displayName || ui.design.finish;
     const size = sizeLabel();
     const message = [
       "Hi Framework! I designed a shelf and would like to order it.",
       "",
       `Pieces: ${parts.join(", ")}`,
-      `Colour: ${finish}`,
+      `Colour: ${currentFinish().displayName}`,
+      // An order that quietly dropped the pieces painted differently would be
+      // built in the wrong colours, so they are spelled out piece by piece.
+      exceptionColourLine(),
       size ? `Size: ${size} (width x depth x height)` : null,
       `Total: ${formatKsh(total)}`,
       "",
       `My design: ${shareUrl()}`
-      // Only drop the size line when there is no size; the empty strings above
-      // are deliberate blank lines in the WhatsApp message.
+      // Only drop the size and colour-exception lines when there is nothing to
+      // say; the empty strings above are deliberate blank lines in the message.
     ].filter((line) => line !== null).join("\n");
     return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+  }
+
+  /** "Except: 2 x Standard Extension in Marine", or null when nothing differs. */
+  function exceptionColourLine() {
+    const counts = new Map();
+    for (const instance of ui.design.instances) {
+      if (!instance.finish || instance.finish === ui.design.finish) continue;
+      const key = `${instance.moduleId}|${instance.finish}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    if (!counts.size) return null;
+    const parts = Array.from(counts.keys()).sort().map((key) => {
+      const [moduleId, finishId] = key.split("|");
+      return `${counts.get(key)} x ${moduleLabel(ui.catalog.modules[moduleId])} in ${finishById(finishId).displayName}`;
+    });
+    return `Except: ${parts.join(", ")}`;
   }
 
   // ------------------------------------------------------------- present --
@@ -1615,7 +1816,16 @@
    * offers "copy image" and "save", which is what actually gets a design into a
    * WhatsApp conversation. A download would land in Files and need finding again.
    */
-  const PRESENT_LOGO_SRC = "images/global/fwk-icon.png";
+  const PRESENT_LOGO_SRC = "/images/global/fwk-icon.png";
+  // The image is a 1080-wide canvas that gets looked at phone-sized, so the whole
+  // dimension overlay is drawn larger there than in the viewport, where it sits
+  // at arm's length on a stage of about the same width. One factor for all of
+  // it -- offsets, arrows and numbers together -- because scaling the offsets
+  // alone left the numbers sitting on top of their own tick marks. The padding
+  // is what keeps the height callout, which reaches highest, inside the art box
+  // rather than clipped by its top edge.
+  const PRESENT_DIMENSION_SCALE = 2;
+  const PRESENT_DIMENSION_PADDING = 1.5;
   let presentLogo = null;
 
   function loadPresentLogo() {
@@ -1653,10 +1863,12 @@
 
   function presentContent() {
     const breakdown = priceBreakdown();
-    const finish = currentFinish();
     return {
       sizeLabel: sizeLabel(),
-      finishName: finish ? finish.displayName : null,
+      // Every colour on the shelf, not just the design's: with a piece painted
+      // differently, naming one of them would be a half-truth about a picture
+      // the client can see.
+      finishName: finishLabel(),
       totalLabel: formatKsh(breakdown.total),
       totalNote: breakdown.unpriced
         ? `VAT inclusive · ${breakdown.unpriced} piece${breakdown.unpriced === 1 ? "" : "s"} quoted separately`
@@ -1664,27 +1876,59 @@
       lines: breakdown.lines.map((line) => ({
         label: line.label,
         quantity: line.quantity,
-        amount: line.amount == null ? null : formatKsh(line.amount)
+        // The unit price: the list runs in two columns for a long design, where
+        // there is no room for a line total as well, and the unit price is the
+        // one a client asks about.
+        amount: line.amount == null ? null : formatKsh(line.amount / line.quantity)
       })),
       code: designCode(),
-      codeUrl: `framework.co.ke/new-designer · ${designCode()}`
+      codeHome: `${DESIGN_LINK_HOME}/`
     };
   }
 
   function openPresent() {
     if (!ui.design.instances.length) return;
     dom.present.disabled = true;
+
+    // The image prints framework.co.ke/builder/<code>, so the design has to
+    // exist under that code by the time anyone types it in. Saving here rather
+    // than only behind Advanced's "Create link" is what keeps that address from
+    // being one that 404s. It runs alongside the composition: the picture is
+    // worth having even if the save does not land.
+    saveDesign()
+      .then((code) => { ui.savedCode = code; })
+      .catch((error) => console.warn("could not save the design behind the image:", error.message));
+
     loadPresentLogo().then((logo) => {
       try {
         const composer = window.FrameworkDesignerPresent;
+        const withDimensions = ui.dimensionsOn && !isPerspective();
         // Snapshot at the art box's own aspect, at 2x for a crisp downscale.
+        // Dimensions hang outside the model, so they need the shelf pulled in
+        // further -- the same trade the viewport makes while they are showing.
         const snapshot = ui.renderer.snapshot({
           width: composer.WIDTH * 2,
           height: composer.ART_HEIGHT * 2,
           boundsMm: engine.designBounds(ui.catalog, ui.design),
-          padding: 1.14
+          padding: withDimensions ? PRESENT_DIMENSION_PADDING : 1.14
         });
-        const canvas = composer.compose(snapshot, presentContent(), logo);
+        const content = presentContent();
+        // The overlay follows the viewport's toggle. It is drawn, not
+        // photographed: the live one is SVG over the canvas, and the snapshot is
+        // the WebGL layer alone. Projecting through the snapshot's own camera and
+        // then through the art box's placement gives the composer coordinates in
+        // the finished image, so it never has to know about either.
+        if (withDimensions) {
+          const art = composer.artTransform(snapshot);
+          content.dimensions = dimensionGeometry(
+            (pointMm) => {
+              const point = snapshot.project(pointMm);
+              return { x: point.x * art.scale + art.offsetX, y: point.y * art.scale + art.offsetY };
+            },
+            PRESENT_DIMENSION_SCALE
+          );
+        }
+        const canvas = composer.compose(snapshot, content, logo);
         dom.presentImage.src = canvas.toDataURL("image/png");
         dom.presentModal.hidden = false;
         track("designer_present", { mode: ui.mode, view: ui.renderer.getViewMode() });
@@ -1713,6 +1957,11 @@
     const types = [];
     const typeIndex = new Map();
     const idIndex = new Map();
+    // Colours of individual pieces, in their own table. Almost every design has
+    // none, and a row only carries an index when it has one, so the common case
+    // encodes to exactly what it did before per-piece colour existed.
+    const tints = [];
+    const tintIndex = new Map();
     ui.design.instances.forEach((instance, index) => idIndex.set(instance.id, index));
 
     const rows = ui.design.instances.map((instance) => {
@@ -1722,7 +1971,7 @@
       }
       const on = instance.placement && instance.placement.on;
       const supports = on ? (Array.isArray(on) ? on : [on]) : [];
-      return [
+      const row = [
         typeIndex.get(instance.moduleId),
         Math.round(instance.originWorldMm[0]),
         Math.round(instance.originWorldMm[1]),
@@ -1730,14 +1979,32 @@
         instance.placement && instance.placement.method === "socket" ? 1 : 0,
         supports.map((id) => idIndex.get(id)).filter((index) => index != null)
       ];
+      if (instance.finish) {
+        if (!tintIndex.has(instance.finish)) {
+          tintIndex.set(instance.finish, tints.length);
+          tints.push(instance.finish);
+        }
+        // One-based, so a present-but-zero index cannot be mistaken for absent.
+        row.push(tintIndex.get(instance.finish) + 1);
+      }
+      return row;
     });
-    return toBase64Url(JSON.stringify([1, ui.mode, ui.design.finish, ui.design.bookends || 0, types, rows]));
+    const payload = [1, ui.mode, ui.design.finish, ui.design.bookends || 0, types, rows];
+    if (tints.length) payload.push(tints);
+    return toBase64Url(JSON.stringify(payload));
   }
 
+  /**
+   * Still schema 1. The colour table is appended rather than versioned in: a
+   * link written before it existed decodes here unchanged, and a link written
+   * with it decodes in the deployed version too, just without the colours. A
+   * design link that half-works beats one that refuses to open.
+   */
   function decodeDesign(encoded) {
     const payload = JSON.parse(fromBase64Url(encoded));
     if (!Array.isArray(payload) || payload[0] !== 1) throw new Error("unsupported design link");
     const [, mode, finish, bookends, types, rows] = payload;
+    const tints = payload[6] || [];
     const instances = rows.map((row, index) => ({
       id: `item_${String(index + 1).padStart(3, "0")}`,
       type: types[row[0]],
@@ -1745,7 +2012,8 @@
       rotationDeg: row[3] || 0,
       placement: row[4]
         ? { method: "socket", on: (row[5] || []).map((support) => `item_${String(support + 1).padStart(3, "0")}`) }
-        : { method: "floor" }
+        : { method: "floor" },
+      finish: row[6] ? (tints[row[6] - 1] || null) : null
     }));
     return {
       mode: MODES.indexOf(mode) >= 0 ? mode : "simple",
@@ -1778,6 +2046,108 @@
       setHint("That design link could not be read, so we started a new shelf.", true);
       return null;
     }
+  }
+
+  // ---------------------------------------------------------- saved designs --
+
+  /*
+   * A design saved server-side under its own code, so that
+   * framework.co.ke/builder/1Y3MK7P -- the address printed on every share
+   * image -- opens the shelf it names. The full URL hash still carries a design
+   * on its own and needs nothing stored; this is for the short form, which is
+   * the one that survives being read off a picture.
+   *
+   * The code comes from designCode(): a hash of the design itself, so saving the
+   * same shelf twice is the same record rather than two.
+   */
+  const SAVED_CODE_RE = /^\/builder\/([0-9A-Za-z]{7})\/?$/;
+
+  function savedCodeInPath() {
+    const match = SAVED_CODE_RE.exec(location.pathname);
+    return match ? match[1].toUpperCase() : null;
+  }
+
+  function designLink(code) {
+    return `https://${DESIGN_LINK_HOME}/${code}`;
+  }
+
+  /** Where the design came from, for the record. No PII: the page has none. */
+  function arrivalDetails() {
+    const params = new URLSearchParams(location.search);
+    const ad = {};
+    for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_content", "ad_id", "fbclid", "gclid"]) {
+      const value = params.get(key);
+      if (value) ad[key] = value;
+    }
+    let sessionId = null;
+    try {
+      sessionId = sessionStorage.getItem("nd_session");
+      if (!sessionId) {
+        sessionId = (window.crypto && window.crypto.randomUUID)
+          ? window.crypto.randomUUID()
+          : `s_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+        sessionStorage.setItem("nd_session", sessionId);
+      }
+    } catch (error) {
+      /* private browsing can refuse storage; the record is still worth writing */
+    }
+    return {
+      session_id: sessionId,
+      referrer: document.referrer || null,
+      ad,
+      language: navigator.language || null,
+      viewport: `${window.innerWidth}x${window.innerHeight}`
+    };
+  }
+
+  function saveDesign() {
+    const breakdown = priceBreakdown();
+    return fetch(DESIGN_API, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(Object.assign({
+        code: designCode(),
+        hash: encodeDesign(),
+        design: engine.serializeState(ui.design),
+        mode: ui.mode,
+        finish: ui.design.finish,
+        pieces: ui.design.instances.length,
+        total_ksh: breakdown.total
+      }, arrivalDetails()))
+    }).then((response) => response.json().then((body) => {
+      if (!response.ok || !body.ok) throw new Error(body.error || `HTTP ${response.status}`);
+      return body.code;
+    }));
+  }
+
+  function loadSavedDesign(code) {
+    setBusy(true);
+    fetch(`${DESIGN_API}?code=${encodeURIComponent(code)}`)
+      .then((response) => response.json().then((body) => {
+        if (!response.ok || !body.ok) throw new Error(body.error || `HTTP ${response.status}`);
+        return body;
+      }))
+      .then((body) => {
+        // The hash is the form the page reads natively; the serialised design is
+        // the fallback for a record written before the hash was stored.
+        const restored = body.hash
+          ? Object.assign(decodeDesign(body.hash), {})
+          : { mode: body.mode || "simple", design: engine.deserializeState(ui.catalog, body.design) };
+        ui.mode = MODES.indexOf(restored.mode) >= 0 ? restored.mode : ui.mode;
+        ui.design = restored.design;
+        ui.simple = deriveSimpleSpec(ui.design);
+        ui.history.length = 0;
+        ui.future.length = 0;
+        updateHistoryButtons();
+        applyMode(ui.mode, { silent: true });
+        refresh({ fit: true });
+      })
+      .catch((error) => {
+        console.warn("could not open the saved design:", error.message);
+        setHint(`Design ${code} could not be opened, so we started a new shelf.`, true);
+      })
+      // Not plain false: refresh() may have geometry still in flight behind this.
+      .then(() => setBusy(ui.pendingModules.size > 0));
   }
 
   // ----------------------------------------------------------------- panels --
@@ -1978,14 +2348,18 @@
     body.appendChild(bookendField());
     body.appendChild(breakdownSection());
 
-    const actions = make("div", "nd-button-row");
-    const save = make("button", "nd-button", "Save design");
+    body.appendChild(linkField());
+
+    // Download and Upload are for us, not for customers -- they move a design as
+    // a file between a phone and the workshop -- so they sit small and last.
+    const actions = make("div", "nd-button-row nd-button-row-small");
+    const save = make("button", "nd-button is-small", "Download");
     save.type = "button";
     save.addEventListener("click", saveDesignFile);
-    const load = make("button", "nd-button", "Load design");
+    const load = make("button", "nd-button is-small", "Upload");
     load.type = "button";
     load.addEventListener("click", () => fileInput.click());
-    const reset = make("button", "nd-button", "Start again");
+    const reset = make("button", "nd-button is-small", "Start again");
     reset.type = "button";
     reset.addEventListener("click", () => {
       if (!ui.design.instances.length) return;
@@ -1997,6 +2371,83 @@
     body.appendChild(actions);
 
     renderModuleList();
+  }
+
+  /**
+   * "Create link to design": stores the design and hands back its short address,
+   * the same one the share image prints. Deliberately an explicit action rather
+   * than something that happens on every edit -- a design is only worth a record
+   * once someone means to pass it on.
+   */
+  function linkField() {
+    const field = make("div", "nd-field");
+    field.appendChild(make("span", "nd-label", "Link to this design"));
+
+    const row = make("div", "nd-button-row");
+    const create = make("button", "nd-button is-primary", "Create link to design");
+    create.type = "button";
+    const output = make("div", "nd-link-out");
+    output.hidden = true;
+
+    const show = (code) => {
+      clear(output);
+      const url = designLink(code);
+      const address = make("code", "nd-link-url", url);
+      const copy = make("button", "nd-button is-small", "Copy");
+      copy.type = "button";
+      copy.addEventListener("click", () => {
+        const done = () => {
+          copy.textContent = "Copied";
+          window.setTimeout(() => { copy.textContent = "Copy"; }, 2000);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(done, () => setHint("Copying was blocked — select the link instead.", true));
+        } else {
+          // Older Android WebViews have no async clipboard; select it so a
+          // long-press "copy" works on what is already highlighted.
+          const range = document.createRange();
+          range.selectNodeContents(address);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+          done();
+        }
+      });
+      output.appendChild(address);
+      output.appendChild(copy);
+      output.hidden = false;
+      ui.savedCode = code;
+    };
+
+    create.addEventListener("click", () => {
+      if (!ui.design.instances.length) {
+        setHint("Add a unit first — there is nothing to link to yet.");
+        return;
+      }
+      create.disabled = true;
+      create.textContent = "Creating…";
+      saveDesign()
+        .then((code) => {
+          show(code);
+          track("designer_link", { mode: ui.mode, pieces: ui.design.instances.length });
+        })
+        .catch((error) => {
+          console.warn("could not create the link:", error.message);
+          setHint("The link could not be created. Check your connection and try again.", true);
+        })
+        .then(() => {
+          create.disabled = false;
+          create.textContent = "Create link to design";
+        });
+    });
+
+    row.appendChild(create);
+    field.appendChild(row);
+    field.appendChild(output);
+    // A design edited since its link was made has a different code, so the old
+    // link no longer describes what is on screen. Say so rather than imply it.
+    if (ui.savedCode && ui.savedCode === designCode()) show(ui.savedCode);
+    return field;
   }
 
   function renderModuleList() {
@@ -2135,11 +2586,7 @@
     const settings = options || {};
     computeCandidateCache();
 
-    const finish = currentFinish();
-    ui.renderer.setPalette({
-      surface: scaleHex(finish.builder.surface, SURFACE_GAIN),
-      steel: scaleHex(finish.builder.steel, STEEL_GAIN)
-    });
+    ui.renderer.setPalette(shaderPalette(currentFinish()));
 
     const needed = Array.from(new Set(ui.design.instances.map((instance) => instance.moduleId)));
     ensureGeometry(needed);

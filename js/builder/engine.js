@@ -3,7 +3,7 @@
  *
  * Pure logic: no DOM, no WebGL. Ported from the desktop builder's core
  * (shelving-3d-pipeline/app/js/shelving-builder-v2-core.js), which is validated
- * against the Python pipeline's golden configs; scripts/test-new-designer.mjs
+ * against the Python pipeline's golden configs; scripts/test-builder.mjs
  * re-runs those same fixtures against this copy.
  *
  * Two things are new here, both for the website:
@@ -328,7 +328,12 @@
       rotationDeg: (fields && fields.rotationDeg) || 0,
       supportPlaneZ,
       consumedSockets,
-      placement
+      placement,
+      // A colour of its own, overriding the design's. Null means "match the
+      // rest", which is what almost every piece is. Nothing about placement
+      // depends on it -- it rides along so that a piece keeps its colour through
+      // a rebuild, an undo, or a share link.
+      finish: (fields && fields.finish) || null
     };
   }
 
@@ -836,13 +841,19 @@
       schemaVersion: 1,
       finish: state.finish || "sage",
       bookends: state.bookends || 0,
-      instances: state.instances.map((instance) => ({
-        id: instance.id,
-        type: instance.moduleId,
-        originWorldMm: instance.originWorldMm,
-        rotationDeg: instance.rotationDeg || 0,
-        placement: instance.placement
-      }))
+      instances: state.instances.map((instance) => {
+        const spec = {
+          id: instance.id,
+          type: instance.moduleId,
+          originWorldMm: instance.originWorldMm,
+          rotationDeg: instance.rotationDeg || 0,
+          placement: instance.placement
+        };
+        // Only when it has one, so an ordinary design serialises exactly as it
+        // did before per-piece colour existed.
+        if (instance.finish) spec.finish = instance.finish;
+        return spec;
+      })
     };
   }
 
@@ -859,7 +870,8 @@
       state = addInstance(catalog, state, instance.type, x, y, {
         id: instance.id,
         placement,
-        rotationDeg: instance.rotationDeg || 0
+        rotationDeg: instance.rotationDeg || 0,
+        finish: instance.finish || null
       });
     }
     return state;
@@ -873,6 +885,25 @@
   function replaceInstance(catalog, state, instanceId, moduleId) {
     const specs = serializeState(state).instances.map((spec) =>
       spec.id === instanceId ? Object.assign({}, spec, { type: moduleId }) : spec);
+    return rebuild(catalog, state, specs);
+  }
+
+  /**
+   * Give one piece a colour of its own, or `null` to put it back to the
+   * design's.
+   *
+   * Routed through the same rebuild as rotation and replacement even though a
+   * colour cannot make an assembly illegal: one path in means there is one place
+   * for an instance's fields to survive, and no second way for them to be lost.
+   */
+  function setInstanceFinish(catalog, state, instanceId, finishId) {
+    const specs = serializeState(state).instances.map((spec) => {
+      if (spec.id !== instanceId) return spec;
+      const next = Object.assign({}, spec);
+      if (finishId) next.finish = finishId;
+      else delete next.finish;
+      return next;
+    });
     return rebuild(catalog, state, specs);
   }
 
@@ -956,6 +987,7 @@
     rotateInstance,
     rotationKeepsSockets,
     serializeState,
+    setInstanceFinish,
     stacksOf,
     validateAddition,
     validateState

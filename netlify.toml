@@ -24,16 +24,40 @@
   status = 200
 
 [[redirects]]
-  from = "/new-designer"
-  to = "/new-designer.html"
+  from = "/builder"
+  to = "/builder.html"
   status = 200
 
-# --- /new-designer runtime assets ------------------------------------------
-# The geometry bundles are content-built by
-# scripts/build-new-designer-assets.mjs and only change when the Rhino pipeline
-# does, so they can be cached hard. They are JSON (not raw binary) specifically
-# so Netlify's edge brotli applies -- application/octet-stream is served
-# uncompressed, which quadrupled the download.
+# A saved design: /builder/1Y3MK7P. The page is served unchanged and reads the
+# code off its own path, then resolves it through /api/design. The URL stays as
+# typed, which is the point -- it is what the share image prints.
+# (This is why the page's assets are referenced from the site root: at this depth
+# a relative "css/..." would resolve inside /builder/.)
+[[redirects]]
+  from = "/builder/*"
+  to = "/builder.html"
+  status = 200
+
+# The page was at /new-designer while it was being evaluated, and those links are
+# in WhatsApp threads with a design in the URL fragment. 301 rather than a
+# rewrite so the address corrects itself, and the fragment rides along untouched
+# because the browser reapplies it after the redirect -- which is the whole
+# design, so this cannot be dropped without breaking shelves people already have.
+[[redirects]]
+  from = "/new-designer"
+  to = "/builder"
+  status = 301
+
+[[redirects]]
+  from = "/new-designer/*"
+  to = "/builder/:splat"
+  status = 301
+
+# --- /builder runtime assets -----------------------------------------------
+# The geometry bundles are content-built by scripts/build-builder-assets.mjs and
+# only change when the Rhino pipeline does, so they can be cached hard. They are
+# JSON (not raw binary) specifically so Netlify's edge brotli applies --
+# application/octet-stream is served uncompressed, which quadrupled the download.
 [[headers]]
   for = "/assets/shelving/modules/*"
   [headers.values]
