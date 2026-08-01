@@ -31,6 +31,26 @@ does not always list the full one — a compact unit is only sold as
 whichever variant has a price, preferring the untrimmed one. Advanced offers
 everything and keeps the "(Trimmed)" suffix so the two can be told apart.
 
+### Corners
+
+A run can turn. Standard and Advanced offer a **Turn a corner here** button at
+either end of any run; taking it starts a second run at right angles to the
+first, and everything stacked on it is turned to match, because a turned base
+presents a turned socket rectangle and only a turned extension meets it. That is
+`/designer`'s rule — a corner extension belongs on a corner base of the same
+orientation — arrived at through the sockets rather than by matching a suffix.
+
+The **corner unit** is the piece meant to sit at the join. It is an ordinary
+straight unit whose shelf is about a shelf board longer than a standard one, and
+that extra length is exactly what covers the square where the two runs meet. So
+the turn is placed against the first run's *shelf*: its back flush with that
+shelf's far edge, its near end meeting that shelf's front edge. Measured on the
+boards, not the bounding boxes — the boxes carry foot pads that hang 10mm past
+the frame, and placing against those leaves a visible notch in the corner.
+
+Simple has no corners: it builds one plain run, and a run of corner units is not
+a thing anyone wants.
+
 ### Switching down to Simple
 
 Simple can only express a plain run, so entering it rebuilds the shelf from the
@@ -48,12 +68,12 @@ js/builder/renderer.js    minimal WebGL renderer (no three.js)
 js/builder/present.js     composes the share image
 js/builder/app.js         the three interfaces
 netlify/functions/design.js    /api/design — saved designs, by short code
+assets/shelving/builder-contract.json  the pipeline's handoff, vendored (below)
 assets/shelving/catalog.json   module metadata, sockets, prices, finishes
 assets/shelving/modules/*.json geometry, one bundle per module
 scripts/build-builder-assets.mjs
 scripts/dev-builder.mjs        local server, with the rewrites and the function
 scripts/test-builder.mjs
-scripts/fixtures/builder/ the pipeline's golden configs, as test fixtures
 ```
 
 ## Working on it
@@ -89,25 +109,53 @@ loses whatever the catalogue gained, which is what a CDN hands you minutes after
 a deploy. Use the script rather than editing by hand — a search-and-replace for
 the old number also rewrote two SVG path commands that contained it.
 
+## Where the geometry comes from
+
+Rhino, through the `shelving-3d-pipeline` repo beside this one. Its
+`docs/pipeline-spec.md` is the account of that chain; what matters here is the
+seam.
+
+`assets/shelving/builder-contract.json` is **generated there and checked in
+here**. It carries the modules, sockets, prices, finishes, vocabulary and the
+pipeline's own golden validation configs, plus the SHA of the Rhino export it
+was built from and the fillet/chamfer parameters applied to the geometry. Every
+consequence of that is deliberate:
+
+- this repo builds and tests with no pipeline checkout present,
+- `build-builder-assets.mjs` parses JSON instead of string-scraping a generated
+  JS file, which is what it used to do,
+- the test fixtures arrive with the contract, so they cannot fall behind the
+  pipeline's copy the way a hand-copy did,
+- `catalog.json` records which contract it was baked from, and
+  `test-builder.mjs` fails if that is not the contract checked in — or, when a
+  pipeline checkout *is* present, if ours is older than theirs.
+
+**Do not edit the contract, the catalog or the geometry bundles by hand.** To
+move a geometry change downstream, run `make site` in the pipeline: it copies
+the contract across, rebuilds these assets, bumps the version and runs the tests
+here.
+
 ## Rebuilding the assets
 
-The geometry is baked from the Rhino pipeline. Re-run this whenever the pipeline's
-modules, sockets, prices or finishes change:
+The geometry is baked from the pipeline's per-module GLBs, which are the same
+assets its Blender renders are assembled from. Rebuild after vendoring a new
+contract:
 
 ```bash
 node scripts/build-builder-assets.mjs
 ```
 
-It reads `../shelving-3d-pipeline` by default (`--pipeline <path>` to override)
-and rewrites `assets/shelving/`. Then run the tests:
+It reads the vendored contract and `../shelving-3d-pipeline`'s GLBs
+(`--pipeline <path>` to override) and rewrites `assets/shelving/`. Then run the
+tests:
 
 ```bash
 node scripts/test-builder.mjs
 ```
 
-The fixtures are the pipeline's own validation configs, so a placement rule that
-drifts from what the Rhino/Blender pipeline considers buildable fails there rather
-than on a customer's phone. The suite also checks that the fast incremental
+The fixtures are the pipeline's own validation configs, carried inside the
+vendored contract, so a placement rule that drifts from what the Rhino/Blender
+pipeline considers buildable fails there rather than on a customer's phone. The suite also checks that the fast incremental
 placement check agrees with the authoritative full-state validation on every one
 of them.
 
@@ -215,7 +263,7 @@ a half-truth about a picture the client can see.
 
 Every one of these is a response to a measurement, not a preference.
 
-- **22MB of pipeline GLBs → 2.7MB of bundles.** The GLBs carry lathe-quality
+- **17MB of pipeline GLBs → 2.7MB of bundles.** The GLBs carry lathe-quality
   detail no configurator can show: a base's rubber foot was 4,776 triangles for a
   50mm black pad, and a leg is a pipe of 514 vertices per wall. The build script
   recovers the instancing the exporter flattened (a base's four legs are one
@@ -263,9 +311,6 @@ designer-page exclusion list.
 
 ## Not done yet
 
-- **Corner units.** `/simplified-designer` offers them; the placement engine has
-  no rules for them yet (`generateCandidates` returns nothing for a corner
-  module), so they are excluded from the catalogue rather than shown and broken.
 - **Bookends** are priced and included in the WhatsApp order, but have no 3D
   model in the pipeline (`status: model-pending`), so they do not appear in the
   view.
@@ -297,3 +342,8 @@ Named `/new-designer` while it ran in parallel with `/designer` and
 `/simplified-designer`; renamed to `/builder` in July 2026. Per-piece colour,
 Download/Upload, "Create link to design", the resolvable share address, the
 dimensioned share image and the round-part fix all landed at the same time.
+
+Later in July 2026 the pipeline handoff became the vendored contract described
+above, replacing a string-scrape of a generated JS file and a hand-copy of the
+test fixtures; the desktop builder it was ported from was retired; and corner
+units arrived.

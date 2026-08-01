@@ -4,10 +4,11 @@
  *
  *   node scripts/test-builder.mjs
  *
- * The fixtures in scripts/fixtures/builder/ are the shelving pipeline's
- * own golden configs (generated/validation/configs), so a placement rule that
- * drifts away from what the Rhino/Blender pipeline considers buildable fails
- * here rather than on a customer's phone.
+ * The fixtures are the shelving pipeline's own golden configs, carried inside
+ * assets/shelving/builder-contract.json, so a placement rule that drifts away
+ * from what the Rhino/Blender pipeline considers buildable fails here rather
+ * than on a customer's phone. They arrive with the contract rather than as a
+ * hand-copy, so there is no way for them to fall behind the pipeline's.
  */
 
 import assert from "node:assert/strict";
@@ -20,11 +21,11 @@ const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const engine = require(path.join(ROOT, "js/builder/engine.js"));
 
-const catalog = engine.normalizeCatalog(
-  JSON.parse(fs.readFileSync(path.join(ROOT, "assets/shelving/catalog.json"), "utf8"))
-);
+const rawCatalog = JSON.parse(fs.readFileSync(path.join(ROOT, "assets/shelving/catalog.json"), "utf8"));
+const catalog = engine.normalizeCatalog(rawCatalog);
+const contract = JSON.parse(fs.readFileSync(path.join(ROOT, "assets/shelving/builder-contract.json"), "utf8"));
+const PIPELINE = path.resolve(ROOT, "..", "shelving-3d-pipeline");
 
-const FIXTURES = path.join(ROOT, "scripts/fixtures/builder");
 // This fixture exists in the pipeline precisely because it is illegal: two
 // accessories fight over one support socket.
 const EXPECTED_INVALID = new Set(["wacky-deep-accessory-stack"]);
@@ -52,19 +53,46 @@ async function asyncTest(name, fn) {
 }
 
 function fixtures() {
-  return fs.readdirSync(FIXTURES)
-    .filter((name) => name.endsWith(".json"))
-    .sort()
-    .map((name) => JSON.parse(fs.readFileSync(path.join(FIXTURES, name), "utf8")));
+  return contract.validationConfigs;
 }
 
 // ---------------------------------------------------------------------------
+
+/**
+ * Everything under assets/shelving/ has to have come from one contract, and
+ * that contract has to be the pipeline's. Two ways to end up otherwise, both
+ * silent without this: vendor a new contract and forget to rebuild the assets,
+ * or change the Rhino model and forget to vendor at all. Either leaves a catalog describing one model and geometry cut
+ * from another.
+ */
+test("the vendored contract, the catalog and the pipeline agree", () => {
+  assert.equal(contract.schema, "framework-builder-contract@1");
+  assert.ok(contract.validationConfigs.length >= 30, "the contract carries the pipeline's golden configs");
+  assert.deepEqual(
+    rawCatalog.contract,
+    { sourceSha256: contract.sourceSha256, contentHash: contract.contentHash },
+    "catalog.json was built from a different contract — run `node scripts/build-builder-assets.mjs`"
+  );
+
+  // Only when a pipeline checkout is actually here; the point of vendoring is
+  // that this suite passes without one.
+  const upstream = path.join(PIPELINE, "generated/contract/builder-contract.json");
+  if (!fs.existsSync(upstream)) return;
+  const theirs = JSON.parse(fs.readFileSync(upstream, "utf8"));
+  assert.equal(
+    contract.contentHash,
+    theirs.contentHash,
+    `the vendored contract is older than the pipeline's (ours ${contract.contentHash.slice(0, 12)}, ` +
+    `theirs ${theirs.contentHash.slice(0, 12)}) — run \`make site\` in the pipeline`
+  );
+});
 
 test("catalog ships the modules the interfaces name", () => {
   for (const id of ["standard_base", "standard_extension", "compact_base", "deep_base", "wide_base", "lamp"]) {
     assert.ok(catalog.modules[id], `${id} missing from catalog.json`);
   }
-  assert.ok(!catalog.modules.corner_base, "corner modules have no placement rules and must not ship");
+  assert.ok(catalog.modules.corner_base, "corner units ship: a run turns through them");
+  assert.ok(catalog.modules.corner_extension, "and stack like any other extension");
   assert.equal(catalog.modules.standard_base_trimmed.canonicalId, "standard_base");
   assert.ok(catalog.modules.standard_base.priceKsh > 0, "prices came through");
   assert.ok(catalog.finishes.length >= 4, "finishes came through");
@@ -192,8 +220,10 @@ test("adjacentBasesOnly drops gapped placements but keeps butted ones", () => {
   assert.ok(adjacent.length > 0, "a butted neighbour is always offered");
   assert.ok(adjacent.length < all.length, "gapped intervals should have been dropped");
   for (const candidate of adjacent) {
+    // Butted against a neighbour, or turned into a corner. Both are things
+    // /designer has always offered; only the gapped intervals are Advanced.
     assert.ok(
-      /^adjacent/.test(candidate.placement.basePlacementKind || ""),
+      /^(adjacent|corner)/.test(candidate.placement.basePlacementKind || ""),
       `unexpected ${candidate.placement.basePlacementKind} in adjacent-only mode`
     );
   }
@@ -215,6 +245,98 @@ test("units of different depths line up on their backs", () => {
   // Backs (max depth) coincide; the deeper unit grows forwards into the room.
   assert.ok(Math.abs(deeper[4] - shallow[4]) < 12, `backs not aligned: ${shallow[4]} vs ${deeper[4]}`);
   assert.ok(deeper[1] < shallow[1] - 50, "the deeper unit should extend further forward");
+});
+
+/**
+ * The corner: a run turns, and the second run stands against the other wall.
+ *
+ * The 2D /designer models this as four rotations of one corner unit (NE/NW/SE/
+ * SW), and only lets a corner extension sit on a corner base of the same
+ * orientation. Here that falls out of the sockets: a turned base presents a
+ * turned socket rectangle, and only a turned extension meets it.
+ */
+test("a run turns a corner, and the corner unit carries the turn", () => {
+  let state = engine.createState(catalog);
+  state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, "corner_base")[0]);
+  // The right-hand turn specifically, so the flush edges below are the max ones.
+  const turn = engine.generateCandidates(catalog, state, "standard_base", { adjacentBasesOnly: true })
+    .find((candidate) => candidate.placement.basePlacementKind === "corner_right");
+  assert.ok(turn, "a base should be offered turned into a perpendicular run");
+  assert.ok(turn.rotationDeg === 90 || turn.rotationDeg === 270, `unexpected turn of ${turn.rotationDeg} degrees`);
+
+  const turned = engine.applyCandidate(catalog, state, turn);
+  assert.equal(engine.validateState(catalog, turned).isValid, true);
+
+  const [corner, second] = turned.instances.map((instance) => engine.instanceBounds(catalog, instance));
+  // The two runs are at right angles: the corner unit is wider than it is deep,
+  // the turned one deeper than it is wide.
+  assert.ok(corner[3] - corner[0] > corner[4] - corner[1], "the first run goes across");
+  assert.ok(second[4] - second[1] > second[3] - second[0], "the second run goes back");
+  // And no two surfaces are in the same place. Measured on the shelves: the
+  // bounding boxes carry foot pads that hang 10mm past the frame and would read
+  // as a collision where there is nothing but air.
+  const [cornerBoards, secondBoards] = turned.instances.map((instance) => engine.shelfBounds(catalog, instance));
+  const overlap = Math.min(cornerBoards[3], secondBoards[3]) - Math.max(cornerBoards[0], secondBoards[0]) > 2
+    && Math.min(cornerBoards[4], secondBoards[4]) - Math.max(cornerBoards[1], secondBoards[1]) > 2;
+  assert.ok(!overlap, "the two runs must not sit on top of each other");
+
+  /*
+   * And the join is continuous, which is the whole reason a corner unit is
+   * longer than a standard one: its shelf has to cover the square where the
+   * two runs meet. Measured on the shelves, both ways:
+   *
+   *   - the second run's shelf ends exactly where the corner unit's does, so
+   *     the corner unit reaches the second wall,
+   *   - and starts exactly where the corner unit's shelf front is, so there is
+   *     no notch between them.
+   */
+  const [cornerShelf, secondShelf] = [cornerBoards, secondBoards];
+  assert.ok(
+    Math.abs(secondShelf[3] - cornerShelf[3]) < 1,
+    `the second run should end flush with the corner unit's shelf (${secondShelf[3]} vs ${cornerShelf[3]})`
+  );
+  assert.ok(
+    Math.abs(secondShelf[4] - cornerShelf[1]) < 1,
+    `the second run should meet the corner unit's shelf front (${secondShelf[4]} vs ${cornerShelf[1]})`
+  );
+  // The corner square itself: the first run's shelf has to cover the whole
+  // depth of the second one, or the surface has a notch in it where they meet.
+  const covered = Math.min(cornerShelf[3], secondShelf[3]) - Math.max(cornerShelf[0], secondShelf[0]);
+  assert.ok(
+    covered >= (secondShelf[3] - secondShelf[0]) - 1,
+    `the corner unit's shelf should cover the second run's full depth (covers ${covered.toFixed(0)} of ${(secondShelf[3] - secondShelf[0]).toFixed(0)}mm)`
+  );
+
+  // Which is what its extra length is for: about a shelf board more than a
+  // standard unit, so the board reaches across the join.
+  let probe = engine.createState(catalog);
+  probe = engine.applyCandidate(catalog, probe, engine.generateCandidates(catalog, probe, "standard_base")[0]);
+  const standardShelf = engine.shelfBounds(catalog, probe.instances[0]);
+  const extra = (cornerShelf[3] - cornerShelf[0]) - (standardShelf[3] - standardShelf[0]);
+  assert.ok(extra > 200, `a corner unit should be a shelf board longer than a standard one (${extra.toFixed(0)}mm)`);
+});
+
+test("an extension follows its base around the corner", () => {
+  let state = engine.createState(catalog);
+  state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, "corner_base")[0]);
+  const turn = engine.generateCandidates(catalog, state, "standard_base", { adjacentBasesOnly: true })
+    .find((candidate) => candidate.placement.basePlacementKind === "corner_right");
+  state = engine.applyCandidate(catalog, state, turn);
+
+  const onTurned = engine.generateCandidates(catalog, state, "standard_extension")
+    .filter((candidate) => candidate.placement.on.includes(state.instances[1].id));
+  assert.ok(onTurned.length, "the turned base must accept an extension");
+  assert.equal(onTurned[0].rotationDeg, turn.rotationDeg, "which has to be turned the same way to meet its sockets");
+
+  const stacked = engine.applyCandidate(catalog, state, onTurned[0]);
+  assert.equal(engine.validateState(catalog, stacked).isValid, true);
+
+  // A corner extension belongs on a corner base, at that base's own rotation --
+  // /designer's "suffixes must match" rule, arrived at through the sockets.
+  const onCorner = engine.generateCandidates(catalog, stacked, "corner_extension")
+    .filter((candidate) => candidate.placement.on.includes(state.instances[0].id));
+  assert.ok(onCorner.length, "a corner extension must fit its corner base");
+  assert.equal(onCorner[0].rotationDeg, 0, "the corner base was never turned, so neither is its extension");
 });
 
 test("rotationKeepsSockets tells safe default rotations from unsafe ones", () => {
@@ -317,6 +439,20 @@ test("round parts come out round", () => {
       const centreX = (box[0] + box[3]) / 2;
       const centreY = (box[1] + box[4]) / 2;
       const outer = extent[0] / 2;
+
+      // A square 20x20 tube has the same slim upright box as a round one, and
+      // this only ever meant to police the round ones. It used to exclude
+      // itself: a sharp box's outer vertices are its four corners, all at the
+      // same radius, so the spread was zero by construction. Now that the long
+      // edges carry a fillet those corners are arcs, and the flats read as
+      // "out of round" -- which is the shape they are supposed to be. Tell them
+      // apart by the flats: a square section puts most of its outer vertices on
+      // the bounding planes, a lathed one only touches them four times.
+      const onPlane = points.filter((point) =>
+        Math.abs(Math.abs(point[0] - centreX) - outer) < outer * 0.02 ||
+        Math.abs(Math.abs(point[1] - centreY) - outer) < outer * 0.02
+      ).length;
+      if (onPlane > points.length * 0.3) return;
       // The outer shell only: a tube's inner wall is deliberately much coarser.
       const radii = points
         .map((point) => Math.hypot(point[0] - centreX, point[1] - centreY))

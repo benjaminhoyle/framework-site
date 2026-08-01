@@ -197,21 +197,104 @@
     return [rounded(originX - localX), rounded(originY - localY), rounded(0 - localZ)];
   }
 
-  function baseXRange(module, originX, originY) {
-    const translation = baseTranslation(module, originX, originY);
-    const bbox = module.bboxMm || [0, 0, 0, Number(module.widthSpanMm || 0), 0, 0];
-    return {
-      left: rounded(translation[0] + bbox[0]),
-      right: rounded(translation[0] + bbox[3])
+  /**
+   * How a unit turned by `rotationDeg` lies in the world.
+   *
+   * A run grows along the unit's own width (local +X) and its back is its local
+   * +Y face. Under a quarter turn those become world axes with a sign, and
+   * everything about placing the next unit -- butting it against this one,
+   * lining their backs up, turning a corner -- is expressed in those terms
+   * rather than in x and y. That is what lets a run continue along a wall that
+   * is not the x axis.
+   */
+  const ROTATION_FRAMES = {
+    0: { runAxis: 0, runSign: 1, backAxis: 1, backSign: 1 },
+    90: { runAxis: 1, runSign: 1, backAxis: 0, backSign: -1 },
+    180: { runAxis: 0, runSign: -1, backAxis: 1, backSign: -1 },
+    270: { runAxis: 1, runSign: -1, backAxis: 0, backSign: 1 }
+  };
+
+  function normaliseQuarterTurn(degrees) {
+    const rotation = ((Math.round(Number(degrees) || 0) % 360) + 360) % 360;
+    return ROTATION_FRAMES[rotation] ? rotation : 0;
+  }
+
+  function frameOf(rotationDeg) {
+    return ROTATION_FRAMES[normaliseQuarterTurn(rotationDeg)];
+  }
+
+  /** Index into a bounds array of the face an axis+sign points at. */
+  function edgeIndex(axis, sign) {
+    return sign > 0 ? axis + 3 : axis;
+  }
+
+  function baseBounds(catalog, module, rotationDeg, originX, originY) {
+    return instanceBounds(catalog, {
+      moduleId: module.id,
+      translation: baseTranslation(module, originX, originY),
+      rotationDeg
+    });
+  }
+
+  /** World extent of an instance's own sockets, which is what backs align on. */
+  function socketBounds(instance, module) {
+    const bounds = [Infinity, Infinity, -Infinity, -Infinity];
+    for (const socket of rotationSockets(module)) {
+      const [dx, dy] = rotatedOffset(module, socket, instance.rotationDeg || 0);
+      const x = instance.originWorldMm[0] + dx;
+      const y = instance.originWorldMm[1] + dy;
+      bounds[0] = Math.min(bounds[0], x);
+      bounds[1] = Math.min(bounds[1], y);
+      bounds[2] = Math.max(bounds[2], x);
+      bounds[3] = Math.max(bounds[3], y);
+    }
+    return Number.isFinite(bounds[0]) ? [bounds[0], bounds[1], 0, bounds[2], bounds[3], 0] : null;
+  }
+
+  /**
+   * World extent of an instance's shelf surfaces -- the boards, without the
+   * feet and stubs its bounding box also carries. This is the surface a design
+   * reads as continuous, so it is what a corner has to line up.
+   */
+  function shelfBounds(catalog, instance) {
+    const module = moduleFor(catalog, instance.moduleId);
+    const boxes = collectHorizontalBoxes(catalog, [instance]);
+    if (!boxes.length) return instanceBounds(catalog, instance);
+    const bounds = boxes[0].bbox.slice();
+    for (const box of boxes) {
+      for (let axis = 0; axis < 3; axis += 1) {
+        bounds[axis] = Math.min(bounds[axis], box.bbox[axis]);
+        bounds[axis + 3] = Math.max(bounds[axis + 3], box.bbox[axis + 3]);
+      }
+    }
+    return bounds.map(rounded);
+  }
+
+  /**
+   * Where a unit has to stand for the named faces to land where we want them.
+   *
+   * Bounds move one-for-one with the origin, so one probe placement is enough
+   * to solve both axes -- no search, and it works for any rotation.
+   */
+  function baseOriginForFaces(catalog, module, rotationDeg, targets) {
+    const probe = {
+      moduleId: module.id,
+      originWorldMm: [0, 0, 0],
+      translation: baseTranslation(module, 0, 0),
+      rotationDeg
     };
-  }
-
-  function baseOriginForLeftEdge(module, leftEdgeX, originY) {
-    return rounded(leftEdgeX - baseXRange(module, 0, originY).left);
-  }
-
-  function baseOriginForRightEdge(module, rightEdgeX, originY) {
-    return rounded(rightEdgeX - baseXRange(module, 0, originY).right);
+    const probeBox = instanceBounds(catalog, probe);
+    const probes = {
+      box: probeBox,
+      sockets: socketBounds(probe, module) || probeBox,
+      shelf: shelfBounds(catalog, probe)
+    };
+    const origin = [0, 0];
+    for (const target of targets) {
+      const bounds = probes[target.measure || "box"];
+      origin[target.axis] = rounded(target.value - bounds[edgeIndex(target.axis, target.sign)]);
+    }
+    return { x: origin[0], y: origin[1] };
   }
 
   function stackInstanceIds(state, baseInstanceId) {
@@ -235,17 +318,23 @@
     return ids;
   }
 
-  function stackXRange(catalog, state, baseInstance, baseModule) {
-    const range = baseXRange(baseModule, baseInstance.originWorldMm[0], baseInstance.originWorldMm[1]);
+  /**
+   * The footprint of a base plus everything standing on it.
+   *
+   * A run whose shelves overhang wider than the base itself has to clear the
+   * whole stack, not just the base's own feet.
+   */
+  function stackBounds(catalog, state, baseInstance) {
+    const bounds = instanceBounds(catalog, baseInstance).slice();
     const stackIds = stackInstanceIds(state, baseInstance.id);
     const boxes = collectHorizontalBoxes(catalog, state.instances.filter((instance) => stackIds.has(instance.id)));
-    let left = range.left;
-    let right = range.right;
     for (const box of boxes) {
-      left = Math.min(left, box.bbox[0]);
-      right = Math.max(right, box.bbox[3]);
+      for (let axis = 0; axis < 3; axis += 1) {
+        bounds[axis] = Math.min(bounds[axis], box.bbox[axis]);
+        bounds[axis + 3] = Math.max(bounds[axis + 3], box.bbox[axis + 3]);
+      }
     }
-    return { left: rounded(left), right: rounded(right) };
+    return bounds.map(rounded);
   }
 
   function supportedPlacement(catalog, state, moduleId, originX, originY, allowedProviderIds, rotationDeg, providersOverride) {
@@ -359,16 +448,18 @@
   /**
    * Place a candidate.
    *
-   * `fields.rotationDeg` is only safe for a rotation the module's own socket
-   * layout is invariant under -- otherwise the candidate's consumed sockets,
-   * computed at rotation 0, would no longer be the ones the piece rests on.
-   * Callers get that guarantee from rotationKeepsSockets().
+   * A candidate that carries its own `rotationDeg` was generated and validated
+   * at that rotation -- the turn into a perpendicular run, and everything that
+   * then stacks on it. `fields.rotationDeg` is the other case: turning a piece
+   * that was placed square, which is only safe for a rotation its socket layout
+   * is invariant under, or its consumed sockets would no longer be the ones it
+   * rests on. Callers get that guarantee from rotationKeepsSockets().
    */
   function applyCandidate(catalog, state, candidate, fields) {
     return addInstance(catalog, state, candidate.moduleId, candidate.originWorldMm[0], candidate.originWorldMm[1], {
       id: fields && fields.id,
       placement: candidate.placement,
-      rotationDeg: (fields && fields.rotationDeg) || 0
+      rotationDeg: (fields && fields.rotationDeg) || candidate.rotationDeg || 0
     });
   }
 
@@ -660,66 +751,116 @@
    * own front-to-back socket span, so this is the offset that makes the two
    * back rows coincide.
    */
-  function backAlignedOriginY(catalog, baseInstance, baseModule, module) {
-    const baseSpan = Number(baseModule.depthSpanMm || 0);
-    const newSpan = Number(module.depthSpanMm || 0);
-    return rounded(baseInstance.originWorldMm[1] + baseSpan - newSpan);
-  }
-
   function baseOrigins(catalog, state, module, options) {
     const origins = [];
     const baseInstances = state.instances.filter((instance) => moduleFor(catalog, instance.moduleId).role === "base");
     if (!baseInstances.length) {
-      origins.push({ x: 0, y: 0, kind: "first_base" });
+      origins.push({ x: 0, y: 0, kind: "first_base", rotationDeg: 0 });
       return origins;
     }
     for (const base of baseInstances) {
       const baseModule = moduleFor(catalog, base.moduleId);
-      const originY = backAlignedOriginY(catalog, base, baseModule, module);
-      const baseRange = baseXRange(baseModule, base.originWorldMm[0], base.originWorldMm[1]);
-      origins.push({
-        x: baseOriginForLeftEdge(module, baseRange.right + ADJACENT_BASE_GAP_MM, originY),
-        y: originY,
-        kind: "adjacent_right"
-      });
-      origins.push({
-        x: baseOriginForRightEdge(module, baseRange.left - ADJACENT_BASE_GAP_MM, originY),
-        y: originY,
-        kind: "adjacent_left"
-      });
+      const rotationDeg = normaliseQuarterTurn(base.rotationDeg);
+      const frame = frameOf(rotationDeg);
+      const ownBox = instanceBounds(catalog, base);
+      const stackBox = stackBounds(catalog, state, base);
+      const ownSockets = socketBounds(base, baseModule) || ownBox;
+      const ownShelf = shelfBounds(catalog, base);
 
-      // A run whose shelves overhang wider than the base itself must clear the
-      // whole stack, not just the base footprint.
-      const stackRange = stackXRange(catalog, state, base, baseModule);
-      origins.push({
-        x: baseOriginForLeftEdge(module, stackRange.right + ADJACENT_BASE_GAP_MM, originY),
-        y: originY,
-        kind: "adjacent_stack_right"
-      });
-      origins.push({
-        x: baseOriginForRightEdge(module, stackRange.left - ADJACENT_BASE_GAP_MM, originY),
-        y: originY,
-        kind: "adjacent_stack_left"
-      });
+      /*
+       * Along the run: butt the new unit against this one, both ways.
+       * Across it: line the two BACKS up, not the fronts -- a run stands
+       * against a wall, so a deeper unit grows forwards into the room rather
+       * than pushing its back through the wall. Backs are measured on the
+       * sockets, the legs that actually stand against the wall, while the butt
+       * uses the footprint, because that is what would collide.
+       */
+      const backTarget = {
+        axis: frame.backAxis,
+        sign: frame.backSign,
+        measure: "sockets",
+        value: ownSockets[edgeIndex(frame.backAxis, frame.backSign)]
+      };
+
+      for (const direction of [1, -1]) {
+        const sign = frame.runSign * direction;
+        const side = direction > 0 ? "right" : "left";
+        for (const [name, box] of [["adjacent", ownBox], ["adjacent_stack", stackBox]]) {
+          origins.push(Object.assign(
+            baseOriginForFaces(catalog, module, rotationDeg, [
+              {
+                axis: frame.runAxis,
+                sign: -sign,
+                value: rounded(box[edgeIndex(frame.runAxis, sign)] + sign * ADJACENT_BASE_GAP_MM)
+              },
+              backTarget
+            ]),
+            { kind: `${name}_${side}`, rotationDeg, nextTo: base.id }
+          ));
+        }
+
+        /*
+         * The turn into a perpendicular run: the corner.
+         *
+         * Two walls meet; this run stands against one of them and the new one
+         * against the other. The square where they meet is covered by *this*
+         * run's last shelf, which is why a corner unit is longer than a
+         * standard one by exactly the depth of a run -- the extra length is
+         * the corner. So the new unit is placed to sit against that:
+         *
+         *   - its back plane flush with this run's far shelf edge, which is
+         *     where the second wall is,
+         *   - its near end meeting this run's front shelf edge, so the two
+         *     surfaces read as one turning through the corner.
+         *
+         * Measured on the shelves rather than the footprints: the boards are
+         * what the eye follows around the corner, and a bounding box carries
+         * feet and stubs that would push the second run out by 50mm and leave
+         * the notch this is here to avoid. Matches /designer, which models the
+         * same join as four rotations of one corner unit.
+         */
+        const turned = normaliseQuarterTurn(rotationDeg + (direction > 0 ? 270 : 90));
+        origins.push(Object.assign(
+          baseOriginForFaces(catalog, module, turned, [
+            {
+              axis: frame.runAxis,
+              sign,
+              measure: "shelf",
+              value: ownShelf[edgeIndex(frame.runAxis, sign)]
+            },
+            {
+              axis: frame.backAxis,
+              sign: frame.backSign,
+              measure: "shelf",
+              value: ownShelf[edgeIndex(frame.backAxis, -frame.backSign)]
+            }
+          ]),
+          { kind: `corner_${side}`, rotationDeg: turned, nextTo: base.id }
+        ));
+      }
 
       // Gapped placements exist so a later bridging span has two owned columns
       // to land on, and so a run can be broken up deliberately. Advanced only:
       // /designer has never offered them and they read as a mistake in a
       // simple UI.
       if (!options.adjacentBasesOnly) {
-        const baseSpan = Number(baseModule.widthSpanMm || 0);
-        const newSpan = Number(module.widthSpanMm || 0);
-        for (const span of BASE_INTERVALS_MM) {
-          origins.push({
-            x: rounded(base.originWorldMm[0] + baseSpan + span),
-            y: originY,
-            kind: `interval_right_${span}`
-          });
-          origins.push({
-            x: rounded(base.originWorldMm[0] - newSpan - span),
-            y: originY,
-            kind: `interval_left_${span}`
-          });
+        for (const direction of [1, -1]) {
+          const sign = frame.runSign * direction;
+          const side = direction > 0 ? "right" : "left";
+          for (const span of BASE_INTERVALS_MM) {
+            origins.push(Object.assign(
+              baseOriginForFaces(catalog, module, rotationDeg, [
+                {
+                  axis: frame.runAxis,
+                  sign: -sign,
+                  sockets: true,
+                  value: rounded(ownSockets[edgeIndex(frame.runAxis, sign)] + sign * span)
+                },
+                backTarget
+              ]),
+              { kind: `interval_${side}_${span}`, rotationDeg, nextTo: base.id }
+            ));
+          }
         }
       }
     }
@@ -730,27 +871,46 @@
     const candidates = [];
     const seen = new Set();
     for (const origin of baseOrigins(catalog, state, module, options)) {
+      const rotationDeg = origin.rotationDeg || 0;
       const instance = {
         moduleId: module.id,
         originWorldMm: [rounded(origin.x), rounded(origin.y), 0],
         translation: baseTranslation(module, origin.x, origin.y),
-        rotationDeg: 0,
+        rotationDeg,
         supportPlaneZ: 0,
         consumedSockets: [],
-        placement: { method: "floor", basePlacementKind: origin.kind }
+        // `nextTo` names the unit this placement was worked out from, which is
+        // what lets the interface gather every piece that could go in one spot
+        // behind a single "+" instead of one per piece.
+        placement: { method: "floor", basePlacementKind: origin.kind, nextTo: origin.nextTo || null }
       };
       if (!validateAddition(catalog, context, instance)) continue;
       uniqueCandidate(candidates, seen, {
         moduleId: module.id,
         canonicalId: module.canonicalId,
-        transform: { x: instance.translation[0], y: instance.translation[1], z: instance.translation[2], rotation: 0 },
+        transform: { x: instance.translation[0], y: instance.translation[1], z: instance.translation[2], rotation: rotationDeg },
         originWorldMm: instance.originWorldMm,
+        rotationDeg,
         supportPlaneZ: 0,
         consumedSockets: [],
         placement: instance.placement
       });
     }
     return candidates.sort(compareCandidates);
+  }
+
+  /**
+   * The quarter turns worth trying when stacking something.
+   *
+   * Square on is always tried. Beyond that, only the turns the design already
+   * contains: once a run has turned a corner, everything that stacks on it has
+   * to be turned the same way to meet its sockets, and a design with no corner
+   * in it pays nothing for the possibility.
+   */
+  function rotationsInPlay(state) {
+    const rotations = new Set([0]);
+    for (const instance of state.instances) rotations.add(normaliseQuarterTurn(instance.rotationDeg));
+    return Array.from(rotations);
   }
 
   function supportedCandidates(catalog, state, module, options, context) {
@@ -761,32 +921,35 @@
     const candidates = [];
     const seen = new Set();
 
-    for (const providerList of providers.values()) {
-      for (const provider of providerList) {
-        const [firstOffsetX, firstOffsetY] = rotatedOffset(module, first, 0);
-        const originX = rounded(provider.worldMm[0] - firstOffsetX);
-        const originY = rounded(provider.worldMm[1] - firstOffsetY);
-        const snap = supportedPlacement(catalog, state, module.id, originX, originY, null, 0, providers);
-        if (!snap.ok) continue;
-        const instance = {
-          moduleId: module.id,
-          originWorldMm: [originX, originY, snap.supportPlaneZ],
-          translation: snap.translation,
-          rotationDeg: 0,
-          supportPlaneZ: snap.supportPlaneZ,
-          consumedSockets: snap.consumedSockets,
-          placement: { method: "socket", on: Array.from(new Set(snap.consumedSockets.map((socket) => socket.instanceId))) }
-        };
-        if (!validateAddition(catalog, context, instance)) continue;
-        uniqueCandidate(candidates, seen, {
-          moduleId: module.id,
-          canonicalId: module.canonicalId,
-          transform: { x: snap.translation[0], y: snap.translation[1], z: snap.translation[2], rotation: 0 },
-          originWorldMm: instance.originWorldMm,
-          supportPlaneZ: snap.supportPlaneZ,
-          consumedSockets: snap.consumedSockets,
-          placement: instance.placement
-        });
+    for (const rotationDeg of rotationsInPlay(state)) {
+      for (const providerList of providers.values()) {
+        for (const provider of providerList) {
+          const [firstOffsetX, firstOffsetY] = rotatedOffset(module, first, rotationDeg);
+          const originX = rounded(provider.worldMm[0] - firstOffsetX);
+          const originY = rounded(provider.worldMm[1] - firstOffsetY);
+          const snap = supportedPlacement(catalog, state, module.id, originX, originY, null, rotationDeg, providers);
+          if (!snap.ok) continue;
+          const instance = {
+            moduleId: module.id,
+            originWorldMm: [originX, originY, snap.supportPlaneZ],
+            translation: snap.translation,
+            rotationDeg,
+            supportPlaneZ: snap.supportPlaneZ,
+            consumedSockets: snap.consumedSockets,
+            placement: { method: "socket", on: Array.from(new Set(snap.consumedSockets.map((socket) => socket.instanceId))) }
+          };
+          if (!validateAddition(catalog, context, instance)) continue;
+          uniqueCandidate(candidates, seen, {
+            moduleId: module.id,
+            canonicalId: module.canonicalId,
+            transform: { x: snap.translation[0], y: snap.translation[1], z: snap.translation[2], rotation: rotationDeg },
+            originWorldMm: instance.originWorldMm,
+            rotationDeg,
+            supportPlaneZ: snap.supportPlaneZ,
+            consumedSockets: snap.consumedSockets,
+            placement: instance.placement
+          });
+        }
       }
     }
     return candidates.sort(compareCandidates);
@@ -801,7 +964,6 @@
   function generateCandidates(catalog, state, moduleId, options) {
     const settings = options || {};
     const module = moduleFor(catalog, moduleId);
-    if (module.isCorner) return [];
     const context = settings.context || additionContext(catalog, state);
     return module.role === "base"
       ? baseCandidates(catalog, state, module, settings, context)
@@ -988,6 +1150,7 @@
     rotationKeepsSockets,
     serializeState,
     setInstanceFinish,
+    shelfBounds,
     stacksOf,
     validateAddition,
     validateState

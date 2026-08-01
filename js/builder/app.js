@@ -55,13 +55,18 @@
   // variants are shortened cuts of the same unit and only appear in Advanced.
   const FAMILY_LABELS = {
     standard: "Standard",
+    corner: "Corner",
     compact: "Compact",
     wide: "Wide",
     deep: "Deep",
     slim: "Slim",
     broad: "Broad"
   };
-  const FAMILY_ORDER = ["standard", "compact", "wide", "deep", "slim", "broad"];
+  const FAMILY_ORDER = ["standard", "compact", "wide", "deep", "slim", "broad", "corner"];
+  // Simple builds a plain run from one family, and a run of corner units is not
+  // a thing anyone wants: the corner is where a run turns, so it belongs to
+  // Standard and Advanced, where a design can have two runs in it.
+  const SIMPLE_FAMILIES = FAMILY_ORDER.filter((family) => family !== "corner");
 
   /*
    * Render colours come from the catalogue's `builder` palette, which the build
@@ -399,7 +404,7 @@
   // ----------------------------------------------------- Simple generation ---
 
   function availableFamilies() {
-    return FAMILY_ORDER.filter((family) => siteVariant(family, "base") && siteVariant(family, "extension"));
+    return SIMPLE_FAMILIES.filter((family) => siteVariant(family, "base") && siteVariant(family, "extension"));
   }
 
   /**
@@ -520,7 +525,6 @@
     const chosen = new Map(); // "family:role" -> module id
     const groups = new Map();
     for (const module of Object.values(ui.catalog.modules)) {
-      if (module.isCorner) continue;
       const key = `${module.family || ""}:${module.role}`;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(module);
@@ -540,7 +544,6 @@
   }
 
   function moduleAllowed(module, mode) {
-    if (module.isCorner) return false;
     if (mode === "advanced") return true;
     if (!ui.siteVariantIds.has(module.id)) return false;
     return TIER_ROLES[mode].indexOf(module.role) >= 0;
@@ -1040,6 +1043,9 @@
   function buildAddButtons() {
     const groupedSide = { left: [], right: [] };
     const groupedTop = new Map();
+    // Turns get their own buttons, one per corner the design offers, because a
+    // turn is not "further along this run" -- it is a second run starting.
+    const groupedCorner = new Map();
     const { rootOf, groups } = engine.stacksOf(ui.design);
 
     const baseXs = ui.design.instances
@@ -1054,6 +1060,15 @@
         if (module.role === "base") {
           if (!baseXs.length) {
             groupedSide.right.push({ module, candidate });
+            continue;
+          }
+          if (/^corner/.test(candidate.placement.basePlacementKind || "")) {
+            // One button per corner, not per piece: every piece that could turn
+            // this corner is worked out from the same unit and the same side.
+            const key = `${candidate.placement.nextTo}:${candidate.placement.basePlacementKind}`;
+            if (!groupedCorner.has(key)) groupedCorner.set(key, []);
+            const turns = groupedCorner.get(key);
+            if (!turns.some((entry) => entry.module.id === id)) turns.push({ module, candidate });
             continue;
           }
           const side = candidate.originWorldMm[0] > maxX ? "right" : candidate.originWorldMm[0] < minX ? "left" : null;
@@ -1104,6 +1119,16 @@
       if (designBounds) spot[2] = (designBounds[2] + designBounds[5]) / 2;
       const label = ui.design.instances.length ? "Add a unit here" : "Start your shelf";
       addOverlay(plusButton(label, options.map(sideOption)), spot);
+    });
+
+    groupedCorner.forEach((options) => {
+      if (!options.length) return;
+      const spot = centreOf(candidateBounds(options[0].candidate));
+      if (designBounds) spot[2] = (designBounds[2] + designBounds[5]) / 2;
+      addOverlay(plusButton("Turn a corner here", options.map((entry) => ({
+        module: entry.module,
+        onPick: () => placeCandidate(entry.candidate)
+      }))), spot);
     });
 
     groups.forEach((ids, root) => {
@@ -1163,7 +1188,10 @@
     let next = null;
     try {
       next = engine.applyCandidate(ui.catalog, ui.design, candidate, {
-        rotationDeg: defaultRotationFor(module, candidate)
+        // A candidate that turned a corner brings its own quarter turn; the
+        // facing rules (a top bar reaching back over the shelf, say) are
+        // relative to that, not instead of it.
+        rotationDeg: ((candidate.rotationDeg || 0) + defaultRotationFor(module, candidate)) % 360
       });
     } catch (error) {
       console.error(error);

@@ -34,6 +34,18 @@ window.FrameworkDesignerRenderer = (function () {
   const PERSPECTIVE_FOV_DEG = 38;
   const PERSPECTIVE_PADDING = 1.24;
 
+  /*
+   * The third view: a free orbit. Not used by /builder, which is pan and
+   * auto-fit by design so that nobody can lose the shelf off-screen or end up
+   * under it. It exists for the pipeline's render console, where choosing an
+   * arbitrary viewpoint for a Blender render is the entire job, and lives here
+   * so that the console can reuse this renderer verbatim rather than growing a
+   * second one.
+   */
+  const ORBIT_FOV_DEG = 38;
+  const ORBIT_PADDING = 1.15;
+  const ORBIT_MAX_ELEVATION_DEG = 85;
+
   const ROLE_FOOT = 2;
   const ROLE_PAPER = 3;
   const ROLE_CORD = 4;
@@ -151,6 +163,9 @@ window.FrameworkDesignerRenderer = (function () {
       target: [500, 130, 400],
       halfHeight: 900,
       viewMode: "iso",
+      // Console-only; ignored in the two locked views. distanceMm 0 means "work
+      // it out from the design", which is what a freshly loaded design wants.
+      orbit: { azimuthDeg: 45, elevationDeg: 24, distanceMm: 0 },
       pixelRatio: 1,
       width: 1,
       height: 1,
@@ -398,8 +413,77 @@ window.FrameworkDesignerRenderer = (function () {
     };
   }
 
+  /**
+   * Free orbit around the design's centre, for the render console.
+   *
+   * The camera is spherical about `state.target` -- which pan still moves, so
+   * an off-centre composition is reachable -- at an azimuth measured from the
+   * front of the shelf and an elevation clamped short of the poles, where the
+   * up vector degenerates.
+   */
+  function orbitProjection(state) {
+    const aspect = state.width / Math.max(1, state.height);
+    const orbit = state.orbit;
+    const azimuth = (orbit.azimuthDeg * Math.PI) / 180;
+    const elevation = (orbit.elevationDeg * Math.PI) / 180;
+    const distance = orbit.distanceMm || fitOrbitDistance(state, aspect);
+    // Azimuth 0 stands in front of the shelf (the low-depth side) and turns
+    // towards +x, so the default below is the familiar front-right-above view.
+    const offset = [
+      Math.sin(azimuth) * Math.cos(elevation),
+      -Math.cos(azimuth) * Math.cos(elevation),
+      Math.sin(elevation)
+    ];
+    const eye = [
+      state.target[0] + offset[0] * distance,
+      state.target[1] + offset[1] * distance,
+      state.target[2] + offset[2] * distance
+    ];
+    const forward = normalise([-offset[0], -offset[1], -offset[2]]);
+    const right = normalise(cross(forward, WORLD_UP));
+    const up = cross(right, forward);
+
+    const radius = state.sceneRadius || 1500;
+    const near = Math.max(20, distance - radius * 2);
+    const far = distance + radius * 4;
+    const halfV = (ORBIT_FOV_DEG * Math.PI) / 360;
+    const focal = 1 / Math.tan(halfV);
+    const projection = new Float32Array([
+      focal / aspect, 0, 0, 0,
+      0, focal, 0, 0,
+      0, 0, (far + near) / (near - far), -1,
+      0, 0, (2 * far * near) / (near - far), 0
+    ]);
+    return {
+      matrix: multiply(new Float32Array(16), projection, viewMatrix(right, up, forward, eye)),
+      right,
+      up,
+      forward,
+      eye,
+      near,
+      far,
+      fovDeg: ORBIT_FOV_DEG,
+      distance,
+      perspective: true
+    };
+  }
+
+  /** Far enough out that the whole design fits both axes of the frame. */
+  function fitOrbitDistance(state, aspect) {
+    const bounds = sceneBounds(state) || [0, 0, 0, 1000, 300, 800];
+    const halfWidth = Math.max(60, (bounds[3] - bounds[0]) / 2);
+    const halfHeight = Math.max(60, (bounds[5] - bounds[2]) / 2);
+    const halfDepth = Math.max(30, (bounds[4] - bounds[1]) / 2);
+    const halfV = (ORBIT_FOV_DEG * Math.PI) / 360;
+    const halfH = Math.atan(Math.tan(halfV) * aspect);
+    const radius = Math.hypot(halfWidth, halfHeight, halfDepth);
+    return ORBIT_PADDING * (radius + Math.max(halfHeight / Math.tan(halfV), halfWidth / Math.tan(halfH)));
+  }
+
   function viewProjection(state) {
-    return state.viewMode === "perspective" ? perspectiveProjection(state) : isometricProjection(state);
+    if (state.viewMode === "perspective") return perspectiveProjection(state);
+    if (state.viewMode === "orbit") return orbitProjection(state);
+    return isometricProjection(state);
   }
 
   function resize(state) {
@@ -572,6 +656,9 @@ window.FrameworkDesignerRenderer = (function () {
       fit(boundsMm, padding) {
         const bounds = boundsMm || sceneBounds(state);
         resize(state);
+        // Back to "work it out from the design" rather than whatever the last
+        // dolly left behind.
+        state.orbit.distanceMm = 0;
         if (!bounds) {
           state.target = [400, 130, 300];
           state.halfHeight = 700;
@@ -615,6 +702,15 @@ window.FrameworkDesignerRenderer = (function () {
 
       /** Zoom about a screen point so pinch and wheel feel anchored. */
       zoomBy(factor, clientX, clientY) {
+        if (state.viewMode === "orbit") {
+          // Dollying the camera is the honest move under a perspective view;
+          // the anchor point does not apply, so it is ignored here.
+          const aspect = state.width / Math.max(1, state.height);
+          const current = state.orbit.distanceMm || fitOrbitDistance(state, aspect);
+          state.orbit.distanceMm = Math.max(150, Math.min(60000, current / factor));
+          requestFrame(state);
+          return;
+        }
         const previous = state.halfHeight;
         const next = Math.max(120, Math.min(12000, previous / factor));
         if (next === previous) return;
@@ -817,12 +913,72 @@ window.FrameworkDesignerRenderer = (function () {
        * Switch between the isometric and the fixed front perspective view. The
        * perspective camera derives everything from the design, so there is
        * nothing to pan or zoom -- it is a viewpoint, not a way to inspect.
+       *
+       * "orbit" is the render console's third mode; /builder never asks for it.
        */
       setViewMode(mode) {
-        const next = mode === "perspective" ? "perspective" : "iso";
+        const next = mode === "perspective" || mode === "orbit" ? mode : "iso";
         if (next === state.viewMode) return;
         state.viewMode = next;
         requestFrame(state);
+      },
+
+      /**
+       * Turn the orbit camera by a screen-space drag. No-op in the two locked
+       * views, so a console button and a builder gesture cannot fight.
+       */
+      orbitByPixels(dx, dy) {
+        if (state.viewMode !== "orbit") return;
+        const perPixel = 0.4;
+        state.orbit.azimuthDeg = (state.orbit.azimuthDeg + dx * perPixel) % 360;
+        state.orbit.elevationDeg = Math.max(
+          -ORBIT_MAX_ELEVATION_DEG,
+          Math.min(ORBIT_MAX_ELEVATION_DEG, state.orbit.elevationDeg + dy * perPixel)
+        );
+        requestFrame(state);
+      },
+
+      setOrbit(orbit) {
+        if (orbit.azimuthDeg != null) state.orbit.azimuthDeg = orbit.azimuthDeg;
+        if (orbit.elevationDeg != null) {
+          state.orbit.elevationDeg = Math.max(-ORBIT_MAX_ELEVATION_DEG, Math.min(ORBIT_MAX_ELEVATION_DEG, orbit.elevationDeg));
+        }
+        if (orbit.distanceMm != null) state.orbit.distanceMm = orbit.distanceMm;
+        requestFrame(state);
+      },
+
+      getOrbit: () => ({ ...state.orbit, distanceMm: state.orbit.distanceMm || fitOrbitDistance(state, state.width / Math.max(1, state.height)) }),
+
+      /**
+       * The live camera, in world millimetres, whichever mode is active.
+       *
+       * The console hands this to Blender so a render frames what is on screen.
+       * It is described in this renderer's own terms -- millimetres, an ortho
+       * frame width, a vertical field of view -- and the caller converts; the
+       * renderer has no business knowing about Blender's units.
+       */
+      getCamera() {
+        const camera = viewProjection(state);
+        const aspect = state.width / Math.max(1, state.height);
+        return camera.perspective
+          ? {
+            type: "perspective",
+            positionMm: camera.eye.slice(),
+            targetMm: state.target.slice(),
+            fovDeg: camera.fovDeg || PERSPECTIVE_FOV_DEG,
+            nearMm: camera.near || 50,
+            farMm: camera.far || 20000
+          }
+          : {
+            type: "orthographic",
+            positionMm: camera.eye.slice(),
+            targetMm: state.target.slice(),
+            // Blender's ortho scale is the width the frame spans, so hand back
+            // the width rather than this renderer's half-height.
+            widthMm: state.halfHeight * 2 * aspect,
+            nearMm: 1,
+            farMm: (state.sceneRadius || 1500) * 6
+          };
       },
 
       /**
