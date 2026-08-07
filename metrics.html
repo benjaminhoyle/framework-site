@@ -54,35 +54,14 @@
     .card { background:var(--card); border:1px solid var(--line); border-radius:12px; }
     .pad { padding:18px 20px; }
 
-    /* Verdict — the top of the hierarchy. One question: is what's live working?
-       Everything below it is evidence for this answer, so it is the only thing on
-       the page allowed to be this loud. */
-    .verdict { background:var(--card); border:1px solid var(--line); border-left:3px solid var(--muted);
-      border-radius:12px; padding:19px 22px 20px; }
-    .verdict.not_working { border-left-color:var(--critical); }
-    .verdict.stalled     { border-left-color:var(--serious); }
-    .verdict.working     { border-left-color:var(--good); }
-    .verdict .eyebrow { font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
-    .verdict .say { font-size:23px; font-weight:600; letter-spacing:-.02em; margin:5px 0 0; }
-    .verdict.not_working .say { color:var(--critical); }
-    .verdict.stalled .say     { color:var(--serious); }
-    .verdict.working .say     { color:var(--good); }
-    .verdict .setup { font-size:13px; color:var(--dim); margin-top:7px; font-variant-numeric:tabular-nums; }
-    .verdict .setup b { color:var(--ink); font-weight:600; }
-
-    /* The money chain: spend → conversations → sales, in one reading line. */
-    .chain { display:flex; align-items:stretch; gap:0; margin-top:17px; flex-wrap:wrap;
-      border-top:1px solid var(--line); padding-top:16px; }
-    .chain .step { padding-right:26px; }
-    .chain .step + .step { padding-left:26px; border-left:1px solid var(--line-soft); }
-    .chain .n { font-size:21px; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
-    .chain .n.nil { color:var(--critical); }
-    .chain .k { font-size:11.5px; color:var(--muted); margin-top:2px; }
-
-    /* Trust check — only rendered when the two counts actually disagree. */
-    .trust { margin-top:15px; padding-top:14px; border-top:1px solid var(--line); font-size:13px; color:var(--dim); }
-    .trust b { color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
-    .trust .verdictline { color:var(--serious); margin-top:4px; }
+    /* The verdict banner ("Live — working / not working") used to sit here, above
+       the alerts. Removed 2026-08-07: its headline was driven by `live.sales30`,
+       which counts only sales on conversations carrying a Meta Ad ID — so it read
+       "not working" through a week that produced three sales, because those sales
+       arrived through the site bridge and organic reach rather than through an
+       ad we could join on. It was measuring attribution coverage and printing it
+       as a business verdict. The day-by-day rows below say the same thing without
+       having to be right about attribution first. */
 
     /* Alerts */
     .alert { border-radius:10px; padding:13px 16px; margin-bottom:12px; border:1px solid;
@@ -289,7 +268,7 @@
         '<span style="color:' + col + '">● ' + lbl + '</span>' +
         '<span style="color:var(--muted)"> · ' + gen.toLocaleString() + '</span>';
 
-      var h = verdict() + alerts() + dailyChart() + adTable() + funnels() + trend() + footerPanels();
+      var h = alerts() + dailyChart() + adTable() + funnels() + trend() + footerPanels();
       show(h);
       wire();
     }
@@ -306,64 +285,11 @@
       }).join('');
     }
 
-    // ---------- verdict: is what's live working? ----------
-    // Replaces the old four-KPI row. Those four numbers were true but answered
-    // nothing on their own — you still had to do the division in your head and
-    // then go hunting for whether the ads producing them were even running.
-    var SAY = {
-      working:      { t:'Live and working' },
-      not_working:  { t:'Live — not working' },
-      stalled:      { t:'Live but not delivering' },
-      nothing_live: { t:'Nothing is live' }
-    };
-    function verdict() {
-      var v = D.live; if (!v) return '';
-      var s = SAY[v.verdict] || SAY.nothing_live;
-
-      // Line 1 — the setup: what is running and how long it can keep running.
-      var setup = v.verdict === 'nothing_live'
-        ? 'No active ads. Nothing is spending.'
-        : '<b>' + num(v.activeAds) + '</b> active ad' + (v.activeAds===1?'':'s') +
-          (v.dailyBudget ? ' · <b>' + kes(v.dailyBudget) + '</b>/day' : '') +
-          (v.runwayDays != null ? ' · <b>' + v.runwayDays.toFixed(1) + '</b> days of runway' : '');
-
-      // Line 2 — the money chain. Zero at the end of the chain is the whole point,
-      // so it is coloured; every other number stays neutral.
-      var chain = v.verdict === 'nothing_live' ? '' :
-        '<div class="chain">' +
-          step(kes(v.spend30), 'spent · 30 days') +
-          step(num(v.convosMeta30), 'conversations', !v.convosMeta30) +
-          step(num(v.sales30), v.sales30 === 1 ? 'sale' : 'sales', !v.sales30) +
-          (v.revenue30 ? step(kes(v.revenue30), 'revenue') : '') +
-          (v.costPerConvo30 != null ? step(kes(v.costPerConvo30), 'per conversation') : '') +
-        '</div>';
-
-      return '<section><div class="verdict ' + esc(v.verdict) + '">' +
-        '<div class="eyebrow">Live right now</div>' +
-        '<div class="say">' + esc(s.t) + '</div>' +
-        '<div class="setup">' + setup + '</div>' +
-        chain + trustCheck(v) +
-      '</div></section>';
-    }
-    function step(n, k, nil) {
-      return '<div class="step"><div class="n' + (nil?' nil':'') + '">' + esc(n) + '</div>' +
-        '<div class="k">' + esc(k) + '</div></div>';
-    }
-
-    // Meta counts a landing-page view off its own click; the site counts a session
-    // that actually loaded. When those two disagree badly the clicks were not
-    // people. Stays silent unless it has something to say — this is the one place
-    // a discrepancy is worth interrupting for.
-    function trustCheck(v) {
-      if (!v.metaLanding30) return '';
-      var ratio = v.metaLanding30 ? v.siteArrivals30 / v.metaLanding30 : 1;
-      var bad = v.metaLanding30 >= 200 && ratio < 0.5;
-      return '<div class="trust">Meta counted <b>' + num(v.metaLanding30) + '</b> landing views' +
-        '; your site recorded <b>' + num(v.siteArrivals30) + '</b> arrivals.' +
-        (bad ? '<div class="verdictline">Only ' + Math.round(ratio*100) + '% of those clicks became a real visit — ' +
-               'the rest never loaded the site.</div>' : '') +
-      '</div>';
-    }
+    // The verdict banner, the money chain and the Meta-vs-site trust check lived
+    // here. Removed 2026-08-07 with the CSS above; `dashboard.json` still carries
+    // `live`, so this can be restored from git if the headline is ever wanted
+    // back. The runway number it showed is not lost — it is the `budget_runway`
+    // alert, which renders above.
 
     // ---------- day by day (the daily check-in) ----------
     // Three measures that share an x-axis but NOT a y-scale, drawn as aligned
