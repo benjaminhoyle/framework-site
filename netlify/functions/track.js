@@ -13,9 +13,24 @@
 
 import { getStore } from '@netlify/blobs';
 
-const EVENTS = new Set(['arrive', 'product_view', 'engage', 'wa_handoff']);
+// `catalog_impression` and `designer_open` were emitted by shelving.html for
+// months and rejected here with a 422, because this allowlist was written before
+// either existed and never widened. That silently zeroed the whole seen→opened
+// denominator in the Catalog Manager: `seen`, `seenAboveFold`, `impressionsBySlot`
+// and `designerOpens` were structurally incapable of being anything but 0.
+const EVENTS = new Set([
+  'arrive', 'product_view', 'engage', 'wa_handoff', 'catalog_impression', 'designer_open',
+]);
 const CODE_RE = /^[0-9A-HJKMNP-TV-Z]{6}$/; // Crockford Base32, uppercase, no I/L/O/U
 const MAX_BODY = 8 * 1024; // drop anything oversized
+
+// Impressions arrive BATCHED — one event carrying `dims.items[]` rather than one
+// event per card. The storage layout here is one blob per event, and /api/export
+// fetches every blob in the range individually; at roughly ten cards seen per
+// session, per-card events would have multiplied the export's blob count by ~8
+// and pushed it past the function's 10s budget. The cap is a backstop: the
+// client flushes well below it and MAX_BODY already bounds the payload.
+const MAX_ITEMS = 60;
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json' } });
@@ -69,7 +84,7 @@ export default async (req, context) => {
       ad: cleanAd(body.ad),
       device: str(body.device),
       in_app_browser: str(body.in_app_browser),
-      dims: (body.dims && typeof body.dims === 'object') ? body.dims : {},
+      dims: cleanDims(body.dims),
       received_at,
       country
     });
@@ -78,6 +93,15 @@ export default async (req, context) => {
     return json({ ok: false, error: 'store_error', detail: String(err && err.message) }, 500);
   }
 };
+
+// dims is otherwise passed through as the client sent it — deliberately open, so
+// a new checkpoint dimension needs no server change. The one thing bounded is
+// `items`, the batched-impression array, because the reader iterates it.
+function cleanDims(dims) {
+  if (!dims || typeof dims !== 'object') return {};
+  if (!Array.isArray(dims.items)) return dims;
+  return { ...dims, items: dims.items.filter((i) => i && typeof i === 'object').slice(0, MAX_ITEMS) };
+}
 
 function str(v) { return (v == null) ? null : String(v).slice(0, 300); }
 function num(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }

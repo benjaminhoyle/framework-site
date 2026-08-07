@@ -2326,33 +2326,66 @@
 
     // Emit one impression per session per (product, placement) — the honest
     // denominator: the card actually entered the viewport, not merely rendered.
-    // Deduped in sessionStorage so scrolling a card in and out of view, or
-    // expanding "see more" twice, doesn't inflate it.
+    // Deduped so scrolling a card in and out of view, or expanding "see more"
+    // twice, doesn't inflate it. sessionStorage is the durable mark; the
+    // in-memory set backs it up, because sessionStorage throws in private mode
+    // and a failed dedup would otherwise re-emit on every intersection.
+    //
+    // Impressions are sent BATCHED — one beacon carrying `items[]`, not one per
+    // card. The collector stores one blob per event and /api/export fetches each
+    // blob individually, so per-card events would have multiplied the export's
+    // work by ~8 and pushed it past its 10s budget. Flushing is idle-triggered
+    // (scrolling settles, then we send), size-capped, and forced on pagehide so
+    // a session that scrolls and leaves doesn't lose its tail.
     //
     // The observer fires for above-the-fold cards on first paint, which can be
     // BEFORE the deferred site.js defines window.fwk. Those are the most-seen
-    // cards, so dropping them would gut the data. Queue when fwk isn't ready yet
-    // and flush the moment it is — the dedup mark is set at capture time, so a
-    // queued impression is neither lost nor duplicated.
+    // cards, so dropping them would gut the data. The queue simply holds them
+    // until fwk exists — the dedup mark is set at capture time, so a queued
+    // impression is neither lost nor duplicated.
+    var IMPR_BATCH_MAX = 25;   // stays well inside the collector's 8KB body cap
+    var IMPR_IDLE_MS = 1000;   // quiet period after the last card scrolled in
     var imprQueue = [];
-    function flushImpressions() {
-      if (!(window.fwk && window.fwk.track)) return false;
-      while (imprQueue.length) window.fwk.track('catalog_impression', imprQueue.shift());
+    var imprSeen = {};
+    var imprIdleTimer = null;
+
+    function sendImpressionBatch() {
+      if (!imprQueue.length) return false;
+      if (!(window.fwk && window.fwk.track)) return false; // not ready; the poll retries
+      while (imprQueue.length) {
+        window.fwk.track('catalog_impression', { items: imprQueue.splice(0, IMPR_BATCH_MAX) });
+      }
       return true;
+    }
+    function scheduleImpressionFlush() {
+      if (imprQueue.length >= IMPR_BATCH_MAX) { sendImpressionBatch(); return; }
+      clearTimeout(imprIdleTimer);
+      imprIdleTimer = setTimeout(sendImpressionBatch, IMPR_IDLE_MS);
     }
     var imprFlushTries = 0;
     var imprFlushTimer = setInterval(function () {
-      if (flushImpressions() || ++imprFlushTries > 50) clearInterval(imprFlushTimer);
+      if (window.fwk && window.fwk.track) { sendImpressionBatch(); clearInterval(imprFlushTimer); }
+      else if (++imprFlushTries > 50) clearInterval(imprFlushTimer);
     }, 200);
+    // sendBeacon is specified to survive both of these; a pending idle timer is not.
+    window.addEventListener('pagehide', function () {
+      clearTimeout(imprIdleTimer); sendImpressionBatch();
+    });
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState !== 'hidden') return;
+      clearTimeout(imprIdleTimer); sendImpressionBatch();
+    });
 
     function emitImpression(id, placement, dims) {
       if (!id) return;
       var key = 'fwk_impr_' + placement + '_' + id;
+      if (imprSeen[key]) return;
+      imprSeen[key] = 1;
       try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch (e) { /* private mode */ }
       var d = { product_id: id, placement: placement };
       if (dims) for (var k in dims) d[k] = dims[k];
-      if (window.fwk && window.fwk.track) window.fwk.track('catalog_impression', d);
-      else imprQueue.push(d);
+      imprQueue.push(d);
+      scheduleImpressionFlush();
     }
 
     function slotOf(id) {
