@@ -178,6 +178,39 @@ test("serialise/deserialise round-trips every golden config", () => {
 });
 
 /**
+ * The design code is the spine of the whole production chain: it addresses a
+ * design at framework.co.ke/builder/<code>, keys its record in /api/design, and
+ * rides in the filename of every render and scene made from it.
+ *
+ * So it must never change. A code that shifts orphans every link already sent
+ * to a client and every image already filed under the old one. These are frozen
+ * answers, not a description of the algorithm -- if this test fails, the fix is
+ * to put the hash back, not to update the expectations.
+ */
+test("the design code is stable, and derived only from the design", () => {
+  const frozen = {
+    "broad-base-extension": "0NKCEDE",
+    "compact-base-extension": "0B8W8UY",
+    "broad-hanger-stack": "1VCQ67C"
+  };
+  let checked = 0;
+  for (const config of fixtures()) {
+    if (!(config.id in frozen)) continue;
+    checked += 1;
+    const state = engine.fromPipelineConfig(catalog, config);
+    assert.equal(engine.designCode(state), frozen[config.id], `${config.id} changed code`);
+    // Seven of uppercase base36, which is what the site's CODE_RE accepts and
+    // what the filename convention hunts for.
+    assert.match(engine.designCode(state), /^[0-9A-Z]{7}$/);
+    // Round-tripping the design must not move the code, or a render loaded from
+    // a saved design would file itself under a different one than the builder.
+    const roundTrip = engine.deserializeState(catalog, JSON.parse(JSON.stringify(engine.serializeState(state))));
+    assert.equal(engine.designCode(roundTrip), frozen[config.id], `${config.id} moved on a round trip`);
+  }
+  assert.ok(checked > 0, "none of the frozen fixtures are in the contract any more");
+});
+
+/**
  * The incremental check is the whole reason candidate generation is fast
  * enough for a phone, so it has to agree with the authoritative full-state
  * validation everywhere -- including on the placements it rejects.

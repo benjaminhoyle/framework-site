@@ -570,6 +570,32 @@ button { cursor: pointer; }
 }
 .nd-link-out .nd-button { flex: 0 0 auto; }
 
+/* The design code under the share image. Set larger and wider than the link
+   above, because this one gets read off a screen and typed into another
+   machine -- the two characters people confuse are 0 and O. */
+.nd-present-code {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.nd-present-code-label {
+  color: var(--nd-ink-soft);
+  font-size: .78rem;
+}
+.nd-present-code code {
+  flex: 1 1 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--nd-line-strong);
+  border-radius: var(--nd-radius);
+  background: var(--nd-panel);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .95rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+.nd-present-code .nd-button { flex: 0 0 auto; }
+
 /* Module list (Advanced). */
 .nd-search {
   width: 100%;

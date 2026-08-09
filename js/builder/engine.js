@@ -1019,6 +1019,30 @@
     };
   }
 
+  /**
+   * A short, stable reference for a design: seven characters of uppercase
+   * base36, e.g. 1Y3MK7P.
+   *
+   * Derived from the design itself, so the same shelf always gets the same code
+   * and two shares of one design are recognisably the same. That also makes
+   * saving it idempotent -- /api/design is keyed by this, first write wins.
+   *
+   * It lives here rather than in app.js because it is a pure function of what
+   * serializeState returns, and because the render console needs the identical
+   * answer without shipping the builder's UI. **Changing it renames every
+   * design that has ever been saved**, so it does not change.
+   */
+  function designCode(state) {
+    const source = JSON.stringify(serializeState(state));
+    // FNV-1a, 32-bit: short, well spread, and four lines of code.
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < source.length; i += 1) {
+      hash ^= source.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return hash.toString(36).toUpperCase().padStart(7, "0").slice(-7);
+  }
+
   function deserializeState(catalog, payload) {
     const parsed = typeof payload === "string" ? JSON.parse(payload) : payload;
     let state = createState(catalog, {
@@ -1135,6 +1159,7 @@
     applyCandidate,
     createState,
     designBounds,
+    designCode,
     deserializeState,
     fromPipelineConfig,
     generateCandidates,

@@ -184,6 +184,14 @@
                 <div class="nd-modal-body">
                     <p class="nd-note" id="nd-present-hint">Long-press or right-click the image to copy or save it.</p>
                     <div class="nd-present-frame"><img id="nd-present-image" alt="Your shelf design"></div>
+                    <!-- The code is printed on the image, but it is also what
+                         the render console is opened with, so it is worth being
+                         able to take without retyping. -->
+                    <div class="nd-present-code" id="nd-present-code" hidden>
+                        <span class="nd-present-code-label">Design code</span>
+                        <code id="nd-present-code-value"></code>
+                        <button type="button" class="nd-button is-small" id="nd-present-code-copy">Copy</button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -211,7 +211,10 @@
     presentModal: el("nd-present-modal"),
     presentImage: el("nd-present-image"),
     presentClose: el("nd-present-close"),
-    presentHint: el("nd-present-hint")
+    presentHint: el("nd-present-hint"),
+    presentCode: el("nd-present-code"),
+    presentCodeValue: el("nd-present-code-value"),
+    presentCodeCopy: el("nd-present-code-copy")
   };
 
   const ui = {
@@ -1879,14 +1882,7 @@
    * look back through a conversation we can tell which designs a client saw.
    */
   function designCode() {
-    const source = JSON.stringify(engine.serializeState(ui.design));
-    // FNV-1a, 32-bit: short, well spread, and four lines of code.
-    let hash = 0x811c9dc5;
-    for (let i = 0; i < source.length; i += 1) {
-      hash ^= source.charCodeAt(i);
-      hash = Math.imul(hash, 0x01000193) >>> 0;
-    }
-    return hash.toString(36).toUpperCase().padStart(7, "0").slice(-7);
+    return engine.designCode(ui.design);
   }
 
   function presentContent() {
@@ -1958,6 +1954,10 @@
         }
         const canvas = composer.compose(snapshot, content, logo);
         dom.presentImage.src = canvas.toDataURL("image/png");
+        // The same code the image prints, offered as text: it is what the render
+        // console is opened with, and reading seven characters off a picture and
+        // retyping them is the one bit of manual transcription in the chain.
+        showPresentCode(content.code);
         dom.presentModal.hidden = false;
         track("designer_present", { mode: ui.mode, view: ui.renderer.getViewMode() });
       } catch (error) {
@@ -1969,9 +1969,42 @@
     });
   }
 
+  /**
+   * The design code beneath the share image, with a Copy button.
+   *
+   * Same clipboard handling as linkField()'s: older Android WebViews have no
+   * async clipboard, so fall back to selecting the text and letting a long-press
+   * copy what is already highlighted.
+   */
+  function showPresentCode(code) {
+    if (!dom.presentCode || !code) return;
+    dom.presentCodeValue.textContent = code;
+    dom.presentCode.hidden = false;
+    dom.presentCodeCopy.textContent = "Copy";
+    dom.presentCodeCopy.onclick = () => {
+      const done = () => {
+        dom.presentCodeCopy.textContent = "Copied";
+        window.setTimeout(() => { dom.presentCodeCopy.textContent = "Copy"; }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(done, () => {
+          setHint("Copying was blocked — the code is on the image too.", true);
+        });
+      } else {
+        const range = document.createRange();
+        range.selectNodeContents(dom.presentCodeValue);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        done();
+      }
+    };
+  }
+
   function closePresent() {
     dom.presentModal.hidden = true;
     dom.presentImage.removeAttribute("src");
+    if (dom.presentCode) dom.presentCode.hidden = true;
   }
 
   // ------------------------------------------------------ share / URL state --

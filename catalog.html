@@ -74,10 +74,23 @@
     .ph { position:relative; aspect-ratio:1/1; background:#0b0d11; overflow:hidden; }
     .ph img { width:100%; height:100%; object-fit:cover; display:block; position:relative; z-index:1; }
     .ph .placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:11px; text-align:center; padding:12px; }
-    .stack { display:flex; gap:4px; padding:6px 8px 0; overflow-x:auto; }
-    .stack button { flex:0 0 auto; width:34px; height:34px; padding:0; border:1px solid var(--line); border-radius:5px; overflow:hidden; background:#0b0d11; cursor:pointer; opacity:.6; }
+    .stack { display:flex; gap:7px; padding:7px 8px 0; overflow-x:auto; }
+    .stack button { flex:0 0 auto; width:46px; height:46px; padding:0; border:1px solid var(--line); border-radius:5px; overflow:hidden; background:#0b0d11; cursor:pointer; opacity:.6; }
     .stack button.sel { opacity:1; border-color:var(--blue); }
     .stack img { width:100%; height:100%; object-fit:cover; display:block; }
+    /* Per-image controls. The first image is the cover, so "make cover" and
+       "reorder" are the same gesture -- move it to the front. The thumbnails are
+       sized by these rather than the other way round: three controls under one
+       thumb need enough width each to actually be hit, on a phone included. */
+    .shot { position:relative; flex:0 0 auto; }
+    .shot .cover { position:absolute; top:-1px; left:-1px; z-index:2; font-size:8px; line-height:1;
+      padding:2px 4px; border-radius:4px 0 4px 0; background:var(--blue); color:#fff; letter-spacing:.03em; }
+    .shot-tools { display:flex; gap:2px; margin-top:3px; }
+    .shot-tools button { width:auto; height:19px; flex:1 1 0; min-width:0; padding:0; opacity:.6;
+      font-size:12px; line-height:1; color:var(--dim); background:#12151b; border-radius:3px; }
+    .shot-tools button:hover:not(:disabled) { opacity:1; color:var(--ink); border-color:var(--blue); }
+    .shot-tools button:disabled { opacity:.18; cursor:default; }
+    .shot-tools button.del:hover { color:#ff8b7a; border-color:#ff8b7a; }
     .imgcount { position:absolute; bottom:6px; right:6px; z-index:2; background:rgba(0,0,0,.65); border-radius:20px; padding:1px 7px; font-size:10px; color:#fff; }
     .badge { position:absolute; top:8px; left:8px; font-size:11px; padding:2px 8px; border-radius:20px; background:rgba(0,0,0,.6); }
     .badge.new { background:var(--blue); color:#fff; } .badge.changed { background:var(--warn); color:#000; }
@@ -135,7 +148,7 @@
     <p style="color:var(--dim)">Publishing is deliberate and batched — you stage everything here, then apply it once. Nothing changes on the live site until you run that step.</p>
   </div><div class="dlg-foot"><button class="btn" id="dlgClose">Got it</button></div></dialog>
 
-  <input type="file" id="fileInput" multiple accept=".json,image/*" style="display:none">
+  <input type="file" id="fileInput" multiple accept=".json,.zip,image/*" style="display:none">
 
   <script>
     var key = new URLSearchParams(location.search).get('key');
@@ -246,7 +259,7 @@
           '<button data-view="rows" class="' + (state.view==='rows'?'on':'') + '">Rows</button>' +
         '</span>' +
       '</div>' +
-      '<div class="drop" id="dropZone">➕ &nbsp;Upload a product package — select the folder’s <b>.json</b> and its images</div>';
+      '<div class="drop" id="dropZone">➕ &nbsp;Upload a product package — the <b>.zip</b> from the catalog studio, or the folder’s <b>.json</b> and its images</div>';
 
       if (!list.length) {
         html += '<div class="emptybox">No products match this view.</div>';
@@ -395,9 +408,20 @@
       var all = (p.images && p.images.length ? p.images : [p.image]).filter(Boolean);
       var shown = state.shown[p.id] || 0;
       var count = all.length > 1 ? '<span class="imgcount">' + all.length + ' images</span>' : '';
-      var strip = all.length > 1 ? '<div class="stack">' + all.map(function (src, i) {
-        return '<button type="button" class="' + (i === shown ? 'sel' : '') + '" data-img-i="' + i + '" title="' + esc(src.split('/').pop()) + '">' +
-          '<img src="/' + esc(src) + '" alt="" onerror="this.remove()"></button>';
+      // Every image in the package, reorderable. Position 0 is the cover, so
+      // "make this the cover" and "move it left" are one gesture rather than two
+      // concepts. Arrows rather than drag-and-drop: this has to work on a phone.
+      var strip = all.length ? '<div class="stack">' + all.map(function (src, i) {
+        return '<div class="shot">' +
+          (i === 0 ? '<span class="cover">COVER</span>' : '') +
+          '<button type="button" class="' + (i === shown ? 'sel' : '') + '" data-img-i="' + i + '" title="' + esc(src.split('/').pop()) + '">' +
+            '<img src="/' + esc(src) + '" alt="" onerror="this.remove()"></button>' +
+          '<div class="shot-tools">' +
+            '<button type="button" data-img-left="' + i + '" title="Move earlier"' + (i === 0 ? ' disabled' : '') + '>&lsaquo;</button>' +
+            '<button type="button" class="del" data-img-del="' + i + '" title="Remove from this product"' + (all.length < 2 ? ' disabled' : '') + '>&times;</button>' +
+            '<button type="button" data-img-right="' + i + '" title="Move later"' + (i === all.length - 1 ? ' disabled' : '') + '>&rsaquo;</button>' +
+          '</div>' +
+        '</div>';
       }).join('') + '</div>' : '';
       var s = p.stats || {}, dv = derived(s);
       // The card mirrors the table funnel: reach → chose it → messaged → outcome.
@@ -417,7 +441,10 @@
           '<textarea class="desc" data-f="description" placeholder="Description">' + esc(p.description||'') + '</textarea>' +
           statHtml +
           '<div class="actions"><button class="btn small ghost" data-dl>Download JSON</button>' +
-            (diff==='isnew' ? '<button class="btn small ghost" data-remove>Remove</button>' : '<span class="pid">KSh ' + (Number(p.priceValue)||0).toLocaleString() + '</span>') +
+            // Removable whether or not it is live. catalog-publish already
+            // computes and applies removals; only the button was missing.
+            '<button class="btn small ghost" data-remove>Remove</button>' +
+            (diff==='isnew' ? '' : '<span class="pid">KSh ' + (Number(p.priceValue)||0).toLocaleString() + '</span>') +
           '</div>' +
         '</div></div>';
     }
@@ -471,10 +498,29 @@
         var id = el.getAttribute('data-id');
         el.querySelector('[data-toggle]').onclick = function () { setProd(id, function (p) { p.active = (p.active === false); }); };
         el.querySelectorAll('[data-f]').forEach(function (inp) {
-          inp.onchange = function () { setProd(id, function (p) { p[inp.getAttribute('data-f')] = inp.value; }); };
+          inp.onchange = function () {
+            setProd(id, function (p) {
+              var field = inp.getAttribute('data-f');
+              p[field] = inp.value;
+              // priceValue is the number the Meta feed advertises and the site
+              // sorts on; `price` is the string a customer reads. Editing one
+              // without the other silently ships a product whose advertised
+              // price is not the price on the page.
+              if (field === 'price') p.priceValue = priceNumber(inp.value);
+            });
+          };
         });
         el.querySelectorAll('[data-img-i]').forEach(function (b) {
           b.onclick = function () { state.shown[id] = Number(b.getAttribute('data-img-i')); render(); };
+        });
+        el.querySelectorAll('[data-img-left]').forEach(function (b) {
+          b.onclick = function () { moveImage(id, Number(b.getAttribute('data-img-left')), -1); };
+        });
+        el.querySelectorAll('[data-img-right]').forEach(function (b) {
+          b.onclick = function () { moveImage(id, Number(b.getAttribute('data-img-right')), 1); };
+        });
+        el.querySelectorAll('[data-img-del]').forEach(function (b) {
+          b.onclick = function () { removeImage(id, Number(b.getAttribute('data-img-del'))); };
         });
         var dl = el.querySelector('[data-dl]'); if (dl) dl.onclick = function () { downloadJson(id); };
         var rm = el.querySelector('[data-remove]'); if (rm) rm.onclick = function () { removeProd(id); };
@@ -483,6 +529,43 @@
 
     function getProd(id) { return state.working.find(function (p) { return p.id === id; }); }
     function setProd(id, fn) { var p = getProd(id); if (!p) return; fn(p); render(); saveDraftDebounced(); }
+
+    /** The number inside "Ksh 6,500" — everything that is not a digit goes. */
+    function priceNumber(text) { return Number(String(text || '').replace(/[^\d.]/g, '')) || 0; }
+
+    /**
+     * `images` is the order they appear in; `image` is the cover and must always
+     * be the first of them. Keeping the two in step in one place is why every
+     * image edit goes through here rather than touching the arrays directly.
+     */
+    function setImages(p, list) {
+      p.images = list;
+      p.image = list[0] || '';
+    }
+    function moveImage(id, index, step) {
+      setProd(id, function (p) {
+        var list = (p.images && p.images.length ? p.images.slice() : [p.image]).filter(Boolean);
+        var to = index + step;
+        if (to < 0 || to >= list.length) return;
+        var moved = list.splice(index, 1)[0];
+        list.splice(to, 0, moved);
+        setImages(p, list);
+        state.shown[id] = to;
+      });
+    }
+    function removeImage(id, index) {
+      var p = getProd(id);
+      if (!p) return;
+      var list = (p.images && p.images.length ? p.images.slice() : [p.image]).filter(Boolean);
+      // A product with no images fails catalog.json's own validation on publish,
+      // so the last one cannot go. Deactivate the product instead.
+      if (list.length < 2) { toast('A product needs at least one image — turn it off instead.'); return; }
+      if (!confirm('Remove ' + String(list[index]).split('/').pop() + ' from "' + id + '"?\n\nThe file stays in the repo; it just stops being shown for this product.')) return;
+      list.splice(index, 1);
+      setProd(id, function (prod) { setImages(prod, list); });
+      state.shown[id] = 0;
+      render();
+    }
 
     function updatePublishBar() {
       var pub = pubIndex();
@@ -515,7 +598,15 @@
       api('/api/catalog-draft', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(payload) }).catch(function(){});
     }
 
-    function removeProd(id) { state.working = state.working.filter(function (p) { return p.id !== id; }); render(); saveDraftDebounced(); }
+    function removeProd(id) {
+      // Taking a live product off the site is the one destructive thing here, so
+      // it asks. A product only staged in this draft has nothing to lose.
+      var live = (state.published.products || []).some(function (p) { return p.id === id; });
+      if (live && !confirm('Remove "' + id + '" from the catalog?\n\nIt stays live until you Publish. Its images are left in the repo, so re-uploading the package brings it back.')) return;
+      state.working = state.working.filter(function (p) { return p.id !== id; });
+      render();
+      saveDraftDebounced();
+    }
 
     function downloadJson(id) {
       var p = getProd(id); if (!p) return;
@@ -525,12 +616,50 @@
       var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = id + '.json'; a.click();
     }
 
-    // --- Upload a package (json + images) --------------------------------------
+    // --- Upload a package (json + images, loose or zipped) ----------------------
     document.getElementById('fileInput').onchange = function (e) { handleFiles(Array.from(e.target.files)); e.target.value=''; };
+
+    /**
+     * Read the ZIP the catalog studio exports.
+     *
+     * Only STORED entries, which is all that studio writes — it builds the
+     * archive by hand rather than compressing. A deflated zip from elsewhere is
+     * refused by name rather than silently producing garbage.
+     */
+    function readStoredZip(file) {
+      return file.arrayBuffer().then(function (buffer) {
+        var bytes = new Uint8Array(buffer), out = [], at = 0;
+        while (at + 30 <= bytes.length) {
+          var sig = bytes[at] | (bytes[at+1]<<8) | (bytes[at+2]<<16) | (bytes[at+3]<<24);
+          if (sig !== 0x04034b50) break;
+          var method = bytes[at+8] | (bytes[at+9]<<8);
+          var size = (bytes[at+18] | (bytes[at+19]<<8) | (bytes[at+20]<<16) | (bytes[at+21]<<24)) >>> 0;
+          var nameLen = bytes[at+26] | (bytes[at+27]<<8);
+          var extraLen = bytes[at+28] | (bytes[at+29]<<8);
+          var name = new TextDecoder().decode(bytes.slice(at+30, at+30+nameLen));
+          var start = at + 30 + nameLen + extraLen;
+          if (method !== 0) throw new Error('compressed');
+          out.push(new File([bytes.slice(start, start+size)], name.split('/').pop()));
+          at = start + size;
+        }
+        if (!out.length) throw new Error('empty');
+        return out;
+      });
+    }
+
     function handleFiles(files) {
+      var zip = files.find(function (f) { return /\.zip$/i.test(f.name); });
+      if (zip) {
+        readStoredZip(zip).then(handleFiles).catch(function (e) {
+          alert(e.message === 'compressed'
+            ? 'That ZIP is compressed. Use the one the catalog studio exports, or unzip it and select the files.'
+            : 'That ZIP could not be read. Unzip it and select the .json and its images.');
+        });
+        return;
+      }
       var jsonFile = files.find(function (f) { return f.name.toLowerCase().endsWith('.json'); });
       var images = files.filter(function (f) { return /\.(jpe?g|png|webp)$/i.test(f.name); });
-      if (!jsonFile) { alert('Select the package .json file along with its images.'); return; }
+      if (!jsonFile) { alert('Select the package .json file along with its images, or the package .zip.'); return; }
       jsonFile.text().then(function (txt) {
         var meta; try { meta = JSON.parse(txt); } catch (e) { alert('That .json is not valid JSON.'); return; }
         var id = String(meta.id || jsonFile.name.replace(/\.json$/i,'')).trim();
@@ -550,6 +679,10 @@
         active: false,
       };
       if (meta.designerUrl) product.designerUrl = meta.designerUrl;
+      // Which shelf this product is, when the package came from a render. Passed
+      // straight through to catalog.json — nothing on the site reads it yet, but
+      // it is the only chance to capture it, and it costs a field.
+      if (meta.designCode) product.designCode = meta.designCode;
       // preview via the first uploaded image
       if (images[0]) state.objectUrls[id] = URL.createObjectURL(images[0]);
       // upsert into working
@@ -559,11 +692,49 @@
       // upload each image to the staging store
       var done = 0;
       if (!images.length) { saveDraft(); return; }
+      toast(id + ': preparing ' + images.length + ' image(s)…');
       images.forEach(function (f) {
-        api('/api/catalog-upload?id=' + encodeURIComponent(id) + '&file=' + encodeURIComponent(f.name), { method:'POST', body:f })
+        shrink(f)
+          .then(function (body) {
+            return api('/api/catalog-upload?id=' + encodeURIComponent(id) + '&file=' + encodeURIComponent(f.name), { method:'POST', body:body });
+          })
           .then(function (r) { return r.json(); })
           .then(function () { if (++done === images.length) { saveDraft(); toast(id + ': ' + images.length + ' image(s) staged'); } })
           .catch(function () { toast('Upload failed for ' + f.name); });
+      });
+    }
+
+    /**
+     * Resize an image to what the site actually serves before uploading it.
+     *
+     * Product photos come off a phone at several megabytes and get resized to
+     * 1400px on publish anyway, so sending the original wastes the whole upload
+     * and pushes at the function's payload ceiling for no benefit. Doing it here
+     * also means the bytes that arrive are already the shipping size.
+     *
+     * Falls back to the original file on any failure — a slightly larger upload
+     * is a much better outcome than a product that would not stage.
+     */
+    function shrink(file, max) {
+      max = max || 1400;
+      return new Promise(function (resolve) {
+        if (!/\.(jpe?g|png|webp)$/i.test(file.name)) return resolve(file);
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function () {
+          URL.revokeObjectURL(url);
+          var scale = Math.min(1, max / Math.max(img.width, img.height));
+          if (scale === 1) return resolve(file);
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          // Keep the uploaded name's extension meaningful: PNG in, PNG out.
+          var type = /\.png$/i.test(file.name) ? 'image/png' : 'image/jpeg';
+          canvas.toBlob(function (blob) { resolve(blob || file); }, type, 0.9);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
       });
     }
 
