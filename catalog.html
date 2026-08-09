@@ -139,14 +139,12 @@
 
   <dialog id="publishDlg"><div class="dlg-body">
     <h3>Publish catalog changes</h3>
-    <p>Your changes are <b>saved as a draft</b> (nothing is live yet). To apply them to the website and Meta catalog:</p>
-    <ol>
-      <li>On the Mac, open Finder → <b>code</b> → <b>framework</b> → <b>framework-ops</b>.</li>
-      <li>Double-click <b>catalog.command</b>. It reviews the draft, updates the site + Meta feed, and deploys.</li>
-      <li>When it finishes, reload this page — the “staged changes” banner clears.</li>
-    </ol>
-    <p style="color:var(--dim)">Publishing is deliberate and batched — you stage everything here, then apply it once. Nothing changes on the live site until you run that step.</p>
-  </div><div class="dlg-foot"><button class="btn" id="dlgClose">Got it</button></div></dialog>
+    <div id="dlgPlan">Checking what would go live…</div>
+    <p style="color:var(--dim)">Publishing is deliberate and batched — you stage everything here, then apply it once. Nothing changes on the live site until you press Publish, and the site takes a minute or two to rebuild afterwards.</p>
+  </div><div class="dlg-foot">
+    <button class="btn" id="dlgClose">Cancel</button>
+    <button class="btn primary" id="dlgPublish" disabled>Publish to the live site</button>
+  </div></dialog>
 
   <input type="file" id="fileInput" multiple accept=".json,.zip,image/*" style="display:none">
 
@@ -694,14 +692,22 @@
       if (!images.length) { saveDraft(); return; }
       toast(id + ': preparing ' + images.length + ' image(s)…');
       images.forEach(function (f) {
-        shrink(f)
-          .then(function (body) {
-            return api('/api/catalog-upload?id=' + encodeURIComponent(id) + '&file=' + encodeURIComponent(f.name), { method:'POST', body:body });
-          })
-          .then(function (r) { return r.json(); })
+        // The full-size image and its thumbnail, both made here. The site needs
+        // both, and generating them in the browser is what lets publishing
+        // happen without a Mac running `sips`. The staging store's keys cannot
+        // contain a slash, so the thumbnail is prefixed and the publish step
+        // routes it into the thumbs directory.
+        Promise.all([
+          shrink(f, 1400).then(function (body) { return put(id, f.name, body); }),
+          shrink(f, 180).then(function (body) { return put(id, 'thumb__' + f.name, body); })
+        ])
           .then(function () { if (++done === images.length) { saveDraft(); toast(id + ': ' + images.length + ' image(s) staged'); } })
           .catch(function () { toast('Upload failed for ' + f.name); });
       });
+    }
+    function put(id, name, body) {
+      return api('/api/catalog-upload?id=' + encodeURIComponent(id) + '&file=' + encodeURIComponent(name), { method:'POST', body:body })
+        .then(function (r) { if (!r.ok) throw new Error('upload ' + r.status); return r.json(); });
     }
 
     /**
@@ -740,7 +746,68 @@
 
     function toast(msg) { var el = document.getElementById('pstatus'); if (el) { el.textContent = msg; el.className='pending'; } }
 
-    document.getElementById('publishBtn').onclick = function () { saveDraft(); document.getElementById('publishDlg').showModal(); };
+    // --- Publish ---------------------------------------------------------------
+    // A dry run first, always. It reads the same inputs and builds the same
+    // files as the real thing, so "24 active, 3 images" is a fact about what is
+    // about to happen rather than a guess — and a missing image is caught before
+    // anything is committed rather than after it is live.
+    document.getElementById('publishBtn').onclick = function () {
+      saveDraft();
+      var dlg = document.getElementById('publishDlg');
+      var plan = document.getElementById('dlgPlan');
+      var go = document.getElementById('dlgPublish');
+      go.disabled = true;
+      go.textContent = 'Publish to the live site';
+      plan.textContent = 'Checking what would go live…';
+      dlg.showModal();
+      // Give saveDraft's debounce time to land, or the dry run reads the draft
+      // as it was before this last edit.
+      setTimeout(function () {
+        api('/api/catalog-publish?dry=1', { method:'POST' })
+          .then(function (r) { return r.json().then(function (b) { return { status:r.status, body:b }; }); })
+          .then(function (res) {
+            if (res.status === 501) {
+              plan.innerHTML = '<p>Publishing from here is not switched on for this site yet.</p>' +
+                '<ol><li>On the Mac, open Finder → <b>code</b> → <b>framework</b> → <b>framework-ops</b>.</li>' +
+                '<li>Double-click <b>catalog.command</b>.</li>' +
+                '<li>Reload this page when it finishes.</li></ol>';
+              return;
+            }
+            if (!res.body.ok) {
+              plan.innerHTML = '<p><b>Cannot publish yet.</b> ' + esc(res.body.detail || res.body.error) + '</p>' +
+                (res.body.missing ? '<ul>' + res.body.missing.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>' : '');
+              return;
+            }
+            plan.innerHTML = '<p>This will put <b>' + res.body.active + ' product' + (res.body.active===1?'':'s') +
+              '</b> on the live site' + (res.body.inactive ? ' and keep ' + res.body.inactive + ' turned off' : '') +
+              (res.body.images ? ', uploading ' + res.body.images + ' image file' + (res.body.images===1?'':'s') : '') +
+              '. The Meta feed is updated to match.</p>';
+            go.disabled = false;
+          })
+          .catch(function (e) { plan.textContent = 'Could not check: ' + e.message; });
+      }, 700);
+    };
+    document.getElementById('dlgPublish').onclick = function () {
+      var go = document.getElementById('dlgPublish');
+      var plan = document.getElementById('dlgPlan');
+      go.disabled = true;
+      go.textContent = 'Publishing…';
+      api('/api/catalog-publish', { method:'POST' })
+        .then(function (r) { return r.json(); })
+        .then(function (b) {
+          if (!b.ok) throw new Error(b.detail || b.error);
+          plan.innerHTML = '<p><b>Published.</b> ' + esc(String(b.active)) + ' product(s) live in commit ' +
+            esc(String(b.commit)) + '. The site rebuilds itself in a minute or two.</p>';
+          go.textContent = 'Done';
+          setTimeout(function () { location.reload(); }, 2500);
+        })
+        .catch(function (e) {
+          plan.innerHTML = '<p><b>Publish failed.</b> ' + esc(e.message) + '</p>' +
+            '<p style="color:var(--dim)">Nothing was changed on the live site, and your staged changes are still here.</p>';
+          go.disabled = false;
+          go.textContent = 'Try again';
+        });
+    };
     document.getElementById('dlgClose').onclick = function () { document.getElementById('publishDlg').close(); };
     document.getElementById('discardBtn').onclick = function () {
       if (!confirm('Discard all staged changes and revert to the live catalog?')) return;
