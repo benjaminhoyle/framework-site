@@ -5,26 +5,25 @@
  *   node scripts/generate-meta-catalog-feed.mjs
  *
  * Options:
- *   --input PATH      Source HTML file. Defaults to shelving.html.
+ *   --input PATH      Published catalogue. Defaults to data/catalog.json.
  *   --output PATH     CSV output path. Defaults to feeds/meta-shelving-catalog.csv.
  *   --base-url URL    Site base URL. Defaults to https://www.framework.co.ke/.
  *
  * The rows themselves are built by scripts/lib/catalog-build.mjs, which
  * netlify/functions/catalog-publish.js also uses — the feed Meta fetches and
- * the feed a laptop writes have to be the same feed. This file reads the
- * products out of the built page, which is what makes it a check on the page as
- * much as a generator: a feed built from catalog.json directly could advertise
- * products the site is not actually showing.
+ * the feed a laptop writes have to be the same feed. It reads the published
+ * artifact rather than the editorial catalog.json, so what is advertised is
+ * exactly what the site is showing.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  DEFAULT_BASE_URL, FEED, PAGE, feedCsv, readConfigurations,
+  DEFAULT_BASE_URL, FEED, PUBLIC_CATALOG, feedCsv, readPublicCatalog,
 } from './lib/catalog-build.mjs';
 
 function parseArgs(argv) {
-  const args = { input: PAGE, output: FEED, baseUrl: DEFAULT_BASE_URL };
+  const args = { input: PUBLIC_CATALOG, output: FEED, baseUrl: DEFAULT_BASE_URL };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     const take = (name) => {
@@ -44,7 +43,7 @@ function parseArgs(argv) {
 
 try {
   const args = parseArgs(process.argv.slice(2));
-  const configurations = readConfigurations(fs.readFileSync(args.input, 'utf8'), args.input);
+  const configurations = readPublicCatalog(fs.readFileSync(args.input, 'utf8'), args.input);
   fs.mkdirSync(path.dirname(args.output), { recursive: true });
   fs.writeFileSync(args.output, feedCsv(configurations, args.baseUrl), 'utf8');
   console.log(JSON.stringify({ output: args.output, products: configurations.length }, null, 2));

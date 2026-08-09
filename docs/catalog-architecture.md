@@ -1,7 +1,8 @@
 # The catalogue: where it lives and how it gets published
 
-**Status:** proposal. Written 9 August 2026, after building the publish
-function and then looking properly at what it was publishing into.
+**Status:** built, 9 August 2026. Written after building the publish function
+and then looking properly at what it was publishing into. §7 records how it
+landed; §11 is what remains.
 
 Supersedes `docs/shelving-catalog-workflow.md`, which describes the Dropbox
 folder and "ask Codex to run the importer" flow that the manager replaced.
@@ -18,6 +19,9 @@ and nothing keeps them in agreement.
 | Editorial record | `catalog.json` in the repo | `catalog.command` | the build script |
 | What the public sees | `const configurations = […]` baked into `shelving.html` | a **regex splice** into a 2,772-line HTML file | the page, at runtime, via JS |
 | What the manager calls "live" | the `published` blob | **the ops runner**, separately, alongside performance stats | `catalog.html` |
+
+*(Past tense as of 9 August 2026 — this section describes what was found, and
+the rest of the document describes what replaced it.)*
 
 The third row is the one that bites. `framework.co.ke/catalog.html` decides
 whether to show you "2 staged changes" by comparing your draft against the
@@ -87,10 +91,9 @@ somewhere with a checkout — a laptop, or a function holding a repo-write token
 | `feeds/meta-shelving-catalog.csv` | **Derived.** Meta fetches it on a schedule | yes | publish |
 | `images/shelving/configs/…` | Product images and thumbnails | yes | publish |
 
-`catalog.json` is currently served publicly — nothing in `netlify.toml` blocks
-it — so today the one inactive product and its price are readable by anyone.
-Small, but it is the kind of thing that stops being small, and the fix is one
-redirect.
+`catalog.json` **was** served publicly — nothing in `netlify.toml` blocked it —
+so the inactive product and its price were readable by anyone who looked. Small,
+but the kind of thing that stops being small. Now blocked by a redirect.
 
 ### What the blobs are for, after this
 
@@ -99,8 +102,14 @@ Only three things, none of them "the catalogue":
 - **`draft`** — edits not yet published. Unchanged.
 - **staged images** — uploads not yet published. Unchanged.
 - **`stats`** — per-product performance, pushed by the ops runner. Renamed from
-  `published`, and reduced to *only* the stats. The manager fetches
-  `/data/catalog.json` for what is live and overlays these numbers onto it.
+  `published`, and reduced to *only* the stats.
+
+One refinement on contact with the code: the manager takes its baseline from
+`catalog.json` **imported directly into `/api/catalog`**, not from
+`/data/catalog.json`. A function is bundled with the deploy, so that import is
+exactly the catalogue the live site is serving — and unlike the public artifact
+it still contains inactive products, which the manager needs in order to turn
+them back on.
 
 That rename is the fix for §1's third row: the runner stops having an opinion
 about what the catalogue contains, and keeps the one it is qualified to have.
@@ -206,12 +215,23 @@ Nothing here is a big-bang, and every step is independently deployable.
 | 1 | Publish `data/catalog.json` **alongside** the existing baked array. No reader yet | deleting the file |
 | 2 | Point the manager's baseline at `/data/catalog.json`; runner's blob becomes `stats` only | reverting one fetch |
 | 3 | `shelving.html` fetches, **falling back to the baked array** if the fetch fails | the fallback is already the old behaviour |
-| 4 | Watch a publish end to end. Then delete the baked array and the splice | git revert |
-| 5 | Block `/catalog.json`; add the cache header; split the publish secret | one redirect |
+| 4 | Delete the baked array and the splice, once step 3 is observed working | git revert |
+| 5 | Block `/catalog.json`; add the cache header; record who published | one redirect |
 
 Step 3 is the only one that touches the public product page, and it ships with
 the old path still in place underneath it. Step 4 is the point of no return, and
 it is a deletion, taken only once step 3 has been observed working.
+
+**All five landed.** Step 3 was verified by serving a deliberately altered
+`data/catalog.json` and watching the page render it — three products with a
+changed title, matching microdata, "see more" correctly hidden — then by
+breaking the file in three ways (bad schema, 404, and 404 with the array
+already gone) and confirming the fallback, then the failure message. Step 4
+removed 342 lines of baked array from `shelving.html`.
+
+Publishing writes data, not markup: the function no longer reads or writes
+`shelving.html` at all, and `buildPublish` refuses to emit an HTML file — there
+is a test that asserts it.
 
 ---
 
@@ -253,7 +273,21 @@ is the one worth having.
 
 ---
 
-## 10. Effort
+## 10. What is not done
+
+- **`GITHUB_TOKEN` and `GITHUB_REPO`** are still unset, so `/api/catalog-publish`
+  answers 501 and the Publish dialog shows the `catalog.command` instructions.
+  That is the fallback working as intended.
+- **The publish secret is still the shared `SITE_EXPORT_KEY`**, in the query
+  string. The `by=` name that lands in the commit message shipped; splitting the
+  secret did not. §6 stands as the next thing to do here.
+- **Nobody has watched a real publish.** The pure half is tested; the commit
+  half has never run against the real repository, because doing that is a
+  production write.
+
+---
+
+## 11. Effort
 
 About a day, spread across the five migration steps, most of it in step 3 and in
 watching step 4. Steps 1, 2 and 5 are an hour or two each.

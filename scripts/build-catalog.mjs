@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// build-catalog — regenerate the site catalog + Meta feed from catalog.json
-// (the single source of truth). ACTIVE products become the live shelving.html
-// `configurations` array and the Meta feed CSV; inactive products are kept in
-// catalog.json (so they can be re-activated) but never shipped or advertised.
+// build-catalog — regenerate the published catalogue + Meta feed from
+// catalog.json (the editorial source of truth). ACTIVE products become
+// data/catalog.json, which shelving.html fetches, and the Meta feed CSV;
+// inactive products stay in catalog.json so they can be re-activated, and are
+// never shipped or advertised.
 //
-//   node scripts/build-catalog.mjs            # regenerate shelving.html + feed
-//   node scripts/build-catalog.mjs --check    # verify catalog vs. site, no writes
+//   node scripts/build-catalog.mjs            # regenerate the published files
+//   node scripts/build-catalog.mjs --check    # verify, no writes
 //
 // The work itself lives in scripts/lib/catalog-build.mjs, which is pure string
 // functions and no I/O, because netlify/functions/catalog-publish.js does the
@@ -14,26 +15,27 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  CATALOG, PAGE, FEED, buildPublish, readCatalog, readConfigurations,
+  CATALOG, PUBLIC_CATALOG, buildPublish, readCatalog, readPublicCatalog,
 } from './lib/catalog-build.mjs';
 
 const check = process.argv.includes('--check');
 
 const catalogText = fs.readFileSync(CATALOG, 'utf8');
-const pageText = fs.readFileSync(PAGE, 'utf8');
 const cat = readCatalog(catalogText);
-const built = buildPublish({ catalogText, pageText });
+const built = buildPublish({ catalogText });
 
 /** Which of the assets the active products need are not actually on disk. */
 const missingAssets = built.requiredAssets.filter((p) => !fs.existsSync(p));
 
 if (check) {
-  const siteIds = readConfigurations(pageText).map((c) => c.id);
+  const publishedIds = fs.existsSync(PUBLIC_CATALOG)
+    ? readPublicCatalog(fs.readFileSync(PUBLIC_CATALOG, 'utf8')).map((p) => p.id)
+    : [];
   const wantIds = built.active.map((p) => p.id);
-  const same = siteIds.length === wantIds.length && siteIds.every((id, i) => id === wantIds[i]);
+  const same = publishedIds.length === wantIds.length && publishedIds.every((id, i) => id === wantIds[i]);
   console.log(JSON.stringify({
     catalog: cat.products.length, active: built.active.length, inactive: built.inactive.length,
-    siteInSync: same, siteIds: siteIds.length, missingAssets,
+    publishedInSync: same, publishedIds: publishedIds.length, missingAssets,
   }, null, 2));
   if (!same || missingAssets.length) process.exit(1);
 } else {
@@ -50,6 +52,7 @@ if (check) {
     fs.writeFileSync(file, text);
   }
   console.log(JSON.stringify({
-    wrote: [PAGE, FEED], active: built.active.length, inactive: built.inactive.length,
+    wrote: Object.keys(built.files).filter((f) => f !== CATALOG),
+    active: built.active.length, inactive: built.inactive.length,
   }, null, 2));
 }

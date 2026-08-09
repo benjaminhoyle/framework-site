@@ -4,13 +4,16 @@
 // This is what `framework-ops/catalog.command` does, minus the laptop. The work
 // itself is scripts/lib/catalog-build.mjs, imported rather than reimplemented:
 // the site a laptop publishes and the site this publishes have to be the same
-// site, and two implementations of the splice would eventually disagree about
-// what is in the catalogue.
+// site, and two implementations would eventually disagree about what is in the
+// catalogue.
+//
+// It writes data, not markup: catalog.json (editorial), data/catalog.json (what
+// shelving.html fetches) and the Meta feed. See docs/catalog-architecture.md.
 //
 // Everything lands as a SINGLE commit via the git data API (blobs -> tree ->
 // commit -> ref). One commit is one deploy; writing the files one at a time
 // through the contents API would be one deploy per file, and the site would be
-// briefly live with a page that disagrees with its own catalog.json.
+// briefly live with a catalogue that disagrees with its own feed.
 //
 // Requires, beyond the usual SITE_EXPORT_KEY:
 //   GITHUB_TOKEN   fine-grained, Contents: read+write, this repo only
@@ -100,7 +103,12 @@ export default async (req) => {
     }, 501);
   }
 
-  const dry = new URL(req.url).searchParams.get('dry') === '1';
+  const url = new URL(req.url);
+  const dry = url.searchParams.get('dry') === '1';
+  // Who is publishing, for the commit message. git then keeps the audit trail
+  // forever, which is the cheapest useful answer to "who changed this price".
+  const publisher = String(url.searchParams.get('by') || '').trim().slice(0, 60)
+    .replace(/[^\w .'-]/g, '');
   const catalogStore = getStore('catalog');
   const uploadStore = getStore('catalog-uploads');
 
@@ -110,10 +118,9 @@ export default async (req) => {
       return json({ ok: false, error: 'no_draft', detail: 'Nothing is staged — there is nothing to publish.' }, 409);
     }
 
-    // What the repo holds now.
-    const [pageText, catalogText, tree] = await Promise.all([
-      gh.read('shelving.html'), gh.read('catalog.json'), gh.paths(),
-    ]);
+    // What the repo holds now. shelving.html is no longer read or written --
+    // the page fetches data/catalog.json, so publishing writes data, not markup.
+    const [catalogText, tree] = await Promise.all([gh.read('catalog.json'), gh.paths()]);
 
     // The staged images, keyed by the repo path each one belongs at.
     const staged = {};
@@ -130,7 +137,7 @@ export default async (req) => {
       }
     }
 
-    const built = buildPublish({ catalogText, pageText, products: draft.products });
+    const built = buildPublish({ catalogText, products: draft.products });
 
     // An active product whose image is neither in the repo nor in this batch
     // would ship a broken card. The laptop version checks a disk; this checks
@@ -160,7 +167,8 @@ export default async (req) => {
       treeSha: tree.treeSha,
       files,
       message: `Catalog publish: ${built.active.length} active, ${built.inactive.length} off`
-        + (summary.images ? `, ${summary.images} image(s)` : ''),
+        + (summary.images ? `, ${summary.images} image(s)` : '')
+        + (publisher ? `\n\nPublished by ${publisher} from the catalogue manager.` : ''),
     });
 
     // Only once the commit is in: a cleared draft with no commit behind it
@@ -173,7 +181,16 @@ export default async (req) => {
 
     return json({ ok: true, commit: sha.slice(0, 7), branch: gh.branch, ...summary });
   } catch (error) {
-    return json({ ok: false, error: 'publish_failed', detail: String(error && error.message).slice(0, 600) }, 500);
+    const message = String(error && error.message);
+    // Someone else published between the dry run and the write. Never force:
+    // their change is as real as this one. The draft is untouched.
+    if (/\b(409|422)\b/.test(message) && /refs\/heads|fast forward|not a fast/i.test(message)) {
+      return json({
+        ok: false, error: 'conflict',
+        detail: 'Someone else published while you were reviewing. Reload the page to pick up their changes, then publish again. Nothing of yours was lost.',
+      }, 409);
+    }
+    return json({ ok: false, error: 'publish_failed', detail: message.slice(0, 600) }, 500);
   }
 };
 

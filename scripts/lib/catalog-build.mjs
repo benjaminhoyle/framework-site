@@ -12,21 +12,34 @@
  * announce itself is a live catalogue that disagrees with the Meta feed
  * advertising it.
  *
- * Note the deliberate asymmetry: shelving.html carries a **baked** product
- * array rather than fetching catalog.json at runtime. That array feeds the
- * page's structured data and its first paint, so on a public product page it
- * earns the build step. The build step just no longer needs a laptop.
+ * shelving.html fetches `data/catalog.json` rather than carrying a copy of the
+ * products. There is no HTML surgery here any more, and no round trip through
+ * generated markup to build the feed. See docs/catalog-architecture.md.
  */
-
-const CONFIG_RE = /const configurations = \[[\s\S]*?\];\n\n    \/\* === Catalog \+ Lightbox === \*\//;
-const CONFIG_CAPTURE = /const configurations = (\[[\s\S]*?\]);\n\n    \/\* === Catalog \+ Lightbox === \*\//;
 
 export const CONFIG_IMAGE_DIR = 'images/shelving/configs';
 export const THUMB_DIR = 'images/shelving/configs/thumbs';
-export const PAGE = 'shelving.html';
 export const CATALOG = 'catalog.json';
+/** What the public page fetches: active products only, and only the fields it
+ *  renders. Separate from CATALOG because the editorial record holds retired
+ *  products, their prices, and internal fields that have no business being
+ *  readable by anyone who looks. */
+export const PUBLIC_CATALOG = 'data/catalog.json';
 export const FEED = 'feeds/meta-shelving-catalog.csv';
 export const DEFAULT_BASE_URL = 'https://www.framework.co.ke/';
+/** Bumped only when the page could not render an older artifact correctly. The
+ *  page checks the major part and refuses rather than rendering something wrong. */
+export const PUBLIC_SCHEMA = 'framework-catalog-public@1';
+
+/** The products in a published artifact, refusing one this code cannot read. */
+export function readPublicCatalog(text, label = PUBLIC_CATALOG) {
+  const data = JSON.parse(text);
+  if (String(data.schema || '').indexOf('framework-catalog-public@1') !== 0) {
+    throw new Error(`${label}: unsupported schema ${data.schema}`);
+  }
+  if (!Array.isArray(data.products)) throw new Error(`${label}: products[] missing`);
+  return data.products;
+}
 
 /** Read catalog.json, refusing the shapes that would ship a broken catalogue. */
 export function readCatalog(text) {
@@ -45,42 +58,6 @@ export function readCatalog(text) {
 
 export function imagesOf(p) {
   return (Array.isArray(p.images) && p.images.length ? p.images : [p.image]).filter(Boolean);
-}
-
-// Match the field shape + formatting the site expects (mirrors the legacy import
-// script so the array stays stable and the feed generator's regex keeps working).
-export function formatProduct(p, indent = '          ') {
-  const images = imagesOf(p);
-  const obj = {
-    id: p.id,
-    title: p.title || p.id,
-    image: p.image || images[0],
-    images,
-    price: p.price || 'Price on request',
-    priceValue: Number(p.priceValue) || 0,
-    description: p.description || '',
-  };
-  // Only carry designerUrl when the product actually has one (accessories like
-  // the bookend intentionally have no "open in designer" link).
-  if (p.designerUrl) obj.designerUrl = p.designerUrl;
-  const json = JSON.stringify(obj, null, 6);
-  return json.split('\n').map((line, i) => (i === 0 ? `${indent}{` : `${indent}${line}`)).join('\n');
-}
-
-/** The product ids currently baked into the page, in their published order. */
-export function readConfigurations(pageText, label = PAGE) {
-  const m = pageText.match(CONFIG_CAPTURE);
-  if (!m) throw new Error(`could not find configurations array in ${label}`);
-  // JSON.parse, not a JS evaluator: the array is JSON.stringify output, so it
-  // parses, and parsing cannot execute anything that finds its way in there.
-  return JSON.parse(m[1]);
-}
-
-/** The page with its product array replaced by the active products. */
-export function spliceConfigurations(pageText, active) {
-  if (!CONFIG_RE.test(pageText)) throw new Error('configurations array not found — aborting');
-  const arrayText = '[\n' + active.map((p) => formatProduct(p)).join(',\n') + '\n        ]';
-  return pageText.replace(CONFIG_RE, `const configurations = ${arrayText};\n\n    /* === Catalog + Lightbox === */`);
 }
 
 /** Every repo path an active product needs to exist, full images and thumbs. */
@@ -110,6 +87,35 @@ export function catalogJson(products) {
     return out;
   });
   return JSON.stringify({ schema: 'framework-catalog@1', updatedAt: new Date().toISOString(), products: next }, null, 2) + '\n';
+}
+
+/**
+ * The published artifact: what shelving.html fetches.
+ *
+ * A projection, not a copy. Active products only, and only the fields the page
+ * renders — so `active` (always true here), `designCode` and anything else we
+ * later keep for ourselves stay out of it. That separation is the point: the
+ * editorial record can grow without any of it becoming public by accident.
+ */
+export function publicCatalog(active) {
+  return JSON.stringify({
+    schema: PUBLIC_SCHEMA,
+    updatedAt: new Date().toISOString(),
+    products: active.map((p) => {
+      const images = imagesOf(p);
+      const out = {
+        id: p.id,
+        title: p.title || p.id,
+        image: p.image || images[0],
+        images,
+        price: p.price || 'Price on request',
+        priceValue: Number(p.priceValue) || 0,
+        description: p.description || '',
+      };
+      if (p.designerUrl) out.designerUrl = p.designerUrl;
+      return out;
+    }),
+  }, null, 2) + '\n';
 }
 
 // --- The Meta feed ----------------------------------------------------------
@@ -182,17 +188,18 @@ export function feedCsv(configurations, baseUrl = DEFAULT_BASE_URL) {
  * skip one. `missingAssets` is advisory here — only the caller knows which
  * files exist, since one of them is looking at a disk and the other at a tree.
  */
-export function buildPublish({ catalogText, pageText, products, baseUrl = DEFAULT_BASE_URL }) {
+export function buildPublish({ catalogText, products, baseUrl = DEFAULT_BASE_URL }) {
   const nextProducts = products || readCatalog(catalogText).products;
   const active = nextProducts.filter((p) => p.active !== false);
+  const files = {
+    [CATALOG]: catalogJson(nextProducts),
+    [PUBLIC_CATALOG]: publicCatalog(active),
+    [FEED]: feedCsv(active, baseUrl),
+  };
   return {
     active,
     inactive: nextProducts.filter((p) => p.active === false),
-    files: {
-      [CATALOG]: catalogJson(nextProducts),
-      [PAGE]: spliceConfigurations(pageText, active),
-      [FEED]: feedCsv(active, baseUrl),
-    },
+    files,
     requiredAssets: requiredAssets(active),
   };
 }
