@@ -35,6 +35,7 @@ input:focus,textarea:focus{border-color:#d97706!important}
 </div>
 <div id="root"></div>
 <script src="/js/studio/framework-names.js"></script>
+<script src="/js/studio/scale.js"></script>
 <script src="/js/studio/prompt-config.js"></script>
 <script>
 const {
@@ -86,10 +87,8 @@ const OPENAI_API = "https://api.openai.com/v1";
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const MAX_DIM = 1500; const UPLOAD_MAX_DIM = 2048; const SERVER_MAX_DIM = 1280; const COST_GEN = 0.134; const COST_VAL = 0.01;
 const GEMINI_IMAGE_TIMEOUT_MS = 240_000; const GEMINI_TEXT_TIMEOUT_MS = 60_000;
-const SCALE_H_CM = 180;
 const PROVIDER_STORAGE_KEY = "frameworkProviderV2";
 const ACTIVE_JOB_STORAGE_KEY = "frameworkActiveJobV1";
-const SCALE_SVG = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDIwMDEwOTA0Ly9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9UUi8yMDAxL1JFQy1TVkctMjAwMTA5MDQvRFREL3N2ZzEwLmR0ZCI+CjxzdmcgdmVyc2lvbj0iMS4wIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiB3aWR0aD0iMTI4MC4wMDAwMDBwdCIgaGVpZ2h0PSIxMjgwLjAwMDAwMHB0IiB2aWV3Qm94PSIwIDAgMTI4MC4wMDAwMDAgMTI4MC4wMDAwMDAiCiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWlkWU1pZCBtZWV0Ij4KPG1ldGFkYXRhPgpDcmVhdGVkIGJ5IHBvdHJhY2UgMS4xNSwgd3JpdHRlbiBieSBQZXRlciBTZWxpbmdlciAyMDAxLTIwMTcKPC9tZXRhZGF0YT4KPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMC4wMDAwMDAsMTI4MC4wMDAwMDApIHNjYWxlKDAuMTAwMDAwLC0wLjEwMDAwMCkiCmZpbGw9IiMwMDAwMDAiIHN0cm9rZT0ibm9uZSI+CjxwYXRoIGQ9Ik02MjQwIDEyMTg3IGMtMTMwIC00MSAtMjI3IC04NyAtMjYxIC0xMjQgLTE1IC0xNSAtNjMgLTEwNiAtMTA4Ci0yMDIgbC04MSAtMTc0IDEwIC05NSBjNiAtNTMgMjAgLTEzNSAzMSAtMTg0IDE3IC03NCAxOSAtOTcgMTAgLTEzMyAtMTQgLTU3Ci0xNCAtMjEwIDAgLTIzOCA3IC0xMiAzMyAtNDkgNTkgLTgyIDQ2IC01OCA0NyAtNjMgNTkgLTE2MyAxMSAtOTQgMTYgLTExMCA1NwotMTc3IDM2IC02MCA0NCAtODEgNDQgLTEyMSAwIC04NSAtMiAtODcgLTExOCAtMTM0IC0xNDggLTU5IC0zNTEgLTE2MiAtNDUyCi0yMjggLTQ3IC0zMSAtMTI4IC05OSAtMTgwIC0xNTEgLTgwIC04MSAtMTA0IC0xMTIgLTE0NyAtMTk2IC0yOCAtNTUgLTY4Ci0xNDUgLTg4IC0yMDAgbC0zOCAtMTAwIC05IC0zMzAgLTkgLTMzMCAtMzUgLTEyNSBjLTQ1IC0xNjQgLTgwIC0zNDcgLTk5Ci01MjggLTkgLTgxIC0yMCAtMTc0IC0yNSAtMjA3IC0zOCAtMjUwIC01MCAtNDE1IC00OSAtNjkzIDAgLTE1OCA0IC0zMjMgOAotMzY3IGw4IC04MCAtMzAgLTI5IGMtMzYgLTM1IC02MyAtOTQgLTcyIC0xNTcgLTYgLTM5IC0yIC01OCAyNCAtMTE3IDI5IC02NgozMiAtODEgMzUgLTIwNyBsNCAtMTM2IC02NSAtMTUyIGMtMTAyIC0yMzYgLTk5IC0yODkgMjkgLTQ3NCA0NSAtNjQgNjEgLTgwCjEwOCAtMTAyIDQ3IC0yMiA2OSAtMjUgMTU1IC0yNiA1NSAwIDExMSAzIDEyNSA3IGwyNSA3IDEgLTI0MiBjMSAtMTMzIDkgLTM0NQoxNyAtNDcyIDMxIC00NDggMzkgLTYyMiAzMiAtNzUyIGwtNiAtMTMzIDc3IC0xNDcgYzYxIC0xMTcgOTAgLTE2MiAxNDAgLTIxMwo1MyAtNTQgNjYgLTc2IDgzIC0xMzAgMTEgLTM2IDQ5IC0xNjYgODYgLTI4OSA4NiAtMjg5IDE2MiAtNDQxIDMyMCAtNjM5IDM5Ci00OCA2NSAtMTI0IDY1IC0xODggMCAtNDUgOCAtNTEgOTQgLTcwIDQwIC05IDQwIC05IDczIC0xMDUgNjMgLTE4MyA2NyAtMzIzCjE0IC00NzIgLTQzIC0xMjIgLTYwIC0xNTIgLTE4OSAtMzM3IC05NiAtMTM2IC0xMTggLTE3NSAtMTMwIC0yMjUgLTIwIC04NyAtOQotMTU5IDI4IC0xODUgNjcgLTQ4IDE5NCAtNDYgMzcyIDYgMjMgNyAtOTYgLTI5MSAtMTUyIC0zODAgbC00MiAtNjYgMTcgLTUwCmM5IC0yOSAyNiAtNTYgMzggLTYzIDE1IC04IDczIC0xMiAxODIgLTEyIDI3MCAwIDUyOSA1MCA1ODcgMTEzIDMyIDM1IDgzIDEyMAoxMTQgMTkxIDE0IDMxIDQ5IDgxIDc4IDExMSA3OCA4MSA4MiAxMDcgNDcgMjU1IC00MCAxNjYgLTQ1IDIyMCAtMjYgMjc1IDkgMjUKMTkgNzEgMjIgMTA0IDYgNTcgNyA2MCA1NCA4OSA0MyAyNiA0OSAzNSA2MCA4MiAxMSA0OCAxMCA1NSAtMTEgODMgLTM3IDUwCi00MSA5MSAtMTMgMTMwIDMyIDQzIDUzIDk1IDYzIDE1NiA4IDQ4IDUgNTYgLTM4IDEzOCBsLTQ1IDg2IDIxIDQ5IGMyNCA1NSA0OAoxODIgNTcgMjk4IDMgNDQgMTUgMTU5IDI2IDI1NSAyNCAyMTIgMzkgNDcxIDQwIDY3NyBsMSAxNTMgLTQyIDcxIC00MiA3MiAxMQo3MCBjNiAzOCAxNiA3OCAyMSA4OCAxOCAzMiAxMiAxNDYgLTEwIDE4OSAtMTEgMjEgLTI0IDQxIC0zMCA0NSAtMTYgMTAgLTEyCjQ1IDkgNzkgMTEgMTcgMzAgNjkgNDQgMTE2IDIyIDc0IDI4IDEyMyA0MiAzODAgOCAxNjIgMTggMzI2IDIyIDM2MyBsNiA2OCA1MwozNCBjMzYgMjMgNjAgNDggNzUgNzcgMjkgNTggNzMgMTIwIDEyMyAxNzcgNDEgNDYgNDIgNDkgNTUgMTU2IDcgNjEgMjEgMTQ0CjMxIDE4NSAxMCA0MSAyNiAxMTUgMzQgMTYzIDE2IDk0IDI4IDExOCAxNDYgMzA5IDUyIDgyIDcwIDEyMSA3OSAxNzAgMTEgNTgKOTAgMzk0IDE2NCA2OTggbDMxIDEyNSAzIDYzNSBjNCA1MzkgMiA2NTIgLTExIDc0NSAtOSA2MSAtMjUgMjE4IC0zNiAzNTAgLTMwCjM3NCAtNjEgNTIwIC0xNTQgNzE2IC0yOSA2MyAtNzEgMTY0IC05MSAyMjQgLTIxIDYxIC00NSAxMTcgLTU1IDEyNSAtOSA4Ci0xODcgMTEzIC0zOTYgMjMzIGwtMzc5IDIxOSAtNzYgMTAyIC03NiAxMDIgMTggOTkgYzEwIDU1IDE4IDEyMiAxOSAxNDkgMCA0NAo1IDU0IDQ0IDk2IDM1IDM3IDQ2IDU5IDU2IDEwNiAxNCA2NSA4IDE2NSAtMTEgMjA4IC0xMCAyMiAtOSAzNiA0IDgwIDkgMjkgMTcKNjUgMTcgODAgMCAxNSAxMCA3NSAyMSAxMzMgMjAgOTYgMjEgMTE1IDEwIDE4NiAtMTQgOTAgLTc1IDIzNCAtMTE5IDI4MSAtMzQKMzYgLTE1MSAxMjMgLTIxNiAxNjEgLTQ3IDI4IC01NCAyOSAtMjEwIDMyIC0xNTkgMyAtMTYyIDMgLTI2NiAtMzB6IG0tOTM5Ci01Nzg0IGMtMyAtMTI1IC0xNSAtMjEwIC00NiAtMzM0IC0yNCAtOTQgLTU1IC0zMTQgLTU1IC0zOTEgMCAtNjIgLTcgLTcwIC00MwotNDcgLTE4IDEwIC00MCAxOSAtNDkgMTkgLTEwIDAgLTE4IDYgLTE4IDEzIDAgNiAtNCA1MCAtMTAgOTYgLTggNjggLTcgODggNgoxMTIgOCAxNyAyMCA4MSAyNiAxNDQgOCA4NSAxNSAxMTUgMjUgMTE1IDE4IDAgMjcgMjYgNTIgMTUwIDE5IDkzIDUxIDE5MCA3NAoyMjggNiA4IDE0IDkgMjUgMyAxMyAtOCAxNiAtMjUgMTMgLTEwOHogbTEwOTkgLTE2NDMgYzIwIC0xMDkgMzAgLTE5OSAzMAotMjYyIDAgLTUyIDUgLTEyMCAxMiAtMTQ5IDcgLTMwIDEyIC04NSAxMyAtMTI0IDAgLTM4IDkgLTEwOCAxOSAtMTU1IDE0IC02NAoxNyAtMTA1IDEyIC0xNzAgLTcgLTg5IDE1IC0yMzUgNDggLTMyOSAxOSAtNTMgMjEgLTE5NCA1IC01MDEgLTEyIC0yMzggLTI2Ci0zNDEgLTI4IC0yMDYgLTEgNzggLTIgODIgLTgyIDI0NSAtMTcwIDM0NiAtMjA3IDQyNyAtMjIwIDQ3NiAtNyAyOCAtMjMgNzUKLTM2IDEwNSAtMjEgNDcgLTI0IDY0IC0xOCAxMjAgMyAzNiAxMCAxNjQgMTUgMjg1IDUgMTIxIDE2IDI3MCAyNCAzMzAgOCA2MQoyMCAxNTMgMjYgMjA1IDcgNTEgMTkgMTEyIDI3IDEzNSA3IDIyIDI3IDk0IDQ0IDE1OSA0MyAxNzIgNDkgMTc5IDY2IDgxIDcKLTQ0IDI3IC0xNTQgNDMgLTI0NXoiLz4KPC9nPgo8L3N2Zz4K";
 </script>
 <script type="text/babel">
 const {useState,useRef,useCallback,useEffect,useMemo} = React;
@@ -109,7 +108,6 @@ function parseJsonObject(text){
 function resize(file,max){return new Promise(r=>{const i=new Image();i.onload=()=>{let{width:w,height:h}=i;if(Math.max(w,h)>max){const s=max/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s)}const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(i,0,0,w,h);const d=c.toDataURL("image/jpeg",.85);URL.revokeObjectURL(i.src);r({base64:d.split(",")[1],width:w,height:h,dataUrl:d})};i.src=URL.createObjectURL(file)})}
 function resizeDataUrl(du,max){return new Promise(r=>{const i=new Image();i.onload=()=>{let{width:w,height:h}=i;if(Math.max(w,h)>max){const s=max/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s)}const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(i,0,0,w,h);const d=c.toDataURL("image/jpeg",.85);r({base64:d.split(",")[1],width:w,height:h,dataUrl:d})};i.src=du})}
 function cropImg(du,rect){return new Promise(r=>{const i=new Image();i.onload=()=>{const c=document.createElement("canvas");const sx=Math.round(rect.x*i.naturalWidth),sy=Math.round(rect.y*i.naturalHeight),sw=Math.round(rect.w*i.naturalWidth),sh=Math.round(rect.h*i.naturalHeight);c.width=sw;c.height=sh;c.getContext("2d").drawImage(i,sx,sy,sw,sh,0,0,sw,sh);const d=c.toDataURL("image/jpeg",.9);r({base64:d.split(",")[1],width:sw,height:sh,dataUrl:d})};i.src=du})}
-function compositeScale(url,w,h,pc,fx,fy,exp){return new Promise(r=>{const fh=SCALE_H_CM*pc,fw=fh,dx=fx-fw/2,ty=fy-fh;let cw=w,ch=h,ox=0,es=null;if(exp){if(dx<0){const e=Math.abs(dx)+10;cw+=e;ox=e;es="left"}else if(dx+fw>w){cw+=(dx+fw)-w+10;es="right"}}const cv=document.createElement("canvas");cv.width=cw;cv.height=ch;const ctx=cv.getContext("2d");if(es){ctx.fillStyle="#e0e0e0";ctx.fillRect(0,0,cw,ch)}const bg=new Image();bg.onload=()=>{ctx.drawImage(bg,ox,0);const fg=new Image();fg.onload=()=>{ctx.globalAlpha=.45;ctx.drawImage(fg,dx+ox,ty,fw,fh);ctx.globalAlpha=1;const d=cv.toDataURL("image/jpeg",.9);r({base64:d.split(",")[1],dataUrl:d,expandedSide:es})};fg.src=SCALE_SVG};bg.src=url})}
 const fmtBytes=n=>n>1_000_000?`${(n/1_000_000).toFixed(2)} MB`:n>1_000?`${(n/1_000).toFixed(1)} KB`:`${n} B`;
 const safeMsg=e=>String(e?.message||e||"Unknown error").replace(/\s+/g," ").slice(0,500);
 const logStep=(logger,type,msg)=>{if(typeof logger==="function")logger(type,msg)};
@@ -528,6 +526,23 @@ function openSceneDb(){return new Promise((res,rej)=>{const rq=indexedDB.open("f
 async function sceneIdbPut(v){const db=await openSceneDb();return new Promise((res,rej)=>{const tx=db.transaction("sessions","readwrite");tx.objectStore("sessions").put(v,AUTOSAVE_KEY);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
 async function sceneIdbGet(){const db=await openSceneDb();return new Promise((res,rej)=>{const tx=db.transaction("sessions","readonly");const rq=tx.objectStore("sessions").get(AUTOSAVE_KEY);rq.onsuccess=()=>res(rq.result||null);rq.onerror=()=>rej(rq.error)})}
 
+/**
+ * The scale record out of a saved session, old shape or new.
+ *
+ * Sessions written before the flow moved into js/studio/scale.js carry six loose
+ * fields instead of one record. They are still on people's machines and in saved
+ * .json files, so they are read rather than dropped — a restore that silently
+ * loses the scale is worse than the migration.
+ */
+function scaleFromSession(saved){
+  if(!saved)return FrameworkScale.UNSET;
+  if(saved.status)return saved;
+  if(!saved.scaleOK)return FrameworkScale.UNSET;
+  return {status:"set",shelfH:saved.shelfH??null,pxCm:saved.pxCm??null,
+    expandFrame:Boolean(saved.expandF),fx:saved.scaleFx??null,fy:saved.scaleFy??null,
+    expandedSide:null,offsetX:0};
+}
+
 // Compute diff between two param sets
 function paramDiff(base,curr){
   const d={};
@@ -545,7 +560,6 @@ function paramDiff(base,curr){
 
 // ─── COMPONENTS ─────────────────────────────────────────────────────────────
 
-function getImgCoords(e,imgEl,natW,natH){const rect=imgEl.getBoundingClientRect();const na=natW/natH,ea=rect.width/rect.height;let rW,rH,ox,oy;if(na>ea){rW=rect.width;rH=rect.width/na;ox=0;oy=(rect.height-rH)/2;}else{rH=rect.height;rW=rect.height*na;ox=(rect.width-rW)/2;oy=0;}return{x:(e.clientX-rect.left-ox)*(natW/rW),y:(e.clientY-rect.top-oy)*(natH/rH),rW,rH};}
 
 function LogPanel({entries}){const cRef=useRef(null);useEffect(()=>{if(cRef.current)cRef.current.scrollTop=cRef.current.scrollHeight},[entries]);const colors={error:"#ef4444",warning:"#f6bd64",success:"#22c55e",cost:"#f59e0b",debug:"#60a5fa",info:"#c8c0b2"};return(<div ref={cRef} style={{maxHeight:168,overflowY:"auto",fontFamily:"ui-monospace, SFMono-Regular, Menlo, monospace",fontSize:10,lineHeight:1.45,padding:"7px 8px",background:"#0a0a0a",borderRadius:4,border:"1px solid #24211b"}}>{entries.map((e,i)=>(<div key={i} style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere",padding:"1px 0"}}><span style={{color:"#555"}}>{e.time}</span> <span style={{color:colors[e.type]||"#aaa"}}>[{e.type}]</span> {e.msg}</div>))}</div>)}
 
@@ -597,16 +611,13 @@ function App(){
   const[refAdj,setRefAdj]=useState({...DEFAULT_REFINE});
   const[refineFB,setRefineFB]=useState("");
 
-  // Ref & scale
+  // Ref & scale. The flow itself lives in js/studio/scale.js; what stays here is
+  // only where its two products are kept — the record, and the reference with
+  // the figure composited into it.
   const[refImage,setRefImage]=useState(null);
   const[augImg,setAugImg]=useState(null);
-  const[scaleMode,setScaleMode]=useState(false);const[scalePM,setScalePM]=useState(false);
-  const[scalePts,setScalePts]=useState([]);const[scaleDim,setScaleDim]=useState("");
-  const[pxCm,setPxCm]=useState(null);const[shelfH,setShelfH]=useState(null);
-  const[scaleOK,setScaleOK]=useState(false);const[expandF,setExpandF]=useState(false);
-  const[scaleFx,setScaleFx]=useState(null);const[scaleFy,setScaleFy]=useState(null);
-  const[figDrag,setFigDrag]=useState(false);
-  const dragPosRef=useRef({fx:null,fy:null,startMouseX:0,startMouseY:0,origFx:null,origFy:null});
+  const[scale,setScale]=useState(FrameworkScale.UNSET);
+  const scaleOK=FrameworkScale.isSet(scale);
   const imgRef=useRef(null);
 
   // Review
@@ -794,7 +805,7 @@ function App(){
     if(!pendingUpload?.img)return;
     const r=pendingUpload.img;
     setRefImage(r);
-    setScalePts([]);setScaleOK(false);setAugImg(null);setScalePM(false);setPxCm(null);setShelfH(null);
+    setScale(FrameworkScale.UNSET);setAugImg(null);
     const refNode={id:"ref",type:"ref",parentId:null,img:r,params:null,history:null,ts:Date.now()};
     setNodes([refNode]);setSelId("ref");setBaseParams(null);setMode("refine");
     setRefAdj({...DEFAULT_REFINE});setRefineFB("");setPromptEditorOpen(false);setPromptEditorContext(null);setPendingUpload(null);
@@ -811,7 +822,7 @@ function App(){
       setNodes(p=>[...p,genNode]);
     }else{
       setRefImage(r);
-      setScalePts([]);setScaleOK(false);setAugImg(null);setScalePM(false);setPxCm(null);setShelfH(null);
+      setScale(FrameworkScale.UNSET);setAugImg(null);
       const refNode={id:"ref",type:"ref",parentId:null,img:r,params:null,history:null,ts:Date.now()};
       setNodes([refNode,genNode]);
     }
@@ -828,73 +839,48 @@ function App(){
   };
 
   // ─── Scale ─────────────────────────────────────────────────────
-  const handleImgClick=e=>{
-    if(!scaleMode&&!scalePM||!refImage)return;
-    const {x,y}=getImgCoords(e,imgRef.current||e.target,refImage.width,refImage.height);
-    if(scaleMode&&scalePts.length<2) setScalePts(p=>[...p,{x,y}]);
-    else if(scalePM){(async()=>{
-      const r=await compositeScale(refImage.dataUrl,refImage.width,refImage.height,pxCm,x,y,expandF);
-      setAugImg(r);setScaleOK(true);setScalePM(false);setScaleFx(x);setScaleFy(y);
-      const sn={id:"ref-scale",type:"ref-scale",parentId:"ref",img:{dataUrl:r.dataUrl,base64:r.base64,width:refImage.width,height:refImage.height},params:null,history:null,ts:Date.now()};
-      setNodes(p=>[...p.filter(n=>n.id!=="ref-scale"),sn]);setSelId("ref-scale");
-      addLog("success","Scale figure placed");
-    })()}
-  };
-  const confirmScale=()=>{if(scalePts.length!==2||!scaleDim)return;const dx=scalePts[1].x-scalePts[0].x,dy=scalePts[1].y-scalePts[0].y,h=parseFloat(scaleDim),pc=Math.sqrt(dx*dx+dy*dy)/h;setPxCm(pc);setShelfH(h);setScaleMode(false);setScalePM(true);addLog("info",`${h}cm — click feet position`)};
-  const resetScale=()=>{setScaleOK(false);setAugImg(null);setScaleMode(false);setScalePM(false);setScalePts([]);setPxCm(null);setShelfH(null);setScaleFx(null);setScaleFy(null);setFigDrag(false);setNodes(p=>p.filter(n=>n.id!=="ref-scale"));if(selId==="ref-scale")setSelId("ref")};
-
-  // ─── Figure drag ───────────────────────────────────────────────
-  const handleImgMouseDown=useCallback(e=>{
-    if(!scaleOK||scaleFx==null||!pxCm||scaleMode||scalePM||!imgRef.current)return;
-    const {x:imgX,y:imgY}=getImgCoords(e,imgRef.current,refImage.width,refImage.height);
-    const fh=SCALE_H_CM*pxCm,fw=fh,pad=fw*0.3;
-    if(imgX>=scaleFx-fw/2-pad&&imgX<=scaleFx+fw/2+pad&&imgY>=scaleFy-fh-pad&&imgY<=scaleFy+pad){
-      e.preventDefault();
-      dragPosRef.current={fx:scaleFx,fy:scaleFy,startMouseX:e.clientX,startMouseY:e.clientY,origFx:scaleFx,origFy:scaleFy};
-      setFigDrag(true);
+  // The measuring, the figure and the drag are FrameworkScale's. All this page
+  // adds is where the result goes: the composited reference becomes the
+  // `ref-scale` node, so it appears in the pipeline like any other image and is
+  // what a generation reads instead of the bare reference.
+  const scaleTool=FrameworkScale.useScaleTool({
+    targetId:refImage?"ref":null,
+    image:refImage,
+    scale,
+    imgRef,
+    log:addLog,
+    onPlaced:(record,composited)=>{
+      setScale(record);
+      setAugImg(composited);
+      setNodes(p=>[...p.filter(n=>n.id!=="ref-scale"),{
+        id:"ref-scale",type:"ref-scale",parentId:"ref",
+        img:{dataUrl:composited.dataUrl,base64:composited.base64,width:composited.width,height:composited.height},
+        params:null,history:null,ts:Date.now()
+      }]);
+      setSelId("ref-scale");
+    },
+    onReset:()=>{
+      setScale(FrameworkScale.UNSET);
+      setAugImg(null);
+      setNodes(p=>p.filter(n=>n.id!=="ref-scale"));
+      if(selId==="ref-scale")setSelId("ref");
     }
-  },[scaleOK,scaleFx,scaleFy,pxCm,scaleMode,scalePM,refImage]);
-
-  useEffect(()=>{
-    if(!figDrag||!imgRef.current||!refImage)return;
-    const rect=imgRef.current.getBoundingClientRect();
-    const na=refImage.width/refImage.height,ea=rect.width/rect.height;
-    const rW=na>ea?rect.width:rect.height*na,rH=na>ea?rect.width/na:rect.height;
-    const scaleX=refImage.width/rW,scaleY=refImage.height/rH;
-    const mv=e=>{
-      const dx=(e.clientX-dragPosRef.current.startMouseX)*scaleX;
-      const dy=(e.clientY-dragPosRef.current.startMouseY)*scaleY;
-      const newFx=dragPosRef.current.origFx+dx;
-      const newFy=dragPosRef.current.origFy+dy;
-      dragPosRef.current.fx=newFx;dragPosRef.current.fy=newFy;
-      setScaleFx(newFx);setScaleFy(newFy);
-    };
-    const up=async()=>{
-      setFigDrag(false);
-      const {fx,fy}=dragPosRef.current;
-      const r=await compositeScale(refImage.dataUrl,refImage.width,refImage.height,pxCm,fx,fy,expandF);
-      setAugImg(r);
-      const sn={id:"ref-scale",type:"ref-scale",parentId:"ref",img:{dataUrl:r.dataUrl,base64:r.base64,width:refImage.width,height:refImage.height},params:null,history:null,ts:Date.now()};
-      setNodes(p=>[...p.filter(n=>n.id!=="ref-scale"),sn]);
-    };
-    window.addEventListener("mousemove",mv);window.addEventListener("mouseup",up);
-    return()=>{window.removeEventListener("mousemove",mv);window.removeEventListener("mouseup",up)};
-  },[figDrag]);
+  });
 
   // ─── Prompt ────────────────────────────────────────────────────
   const buildPrompt=(p)=>{
     const gp=(k,id)=>id==="auto"?"":CONFIG[k]?.find(o=>o.id===id)?.prompt||"";
     const camP=gp("camera",p.camera),frmP=gp("framing",p.framing),litP=gp("light",p.light);
     let photo="";if(camP)photo+=camP+"\n";if(frmP)photo+=frmP+"\n";if(litP)photo+=litP+"\n";
-    let scale="";
-    if(scaleOK&&shelfH){const h=shelfH;let rel=h<80?"desk height":h<120?"chest height":h<160?"shoulder height":"taller than most adults";
-      scale=`\nSCALE: Shelf is EXACTLY ${h}cm tall (${rel}). Scale figure in reference is for reference only — do NOT include in output.${augImg?.expandedSide?` Image extended ${augImg.expandedSide} — fill entire frame.`:""}`;}
+    let scaleLine="";
+    if(FrameworkScale.isSet(scale)){const h=scale.shelfH;let rel=h<80?"desk height":h<120?"chest height":h<160?"shoulder height":"taller than most adults";
+      scaleLine=`\nSCALE: Shelf is EXACTLY ${h}cm tall (${rel}).${FrameworkScale.figureNote(scale)}`;}
     let notes="";if(p.customNotes?.trim())notes=`\nADDITIONAL NOTES: ${p.customNotes.trim()}`;
     const productTruth=`${CONFIG.referenceRolePrompt}\n\n${CONFIG.preservationPrompt}`;
 
     if(p.shotType==="clean"){
       const bg=CONFIG.productBackgrounds.find(o=>o.id===p.productBackground)?.prompt||CONFIG.productBackgrounds[0]?.prompt||"A simple neutral background.";
-      return `You are a professional product photographer creating product imagery for Framework Designs, a modular steel shelving company in Nairobi, Kenya.\n\nTASK: Using the attached reference photo, generate a CLEAN PRODUCT SHOT of this EXACT shelf.\n\n${productTruth}\n\nBACKGROUND: ${bg}\n\nSHELF CONTENTS: Keep the shelf empty unless objects are already present in the reference photo. Do not add lifestyle props.\n\n${CONFIG.negativePrompt}\n${photo?`\n${photo}`:""}\nAspect ratio: ${p.aspect}.${scale}${notes}`;
+      return `You are a professional product photographer creating product imagery for Framework Designs, a modular steel shelving company in Nairobi, Kenya.\n\nTASK: Using the attached reference photo, generate a CLEAN PRODUCT SHOT of this EXACT shelf.\n\n${productTruth}\n\nBACKGROUND: ${bg}\n\nSHELF CONTENTS: Keep the shelf empty unless objects are already present in the reference photo. Do not add lifestyle props.\n\n${CONFIG.negativePrompt}\n${photo?`\n${photo}`:""}\nAspect ratio: ${p.aspect}.${scaleLine}${notes}`;
     }
 
     // ── In-use scene: narrative structure. THE PLACE (one coherent paragraph,
@@ -929,7 +915,7 @@ function App(){
       let sur="";if(wallP)sur+=`- Walls: ${wallP}\n`;if(floorP)sur+=`- Floor: ${floorP}\n`;if(rugP)sur+=`- Rug: ${rugP}\n`;if(furnP)sur+=`- Furniture: ${furnP}\n`;if(winP)sur+=`- Window view: ${winP}\n`;
       placeBlock=`THE PLACE:\n${scn}.\n${sur}${moodP?moodP+"\n":""}`.trim();
     }
-    const shelfBlock=`THE SHELF IN THIS PLACE:\n- The shelf stands against a wall of this room, naturally placed as real furniture.${scale?`\n- ${scale.trim().replace(/^SCALE: /,"SCALE: ")}`:""}\n- Contents: ${contents}. Fill level: ${full}.\n- Condition of the room: ${lived}.${shelfVisibility}`;
+    const shelfBlock=`THE SHELF IN THIS PLACE:\n- The shelf stands against a wall of this room, naturally placed as real furniture.${scaleLine?`\n- ${scaleLine.trim()}`:""}\n- Contents: ${contents}. Fill level: ${full}.\n- Condition of the room: ${lived}.${shelfVisibility}`;
 
     const photoBlock=`THE PHOTOGRAPH:\n${photo?photo.trim():"Natural, competent photography appropriate to the place."}\n- If the light or mood described here conflicts with the place description above, THIS section wins.`;
 
@@ -978,7 +964,7 @@ function App(){
 	    }
 	    return prompt;
 	  };
-	  const livePrompt=useMemo(()=>buildPrompt(params),[params,scaleOK,shelfH,augImg?.expandedSide]);
+	  const livePrompt=useMemo(()=>buildPrompt(params),[params,scale]);
 	  const isLiveRefineRun=isGen&&mode==="refine";
 	  const editableRunPrompt=useMemo(()=>{
 	    return isLiveRefineRun?buildRefinePrompt():livePrompt;
@@ -1274,12 +1260,13 @@ function App(){
       const du=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(blob);});
       const img=await resizeDataUrl(du,Math.max(MAX_DIM,UPLOAD_MAX_DIM));
       setRefImage(img);
-      setScalePts([]);setAugImg(null);setScalePM(false);setPxCm(null);setScaleFx(null);setScaleFy(null);
+      setAugImg(null);
       const refNode={id:"ref",type:"ref",parentId:null,img,params:null,history:null,ts:Date.now()};
       setNodes([refNode]);setSelId("ref");setBaseParams(null);setMode("refine");
       setRefAdj({...DEFAULT_REFINE});setRefineFB("");setPromptEditorOpen(false);setPromptEditorContext(null);setPendingUpload(null);
-      if(rec.unitHeightMm>0){setShelfH(Math.round(rec.unitHeightMm/10));setScaleOK(true);}
-      else{setShelfH(null);setScaleOK(false);}
+      setScale(rec.unitHeightMm>0
+        ?{status:"set",shelfH:Math.round(rec.unitHeightMm/10),pxCm:null,expandFrame:false,fx:null,fy:null,expandedSide:null,offsetX:0}
+        :FrameworkScale.UNSET);
       setDamSource({hash:rec.hash,configId:rec.configId||null,modules:rec.modules||null,unitHeightMm:rec.unitHeightMm||null});
       setLibOpen(false);
       addLog("success",`Library source: ${rec.configId||rec.hash.slice(0,10)}${rec.unitHeightMm>0?` — scale auto-set to ${Math.round(rec.unitHeightMm/10)}cm from its config`:""}`);
@@ -1305,9 +1292,9 @@ function App(){
   // ─── Autosave ──────────────────────────────────────────────────
   useEffect(()=>{
     if(!nodes.length)return;
-    const t=setTimeout(()=>{sceneIdbPut({version:3,ts:Date.now(),provider,nodes,refImage,augImg,designCode,scale:{pxCm,shelfH,scaleFx,scaleFy,expandF,scaleOK},params,baseParams,selId,totalCost,damSource}).catch(()=>{});},1500);
+    const t=setTimeout(()=>{sceneIdbPut({version:3,ts:Date.now(),provider,nodes,refImage,augImg,designCode,scale,params,baseParams,selId,totalCost,damSource}).catch(()=>{});},1500);
     return()=>clearTimeout(t);
-  },[nodes,params,selId,damSource,scaleOK,shelfH,totalCost,designCode]);
+  },[nodes,params,selId,damSource,scale,totalCost,designCode]);
   useEffect(()=>{sceneIdbGet().then(s=>{if(s?.nodes?.length)setRestoreAvailable(true);}).catch(()=>{});},[]);
   const restoreAutosave=async()=>{
     try{
@@ -1319,7 +1306,7 @@ function App(){
       // clearing it, so reloading one does not silently drop a code typed by hand.
       if(s.designCode)setDesignCode(s.designCode);
       setAugImg(s.augImg||null);
-      if(s.scale){setPxCm(s.scale.pxCm??null);setShelfH(s.scale.shelfH??null);setScaleFx(s.scale.scaleFx??null);setScaleFy(s.scale.scaleFy??null);setExpandF(s.scale.expandF??false);setScaleOK(s.scale.scaleOK??false);}
+      setScale(scaleFromSession(s.scale));
       if(s.params)setParams(normalizeParams(s.params));
       setBaseParams(s.baseParams?normalizeParams(s.baseParams):null);
       if(s.selId)setSelId(s.selId);
@@ -1340,8 +1327,7 @@ function App(){
 
   // ─── Session save / load ───────────────────────────────────────
   const handleSave=()=>{
-    const session={version:3,ts:Date.now(),provider,nodes,refImage,augImg,designCode,
-      scale:{pxCm,shelfH,scaleFx,scaleFy,expandF,scaleOK},
+    const session={version:3,ts:Date.now(),provider,nodes,refImage,augImg,designCode,scale,
       params,baseParams,selId,totalCost,damSource};
     const blob=new Blob([JSON.stringify(session)],{type:"application/json"});
     const url=URL.createObjectURL(blob);
@@ -1361,15 +1347,13 @@ function App(){
       // clearing it, so reloading one does not silently drop a code typed by hand.
       if(s.designCode)setDesignCode(s.designCode);
       if(s.augImg)setAugImg(s.augImg);else setAugImg(null);
-      if(s.scale){const{pxCm:pc,shelfH:sh,scaleFx:sfx,scaleFy:sfy,expandF:ef,scaleOK:sok}=s.scale;
-        setPxCm(pc??null);setShelfH(sh??null);setScaleFx(sfx??null);setScaleFy(sfy??null);
-        setExpandF(ef??false);setScaleOK(sok??false);}
+      setScale(scaleFromSession(s.scale));
       if(s.params)setParams(normalizeParams(s.params));
       if(s.baseParams)setBaseParams(normalizeParams(s.baseParams));else setBaseParams(null);
       if(s.selId)setSelId(s.selId);
       if(s.totalCost!=null)setTotalCost(s.totalCost);
       setDamSource(s.damSource||null);
-      setScaleMode(false);setScalePM(false);setScalePts([]);setFigDrag(false);
+      scaleTool.cancel();
       setCropMode(false);setCroppedImg(null);setValResult(null);setCaptions(null);
       setRefAdj({...DEFAULT_REFINE});setRefineFB("");setPromptEditorContext(null);
       addLog("success",`Session loaded — ${s.nodes?.length??0} node(s)`);
@@ -1638,10 +1622,13 @@ function App(){
               <CropTool src={selNode.img.dataUrl} onApply={handleCrop} onCancel={()=>setCropMode(false)}/>
             ):(
               <div>
-                <img ref={imgRef} src={croppedImg?croppedImg.dataUrl:(selNode.type==="ref"&&augImg?augImg.dataUrl:selNode.img?.dataUrl)} alt=""
-                  style={{width:"100%",maxHeight:520,objectFit:"contain",borderRadius:8,border:"1px solid #343129",background:"#0b0b09",cursor:(scaleMode||scalePM)?"crosshair":scaleOK&&scaleFx!=null?(figDrag?"grabbing":"grab"):"default"}}
-                  onClick={handleImgClick}
-                  onMouseDown={handleImgMouseDown}/>
+                {(()=>{
+                  const onRef=selNode.type==="ref"||selNode.type==="ref-scale";
+                  const scaleProps=onRef?scaleTool.imageProps:{};
+                  return <img ref={imgRef} src={croppedImg?croppedImg.dataUrl:(selNode.type==="ref"&&augImg?augImg.dataUrl:selNode.img?.dataUrl)} alt=""
+                    onClick={scaleProps.onClick} onMouseDown={scaleProps.onMouseDown}
+                    style={{width:"100%",maxHeight:520,objectFit:"contain",borderRadius:8,border:"1px solid #343129",background:"#0b0b09",...(scaleProps.style||{})}}/>;
+                })()}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginTop:9}}>
                   <div style={{fontSize:11,color:"#9f9789"}}>
                     {selNode.type==="ref"?"Reference":selNode.type==="ref-scale"?"Reference + scale":selNode.source==="uploaded-refine"?"Uploaded shot":selNode.refinements?"Refined shot":"Generated shot"}
@@ -1650,10 +1637,6 @@ function App(){
                     {scaleOK&&selNode.type==="ref"?<span style={{color:"#8bd17c",marginLeft:8}}>Scale set</span>:null}
                   </div>
                   <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                    {selNode.type==="ref"&&!scaleMode&&!scalePM&&!scaleOK&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setScaleMode(true);setScalePts([])}}>Set scale</button>}
-                    {scaleMode&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setScaleMode(false);setScalePts([])}}>Cancel</button>}
-                    {scalePM&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={resetScale}>Cancel</button>}
-                    {scaleOK&&selNode.type==="ref"&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={resetScale}>Reset scale</button>}
                     {isGen&&(<>
                       <button style={{...S.btn,...S.btnSm,...S.btnP}} onClick={()=>dl(croppedImg||selNode.img,exportName(selNode))}>Download</button>
                       <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setCropMode(true);setCroppedImg(null)}}>Crop</button>
@@ -1665,21 +1648,8 @@ function App(){
                   </div>
                 </div>
 
-                {(scaleMode||scalePM||(scaleOK&&scaleFx!=null&&selNode.type==="ref"))&&(
-                  <div style={{marginTop:10,padding:12,background:"#201a0d",border:"1px solid #6a4519",borderRadius:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-                    {scaleMode&&scalePts.length===0&&<span style={{fontSize:13,fontWeight:800,color:"#ffd08d"}}>Click shelf bottom</span>}
-                    {scaleMode&&scalePts.length===1&&<span style={{fontSize:13,fontWeight:800,color:"#ffd08d"}}>Click shelf top</span>}
-                    {scaleMode&&scalePts.length===2&&(<>
-                      <span style={{fontSize:13,fontWeight:800,color:"#ffd08d"}}>Shelf height</span>
-                      <input autoFocus style={{...S.input,width:96,border:"2px solid #d88a26"}} type="number" placeholder="cm" value={scaleDim} onChange={ev=>setScaleDim(ev.target.value)} onKeyDown={ev=>{if(ev.key==="Enter"&&scaleDim)confirmScale()}}/>
-                      <label style={{fontSize:12,color:"#c5bba8",display:"flex",alignItems:"center",gap:5,cursor:"pointer"}}>
-                        <input type="checkbox" checked={expandF} onChange={ev=>setExpandF(ev.target.checked)}/>Expand frame
-                      </label>
-                      <button style={{...S.btn,...S.btnP,opacity:scaleDim?1:.5}} onClick={confirmScale} disabled={!scaleDim}>Set</button>
-                    </>)}
-                    {scalePM&&<span style={{fontSize:13,fontWeight:800,color:"#ffd08d"}}>Click figure feet position</span>}
-                    {scaleOK&&scaleFx!=null&&selNode.type==="ref"&&<span style={{fontSize:12,color:"#8bd17c"}}>Drag figure to adjust</span>}
-                  </div>
+                {(selNode.type==="ref"||selNode.type==="ref-scale")&&(
+                  <FrameworkScale.Panel {...scaleTool.panelProps} canSkip={false}/>
                 )}
                 {croppedImg&&<div style={{fontSize:10,color:"#8bd17c",marginTop:6,padding:"4px 8px",background:"#122214",borderRadius:5}}>Cropped {croppedImg.width}x{croppedImg.height} <span style={{color:"#cbe8c5",cursor:"pointer",textDecoration:"underline"}} onClick={()=>setCroppedImg(null)}>Undo</span></div>}
                 {valResult&&(<div style={{background:"#0e0e0c",border:"1px solid #2d2a23",borderRadius:8,padding:9,marginTop:8}}>

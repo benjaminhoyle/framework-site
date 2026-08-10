@@ -45,9 +45,6 @@ h1{margin:3px 0 0;font-size:24px;line-height:1.05}
 .drop.scale-active{border-color:#d99a47;cursor:crosshair}
 .drop img{width:100%;height:100%;max-height:360px;object-fit:contain;background:#0d0e0e}
 .empty-drop{padding:22px;text-align:center;color:#9da6a1;font-size:12px;line-height:1.5}
-.scale-panel{margin-top:10px;border:1px solid #3a403e;border-radius:8px;background:#111313;padding:10px}
-.scale-copy{font-size:12px;line-height:1.45;color:#cdd5cf}
-.scale-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .field{display:flex;flex-direction:column;gap:5px}
 .field label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#a5ada8;font-weight:800}
@@ -208,6 +205,7 @@ h1{margin:3px 0 0;font-size:24px;line-height:1.05}
 <div id="root"></div>
 <script src="/js/builder/engine.js"></script>
 <script src="/js/studio/framework-names.js"></script>
+<script src="/js/studio/scale.js"></script>
 <script src="/js/studio/prompt-config.js"></script>
 <script src="/js/studio/catalog-product-reference.js"></script>
 <script type="text/babel">
@@ -466,28 +464,6 @@ async function resizeDataUrl(dataUrl,maxDim=SERVER_MAX_DIM,quality=.86){
   ctx.fillRect(0,0,outW,outH);
   ctx.drawImage(img,0,0,outW,outH);
   return canvas.toDataURL("image/jpeg",quality);
-}
-
-function imagePointFromEvent(event,imgEl,natW,natH){
-  const rect=imgEl.getBoundingClientRect();
-  const naturalAspect=natW/natH;
-  const elementAspect=rect.width/rect.height;
-  let renderW,renderH,offsetX,offsetY;
-  if(naturalAspect>elementAspect){
-    renderW=rect.width;
-    renderH=rect.width/naturalAspect;
-    offsetX=0;
-    offsetY=(rect.height-renderH)/2;
-  }else{
-    renderH=rect.height;
-    renderW=rect.height*naturalAspect;
-    offsetX=(rect.width-renderW)/2;
-    offsetY=0;
-  }
-  return {
-    x:Math.max(0,Math.min(natW,(event.clientX-rect.left-offsetX)*(natW/renderW))),
-    y:Math.max(0,Math.min(natH,(event.clientY-rect.top-offsetY)*(natH/renderH)))
-  };
 }
 
 async function fileToSource(file){
@@ -1000,13 +976,19 @@ Respond with JSON only, no markdown:
 }
 
 function sourceRefs(source){
-  const refs=[{label:"GEOMETRY MASTER: original source shelf product photo. Copy the exact shelf silhouette, tier count, board endpoints, tube/post positions, overhangs, color, material, scale, and joints from this image. Do not copy room styling.",dataUrl:source.dataUrl}];
-  return refs;
+  // The composited copy, when there is one: same photograph, with a 180 cm
+  // figure standing in it. The prompt's scale line tells the model what the
+  // figure is for and that it must not come back in the output.
+  const master=source.scaleImage?.dataUrl||source.dataUrl;
+  return [{label:"GEOMETRY MASTER: original source shelf product photo. Copy the exact shelf silhouette, tier count, board endpoints, tube/post positions, overhangs, color, material, scale, and joints from this image. Do not copy room styling.",dataUrl:master}];
 }
 
 function scaleLineForSource(source,fallbackCm){
   if(source?.scale?.status==="set"){
-    return `SCALE LOCK: The measured shelf height is ${source.scale.shelfH} cm from the source image. Preserve that product scale consistently across the full set. Do not add any people, mannequins, silhouettes, or measurement markers.`;
+    return `SCALE LOCK: The measured shelf height is ${source.scale.shelfH} cm from the source image. Preserve that product scale consistently across the full set.`
+      +(FrameworkScale.hasFigure(source.scale)
+        ?FrameworkScale.figureNote(source.scale)
+        :" Do not add any people, mannequins, silhouettes, or measurement markers.");
   }
   const scale=String(fallbackCm||"").trim();
   if(scale)return `SCALE LOCK: Treat the shelf in the source photo as exactly ${scale} cm tall. Preserve that scale consistently across the full set.`;
@@ -1644,7 +1626,6 @@ function AppV2(){
   const [now,setNow]=useState(Date.now());
   const [dragging,setDragging]=useState(false);
   const [log,setLog]=useState([]);
-  const [scaleSession,setScaleSession]=useState(null);
   // No browser key, ever -- see scene-studio.html. "" selects the server path.
   const browserKey="";
   const [firstGenerationNote,setFirstGenerationNote]=useState("");
@@ -1702,8 +1683,9 @@ function AppV2(){
   const previewType=previewSource?(previewSelection?.type||"source"):"source";
   const previewImage=previewType==="filled"?previewSource?.filled:previewType==="empty"?previewSource?.empty:previewChild||previewSource;
   const previewTitle=previewType==="source"?"Source":previewType==="filled"?"Populated":previewType==="empty"?"Emptied":previewChild?.label||"Generated image";
-  const activePreview=previewImage?.dataUrl;
-  const scaleSessionActive=scaleSession&&previewSource&&previewType==="source"&&scaleSession.sourceId===previewSource.id;
+  const activePreview=previewType==="source"
+    ?(previewSource?.scaleImage?.dataUrl||previewSource?.dataUrl)
+    :previewImage?.dataUrl;
   const visibleQueue=queueItems.filter(item=>item.status!=="done").slice(0,30);
   const activeJobs=queueItems.filter(item=>item.status==="running");
   const activeJob=activeJobs[0]||null;
@@ -1711,6 +1693,38 @@ function AppV2(){
   const averageSessionMs=completedStats.count?completedStats.elapsedMs/completedStats.count:0;
   const queueSpend=queueItems.filter(item=>item.status==="pending"||item.status==="running").reduce((sum,item)=>sum+(item.estimatedCost||0),0);
   const totalSpend=completedStats.estimatedSpend+queueSpend;
+
+  // Measuring the shelf and standing the figure in the photograph is
+  // FrameworkScale's, shared with the scene studio. This page only says which
+  // row the result belongs to. The composited copy is kept beside the original
+  // rather than replacing it: every later re-composite is drawn from the
+  // original, and the row can always be reset back to the bare photograph.
+  const scaleTool=FrameworkScale.useScaleTool({
+    targetId:previewSource?.id||null,
+    image:previewSource,
+    scale:previewSource?.scale,
+    fallbackCm:scaleCm,
+    imgRef:previewRef,
+    log:addLog,
+    onPlaced:(record,composited)=>{
+      if(!previewSource)return;
+      patchSource(previewSource.id,{scale:record,scaleImage:composited});
+    },
+    onReset:()=>{
+      if(!previewSource)return;
+      patchSource(previewSource.id,{scale:FrameworkScale.UNSET,scaleImage:null});
+    },
+    onSkip:()=>{
+      if(!previewSource)return;
+      patchSource(previewSource.id,{scale:FrameworkScale.SKIPPED,scaleImage:null});
+      addLog("info",`${previewSource.name}: scale skipped`);
+    }
+  });
+  const skipScale=source=>{selectPreview(source.id,"source");scaleTool.skip()};
+
+  // A session measures the source photograph. Looking at a generated image
+  // instead ends it rather than leaving it armed against the wrong picture.
+  useEffect(()=>{if(previewType!=="source")scaleTool.cancel()},[previewType]);
 
   function commitSources(updater){
     const next=typeof updater==="function"?updater(sourcesRef.current):updater;
@@ -1799,51 +1813,19 @@ function AppV2(){
     patchGeneratedImage(source,type,image=>historyVersion(image,index),child);
   }
 
-  function beginScale(source){
-    selectPreview(source.id,"source");
-    setScaleSession({sourceId:source.id,phase:"bottom",points:[],heightCm:String(source.scale?.shelfH||scaleCm||"")});
-  }
-
-  function skipScale(source){
-    patchSource(source.id,{scale:{status:"skipped"}});
-    if(scaleSession?.sourceId===source.id)setScaleSession(null);
-    addLog("info",`${source.name}: scale skipped`);
-  }
-
-  function resetScale(source){
-    patchSource(source.id,{scale:{status:"unset"}});
-    if(scaleSession?.sourceId===source.id)setScaleSession(null);
-  }
-
+  // Uploading is the other thing a click on an empty drop zone can mean, so it
+  // is checked before the scale tool sees the event.
   function handleSourcePreviewClick(event){
     if(!previewSource){
       fileRef.current?.click();
       return;
     }
-    if(!scaleSessionActive||!previewRef.current)return;
-    const point=imagePointFromEvent(event,previewRef.current,previewSource.width,previewSource.height);
-    if(scaleSession.phase==="bottom"){
-      setScaleSession({...scaleSession,phase:"top",points:[point]});
-      return;
-    }
-    if(scaleSession.phase==="top"){
-      setScaleSession({...scaleSession,phase:"height",points:[...scaleSession.points,point]});
-    }
+    scaleTool.imageProps.onClick(event);
   }
 
-  function confirmScaleHeight(){
-    if(!scaleSession||scaleSession.points.length!==2||!parseFloat(scaleSession.heightCm))return;
-    const shelfH=Number(scaleSession.heightCm);
-    if(!Number.isFinite(shelfH)||shelfH<10||shelfH>500){
-      addLog("error","Shelf height must be between 10 and 500 cm.");
-      return;
-    }
-    const [bottom,top]=scaleSession.points;
-    const px=Math.hypot(top.x-bottom.x,top.y-bottom.y);
-    patchSource(scaleSession.sourceId,{scale:{status:"set",shelfH,pxCm:px/shelfH}});
-    const source=getSource(scaleSession.sourceId);
-    setScaleSession(null);
-    addLog("success",`${source?.name||"Source"}: scale set to ${shelfH} cm`);
+  function beginScale(source){
+    selectPreview(source.id,"source");
+    scaleTool.begin();
   }
 
   async function loadFiles(files){
@@ -1912,7 +1894,7 @@ function AppV2(){
     commitSources(prev=>prev.filter(item=>item.id!==sourceId));
     if(activeSource===sourceId)setActiveSource(null);
     if(previewSelection?.sourceId===sourceId)setPreviewSelection(null);
-    if(scaleSession?.sourceId===sourceId)setScaleSession(null);
+    scaleTool.cancel();
     addLog("info",`${source?.name||"Source"} removed. Queued jobs for it will be skipped.`);
   }
 
@@ -2260,7 +2242,7 @@ function AppV2(){
     commitSources([]);
     setActiveSource(null);
     setPreviewSelection(null);
-    setScaleSession(null);
+    scaleTool.cancel();
     jobQueueRef.current=[];
     activeJobsRef.current=new Map();
     activeSourceLocksRef.current=new Set();
@@ -2299,7 +2281,7 @@ function AppV2(){
       setBackground({...DEFAULT_BACKGROUND,...(session.background||{})});
       setScaleCm(String(session.scaleCm||""));
       setFirstGenerationNote(String(session.firstGenerationNote||""));
-      setScaleSession(null);
+      scaleTool.cancel();
       jobQueueRef.current=[];
       activeJobsRef.current=new Map();
       activeSourceLocksRef.current=new Set();
@@ -2433,13 +2415,13 @@ function AppV2(){
             <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleFiles}/>
             {libraryOpen&&<LibraryPickerModal onClose={()=>setLibraryOpen(false)} onPick={loadFromLibrary}/>}
             <div
-              className={`drop ${scaleSessionActive?"scale-active":""} ${dragging?"dragging":""}`}
+              className={`drop ${scaleTool.active?"scale-active":""} ${dragging?"dragging":""}`}
               onClick={handleSourcePreviewClick}
               onDragOver={event=>{event.preventDefault();setDragging(true)}}
               onDragLeave={()=>setDragging(false)}
               onDrop={handleDrop}
             >
-              {previewSource&&activePreview?<img ref={previewRef} src={activePreview} alt={previewTitle}/>:previewSource?<div className="empty-drop">Metadata imported. Replace or upload a source image before generating.</div>:<div className="empty-drop">Drag one or more product photos here, or click Upload.</div>}
+              {previewSource&&activePreview?<img ref={previewRef} src={activePreview} alt={previewTitle} onMouseDown={previewType==="source"?scaleTool.imageProps.onMouseDown:undefined} style={previewType==="source"?scaleTool.imageProps.style:undefined}/>:previewSource?<div className="empty-drop">Metadata imported. Replace or upload a source image before generating.</div>:<div className="empty-drop">Drag one or more product photos here, or click Upload.</div>}
             </div>
             {previewSource&&previewType!=="source"&&(
               <PreviewActionPanel
@@ -2458,27 +2440,7 @@ function AppV2(){
               />
             )}
             {previewSource&&previewType==="source"&&(
-              <div className="scale-panel">
-                <div className="scale-copy">
-                  {scaleSessionActive&&scaleSession.phase==="bottom"&&"Click the bottom of the shelf."}
-                  {scaleSessionActive&&scaleSession.phase==="top"&&"Click the top of the shelf."}
-                  {scaleSessionActive&&scaleSession.phase==="height"&&"Enter the shelf height in centimeters."}
-                  {!scaleSessionActive&&previewSource.scale?.status==="set"&&`Scale set: shelf ${previewSource.scale.shelfH} cm.`}
-                  {!scaleSessionActive&&previewSource.scale?.status==="skipped"&&"Scale skipped for this source. Product scale will use approximate catalogue proportions."}
-                  {!scaleSessionActive&&(!previewSource.scale||previewSource.scale.status==="unset")&&"Set scale for this source, or skip it before generating."}
-                </div>
-                <div className="scale-row">
-                  {scaleSessionActive&&scaleSession.phase==="height"&&(
-                    <>
-                      <input className="input" style={{width:110}} inputMode="numeric" placeholder="cm" value={scaleSession.heightCm} onChange={event=>setScaleSession({...scaleSession,heightCm:event.target.value.replace(/[^\d.]/g,"")})} onKeyDown={event=>{if(event.key==="Enter")confirmScaleHeight()}}/>
-                      <button className="btn btn-small btn-primary" onClick={confirmScaleHeight} disabled={!parseFloat(scaleSession.heightCm)}>Set</button>
-                    </>
-                  )}
-                  {!scaleSessionActive&&<button className="btn btn-small btn-soft" onClick={()=>beginScale(previewSource)}>Set Scale</button>}
-                  {!scaleSessionActive&&previewSource.scale?.status!=="skipped"&&<button className="btn btn-small" onClick={()=>skipScale(previewSource)}>Skip Scale</button>}
-                  {(scaleSessionActive||previewSource.scale?.status==="set"||previewSource.scale?.status==="skipped")&&<button className="btn btn-small" onClick={()=>resetScale(previewSource)}>Reset</button>}
-                </div>
-              </div>
+              <FrameworkScale.Panel {...scaleTool.panelProps}/>
             )}
             <div className="form-grid">
               <div className="field">
