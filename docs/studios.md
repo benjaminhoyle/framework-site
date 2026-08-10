@@ -142,6 +142,33 @@ Two things worth knowing:
   shot, simply never existed. Intermittent, and the cause of the first report
   that a generated scene did not come back.
 
+## The render console is not one of these pages
+
+The nav's last item, **Render console ↗**, points at `http://localhost:8775/console/`
+— a program on the machine in front of you, not a page here. It needs Blender and
+the module geometry, which is the whole reason anything still runs locally.
+
+**A page cannot start it, and never will be able to.** No browser gives a web page
+a way to run a program; that is the single most important thing browsers refuse to
+do, and framework.co.ke should not be an exception to it. Registering a custom URL
+scheme (`framework://render`) from the installer would technically get there, but
+it means an app bundle on macOS and a registry key on Windows, a confirmation
+dialog either way, and one more thing to keep working on a machine whose setup is
+deliberately one double-click. Not worth it to save starting a program.
+
+So the nav does the two things a page *can* do:
+
+- **Links to it**, in a new tab. A navigation to `http://localhost:…` is not a
+  fetch, so no mixed-content rule, CORS preflight or local-network check applies;
+  it simply works when the console is running. A new tab means a console that is
+  not running costs you a dead tab, not the studio you were working in.
+- **Says how to start it**, behind the `?`.
+
+There is deliberately no "is it running?" light. Checking would mean fetching
+localhost from an https page: allowed in Chrome, refused in Safari and Firefox,
+and increasingly gated behind a permission prompt in Chrome too. A status light
+that is wrong on half the browsers is worse than no status light.
+
 ## Image generation, in outline
 
 Long jobs cannot run inside a synchronous function, so:

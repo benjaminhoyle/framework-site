@@ -26,6 +26,39 @@
 (function(){
   "use strict";
 
+  /**
+   * The render console, which is not a page here at all.
+   *
+   * It runs on the machine in front of you, because rendering needs Blender and
+   * the module geometry and neither belongs in a browser. **A page cannot start
+   * it.** No browser gives a web page a way to run a program, which is the
+   * single most important thing browsers refuse to do; framework.co.ke could not
+   * be allowed to start processes on your Mac even if we wanted it to.
+   *
+   * Two things a page *can* do, and both are here:
+   *
+   *   - **Link to it.** A navigation to `http://localhost:…` is not a fetch, so
+   *     no mixed-content rule, CORS preflight or local-network check applies to
+   *     it. It opens in a new tab, so a console that is not running leaves you
+   *     with one dead tab rather than losing the studio you were working in.
+   *   - **Say how to start it.** Which is what the `?` is for.
+   *
+   * What is deliberately *not* here is an "is it running?" light. Checking would
+   * mean fetching localhost from an https page, and that is allowed in Chrome,
+   * refused in Safari and Firefox, and increasingly gated behind a permission
+   * prompt in Chrome too. A status light that is wrong on half the browsers is
+   * worse than no status light.
+   */
+  const LOCAL_CONSOLE = {
+    label: "Render console",
+    url: "http://localhost:8775/console/",
+    help: [
+      ["macOS", "Double-click <code>framework-pipeline.command</code> in the <code>framework-renderer</code> folder."],
+      ["Windows", "Double-click <code>framework-pipeline.bat</code> in the same folder."],
+      ["Terminal", "<code>python3 scripts/launch/pipeline.py</code> from that folder."]
+    ]
+  };
+
   /** Every private page, in the order a person moves through them. */
   const PAGES = [
     {href: "/builder",        label: "3D Builder"},
@@ -37,11 +70,24 @@
 
   const CSS = `
 /* ─── Nav ─────────────────────────────────────────────────────────── */
-.fw-nav{display:flex;gap:4px;align-items:center;padding:7px 14px;background:#141414;border-bottom:1px solid #2a2a2a;font-family:'DM Sans',system-ui,sans-serif}
+.fw-nav{display:flex;gap:4px;align-items:center;flex-wrap:wrap;padding:7px 14px;background:#141414;border-bottom:1px solid #2a2a2a;font-family:'DM Sans',system-ui,sans-serif}
 .fw-nav-mark{color:#d5a25d;font-weight:800;letter-spacing:.1em;font-size:10px;text-transform:uppercase;margin-right:14px}
 .fw-nav a{text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px}
 .fw-nav a:hover{background:#1e1e1e;color:#ece8df}
 .fw-nav a[aria-current="page"]{background:#2a2213;color:#f6bd64}
+.fw-nav-spacer{flex:1;min-width:12px}
+.fw-nav-local{display:flex;align-items:center;gap:2px;position:relative}
+.fw-nav-local a{color:#9fb3a8}
+.fw-nav-help{height:22px;width:22px;padding:0;border-radius:999px;border:1px solid #3c4140;background:#1c1f1f;color:#cfcfcf;font:inherit;font-size:11px;font-weight:800;cursor:pointer;line-height:1}
+.fw-nav-help:hover{background:#282c2c;color:#ece8df}
+.fw-local-help{position:absolute;top:30px;right:0;z-index:40;width:min(400px,80vw);background:#171919;border:1px solid #3a403e;border-radius:8px;box-shadow:0 18px 50px rgba(0,0,0,.45);padding:12px;font-size:12px;line-height:1.5;color:#cdd5cf;text-align:left}
+.fw-local-help[hidden]{display:none}
+.fw-local-help h3{margin:0 0 6px;font-size:12px;color:#fff}
+.fw-local-help p{margin:0 0 8px}
+.fw-local-help dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:baseline}
+.fw-local-help dt{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#8d887c;font-weight:800}
+.fw-local-help dd{margin:0}
+.fw-local-help code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;background:#0d0f0f;border:1px solid #2a2f2e;border-radius:4px;padding:1px 5px;color:#e8e2d4}
 
 /* ─── Buttons ─────────────────────────────────────────────────────── */
 /* One family. btn is the default; the rest are modifiers, and a disabled button
@@ -119,10 +165,35 @@
     if(!host) return;
     const here = window.location.pathname.replace(/\/$/, "") || "/";
     host.className = "fw-nav";
-    host.innerHTML = '<span class="fw-nav-mark">Framework</span>' + PAGES.map(page => {
+    const links = PAGES.map(page => {
       const current = here === page.href || here === page.href.replace(/\.html$/, "");
       return `<a href="${page.href}"${current ? ' aria-current="page"' : ""}>${page.label}</a>`;
     }).join("");
+    const steps = LOCAL_CONSOLE.help
+      .map(([platform, how]) => `<dt>${platform}</dt><dd>${how}</dd>`).join("");
+    host.innerHTML = '<span class="fw-nav-mark">Framework</span>' + links
+      + '<span class="fw-nav-spacer"></span>'
+      + '<span class="fw-nav-local">'
+      +   `<a href="${LOCAL_CONSOLE.url}" target="_blank" rel="noopener">${LOCAL_CONSOLE.label} ↗</a>`
+      +   '<button class="fw-nav-help" type="button" aria-expanded="false" title="How to start the render console">?</button>'
+      +   '<div class="fw-local-help" hidden>'
+      +     "<h3>The render console runs on this machine</h3>"
+      +     "<p>It needs Blender and the module geometry, so it cannot live on the site — "
+      +     "and no web page is allowed to start a program on your computer. Start it yourself, "
+      +     "then the link opens it.</p>"
+      +     `<dl>${steps}</dl>`
+      +   "</div>"
+      + "</span>";
+
+    const help = host.querySelector(".fw-local-help");
+    const toggle = host.querySelector(".fw-nav-help");
+    const setOpen = open => {
+      help.hidden = !open;
+      toggle.setAttribute("aria-expanded", String(open));
+    };
+    toggle.addEventListener("click", event => { event.stopPropagation(); setOpen(help.hidden); });
+    document.addEventListener("click", () => setOpen(false));
+    document.addEventListener("keydown", event => { if(event.key === "Escape") setOpen(false); });
   }
 
   // ─── Activity log ───────────────────────────────────────────────────
@@ -202,7 +273,7 @@
     );
   }
 
-  window.FrameworkStudio = {PAGES, injectStyles, mountNav, ActivityLog, logAsText: asText};
+  window.FrameworkStudio = {PAGES, LOCAL_CONSOLE, injectStyles, mountNav, ActivityLog, logAsText: asText};
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", mountNav);
   else mountNav();
 })();
