@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>Framework — Funnel Monitor</title>
+  <link rel="stylesheet" href="/css/gate.css">
+  <script src="/js/gate.js"></script>
   <style>
     :root {
       --bg:#0f1115; --card:#171a21; --line:#262b36; --line-soft:#1e222b;
@@ -213,21 +215,18 @@
 
   <script>
   (function () {
-    var key = new URLSearchParams(location.search).get('key');
+    // The key comes from the shared gate, not the URL. See js/gate.js.
     var esc = function (s) { return String(s==null?'':s).replace(/[&<>"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
     var kes = function (n) { return 'KSh ' + Math.round(Number(n)||0).toLocaleString('en-US'); };
     var num = function (n) { return (Number(n)||0).toLocaleString('en-US'); };
     var show = function (h) { document.getElementById('main').innerHTML = h; };
     var D = null, view = { filter:'spending', group:'ad', win:'30d', sort:'spend30', dir:-1, q:'', month:null, trendTable:false, grain:'day' };
 
-    if (!key) {
-      show('<div class="msg">This dashboard is private. Add your key to the URL:<br><br>' +
-           '<code>' + location.origin + '/metrics.html?key=YOUR_KEY</code></div>');
-      return;
-    }
-    document.getElementById('navCatalog').href = '/catalog.html?key=' + encodeURIComponent(key);
+    document.getElementById('navCatalog').href = '/catalog.html';
 
-    fetch('/api/dashboard?key=' + encodeURIComponent(key))
+    // Nothing is fetched until the gate has a key the server accepts.
+    FrameworkGate.ready()
+      .then(function () { return FrameworkGate.fetch('/api/dashboard'); })
       .then(function (r) {
         if (r.status === 401) throw new Error('Unauthorized — check your key.');
         if (r.status === 404) throw new Error('No data yet. Run the sync (double-click sync.command) to publish the first snapshot.');

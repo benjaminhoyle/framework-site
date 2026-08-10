@@ -16,13 +16,12 @@
 // See docs/catalog-architecture.md.
 
 import { getStore } from '@netlify/blobs';
+import { refuse } from './_auth.mjs';
 import published from '../../catalog.json' with { type: 'json' };
 
 export default async (req) => {
-  const key = new URL(req.url).searchParams.get('key');
-  if (!process.env.SITE_EXPORT_KEY || key !== process.env.SITE_EXPORT_KEY) {
-    return new Response('unauthorized', { status: 401 });
-  }
+  const denied = refuse(req);
+  if (denied) return denied;
   const store = getStore('catalog');
   const [draft, stats] = await Promise.all([
     store.get('draft', { type: 'json' }).catch(() => null),

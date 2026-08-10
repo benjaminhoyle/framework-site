@@ -1,0 +1,3305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="/css/gate.css">
+<script src="/js/gate.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Framework - Catalog Set Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#101111;color:#ece8df;font-family:'DM Sans','Segoe UI',sans-serif}
+button,input,select,textarea{font:inherit}
+button{border:0}
+button:not(:disabled){cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.5}
+a{color:inherit}
+img{display:block}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:#0b0c0c}
+::-webkit-scrollbar-thumb{background:#444;border-radius:4px}
+.page{min-height:100vh;padding:18px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:18px}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#d5a25d;font-weight:800}
+h1{margin:3px 0 0;font-size:24px;line-height:1.05}
+.top-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.btn{height:36px;padding:0 13px;border-radius:7px;background:#262929;color:#f6f2e9;border:1px solid #3c4140;font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none}
+.btn:hover:not(:disabled){background:#323737}
+.btn-primary{background:#e6a44d;color:#17130c;border-color:#f0ba71}
+.btn-primary:hover:not(:disabled){background:#f0b866}
+.btn-soft{background:#182523;border-color:#375247;color:#d9f0e4}
+.btn-danger{background:#2b1b1b;border-color:#6b3737;color:#ffd7d7}
+.btn-small{height:30px;padding:0 10px;font-size:11px;border-radius:6px}
+.grid{display:grid;grid-template-columns:minmax(300px,390px) minmax(0,1fr);gap:16px;align-items:start}
+.panel{background:#171919;border:1px solid #2a2f2e;border-radius:8px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.22)}
+.sticky{position:sticky;top:14px}
+.panel-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.title{font-size:14px;font-weight:800;color:#fff}
+.sub{font-size:11px;color:#9da6a1;line-height:1.4;margin-top:2px}
+.drop{border:1px dashed #4d5a55;border-radius:8px;min-height:210px;display:flex;align-items:center;justify-content:center;background:#111313;overflow:hidden;position:relative}
+.drop.scale-active{border-color:#d99a47;cursor:crosshair}
+.drop img{width:100%;height:100%;max-height:360px;object-fit:contain;background:#0d0e0e}
+.empty-drop{padding:22px;text-align:center;color:#9da6a1;font-size:12px;line-height:1.5}
+.scale-panel{margin-top:10px;border:1px solid #3a403e;border-radius:8px;background:#111313;padding:10px}
+.scale-copy{font-size:12px;line-height:1.45;color:#cdd5cf}
+.scale-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#a5ada8;font-weight:800}
+.input,.select,.textarea{width:100%;border-radius:7px;border:1px solid #3a403e;background:#101212;color:#f4efe6;padding:0 10px;outline:none}
+.input,.select{height:36px}
+.textarea{min-height:68px;padding:9px 10px;resize:vertical;line-height:1.35}
+.input:focus,.select:focus,.textarea:focus{border-color:#d99a47}
+.color-row{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:center}
+.color-input{width:42px;height:36px;padding:3px;border-radius:7px;border:1px solid #3a403e;background:#101212;cursor:pointer}
+.source-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;max-height:180px;overflow:auto;padding-right:2px}
+.source-item{display:grid;grid-template-columns:46px 1fr;gap:9px;align-items:center;padding:8px;border:1px solid #2d3331;background:#121414;border-radius:7px}
+.source-item img{width:46px;height:46px;object-fit:cover;border-radius:5px}
+.source-name{font-size:12px;font-weight:800;color:#f3efe8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.source-meta{font-size:10px;color:#98a39d;margin-top:2px}
+.source-actions{grid-column:1 / -1;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.status-pill{font-size:10px;text-transform:uppercase;letter-spacing:.06em;border:1px solid #383e3c;color:#98a39d;padding:5px 7px;border-radius:99px;font-weight:800}
+.status-pill.set{border-color:#315844;color:#cef5de;background:#14241c}
+.status-pill.skip{border-color:#5b5036;color:#f5d89a;background:#211c12}
+.status-pill.need{border-color:#6f3737;color:#ffd7d7;background:#241717}
+.log{margin-top:12px;display:flex;flex-direction:column;gap:6px;max-height:230px;overflow:auto}
+.log-row{border:1px solid #2a2f2e;border-radius:7px;padding:7px 8px;background:#111313;font-size:11px;color:#c9d0cc;line-height:1.35}
+.log-row.success{border-color:#315844;color:#cbf5de}
+.log-row.error{border-color:#6f3737;color:#ffd7d7}
+.log-row.debug{color:#929d98}
+.sets{display:flex;flex-direction:column;gap:14px}
+.set-card{background:#171919;border:1px solid #2a2f2e;border-radius:8px;overflow:hidden}
+.set-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #262b2a;background:#141616}
+.set-name{font-size:13px;font-weight:800;color:#fff}
+.set-status{font-size:11px;color:#a4aca8}
+.steps{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.step{font-size:10px;text-transform:uppercase;letter-spacing:.06em;border:1px solid #383e3c;color:#98a39d;padding:5px 7px;border-radius:99px;font-weight:800}
+.step.active{border-color:#d99a47;color:#ffd596;background:#2a2116}
+.step.done{border-color:#315844;color:#cef5de;background:#14241c}
+.step.skip{border-color:#4a4f4d;color:#858d88;background:#191c1b}
+.result-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:#252a28}
+.detail-options{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px}
+.detail-option{display:grid;grid-template-columns:38px 1fr;gap:7px;align-items:center;padding:6px;border:1px solid #343a37;border-radius:7px;background:#121414;color:#cbd1cd;text-align:left;font-size:10px;font-weight:800;line-height:1.25}
+.detail-option:hover:not(:disabled){border-color:#718078;background:#18201d}
+.detail-option.selected{border-color:#d99a47;background:#282116;color:#ffe1ad}
+.detail-option img{width:38px;height:38px;border-radius:4px;object-fit:cover}
+.detail-option.none{grid-template-columns:1fr;min-height:52px}
+.detail-preview{margin-top:7px;color:#98a39d;font-size:10px;line-height:1.4}
+.result{background:#111313;min-width:0}
+.result-title{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-bottom:1px solid #242927}
+.result-title span{font-size:12px;font-weight:800;color:#f5efe5}
+.thumb{aspect-ratio:1/1;background:#0d0e0e;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb.clickable{cursor:pointer}
+.thumb.clickable:hover{outline:1px solid #d99a47;outline-offset:-1px}
+.placeholder{font-size:12px;color:#76817b}
+.download-row{display:flex;gap:6px;padding:9px 10px;border-top:1px solid #242927;min-height:48px;flex-wrap:wrap}
+.prompt-preview{margin-top:12px;border:1px solid #2a2f2e;border-radius:8px;overflow:hidden;background:#111313}
+.prompt-preview summary{padding:10px 12px;cursor:pointer;font-size:12px;font-weight:800;color:#f4efe6}
+.prompt-preview pre{white-space:pre-wrap;margin:0;padding:0 12px 12px;color:#aeb8b2;font-size:11px;line-height:1.45;max-height:250px;overflow:auto}
+.notice{padding:18px;border:1px solid #2a2f2e;background:#141616;border-radius:8px;color:#aeb8b2;font-size:13px;line-height:1.5}
+.progress{height:4px;background:#242927;border-radius:999px;overflow:hidden;margin-top:12px}
+.progress div{height:100%;background:#e6a44d;width:40%;animation:slide 1.2s ease-in-out infinite alternate;border-radius:999px}
+.queue-panel{position:sticky;top:0;z-index:5;margin:-18px -18px 16px;padding:12px 18px;background:rgba(16,17,17,.96);backdrop-filter:blur(10px);border-bottom:1px solid #2a2f2e}
+.queue-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.queue-title{font-size:12px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:.08em}
+.queue-stats{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.queue-stat{font-size:11px;color:#c9d0cc;border:1px solid #343a37;background:#141616;border-radius:999px;padding:6px 9px;font-weight:800}
+.queue-strip{display:flex;gap:7px;overflow:auto;padding-top:9px}
+.queue-chip{flex:0 0 auto;max-width:360px;border:1px solid #343a37;background:#121414;border-radius:999px;padding:5px 6px 5px 10px;color:#cbd1cd;font-size:11px;font-weight:800;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.queue-chip-label{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.queue-chip-actions{display:flex;gap:3px;align-items:center}
+.queue-chip-actions button{height:20px;min-width:20px;padding:0 6px;border-radius:999px;border:1px solid #3c4140;background:#202323;color:#ebe6dd;font-size:10px;font-weight:900}
+.queue-chip-actions button:hover:not(:disabled){background:#303535}
+.queue-chip-actions button:disabled{opacity:.35}
+.queue-chip.running{border-color:#d99a47;color:#ffd596;background:#2a2116}
+.queue-chip.done{border-color:#315844;color:#cef5de;background:#14241c}
+.queue-chip.error{border-color:#6f3737;color:#ffd7d7;background:#241717}
+.debug-details{margin-top:8px;border:1px solid #2a2f2e;border-radius:8px;background:#111313}
+.debug-details summary{padding:9px 10px;cursor:pointer;font-size:11px;font-weight:900;color:#f4efe6}
+.debug-log{display:grid;gap:6px;max-height:190px;overflow:auto;padding:0 10px 10px}
+.studio{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:14px;align-items:start}
+.upload-row{display:flex;flex-direction:column;gap:14px;position:sticky;top:118px}
+.source-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.preview-actions{margin-top:10px;border:1px solid #2a2f2e;border-radius:8px;background:#111313;padding:9px;display:grid;gap:8px}
+.preview-actions-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.preview-actions-buttons{display:flex;gap:5px;flex-wrap:wrap}
+.source-mini-list{display:flex;gap:8px;overflow:auto;margin-top:10px;padding-bottom:2px}
+.source-mini{flex:0 0 160px;border:1px solid #2d3331;background:#121414;border-radius:8px;padding:7px}
+.source-mini.selected{border-color:#d99a47;background:#282116}
+.source-mini img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:5px;background:#0d0e0e}
+.source-mini-name{font-size:11px;font-weight:900;color:#f3efe8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:6px}
+.source-mini-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.rows{display:flex;flex-direction:column;gap:14px}
+.flow-row{background:#171919;border:1px solid #2a2f2e;border-radius:9px;overflow:hidden}
+.flow-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #262b2a;background:#141616}
+.flow-title{font-size:13px;font-weight:900;color:#fff}
+.flow-status{font-size:11px;color:#a4aca8;margin-top:2px}
+.flow-lane{display:flex;gap:1px;overflow:auto;background:#252a28;padding-bottom:1px}
+.flow-card{flex:0 0 255px;background:#111313;min-width:0}
+.flow-card.source-card{flex-basis:230px}
+.flow-card.add-card{display:flex;align-items:stretch;justify-content:center;background:#101212}
+.flow-card.meta-card{flex-basis:300px;padding:10px;background:#121414}
+.meta-card .input{height:32px;font-size:11px}
+.meta-card .textarea{font-size:11px}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.meta-grid .field.full{grid-column:1 / -1}
+.meta-filenames{margin-top:8px;border:1px solid #2a2f2e;border-radius:7px;background:#0f1111;padding:8px;display:grid;gap:4px}
+.meta-file{font-size:9px;color:#aeb8b2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-row{display:flex;gap:5px;padding:0 10px 8px;min-height:33px;align-items:center;flex-wrap:wrap}
+.card-title{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-bottom:1px solid #242927;min-height:48px}
+.card-title span{font-size:12px;font-weight:900;color:#f5efe5}
+.card-sub{font-size:10px;color:#98a39d;margin-top:2px}
+.card-actions{display:flex;gap:5px;flex-wrap:wrap;padding:9px 10px;border-top:1px solid #242927;min-height:48px}
+.flow-card .btn-small,.source-tools .btn-small{height:25px;padding:0 8px;font-size:10px;border-radius:999px}
+.flow-card .btn-primary,.source-tools .btn-primary{box-shadow:inset 0 -1px 0 rgba(0,0,0,.18)}
+.card-actions{gap:4px;padding:8px 9px}
+.add-inner{padding:14px;display:flex;flex-direction:column;gap:8px;min-width:240px}
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.menu-grid .btn{height:auto;min-height:34px;white-space:normal;line-height:1.2}
+.drop.dragging{border-color:#d99a47;background:#171f1b}
+.lib-overlay{position:fixed;inset:0;background:rgba(8,9,9,.72);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px}
+.lib-modal{width:min(920px,100%);max-height:86vh;background:#141414;border:1px solid #2a2a2a;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,.4);display:flex;flex-direction:column;overflow:hidden}
+.lib-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid #2a2a2a}
+.lib-head .title{font-size:14px;font-weight:800;color:#fff}
+.lib-close{height:28px;width:28px;padding:0;border-radius:7px;background:#262929;color:#f6f2e9;border:1px solid #3c4140;font-weight:800}
+.lib-filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid #2a2a2a}
+.lib-kinds{display:flex;gap:6px}
+.lib-kinds .btn-small{border-radius:999px}
+.lib-search{flex:1;min-width:160px}
+.lib-body{flex:1;overflow:auto;padding:14px 16px}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.lib-item{border:1px solid #2a2a2a;border-radius:8px;background:#111313;overflow:hidden;text-align:left;color:#ece8df}
+.lib-item:hover:not(:disabled){border-color:#d99a47}
+.lib-thumb{aspect-ratio:1/1;background:#0d0e0e;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.lib-thumb img{width:100%;height:100%;object-fit:cover}
+.lib-label{padding:6px 8px;font-size:10px;line-height:1.35}
+.lib-label .name{font-weight:800;color:#f3efe8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-label .kind{color:#98a39d;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.lib-empty{padding:30px 10px;text-align:center;color:#9da6a1;font-size:12px;line-height:1.5}
+@keyframes slide{from{transform:translateX(-70%)}to{transform:translateX(220%)}}
+@media(max-width:980px){
+  .grid{grid-template-columns:1fr}
+  .studio{grid-template-columns:1fr}
+  .upload-row{grid-template-columns:1fr}
+  .upload-row{position:static}
+  .sticky{position:static}
+  .result-grid{grid-template-columns:1fr}
+  .detail-options{grid-template-columns:1fr}
+  .top{flex-direction:column}
+  .top-actions{justify-content:flex-start}
+}
+</style>
+</head>
+<body>
+<div style="display:flex;gap:4px;align-items:center;padding:7px 14px;background:#141414;border-bottom:1px solid #2a2a2a;font-family:'DM Sans',system-ui,sans-serif">
+  <span style="color:#d5a25d;font-weight:800;letter-spacing:.1em;font-size:10px;text-transform:uppercase;margin-right:14px">Framework</span>
+  <a href="/builder" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">3D Builder</a>
+  <a href="/scene-generator" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Scene Studio</a>
+  <a href="/catalog-generator" style="text-decoration:none;background:#2a2213;color:#f6bd64;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Catalog Studio</a>
+  <a href="/catalog.html" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Catalog Manager</a>
+  <a href="/metrics.html" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Monitor</a>
+</div>
+<div id="root"></div>
+<script src="/js/studio/framework-names.js"></script>
+<script src="/js/studio/prompt-config.js"></script>
+<script src="/js/studio/catalog-product-reference.js"></script>
+<script type="text/babel">
+const {useMemo,useRef,useState,useEffect}=React;
+const CONFIG=window.PROMPT_CONFIG?.CONFIG||{};
+
+const GEMINI_MODELS=[
+  "gemini-3-pro-image-preview",
+  "gemini-3.1-flash-image-preview",
+  "gemini-2.5-flash-image"
+];
+const GEMINI_TEXT_MODELS=["gemini-3.5-flash","gemini-2.5-flash"];
+const GEMINI_API_BASE="https://generativelanguage.googleapis.com/v1beta/models";
+const GEMINI_TIMEOUT_MS=240000;
+const SERVER_MAX_DIM=1280;
+const DIRECT_MAX_DIM=1800;
+const UPLOAD_MAX_DIM=1800;
+const REQUEST_LIMIT=5500000;
+const STORAGE_KEY="frameworkCatalogGeminiKeyV1";
+const BACKGROUND_STORAGE_KEY="frameworkCatalogInitialBackgroundV1";
+const SESSION_DB_NAME="frameworkCatalogStudio";
+const SESSION_DB_STORE="sessions";
+const SESSION_AUTOSAVE_KEY="catalog-v2-autosave";
+const QUEUE_CONCURRENCY=2;
+const DEFAULT_BACKGROUND={color:"#FFFFFF",name:""};
+const ROW_IMAGE_DIR="images/shelving/configs";
+const PRODUCT_REFERENCE=window.FRAMEWORK_CATALOG_REFERENCE||[];
+const CATALOG_COLOR_SWATCHES=[
+  {id:"charcoal_steel",label:"Charcoal steel",material:"steel",hex:"#171E20",usage:"dark powder-coated tube/bar shade"},
+  {id:"cool_grey_mdf",label:"Cool grey MDF",material:"mdf",hex:"#94A4B0",usage:"lighter board/surface shade"},
+  {id:"coral_steel",label:"Coral steel",material:"steel",hex:"#C8554B",usage:"dark powder-coated tube/bar shade"},
+  {id:"soft_coral_mdf",label:"Soft coral MDF",material:"mdf",hex:"#F29A8C",usage:"lighter board/surface shade"},
+  {id:"deep_blue_steel",label:"Deep blue steel",material:"steel",hex:"#143F68",usage:"dark powder-coated tube/bar shade"},
+  {id:"sky_blue_mdf",label:"Sky blue MDF",material:"mdf",hex:"#82AAD0",usage:"lighter board/surface shade"},
+  {id:"leaf_green_steel",label:"Leaf green steel",material:"steel",hex:"#6F986A",usage:"dark powder-coated tube/bar shade"},
+  {id:"mint_green_mdf",label:"Mint green MDF",material:"mdf",hex:"#B3D4BE",usage:"lighter board/surface shade"}
+];
+const CATALOG_DETAILS=[
+  {
+    id:"joint",
+    label:"Joint",
+    shortLabel:"Tube joint",
+    src:"/images/studio/details/shelf-10-joint.jpg",
+    description:"The collar-and-socket connection between two separate round uprights at an MDF shelf.",
+    analysisInstruction:"Find a visible tube joint/collar on the actual emptied shelf image. Return the real local upper-tube colour, lower-tube colour, washer/collar colour, and nearby MDF colour from that exact location. Do not assume the legacy blue-to-green source-detail colours; use blue/green only if those colours are actually visible in the emptied shelf at the chosen joint. If the shelf is one colour module at that location, upper tube, lower tube, and washer/collar should be the same steel colour.",
+    geometryLock:`This is a two-part tube joint, not one continuous post. The upper round tube ends at a very thin flat washer: a shallow sharp-edged cylinder with a clean concentric hole, never a rounded bead, torus, or donut. The washer is painted exactly the same colour as the upper steel tube above it. A short smaller-diameter male peg continues through that hole. The lower round tube comes up through the MDF and terminates as an open receiving socket. In an assembled view, the peg enters that socket while the flat washer stays fully above the MDF with a visible air gap. The washer must never be thick, rounded, buried in, cut through, or fused into the MDF. Keep the main upper and lower tubes the same outside diameter; only the short joining peg is narrower.`
+  },
+  {
+    id:"foot",
+    label:"Foot",
+    shortLabel:"Adjustable foot",
+    src:"/images/studio/details/shelf-12-foot.jpg",
+    description:"The lower tube, small adjustable leveling foot, and adjacent underside of the shelf.",
+    analysisInstruction:"Find one bottom-level foot and return the leg colour, the nearest MDF board colour, the small foot colour, and the floor/background appearance. The MDF board and its supporting steel are the same hue family, but the MDF is always the lighter shade and the steel frame below it is darker.",
+    geometryLock:`Keep the long round leg, its clean tube end, and the small threaded adjustable foot exactly as shown. The foot is a compact, distinct metal adjuster below the tube, not a large caster, cap, pad, or new bracket. The tube must stop at the foot; it must not intersect, sink into, or pass through the nearby MDF. Preserve the nearby MDF edge and the relative gap to the floor.`
+  },
+  {
+    id:"under-mdf",
+    label:"Under MDF",
+    shortLabel:"Underside structure",
+    src:"/images/studio/details/shelf-14-under-mdf.jpg",
+    description:"The steel support structure and fasteners below the MDF shelf surface.",
+    analysisInstruction:"Use the two uppermost shelf levels only: the top grey/charcoal MDF board and the next lower pink/coral MDF board. Return these two levels in that exact top-to-bottom order, plus every visible support-tube colour. Do not substitute lower blue or green shelves unless the upper two are absent. For each shelf level, the steel directly below the MDF surface matches the horizontal legs/supports it connects to; MDF is the lighter shade of that same hue family.",
+    geometryLock:`Preserve the exact underside construction in the reference: every visible MDF plane in the same vertical order, each board's long overhang past its support bar, the straight exposed edges, slim steel support members below, visible fasteners, and their precise intersections with the round uprights. Do not simplify it into a generic shelf bracket, repeat one shelf colour for multiple boards, add extra rails, shorten an overhang, or hide the open negative spaces.`
+  },
+  {
+    id:"mdf-edge",
+    label:"MDF edge",
+    shortLabel:"Bar + MDF edge",
+    src:"/images/studio/details/shelf-11-mdf-edge.jpg",
+    description:"The round upright, collar detail, support bar, and exposed MDF shelf edge.",
+    analysisInstruction:"Find one shelf edge with its nearby upright and underside support. Return the MDF board colour, upright colour above and below the board if different, support-bar colour, and washer colour if a washer is present. The support bar directly below the MDF must match the steel legs/supports it connects to horizontally. The MDF surface is the lighter shade of the same hue family as its supporting steel. A washer, if present, matches the steel tube directly above it.",
+    geometryLock:`Preserve the exposed MDF edge, the two round uprights, the small shallow collar at the joint, the full board overhang beyond the upright, and the short flat structural support bar below the board exactly as shown. The support stays below the MDF edge; do not turn it into a thick rail, a new shelf, or a bracket cutting through the board. No upright or support may intersect, sink into, or visually cut through the MDF.`
+  }
+];
+function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+function makeId(prefix="id"){return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,9)}`}
+function fmtBytes(n){if(!Number.isFinite(n))return "";if(n>1000000)return `${(n/1000000).toFixed(1)} MB`;if(n>1000)return `${Math.round(n/1000)} KB`;return `${n} B`}
+function safeMsg(error){return String(error?.message||error||"Unknown error").replace(/\s+/g," ").slice(0,260)}
+function shortErr(error){return safeMsg(error).slice(0,180)}
+function dataUrlMime(dataUrl){return String(dataUrl||"").match(/^data:([^;]+);base64,/)?.[1]||"image/jpeg"}
+function dataUrlBase64(dataUrl){return String(dataUrl||"").split(",")[1]||""}
+function filenameSafe(name){return String(name||"catalog-set").toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/-{2,}/g,"-").replace(/^-|-$/g,"").slice(0,70)||"catalog-set"}
+function filenameInputSafe(name){return String(name||"").toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/-{2,}/g,"-").replace(/^-+/g,"").slice(0,70)}
+function titleFromId(id){return String(id||"catalog set").replace(/[-_]+/g," ").replace(/\b\w/g,char=>char.toUpperCase())}
+function parsePriceValue(value){return Number(String(value||"").replace(/[^\d.]/g,""))||0}
+function formatKshPrice(value,fallback=""){
+  const numeric=parsePriceValue(value||fallback);
+  if(!numeric)return "";
+  return `Ksh ${new Intl.NumberFormat("en-US",{maximumFractionDigits:0}).format(numeric)}`;
+}
+function defaultRowMeta(source){
+  const sourceName=String(source?.name||"standard-stack");
+  const ours=window.FrameworkNames?.parseLoose(sourceName);
+  // A render's own filename is a terrible product id -- it would ship
+  // fw-0nkcede-r-a45e24-l12-01-populated.jpg to the live site, and it says
+  // nothing about what the product is called. When the source is one of ours,
+  // take only the design code from it and leave the id to be typed.
+  const id=ours?.strict?"catalog-set":filenameSafe(sourceName.replace(/\.[^.]+$/,""));
+  return {
+    id,
+    title:titleFromId(id),
+    priceValue:"",
+    description:"",
+    designerUrl:"/designer#",
+    // Which shelf this product is, when the source image came from the render
+    // console and still had its name. The package images keep their product-id
+    // names -- starter-front.jpg is more use to a person than a hash -- so the
+    // code travels in the JSON instead, and rides through to catalog.json.
+    designCode:ours?.code||""
+  };
+}
+function normalizedRowMeta(source){
+  const meta={...defaultRowMeta(source),...(source?.meta||{})};
+  if(!meta.priceValue&&meta.price)meta.priceValue=String(parsePriceValue(meta.price)||"");
+  return meta;
+}
+function imageExtension(image){
+  const mime=dataUrlMime(image?.dataUrl||"");
+  if(/png/i.test(mime))return "png";
+  if(/webp/i.test(mime))return "webp";
+  return "jpg";
+}
+function rowImageManifest(source){
+  const meta=normalizedRowMeta(source);
+  const id=filenameSafe(meta.id);
+  const items=[];
+  const used=new Map();
+  const uniqueName=name=>{
+    const count=used.get(name)||0;
+    used.set(name,count+1);
+    if(!count)return name;
+    return name.replace(/(\.[^.]+)$/,(ext)=>`-${count+1}${ext}`);
+  };
+  if(source?.dataUrl)items.push({key:"source",json:false,name:uniqueName(`${id}-source.${imageExtension(source)}`),dataUrl:source.dataUrl});
+  if(source?.filled?.dataUrl)items.push({key:"filled",json:true,name:uniqueName(`${id}-populated.${imageExtension(source.filled)}`),dataUrl:source.filled.dataUrl});
+  if(source?.empty?.dataUrl)items.push({key:"empty",json:true,name:uniqueName(`${id}-emptied.${imageExtension(source.empty)}`),dataUrl:source.empty.dataUrl});
+  (source?.children||[]).forEach((child,index)=>{
+    if(!child?.dataUrl)return;
+    const base=child.type==="angle"?"angle":child.type==="front"?"front":child.type==="detail"?(child.detailId||filenameSafe(child.label)):filenameSafe(child.label||`custom-${index+1}`);
+    items.push({key:`${base}-${index+1}`,json:true,name:uniqueName(`${id}-${base}.${imageExtension(child)}`),dataUrl:child.dataUrl});
+  });
+  return items;
+}
+function rowJsonObject(source){
+  const meta=normalizedRowMeta(source);
+  const imagePaths=rowImageManifest(source).filter(item=>item.json).map(item=>`${ROW_IMAGE_DIR}/${item.name}`);
+  const priceValue=parsePriceValue(meta.priceValue||meta.price);
+  const row={
+    id:filenameSafe(meta.id),
+    title:meta.title||titleFromId(meta.id),
+    image:imagePaths[0]||"",
+    images:imagePaths,
+    price:formatKshPrice(priceValue,meta.price),
+    priceValue,
+    description:meta.description||"",
+    designerUrl:meta.designerUrl||"/designer#"
+  };
+  // Only when there is one, so a package without a code does not claim an empty
+  // string as an answer.
+  if(meta.designCode)row.designCode=meta.designCode;
+  return row;
+}
+function imageVersion(image){
+  if(!image?.dataUrl)return null;
+  const {history,historyIndex,...version}=image;
+  return version;
+}
+function withImageHistory(previous,next,status="done"){
+  const clean=imageVersion({...next,status});
+  if(!clean)return next;
+  let history=Array.isArray(previous?.history)?previous.history.slice(0,(previous.historyIndex??previous.history.length-1)+1):[];
+  const prior=imageVersion(previous);
+  if(!history.length&&prior)history=[prior];
+  history=[...history,clean];
+  return {...clean,history,historyIndex:history.length-1};
+}
+function historyVersion(image,index){
+  if(!Array.isArray(image?.history))return image;
+  const bounded=Math.max(0,Math.min(image.history.length-1,index));
+  return {...image,...image.history[bounded],history:image.history,historyIndex:bounded};
+}
+
+function readFileDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=()=>reject(new Error("Could not read image"));
+    img.src=src;
+  });
+}
+
+async function resizeDataUrl(dataUrl,maxDim=SERVER_MAX_DIM,quality=.86){
+  const img=await loadImage(dataUrl);
+  const w=img.naturalWidth||img.width;
+  const h=img.naturalHeight||img.height;
+  const scale=Math.min(1,maxDim/Math.max(w,h));
+  const outW=Math.max(1,Math.round(w*scale));
+  const outH=Math.max(1,Math.round(h*scale));
+  const canvas=document.createElement("canvas");
+  canvas.width=outW;
+  canvas.height=outH;
+  const ctx=canvas.getContext("2d");
+  ctx.fillStyle="#f7f5ef";
+  ctx.fillRect(0,0,outW,outH);
+  ctx.drawImage(img,0,0,outW,outH);
+  return canvas.toDataURL("image/jpeg",quality);
+}
+
+function imagePointFromEvent(event,imgEl,natW,natH){
+  const rect=imgEl.getBoundingClientRect();
+  const naturalAspect=natW/natH;
+  const elementAspect=rect.width/rect.height;
+  let renderW,renderH,offsetX,offsetY;
+  if(naturalAspect>elementAspect){
+    renderW=rect.width;
+    renderH=rect.width/naturalAspect;
+    offsetX=0;
+    offsetY=(rect.height-renderH)/2;
+  }else{
+    renderH=rect.height;
+    renderW=rect.height*naturalAspect;
+    offsetX=(rect.width-renderW)/2;
+    offsetY=0;
+  }
+  return {
+    x:Math.max(0,Math.min(natW,(event.clientX-rect.left-offsetX)*(natW/renderW))),
+    y:Math.max(0,Math.min(natH,(event.clientY-rect.top-offsetY)*(natH/renderH)))
+  };
+}
+
+async function fileToSource(file){
+  const raw=await readFileDataUrl(file);
+  const dataUrl=await resizeDataUrl(raw,UPLOAD_MAX_DIM,.9);
+  const img=await loadImage(dataUrl);
+  return {
+    id:makeId("src"),
+    name:file.name||"source image",
+    dataUrl,
+    width:img.naturalWidth||img.width,
+    height:img.naturalHeight||img.height,
+    size:file.size||dataUrlBase64(dataUrl).length*.75,
+    scale:{status:"unset"}
+  };
+}
+
+async function fileToGeneratedImage(file){
+  const raw=await readFileDataUrl(file);
+  const dataUrl=await resizeDataUrl(raw,SERVER_MAX_DIM,.92);
+  const img=await loadImage(dataUrl);
+  return {
+    dataUrl,
+    base64:dataUrlBase64(dataUrl),
+    mimeType:dataUrlMime(dataUrl),
+    width:img.naturalWidth||img.width,
+    height:img.naturalHeight||img.height,
+    modelUsed:"manual replacement",
+    replacedAt:Date.now(),
+    status:"manual"
+  };
+}
+
+function geminiGenerationConfig(model,options={}){
+  const image={aspectRatio:options.aspect||"1:1"};
+  if(model==="gemini-3-pro-image-preview"||model==="gemini-3.1-flash-image-preview")image.imageSize=options.imageSize||"2K";
+  return {responseModalities:["TEXT","IMAGE"],imageConfig:image};
+}
+
+function normalizeGemini(response){
+  const candidate=response?.candidates?.[0];
+  if(!candidate)throw new Error("No candidates returned");
+  const parts=candidate.content?.parts||[];
+  const images=parts.filter(part=>part.inlineData).map(part=>({
+    base64:part.inlineData.data,
+    mimeType:part.inlineData.mimeType||"image/png",
+    dataUrl:`data:${part.inlineData.mimeType||"image/png"};base64,${part.inlineData.data}`
+  }));
+  return {
+    images,
+    text:parts.filter(part=>part.text).map(part=>part.text).join("\n"),
+    finish:candidate.finishReason
+  };
+}
+
+function shouldTryNextGemini(error){
+  const retryStatuses=new Set([404,408,409,429,500,502,503,504]);
+  if(retryStatuses.has(error?.status))return true;
+  return /fetch failed|network|overloaded|busy|capacity|unavailable|resource_exhausted|deadline|timeout|timed out|not found|model/i.test(shortErr(error));
+}
+
+async function callGeminiDirect(key,model,contents,options={}){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),GEMINI_TIMEOUT_MS);
+  let response;
+  try{
+    response=await fetch(`${GEMINI_API_BASE}/${model}:generateContent?key=${encodeURIComponent(key)}`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      signal:controller.signal,
+      body:JSON.stringify({contents,generationConfig:geminiGenerationConfig(model,options)})
+    });
+  }catch(error){
+    const wrapped=new Error(error?.name==="AbortError"?"Gemini request timed out":"Gemini request failed");
+    wrapped.status=error?.name==="AbortError"?504:503;
+    throw wrapped;
+  }finally{
+    clearTimeout(timeout);
+  }
+  if(!response.ok){
+    const body=await response.text();
+    const err=new Error(`Gemini ${model} ${response.status}: ${body.slice(0,500)}`);
+    err.status=response.status;
+    throw err;
+  }
+  return normalizeGemini(await response.json());
+}
+
+async function callGeminiDirectWithFallback(key,contents,logger){
+  const errors=[];
+  for(let i=0;i<GEMINI_MODELS.length;i++){
+    const model=GEMINI_MODELS[i];
+    try{
+      logger("info",`Gemini model ${i+1}/${GEMINI_MODELS.length}: ${model}`);
+      const result=await callGeminiDirect(key,model,contents,{aspect:"1:1",imageSize:"2K"});
+      if(!result.images?.length){
+        const err=new Error(`No image returned from ${model}: ${result.text||result.finish||"empty response"}`);
+        err.status=502;
+        throw err;
+      }
+      return {...result,modelUsed:model,fallbackUsed:i>0,fallbackErrors:errors};
+    }catch(error){
+      errors.push(`${model}: ${shortErr(error)}`);
+      const last=i===GEMINI_MODELS.length-1;
+      logger(last?"error":"info",`Gemini ${model} failed: ${shortErr(error)}${!last&&shouldTryNextGemini(error)?" - trying fallback":""}`);
+      if(last||!shouldTryNextGemini(error))throw new Error(errors.length>1?`Gemini fallback failed: ${errors.join(" | ")}`:shortErr(error));
+    }
+  }
+  throw new Error("No Gemini image models configured");
+}
+
+async function callGeminiTextDirect(key,model,contents){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),60000);
+  let response;
+  try{
+    response=await fetch(`${GEMINI_API_BASE}/${model}:generateContent?key=${encodeURIComponent(key)}`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      signal:controller.signal,
+      body:JSON.stringify({contents})
+    });
+  }catch(error){
+    const wrapped=new Error(error?.name==="AbortError"?"Gemini analysis timed out":"Gemini analysis request failed");
+    wrapped.status=error?.name==="AbortError"?504:503;
+    throw wrapped;
+  }finally{clearTimeout(timeout)}
+  if(!response.ok){
+    const body=await response.text();
+    const err=new Error(`Gemini ${model} ${response.status}: ${body.slice(0,500)}`);
+    err.status=response.status;
+    throw err;
+  }
+  return normalizeGemini(await response.json());
+}
+
+async function callGeminiTextDirectWithFallback(key,contents,logger){
+  const errors=[];
+  for(let i=0;i<GEMINI_TEXT_MODELS.length;i++){
+    const model=GEMINI_TEXT_MODELS[i];
+    try{
+      logger("info",`Gemini analysis model ${i+1}/${GEMINI_TEXT_MODELS.length}: ${model}`);
+      const result=await callGeminiTextDirect(key,model,contents);
+      if(!result.text?.trim())throw new Error(`No analysis text returned from ${model}`);
+      return {...result,modelUsed:model,fallbackUsed:i>0};
+    }catch(error){
+      errors.push(`${model}: ${shortErr(error)}`);
+      const last=i===GEMINI_TEXT_MODELS.length-1;
+      logger(last?"error":"info",`Gemini ${model} analysis failed: ${shortErr(error)}${!last&&shouldTryNextGemini(error)?" - trying fallback":""}`);
+      if(last||!shouldTryNextGemini(error))throw new Error(errors.length>1?`Gemini analysis fallback failed: ${errors.join(" | ")}`:shortErr(error));
+    }
+  }
+  throw new Error("No Gemini analysis models configured");
+}
+
+function makeJobId(){return `job_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,12)}`}
+
+async function startServerJob(contents,logger){
+  const jobId=makeJobId();
+  const body=JSON.stringify({
+    jobId,
+    action:"image",
+    provider:"gemini",
+    geminiContents:contents,
+    geminiOptions:{aspect:"1:1",imageSize:"2K"}
+  });
+  logger("info",`Starting background job ${jobId} (${fmtBytes(body.length)})`);
+  if(body.length>REQUEST_LIMIT)throw new Error(`Job request is too large (${fmtBytes(body.length)}). Use fewer references or enter a browser Gemini key.`);
+  const response=await window.FrameworkGate.fetch("/api/ai-start",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body
+  });
+  const raw=await response.text();
+  let parsed;
+  try{parsed=JSON.parse(raw)}catch{throw new Error(`Netlify ai-start ${response.status}: ${raw.slice(0,220)}`)}
+  if(![200,202].includes(response.status))throw new Error(parsed.error||`Could not start job (${response.status})`);
+  return jobId;
+}
+
+async function pollServerJob(jobId,logger){
+  const started=Date.now();
+  let interval=1800;
+  let lastState="";
+  let fetchFailures=0;
+  while(Date.now()-started<14*60*1000){
+    await wait(interval);
+    interval=Math.min(4500,interval+350);
+    let response;
+    try{
+      response=await window.FrameworkGate.fetch(`/api/ai-result?id=${encodeURIComponent(jobId)}&t=${Date.now()}`,{headers:{"Accept":"application/json"}});
+      fetchFailures=0;
+    }catch(error){
+      fetchFailures+=1;
+      const message=shortErr(error);
+      logger(fetchFailures<4?"info":"error",`Job ${jobId}: status poll failed (${message}); retry ${fetchFailures}/6`);
+      if(fetchFailures<6)continue;
+      throw new Error(`Could not reach local Netlify job status endpoint for ${jobId}. Open the app through Netlify dev at http://localhost:8888/catalog.html and keep "npx netlify dev --port 8888" running. Last fetch error: ${message}`);
+    }
+    const raw=await response.text();
+    let body;
+    try{body=JSON.parse(raw)}catch{throw new Error(`Job poll ${response.status}: ${raw.slice(0,220)}`)}
+    const elapsed=Math.round((Date.now()-started)/1000);
+    if(body.state!==lastState){
+      lastState=body.state;
+      logger("info",`Job ${jobId}: ${body.state}${elapsed?` after ${elapsed}s`:""}`);
+    }
+    if(body.state==="pending"||body.state==="queued"||body.state==="processing")continue;
+    if(body.state==="error")throw new Error(body.error||`Background job ${jobId} failed`);
+    if(body.state==="done"){
+      const result=body.result||{};
+      const images=await Promise.all((result.images||[]).map(async image=>{
+        if(image.dataUrl||image.base64){
+          const mimeType=image.mimeType||"image/png";
+          return {...image,mimeType,dataUrl:image.dataUrl||`data:${mimeType};base64,${image.base64}`};
+        }
+        if(image.url){
+          const imageResponse=await window.FrameworkGate.fetch(`${image.url}${image.url.includes("?")?"&":"?"}t=${Date.now()}`);
+          if(!imageResponse.ok)throw new Error(`Generated image download failed (${imageResponse.status})`);
+          const blob=await imageResponse.blob();
+          const dataUrl=await new Promise((resolve,reject)=>{
+            const reader=new FileReader();
+            reader.onload=()=>resolve(reader.result);
+            reader.onerror=()=>reject(reader.error);
+            reader.readAsDataURL(blob);
+          });
+          return {...image,mimeType:blob.type||image.mimeType||"image/png",dataUrl,base64:dataUrlBase64(dataUrl)};
+        }
+        return image;
+      }));
+      logger("success",`Job ${jobId} complete`);
+      return {...result,images};
+    }
+  }
+  throw new Error(`Background generation ${jobId} did not finish within 14 minutes`);
+}
+
+async function prepareReferences(refs,useBrowserKey){
+  const maxDim=useBrowserKey?DIRECT_MAX_DIM:SERVER_MAX_DIM;
+  return Promise.all(refs.map(async ref=>({
+    ...ref,
+    dataUrl:await resizeDataUrl(ref.dataUrl,maxDim,.84)
+  })));
+}
+
+function buildContents(prompt,refs){
+  const parts=[{text:prompt}];
+  refs.forEach((ref,index)=>{
+    const label=ref.label||`Reference ${index+1}`;
+    parts.push({text:`REFERENCE IMAGE ${index+1}: ${label}`});
+    parts.push({inlineData:{mimeType:dataUrlMime(ref.dataUrl),data:dataUrlBase64(ref.dataUrl)}});
+  });
+  return [{role:"user",parts}];
+}
+
+async function callImage(prompt,refs,browserKey,logger){
+  const readyRefs=await prepareReferences(refs,Boolean(browserKey));
+  const contents=buildContents(prompt,readyRefs);
+  const result=browserKey
+    ? await callGeminiDirectWithFallback(browserKey,contents,logger)
+    : await pollServerJob(await startServerJob(contents,logger),logger);
+  const image=result.images?.[0];
+  if(!image?.dataUrl&&!image?.base64)throw new Error(result.text||"No generated image returned");
+  const mimeType=image.mimeType||dataUrlMime(image.dataUrl)||"image/png";
+  const dataUrl=image.dataUrl||`data:${mimeType};base64,${image.base64}`;
+  return {...image,mimeType,dataUrl,base64:dataUrlBase64(dataUrl),modelUsed:result.modelUsed||null};
+}
+
+function parseJsonObject(text){
+  const cleaned=String(text||"").replace(/```json\s*/gi,"").replace(/```\s*/g,"").trim();
+  const first=cleaned.indexOf("{");
+  const last=cleaned.lastIndexOf("}");
+  if(first<0||last<=first)throw new Error("Detail analysis did not return JSON");
+  return JSON.parse(cleaned.slice(first,last+1));
+}
+
+function productReferenceText(){
+  return PRODUCT_REFERENCE.map(item=>[
+    `ID: ${item.id}`,
+    `Title: ${item.title}`,
+    `Description: ${item.description}`,
+    item.bestFor?`Best for: ${item.bestFor}`:""
+  ].filter(Boolean).join("\n")).join("\n\n");
+}
+
+function catalogMetaPrompt({referenceText,note}){
+  return `You are writing product catalogue metadata for Framework Designs' modular shelving configurations in Nairobi.
+
+Use the attached populated shelf image to understand the configuration, scale, colour story, use case, and visual character. Use the reference examples below only for naming/copy style and product vocabulary.
+
+REFERENCE EXAMPLES:
+${referenceText}
+
+STYLE RULES:
+- Create a short product name that feels like it belongs with the examples.
+- The file ID must be a lowercase slug with words separated by dashes.
+- The title can use "The ..." when it sounds natural, but it does not have to.
+- The description should be one or two concise sentences, direct and useful, with the same plainspoken Framework tone.
+- Do not mention prices, image filenames, links, discounts, delivery timelines, or unavailable facts.
+- Do not invent exact dimensions or modules unless they are visually obvious from the image.
+- If the note asks for a direction, follow it while staying consistent with the image.
+
+OPTIONAL USER NOTE:
+${String(note||"").trim()||"(none)"}
+
+Respond with JSON only:
+{
+  "id":"lowercase-dashed-file-id",
+  "title":"catalogue title",
+  "description":"catalogue description"
+}`;
+}
+
+async function generateCatalogMeta({image,source,note,browserKey,logger}){
+  if(!image?.dataUrl)throw new Error("Generate a populated image before auto-filling row copy.");
+  const prompt=catalogMetaPrompt({referenceText:productReferenceText(),note});
+  const parts=[
+    {text:prompt},
+    {text:`POPULATED SHELF IMAGE for ${source?.name||"this row"}:`},
+    {inlineData:{mimeType:dataUrlMime(image.dataUrl),data:dataUrlBase64(image.dataUrl)}}
+  ];
+  const raw=browserKey
+    ? await callGeminiTextDirectWithFallback(browserKey,[{role:"user",parts}],logger)
+    : await callServerText(parts,logger,"row copy");
+  const parsed=parseJsonObject(raw.text);
+  const id=filenameSafe(parsed.id||parsed.title||source?.name);
+  if(!id||!parsed.title||!parsed.description)throw new Error("Row copy response was incomplete.");
+  return {id,title:String(parsed.title).trim(),description:String(parsed.description).trim(),modelUsed:raw.modelUsed||null};
+}
+
+function detailAnalysisColourRules(detail){
+  const swatches=CATALOG_COLOR_SWATCHES.map(item=>`- ${item.id}: ${item.label}, ${item.material}, ${item.hex}, ${item.usage}`).join("\n");
+  const paletteLock=`FIXED FRAMEWORK COLOUR SWATCHES:
+${swatches}
+
+SWATCH-SELECTION RULES:
+- Choose the closest Framework swatch family and material from the eight swatches above.
+- MDF shelf boards always use one of the lighter MDF swatches. Steelwork, tubes, feet, bars, supports, collars, and washers always use one of the darker steel swatches.
+- Match hue family by construction: charcoal_steel with cool_grey_mdf, coral_steel with soft_coral_mdf, deep_blue_steel with sky_blue_mdf, leaf_green_steel with mint_green_mdf.
+- If the generated shelf image is visibly shifted from the exact reference swatch, report the nearest swatch_id plus an adjusted hex approximation from the image. Preserve the light/dark gap within a matching MDF/steel family by shifting paired colours in parallel rather than collapsing them to one value.
+- If shadows or highlights make a part ambiguous, choose the nearest structural swatch by hue family and material, not a literal shadow colour.`;
+  if(detail?.id==="joint"){
+    return `${paletteLock}
+
+JOINT-SPECIFIC COLOUR ANALYSIS RULES:
+- Choose a real visible tube joint/collar from the attached emptied shelf image, not from the legacy detail reference.
+- The chosen joint's colours must come from the emptied shelf image at that exact location. Do not import the old reference-detail blue/green colours unless those colours are visibly present on the emptied shelf.
+- If the selected joint is within a single colour module, report the same steel colour for upper tube, lower tube, and washer/collar.
+- If a true colour change is visible at the joint, report the upper tube colour and lower tube colour separately; the washer/collar inherits the tube colour immediately above it.
+- The nearby MDF colour must come from the shelf plane adjacent to that same visible joint.`;
+  }
+  if(detail?.id==="foot"){
+    return `${paletteLock}
+
+FOOT-SPECIFIC COLOUR ANALYSIS RULES:
+- This detail is a bottom leveling foot, not a washer/collar joint between stacked modules.
+- Do not choose or report an upper/lower tube transition, washer, collar, or through-MDF joint for this detail unless such hardware is visibly part of the foot itself.
+- Report one continuous lower leg/tube colour, the compact dark/black adjustable foot colour, the nearest MDF shelf colour if visible, and the studio background/lighting.
+- The lower leg should remain one continuous tube colour down to the small adjustable foot.`;
+  }
+  if(detail?.id==="under-mdf"){
+    return `${paletteLock}
+
+UNDER-MDF-SPECIFIC COLOUR ANALYSIS RULES:
+- Choose the visible upper underside construction from the attached emptied shelf image, not from the legacy under-MDF reference colours.
+- Report the selected MDF planes in exact top-to-bottom order from the emptied shelf. If the shelf has grey above pink, return grey first and pink second; do not repeat one colour for both levels unless the emptied shelf actually repeats it.
+- For each MDF plane, report the directly connected underside support steel from that same level. The support steel is the darker shade of the same hue/module family as that MDF plane.
+- Report vertical/upright tube colours only from the visible supports that actually touch or connect to those selected underside levels.
+- Do not import green paint from the detail reference unless the chosen underside location in the emptied shelf is actually green.`;
+  }
+  if(detail?.id==="mdf-edge"){
+    return `${paletteLock}
+
+MDF-EDGE-SPECIFIC COLOUR ANALYSIS RULES:
+- Choose one real visible shelf edge on the attached emptied shelf image that has a nearby upright and underside support. Do not use the legacy green edge-reference colours as colour evidence.
+- Report the MDF board colour from that exact edge, then report the support bar and upright colours from the same shelf module/location.
+- The support bar directly below the MDF must match the steel legs/supports it connects to horizontally, and must be a darker shade of the same hue family as the MDF board.
+- Only report an above/below upright colour split or washer/collar colour if that split/collar is actually visible at the chosen edge. If the visible upright is a single module colour, report one steel colour for upright/support.
+- If a collar/washer is present, it inherits the colour of the steel tube immediately above it.`;
+  }
+  return `${paletteLock}
+
+STRICT COLOUR ANALYSIS RULES:
+- MDF and its supporting steel are the same colour family/module colour, but not the same value: the MDF surface is always the lighter shade; the powder-coated steel frame that supports it is always darker.
+- The steel directly below an MDF shelf surface is the same colour as the horizontal/vertical steel legs and supports it connects to at that level.
+- Steel colour changes only across a washer/collar joint. A continuous tube or support segment must not change colour except on opposite sides of a washer.
+- A washer/collar is painted exactly the same colour as the steel tube segment directly above it, not the tube below it and not the MDF.
+- If these rules conflict with a rough visual impression from shadows, follow the construction rule above and report the closest matching darker/lighter swatches.`;
+}
+
+function detailGenerationColourRules(detail){
+  if(detail?.id==="joint"){
+    return `JOINT-SPECIFIC COLOUR / CONFIGURATION LOCK:
+- Apply the configuration brief literally. It is the only authority for the joint colours.
+- Do not preserve or reintroduce the blue/green paint from the attached joint reference unless the configuration brief explicitly reports blue/green from the emptied shelf image.
+- If the configuration says upper tube, lower tube, and washer/collar are the same steel colour, paint all three as one continuous module colour while preserving the physical washer/collar geometry.
+- If the configuration reports a true colour change, preserve the specified upper and lower colours as separate paint regions; the washer/collar matches the upper tube.
+- The adjacent MDF plane must use the MDF colour from the configuration brief, with realistic material contrast against the steel.`;
+  }
+  if(detail?.id==="foot"){
+    return `FOOT-SPECIFIC COLOUR / CONFIGURATION LOCK:
+- Apply the configuration brief literally, but treat this as a bottom foot detail only.
+- Do not introduce a washer, collar, upper/lower module colour split, through-shelf joint, or stacked-tube transition. Those rules are for other detail types, not the foot.
+- Preserve one continuous lower leg/tube colour down to the compact adjustable foot. The adjustable foot stays a small separate dark/black leveling screw/foot below the tube.
+- If an MDF plane is visible, keep it in the same hue family as the nearby shelf module and lighter than the darker powder-coated support steel, but do not let the tube pierce, merge with, or cut into the MDF.
+- Final foot audit before returning: the image must still read as the original foot reference — long lower tube, small black leveling foot, nearby shelf edge/underside, no collar joint, no extra modules, no invented hardware.`;
+  }
+  if(detail?.id==="under-mdf"){
+    return `UNDER-MDF-SPECIFIC COLOUR / CONFIGURATION LOCK:
+- Apply the configuration brief literally. It is the only authority for the board and support colours; do not preserve or reintroduce green from the attached underside reference unless the brief explicitly reports green from the emptied shelf.
+- Preserve the original under-MDF geometry exactly: board count visible in the reference crop, long overhangs, support-bar positions, fasteners, negative space, and round uprights. Do not alter that geometry while recolouring.
+- Map MDF planes in the exact top-to-bottom order from the brief. Do not duplicate the lower board colour onto the upper board, or vice versa, unless the brief repeats the colour.
+- Each directly connected underside support steel must be the darker shade of that level's MDF/module colour and must match the connected legs/supports at that level.
+- Do not introduce a washer/collar colour transition unless the configuration brief explicitly identifies a visible collar/joint in this underside location.`;
+  }
+  if(detail?.id==="mdf-edge"){
+    return `MDF-EDGE-SPECIFIC COLOUR / CONFIGURATION LOCK:
+- Apply the configuration brief literally. It is the only authority for this shelf-edge colour mapping; do not preserve or reintroduce green from the attached MDF-edge reference unless the brief explicitly reports green from the emptied shelf.
+- Preserve the source edge-detail geometry exactly: exposed MDF overhang, two round uprights, shallow collar if present, and the short flat support bar below the board. No tube or bar may cut into or pass through the MDF.
+- The MDF board is the lighter material shade of the chosen shelf module. The support bar directly below it and the connected upright/support steel are the darker shade of that same module colour.
+- If the configuration reports one steel colour for upright/support, keep the upright, support bar, and any continuous steel segment one colour. Do not invent a blue/green or upper/lower split.
+- If a washer/collar is specified in the configuration, paint it exactly the same colour as the tube immediately above it; otherwise do not create a new collar/joint.`;
+  }
+  return `STRICT COLOUR / CONFIGURATION LOCK:
+- Apply the configuration brief literally. It is the sole authority for paint, MDF, background, lighting, and shelf-level colour order.
+- Interpret "same colour" structurally: MDF and its supporting steel share the same hue/module colour, but the MDF is the lighter material shade and the powder-coated steel is the darker material shade.
+- For every MDF shelf plane, colour the steel directly below that MDF as the same darker hue family as the legs/supports it connects to horizontally. Do not make the underside support a different colour from its connected steel frame.
+- Steel colour changes are allowed only at washer/collar boundaries. A continuous tube, leg, or support bar must stay one colour from one washer to the next.
+- Any washer/collar visible in the detail is painted exactly the same colour as the steel tube immediately above it. Do not paint the washer as the lower tube colour, MDF colour, black rubber, or a separate accent.
+- For a joint between two tube segments, preserve the specified upper and lower colours as separate paint regions. Do not recolour an entire post as one continuous colour when the brief specifies a transition.
+- Preserve the brief's material contrast: when steel and MDF are both green, blue, pink, grey, or any other shared hue, the powder-coated steel must be visibly darker than the MDF board, never the same light value.
+- When the detail contains more than one board, map their colours in the exact top-to-bottom order given in the brief. Do not duplicate a board colour unless the brief repeats it.
+- Final colour audit before returning: check every MDF plane, directly supporting steel segment, connected leg/support, washer, and tube segment. Correct any place where MDF is darker than its support, a washer mismatches the tube above it, or steel changes colour away from a washer.`;
+}
+
+async function callServerText(parts,logger,label="detail analysis"){
+  logger("info",`Starting Gemini ${label} with server key`);
+  const response=await window.FrameworkGate.fetch("/api/ai",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({action:"text",provider:"gemini",partsOrText:parts})
+  });
+  const raw=await response.text();
+  if(!response.ok)throw new Error(`Netlify ${label} ${response.status}: ${raw.slice(0,220)}`);
+  let result;
+  try{result=JSON.parse(raw.trim())}catch{throw new Error(`Netlify ${label} returned invalid JSON: ${raw.slice(-220)}`)}
+  if(result.status>=400)throw new Error(result.error||`Gemini ${label} failed (${result.status})`);
+  if(!result.text?.trim())throw new Error(`Gemini ${label} returned no text`);
+  logger("success",`Gemini ${label} complete${result.modelUsed?` (${result.modelUsed})`:""}`);
+  return result;
+}
+
+async function analyzeDetailConfiguration(emptyImage,detail,browserKey,logger){
+  const prompt=`You are a meticulous product-production analyst. Inspect ONLY the attached empty shelf image and return a compact JSON configuration brief for a later image edit. Do not generate an image. Do not infer geometry that is not visible.
+
+DETAIL TYPE: ${detail.label}
+DETAIL LOOKUP TASK: ${detail.analysisInstruction}
+
+Choose one specific matching location visible in the empty shelf. Report the exact local colour mapping and studio look needed to recolour an existing detail reference image.
+
+${detailAnalysisColourRules(detail)}
+
+Respond with JSON only, no markdown:
+{
+  "target_location":"short, concrete location in the empty shelf",
+  "steel_segments":[{"part":"upper/lower/left/right/support/washer","connects_to":"brief module or level relationship","swatch_id":"nearest steel swatch id from the fixed palette","color_name":"fixed swatch label","hex":"fixed swatch hex","hex_adjusted":"#RRGGBB if the visible shelf shifts the family, otherwise same as hex","value":"dark"}],
+  "mdf_planes":[{"part":"main/upper/lower","supported_by_steel_part":"matching steel segment part","swatch_id":"nearest MDF swatch id from the fixed palette","color_name":"fixed swatch label","hex":"fixed swatch hex","hex_adjusted":"#RRGGBB if the visible shelf shifts the family, otherwise same as hex","value":"light"}],
+  "background":{"color_name":"...","hex_approx":"#RRGGBB"},
+  "lighting":"brief direction, softness, and exposure description",
+  "material_notes":"state the selected steel/MDF swatch pairings, washer colour inheritance, and where steel colour transitions occur"
+}`;
+  const parts=[{text:prompt},{text:"EMPTY SHELF IMAGE — analyse this image only:"},{inlineData:{mimeType:dataUrlMime(emptyImage.dataUrl),data:dataUrlBase64(emptyImage.dataUrl)}}];
+  const raw=browserKey
+    ? await callGeminiTextDirectWithFallback(browserKey,[{role:"user",parts}],logger)
+    : await callServerText(parts,logger);
+  const configuration=parseJsonObject(raw.text);
+  if(!configuration.target_location||!Array.isArray(configuration.steel_segments)||!Array.isArray(configuration.mdf_planes))throw new Error("Detail analysis was incomplete; retry the detail generation.");
+  return {...configuration,modelUsed:raw.modelUsed||null};
+}
+
+function sourceRefs(source){
+  const refs=[{label:"GEOMETRY MASTER: original source shelf product photo. Copy the exact shelf silhouette, tier count, board endpoints, tube/post positions, overhangs, color, material, scale, and joints from this image. Do not copy room styling.",dataUrl:source.dataUrl}];
+  return refs;
+}
+
+function scaleLineForSource(source,fallbackCm){
+  if(source?.scale?.status==="set"){
+    return `SCALE LOCK: The measured shelf height is ${source.scale.shelfH} cm from the source image. Preserve that product scale consistently across the full set. Do not add any people, mannequins, silhouettes, or measurement markers.`;
+  }
+  const scale=String(fallbackCm||"").trim();
+  if(scale)return `SCALE LOCK: Treat the shelf in the source photo as exactly ${scale} cm tall. Preserve that scale consistently across the full set.`;
+  return "SCALE: Preserve realistic product scale relative to ordinary books, objects, floor, and room proportions.";
+}
+
+function backgroundLabel(background){
+  const name=String(background?.name||"").trim();
+  const color=String(background?.color||DEFAULT_BACKGROUND.color).toUpperCase();
+  return name?`${name} (${color})`:color;
+}
+
+function initialBackgroundLock(background){
+  return `INITIAL BACKGROUND LOCK - applies only while creating the filled anchor:
+- Build one continuous matte studio cyclorama for both the vertical wall and horizontal floor in ${backgroundLabel(background)}.
+- The wall and floor must be the exact same material, color, roughness, and lighting response. Use the swatch as a strict catalog background specification, not as a loose color mood.
+- Keep the background neutral white/grey in feeling, with no warm, cool, blue, green, pink, or beige colour cast. Preserve the lighting behaviour exactly; this is only a background-colour guardrail.
+- Do not substitute a nearby cream, beige, gray, white, blue, brown, concrete, wood, tile, stone, carpet, gradient, or differently colored floor.
+- Keep the background plain and continuous: no columns, side returns, corners, alcoves, windows, seams, ceiling cutouts, panels, architectural protrusions, rugs, baseboards, skirting boards, or visible material changes.
+- Use only a soft natural floor-to-wall sweep or gentle horizon shadow, never a hard pasted line or vertical side-wall shape.`;
+}
+
+function backgroundContinuityLock(background){
+  return `BACKGROUND CONTINUITY LOCK:
+- Preserve the exact approved filled-anchor cyclorama: ${backgroundLabel(background)}. Match its wall, floor, color, material, lighting response, horizon treatment, and shadows exactly.
+- Keep the background neutral white/grey in feeling with no colour cast. Do not change the established lighting, softness, shadow direction, or exposure to achieve this.
+- Do not recolor, warm up, cool down, darken, lighten, texture, or restyle the background. Do not introduce a different-colored floor or a separate wall material.`;
+}
+
+function productLock(scaleLine){
+  return `${CONFIG.referenceRolePrompt||""}
+
+CATALOG SET PRODUCT LOCK:
+- The attached shelf photo is the product truth. Preserve the exact shelf geometry, tier count, asymmetrical/staggered shelf layout, proportions, tube diameter, foot positions, shelf board thickness, color, powder coat, and joint style.
+- Treat the source shelf like a traced blueprint. The product silhouette must match the source before any styling is added.
+- Do not simplify the product into a generic symmetrical bookcase. Do not normalize the shelf into an even grid. Do not make shelf boards equal length unless they are equal in the source.
+- Do not add, remove, extend, shorten, thicken, thin, bend, or realign shelves, tubes, legs, feet, side rails, or structural crossbars. The only exception is an explicit empty-view instruction below to remove a clearly identified optional bookend or display bar.
+- Preserve every shelf board endpoint from the source: left and right ends, overhang lengths, staggered starts/stops, gaps between boards, and whether a board stops before a vertical post or passes through it.
+- Preserve every vertical tube/post position from the source: front posts, rear/side posts, intermediate posts, feet, visible joints, and the way shelves intersect posts.
+- Preserve the visible bar construction exactly: vertical bars are round; ordinary horizontal structural bars are square. The only round horizontal-bar exceptions are clearly source-present hanger bars and display bars, which extend past the verticals. Do not invent a hanger bar, display bar, or any other bar merely because this construction rule exists.
+- If visible, preserve the small 40 mm flat support bar that terminates the bars below an MDF shelf surface. It supports that projecting MDF end; keep its exact position, flat profile, and relationship to the shelf. Do not add this support where it is not clearly visible in the source.
+- Do not turn decorative rails, shadows, back edges, or object supports into extra shelves. Objects may sit only on shelf planes that already exist in the source.
+- Do not place objects on invented shelf extensions or new horizontal lines. If an object needs support and the source shelf does not provide it, move or remove the object.
+- Read shelf accessories conservatively. Optional bookends are the small dangling end pieces at a shelf edge; optional display bars are horizontal add-ons that span approximately the usable width of a shelf surface. Do not invent either accessory when it is not clearly visible in the source.
+- Never confuse an optional display bar with a structural back crossbar: a structural crossbar ends at the steel verticals, is part of the frame, and must remain exactly as shown. It is a thin structural element, not a display surface or a place to put objects.
+- Keep the full shelf readable in the square crop: top, sides, feet, vertical tubes, shelf overhangs, shelf edges, lower structure, bolt/joint points, and open spaces must remain visible.
+- If product geometry conflicts with styling, preserve product geometry and remove or move the styling.
+- INTERNAL GEOMETRY AUDIT BEFORE RETURNING IMAGE: compare the generated shelf to the source. Check shelf count, board lengths, left/right endpoints, vertical post positions, foot positions, tube thickness, color, joint style, and every structural crossbar. If any shelf has been extended or any new shelf/rail/post has appeared, correct it before finalizing. In an explicitly empty view, remove only the optional bookends and display bars called out below; never remove a structural crossbar.
+- The final image must be square, catalogue-ready, and realistic.
+- Put the shelf 35-60 cm in front of the back wall. There must be visible breathing room behind the shelf, with a believable rear shadow gap; rear posts and feet must not touch or merge into the wall.
+- Use one continuous matte studio cyclorama surface for both the vertical wall and horizontal floor. The exact background color is set when the filled anchor is created and must then be preserved across the set.
+- Use the same shelf position, scale, established wall/floor surface, lighting direction, color temperature, and shadow character across the full three-image set. The filled image and front empty image must use the same camera position; the angled empty image changes only the camera yaw by 30-45 degrees.
+- Keep a small amount of life in the shot: natural object placement, tiny asymmetries, minor handmade imperfections, and believable contact shadows. Clean but not sterile.
+- Do not add branding, logos, price tags, watermarks, text overlays, labels, LED strips, new lamps, extra shelf parts, drawers, doors, glass, wood, or decorative brackets.
+${scaleLine}
+${CONFIG.negativePrompt?`\nGENERAL NEGATIVE PROMPT: ${CONFIG.negativePrompt}`:""}
+REFERENCE RETENTION OVERRIDE:
+- If the source product photo or approved anchor already contains a lamp arm, lamp cord, or lamp shade, it is an existing reference feature, not removable shelf content. Preserve its exact placement, scale, shape, material, and shade. Do not add a new lamp or redesign the existing one.`;
+}
+
+function filledPrompt({scaleLine,sourceName,variant,totalVariants,background}){
+  return `${productLock(scaleLine)}
+
+${initialBackgroundLock(background)}
+
+CREATE IMAGE 1 OF 3: FILLED ANCHOR.
+Use the source product photo (${sourceName}) only as product truth. Replace the current room and contents with one consistent neutral studio setup.
+
+CONTENT DIRECTION:
+- Build a fuller playful craft/fairytale collection: warm hipster Bauhaus, folk-art studio, witty, tactile, and physically real.
+- Use a broad generative family of small handmade creature objects. They can be birds, fox-like animals, lizards, fish, horses, horned forest creatures, tiny monsters, dragon-ish animals, guardian figures, or invented hybrids. They should feel carved, hand-painted, ceramic, papier-mache, lacquered wood, felted wool, woven, or mixed-media. Friendly and strange, not franchise-like, not toy-store plastic.
+- Give the creature objects expressive silhouettes and surface character: spotted, striped, dotted, brush-painted, inlaid, stitched, wrapped, glazed, or patterned. Vary body shapes, heights, poses, and materials so future runs do not repeat the same animals.
+- Mix in supporting craft objects: colorful fiber vessels, small sculptural baskets, lidded woven forms, shallow trays, striped sisal or rope pieces, painted cups with brushes, folded jewel-toned textiles, closed horizontal books with believable spine designs, fruit-like color accents, and a few small blocky studio objects.
+- Avoid a beige contents attack. Use confident but warm color: tomato red, ultramarine, marigold, mint, grass green, teal, plum, pink, black-and-white, and natural fiber notes.
+- Books on shelves must be closed. Books should usually be horizontal. If any book leans, it must lean against a heavy object, a horizontal book stack, or a clearly source-present optional bookend or display bar—never directly against the shelf frame or a structural crossbar.
+- When a clearly source-present bookend is used, place a small natural group of books leaning against it. When a clearly source-present display bar is used, books or framed photos may sit on the shelf surface with their backs leaning against that bar. Do not put anything on top of a bar, and do not use a thin structural back crossbar as a display bar.
+- Keep optional bookends and display bars rare and conservative: preserve them only when unambiguous in the source, keep their source placement and proportions, and do not use them as an excuse to over-pack the shelves.
+- Book spines must never be blank flat color blocks. They should look like real books with varied spine widths, subtle bands, borders, typography-like marks, publisher-like blocks, worn edges, or embossed details, while avoiding crisp readable titles, logos, or fake brand text.
+- Book colors can be lively, but arrange them naturally and unevenly. Avoid perfect rainbow order, smooth gradients, identical spacing, repeated cloned books, or fake decorative color swatches pretending to be books.
+- Shoes are allowed only as a rare accent, not a default motif.
+- Fill the shelf substantially while keeping the product readable: front tubes, shelf edges, tier gaps, legs, and joint points remain visible.
+- The contents must adapt to the existing shelf geometry, not the other way around. Never extend a shelf, create a new ledge, or align mismatched shelf boards just to hold objects.
+- If the exact source geometry leaves less usable shelf space, use fewer or smaller objects. Product geometry beats fullness.
+- Objects can be a little askew and human, but not dirty, damaged, messy, or chaotic.
+- Do not copy one exact inventory from any prior image. Make a coherent new family of objects that shares this handmade craft/fairytale language.
+
+SET VARIATION:
+- This is variation ${variant} of ${totalVariants}. Choose a distinct coherent inventory for this variation while following the same studio rules.
+
+Return only the square image.`;
+}
+
+function emptyPrompt({scaleLine,sourceName,background}){
+  return `${productLock(scaleLine)}
+
+${backgroundContinuityLock(background)}
+
+CREATE IMAGE 2 OF 3: EMPTY FRONT FROM APPROVED FILLED.
+Use REFERENCE IMAGE 1, the filled anchor, as the exact source for camera, lighting, cyclorama, shelf position, shelf-to-wall gap, crop, and studio identity.
+
+EDIT THE FILLED ANCHOR:
+- Remove every removable item from every shelf plane and from the floor/ground plane: animals, books, baskets, vessels, textiles, tools, fruit, plants, cups, toys, sculptures, loose decor, and all other props.
+- Treat this as content-aware object removal from the approved filled image. After removing each item, reconstruct the visible MDF shelf surface, shelf edge, shadow, and background behind it so the board reads as clean and continuous.
+- EMPTY MEANS ZERO MOVABLE PROPS OR OPTIONAL ACCESSORIES. Each existing shelf board must show a bare uninterrupted top surface from end to end. Deliberately remove any optional dangling bookends and optional display bars, even if they were visible in the source or filled anchor. Do not leave one or two small objects behind. If an item could plausibly be picked up, or is an optional bookend/display-bar add-on, it must be removed.
+- Check the far left and far right ends of every shelf, lower shelves, corners behind vertical tubes, and the floor beneath the unit. Tiny leftovers, partial books, baskets, bowls, plants, figurines, or object shadows count as failures and must be removed.
+- Do not keep props as "scale references"; the empty product image needs no books, bowls, baskets, ceramics, plants, animals, tools, textiles, or floor objects.
+- Preserve all structural back crossbars exactly. In particular, a thin horizontal bar that ends at the steel verticals is structural, not a display bar: keep it bare and do not remove, restyle, or place anything against/on it.
+- Preserve fixed reference features exactly: any existing lamp shade, lamp arm, cord, support, or mounting point visible in the source or approved filled anchor remains in place. A lamp shade is not removable shelf content.
+- Do not change the shelf itself. Preserve the same geometry, color, tier count, spacing, legs, joints, crop, and camera.
+- Keep the same continuous studio wall and floor as one exact material, with the same soft floor-to-wall sweep and gentle contact shadows.
+- Keep the shelf 35-60 cm in front of the back wall. Preserve visible space behind it; do not push rear posts or feet into the wall.
+- FINAL EMPTY AUDIT: scan every shelf level, rail, ledge, floor area, and negative space twice. Remove every movable object plus every optional bookend and display bar. Keep only the shelf steel, MDF boards, all structural crossbars, feet, joints, shadows, and protected fixed lamp/shade components.
+- The result should be a clean empty product catalogue image, realistic and not sterile.
+
+Return only the square image.`;
+}
+
+function emptyAnglePrompt({scaleLine,sourceName,background}){
+  return `${productLock(scaleLine)}
+
+${backgroundContinuityLock(background)}
+
+CREATE IMAGE 3 OF 3: EMPTY ANGLED VIEW FROM APPROVED EMPTY.
+Use REFERENCE IMAGE 1, the approved empty front image, as the exact source for the empty shelf, cyclorama, lighting, shelf-to-wall gap, product scale, and studio identity.
+
+EDIT THE EMPTY FRONT IMAGE:
+- Keep the space perfectly empty: no objects, no loose contents, no optional bookends, no optional display bars, no person, no props, no marks, and no measurement markers on the wall or floor. Every shelf board must be bare from end to end.
+- Preserve every structural back crossbar exactly. A thin horizontal bar ending at the steel verticals is structural rather than a display bar, so keep it bare and intact.
+- Preserve any existing lamp shade, lamp arm, cord, support, or mounting point exactly as seen in the approved empty front image. A lamp shade is a fixed reference feature, not a prop.
+- Shift the camera 30-45 degrees to one side for a gentle three-quarter product view. Move only the camera; do not move the shelf, wall, floor, or lighting setup.
+- Preserve the same shelf geometry, color, scale, tier count, spacing, legs, joints, and 35-60 cm gap from the back wall.
+- Keep the same square catalogue crop with the full shelf readable, including top, sides, feet, vertical tubes, overhangs, open spaces, and contact shadows.
+- The angled view should reveal believable side depth and the space between shelf and wall while still feeling like the same photoshoot as the filled and front-empty images.
+- Keep the wall and floor the exact same continuous material and lighting response as the front-empty image.
+
+Return only the square image.`;
+}
+
+function emptyFrontFacingPrompt({scaleLine,sourceName,background}){
+  return `${productLock(scaleLine)}
+
+${backgroundContinuityLock(background)}
+
+CREATE ADDITIONAL EMPTY FRONT-FACING VIEW FROM APPROVED EMPTY.
+Use REFERENCE IMAGE 1, the approved empty catalogue image, as the exact source for the empty shelf, cyclorama, lighting, shelf-to-wall gap, product scale, and studio identity.
+
+EDIT THE APPROVED EMPTY IMAGE:
+- Keep the space perfectly empty: no objects, no loose contents, no optional bookends, no optional display bars, no person, no props, no marks, and no measurement markers on the wall or floor. Every shelf board must be bare from end to end.
+- Preserve every structural back crossbar exactly. A thin horizontal bar ending at the steel verticals is structural rather than a display bar, so keep it bare and intact.
+- Preserve any existing lamp shade, lamp arm, cord, support, or mounting point exactly as seen in the approved empty image. A lamp shade is a fixed reference feature, not a prop.
+- Shift the camera to a straight-on front-facing catalogue view. Move only the camera; do not move the shelf, wall, floor, or lighting setup.
+- Preserve the same shelf geometry, color, scale, tier count, spacing, legs, joints, and 35-60 cm gap from the back wall.
+- Keep the same square catalogue crop with the full shelf readable, including top, sides, feet, vertical tubes, overhangs, open spaces, and contact shadows.
+- The front-facing view should feel like the same photoshoot as the approved empty image and filled anchor, with matching wall/floor surface, exposure, shadow softness, and color temperature.
+- If the approved empty image is already front-facing, preserve it very closely and make only a subtle correction toward a cleaner straight-on catalogue camera.
+
+Return only the square image.`;
+}
+
+function customEmptyPrompt({scaleLine,sourceName,background,note}){
+  return `${productLock(scaleLine)}
+
+${backgroundContinuityLock(background)}
+
+CREATE CUSTOM ADDITIONAL IMAGE FROM APPROVED EMPTY.
+Use REFERENCE IMAGE 1, the approved empty catalogue image, as the exact source for the empty shelf, cyclorama, lighting, shelf-to-wall gap, product scale, and studio identity.
+
+BASELINE LOCK:
+- Preserve the product geometry, tier count, board endpoints, overhangs, tube positions, support bars, crossbars, feet, wall/floor cyclorama, exposure, lighting direction, and shadow character unless the custom note explicitly asks for a camera/view change.
+- Keep the shelf empty unless the custom note explicitly asks for additions.
+- Do not add branding, labels, text overlays, watermarks, people, or new hardware.
+
+CUSTOM USER NOTE:
+${String(note||"Create a clean alternate catalogue view from the approved empty image.").trim()}
+
+Return only the square image.`;
+}
+
+function croppedEmptyDetailPrompt({scaleLine,sourceName,background,note}){
+  return `Use REFERENCE IMAGE 1 as the only visual source.
+
+Make a simple alternate camera view of the same empty shelf by choosing one already-visible area of interest, then shifting, tilting, and zooming the camera slightly toward it.
+
+Keep this as a crop/view adjustment, not a new product render:
+- Stay moderately close. The image should still show surrounding shelf context, not a macro hardware close-up.
+- Only show parts that are already visible in REFERENCE IMAGE 1.
+- Do not invent or reveal hidden joints, screws, brackets, undersides, backs, interiors, or construction details.
+- Preserve the actual geometry, colors, materials, lighting, background, shadows, and empty-shelf state.
+- Keep the shelf bare. Do not add props, labels, marks, people, hardware, or text.
+
+OPTIONAL USER NOTE:
+${String(note||"").trim()||"(none)"}
+
+${backgroundContinuityLock(background)}
+${scaleLine}
+
+Return only the square image.`;
+}
+
+function detailShotPrompt({scaleLine,detail,configuration}){
+  return `CREATE IMAGE 4 OF 4: MATCHING PRODUCT DETAIL SHOT — ${detail.label.toUpperCase()}.
+
+Use case: product-mockup
+Asset type: square catalogue detail photograph
+Primary request: edit the one attached detail photograph in place using the colour and studio configuration brief below.
+
+ATTACHED IMAGE: ${detail.label} detail reference = EDIT TARGET, GEOMETRY, AND ASSEMBLY MASTER. It is the only image reference for this generation. Edit it in place. Preserve its component count, component order, silhouette, proportions, joinery, gaps, tube/bar profiles, MDF thickness, crop, and visible construction literally. Do not redraw or reinterpret the construction.
+
+EMPTY-SHELF CONFIGURATION BRIEF — TEXT ONLY, DO NOT LOOK FOR A SECOND IMAGE:
+${JSON.stringify(configuration,null,2)}
+
+COLOUR MATCHING NOTE:
+- Use hex_adjusted values when present to match the generated emptied shelf image. Keep each selected Framework swatch family and its light/dark material gap intact; if one shade is shifted warmer, cooler, lighter, or darker, shift its paired steel/MDF shade in parallel.
+
+IMAGE EDIT BOUNDARY:
+- Start from the attached detail reference rather than generating a new shelf detail. Change only its powder-coat colours, MDF colour, studio background, lighting, and exposure according to the configuration brief.
+- Do not redraw, reshape, resize, add, delete, rotate, crop, move, join, separate, thicken, thin, round, bevel, or otherwise reinterpret any product part from the attached detail reference.
+- The source-detail camera viewpoint and composition are locked. Keep the original crop; no camera variation is permitted in strict detail mode.
+
+STRICT GEOMETRY LOCK:
+- ${detail.geometryLock}
+- Treat reference image 1 as a measured technical source, not inspiration. Do not invent a similar detail or fill in unseen construction with plausible hardware.
+- Reproduce the same component relationships and negative spaces. No part may intersect, pierce, bury into, or merge with the MDF unless reference image 1 visibly does so.
+- Where reference image 1 shows a solid tube and an MDF board, preserve the visible clearance and edge relationship exactly; a solid tube must never visually cut through a board merely to make the connection look plausible.
+- Match the detail-reference camera view and crop closely. A minor change of at most 10 degrees is allowed only if every component relationship, proportion, and visible gap remains unchanged. A faithful near-copy is preferred over creative variation.
+
+${detailGenerationColourRules(detail)}
+
+SCENE LOCK:
+- Replace the detail reference's original setting entirely with the clean continuous studio cyclorama and lighting defined in the configuration brief. No pavement, garden, trees, sky, walls, room clutter, dark backdrop, outdoor light, or floor texture.
+- Keep the shelf empty: no props, books, plants, optional bookends, labels, measurements, branding, logos, text, watermarks, people, added hardware, or decorative features.
+- Preserve realistic powder-coated steel and MDF texture, clean edges, seams, contact shadows, and small manufacturing character. The result must feel like an intentional close-up from the same four-image catalogue set.
+${scaleLine}
+
+Return only the square image.`;
+}
+
+function emptyCleanupPrompt({scaleLine,sourceName,background,view}){
+  return `${productLock(scaleLine)}
+
+${backgroundContinuityLock(background)}
+
+SURGICAL EMPTY CLEANUP: ${view}.
+Use REFERENCE IMAGE 1 as the current otherwise-correct empty catalogue image. Make a surgical edit only.
+Use the original source product photo (${sourceName}) only to correct shelf geometry and color if needed.
+
+- Remove every residual movable object from the shelf and floor: animals, books, baskets, vessels, textiles, tools, fruit, plants, cups, toys, sculptures, loose decor, optional dangling bookends, optional display bars, and all other props/accessories.
+- Do not move, recolor, reframe, relight, restyle, rebuild, or change the shelf, background, camera, floor-wall sweep, shadows, or product geometry.
+- Preserve lamp shades, lamp arms, cords, supports, and mounting points already visible in the current image. These are fixed reference features, not residual props.
+- Preserve every structural back crossbar. A thin bar that ends at the steel verticals is structural, not a removable display bar, and must remain bare and unchanged.
+- Each shelf board must be completely bare and uninterrupted from end to end after this edit.
+
+Return only the square image.`;
+}
+
+function refinePrompt({scaleLine,sourceName,background,title,note}){
+  return `${productLock(scaleLine)}
+
+${backgroundContinuityLock(background)}
+
+SURGICAL REFINEMENT OF CURRENT DISPLAYED IMAGE: ${title}.
+Use REFERENCE IMAGE 1 as the edit target. Preserve the exact displayed shelf, camera, crop, powder-coat colours, MDF colours, materials, background, lighting direction, exposure, floor-wall sweep, shelf-to-wall gap, contact shadows, and scale.
+Use the original source product photo (${sourceName}) only as a geometry/material cross-check.
+
+EDIT REQUEST:
+${String(note||"").trim()}
+
+STRICT EDIT LOCK:
+- Make only the requested edit. Do not create a new composition or alternate version.
+- Do not move, resize, recolor, restyle, relight, reframe, rebuild, or simplify the shelf.
+- If the request removes leftover contents, remove every matching movable prop/accessory cleanly and reconstruct the bare shelf surface behind it. Keep structural crossbars, tubes, feet, joints, and fixed lamp components unchanged.
+- If a requested edit conflicts with product geometry, preserve product geometry and apply the smallest possible local correction.
+- Keep the background neutral white/grey with no warm, cool, blue, green, pink, or beige colour cast. Preserve the existing lighting exactly.
+
+Return only the square image.`;
+}
+
+function downloadDataUrl(dataUrl,name){
+  const a=document.createElement("a");
+  a.href=dataUrl;
+  a.download=name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function textBytes(text){return new TextEncoder().encode(text)}
+function dataUrlBytes(dataUrl){
+  const binary=atob(dataUrlBase64(dataUrl));
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  return bytes;
+}
+const CRC_TABLE=(()=>{
+  const table=new Uint32Array(256);
+  for(let n=0;n<256;n++){
+    let c=n;
+    for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);
+    table[n]=c>>>0;
+  }
+  return table;
+})();
+function crc32(bytes){
+  let c=0xffffffff;
+  for(let i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&0xff]^(c>>>8);
+  return (c^0xffffffff)>>>0;
+}
+function pushU16(out,value){out.push(value&255,(value>>>8)&255)}
+function pushU32(out,value){out.push(value&255,(value>>>8)&255,(value>>>16)&255,(value>>>24)&255)}
+function pushBytes(out,bytes){for(let i=0;i<bytes.length;i++)out.push(bytes[i])}
+function makeZip(entries){
+  const out=[];
+  const central=[];
+  let offset=0;
+  entries.forEach(entry=>{
+    const nameBytes=textBytes(entry.name);
+    const bytes=entry.bytes;
+    const crc=crc32(bytes);
+    const localOffset=offset;
+    pushU32(out,0x04034b50);
+    pushU16(out,20);
+    pushU16(out,0);
+    pushU16(out,0);
+    pushU16(out,0);
+    pushU16(out,0);
+    pushU32(out,crc);
+    pushU32(out,bytes.length);
+    pushU32(out,bytes.length);
+    pushU16(out,nameBytes.length);
+    pushU16(out,0);
+    pushBytes(out,nameBytes);
+    pushBytes(out,bytes);
+    offset=out.length;
+
+    pushU32(central,0x02014b50);
+    pushU16(central,20);
+    pushU16(central,20);
+    pushU16(central,0);
+    pushU16(central,0);
+    pushU16(central,0);
+    pushU16(central,0);
+    pushU32(central,crc);
+    pushU32(central,bytes.length);
+    pushU32(central,bytes.length);
+    pushU16(central,nameBytes.length);
+    pushU16(central,0);
+    pushU16(central,0);
+    pushU16(central,0);
+    pushU16(central,0);
+    pushU32(central,0);
+    pushU32(central,localOffset);
+    pushBytes(central,nameBytes);
+  });
+  const centralOffset=out.length;
+  pushBytes(out,central);
+  pushU32(out,0x06054b50);
+  pushU16(out,0);
+  pushU16(out,0);
+  pushU16(out,entries.length);
+  pushU16(out,entries.length);
+  pushU32(out,central.length);
+  pushU32(out,centralOffset);
+  pushU16(out,0);
+  return new Blob([new Uint8Array(out)],{type:"application/zip"});
+}
+function downloadBlob(blob,name){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+
+function openSessionDb(){
+  return new Promise((resolve,reject)=>{
+    const request=indexedDB.open(SESSION_DB_NAME,1);
+    request.onupgradeneeded=()=>request.result.createObjectStore(SESSION_DB_STORE);
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error);
+  });
+}
+
+async function idbPut(key,value){
+  const db=await openSessionDb();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(SESSION_DB_STORE,"readwrite");
+    tx.objectStore(SESSION_DB_STORE).put(value,key);
+    tx.oncomplete=()=>{db.close();resolve()};
+    tx.onerror=()=>{db.close();reject(tx.error)};
+  });
+}
+
+async function idbGet(key){
+  const db=await openSessionDb();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(SESSION_DB_STORE,"readonly");
+    const request=tx.objectStore(SESSION_DB_STORE).get(key);
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error);
+    tx.oncomplete=()=>db.close();
+  });
+}
+
+function bytesToText(bytes){return new TextDecoder().decode(bytes)}
+function bytesToDataUrl(bytes,mimeType="image/jpeg"){
+  let binary="";
+  const chunk=0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary+=String.fromCharCode(...bytes.slice(i,i+chunk));
+  }
+  return `data:${mimeType};base64,${btoa(binary)}`;
+}
+
+function mimeFromName(name){
+  if(/\.png$/i.test(name))return "image/png";
+  if(/\.webp$/i.test(name))return "image/webp";
+  if(/\.jpe?g$/i.test(name))return "image/jpeg";
+  if(/\.json$/i.test(name))return "application/json";
+  return "application/octet-stream";
+}
+
+async function parseStoredZip(file){
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const entries=[];
+  let offset=0;
+  while(offset+30<=bytes.length){
+    const sig=bytes[offset]|(bytes[offset+1]<<8)|(bytes[offset+2]<<16)|(bytes[offset+3]<<24);
+    if(sig!==0x04034b50)break;
+    const method=bytes[offset+8]|(bytes[offset+9]<<8);
+    const size=(bytes[offset+18]|(bytes[offset+19]<<8)|(bytes[offset+20]<<16)|(bytes[offset+21]<<24))>>>0;
+    const nameLen=bytes[offset+26]|(bytes[offset+27]<<8);
+    const extraLen=bytes[offset+28]|(bytes[offset+29]<<8);
+    const name=bytesToText(bytes.slice(offset+30,offset+30+nameLen));
+    const dataStart=offset+30+nameLen+extraLen;
+    const data=bytes.slice(dataStart,dataStart+size);
+    if(method!==0)throw new Error("Only stored row ZIP files exported by this app can be imported.");
+    entries.push({name,data,mimeType:mimeFromName(name)});
+    offset=dataStart+size;
+  }
+  if(!entries.length)throw new Error("No files found in ZIP.");
+  return entries;
+}
+
+async function sourceFromRowZip(file){
+  const entries=await parseStoredZip(file);
+  const jsonEntry=entries.find(entry=>/\.json$/i.test(entry.name));
+  if(!jsonEntry)throw new Error("Row ZIP does not contain a product JSON file.");
+  const product=JSON.parse(bytesToText(jsonEntry.data));
+  const folder=(jsonEntry.name.match(/^(.+)\//)||[])[1]||filenameSafe(product.id||file.name);
+  const images=entries.filter(entry=>/^image\//.test(entry.mimeType)).map(entry=>({
+    ...entry,
+    basename:entry.name.split("/").pop(),
+    dataUrl:bytesToDataUrl(entry.data,entry.mimeType)
+  }));
+  const findImage=patterns=>images.find(image=>patterns.some(pattern=>pattern.test(image.basename)));
+  const sourceImage=findImage([/-source\./i,/_source\./i])||images[0]||null;
+  const filledImage=findImage([/-populated\./i,/_filled\./i,/-filled\./i]);
+  const emptyImage=findImage([/-emptied\./i,/_empty\./i,/-empty\./i]);
+  const used=new Set([sourceImage?.name,filledImage?.name,emptyImage?.name].filter(Boolean));
+  const children=images.filter(image=>!used.has(image.name)).map((image,index)=>{
+    const base=image.basename.replace(/\.[^.]+$/,"");
+    const type=/-angle$/i.test(base)?"angle":/-front$/i.test(base)?"front":/-joint$|-foot$|-under-mdf$|-mdf-edge$/i.test(base)?"detail":/-detail-from-emptied$/i.test(base)?"crop-detail":"custom";
+    return {
+      id:makeId("gen"),
+      type,
+      label:type==="angle"?"Empty angle":type==="front"?"Front-facing empty":type==="crop-detail"?"Detail from emptied":titleFromId(base.replace(/^.+?-/,"")),
+      dataUrl:image.dataUrl,
+      base64:dataUrlBase64(image.dataUrl),
+      mimeType:image.mimeType,
+      status:"done"
+    };
+  });
+  const loadedImage=image=>image?{
+    dataUrl:image.dataUrl,
+    base64:dataUrlBase64(image.dataUrl),
+    mimeType:image.mimeType,
+    status:"done",
+    importedAt:Date.now()
+  }:null;
+  const primaryDataUrl=sourceImage?.dataUrl||filledImage?.dataUrl||emptyImage?.dataUrl||"";
+  const img=primaryDataUrl?await loadImage(primaryDataUrl):null;
+  return {
+    id:makeId("src"),
+    name:`${filenameSafe(product.id||folder)}.jpg`,
+    dataUrl:primaryDataUrl,
+    width:img?.naturalWidth||img?.width||0,
+    height:img?.naturalHeight||img?.height||0,
+    size:sourceImage?.data?.length||0,
+    scale:{status:"skipped"},
+    meta:{
+      id:filenameSafe(product.id||folder),
+      title:product.title||titleFromId(product.id||folder),
+      priceValue:String(parsePriceValue(product.priceValue||product.price)),
+      description:product.description||"",
+      designerUrl:product.designerUrl||"/designer#"
+    },
+    filled:loadedImage(filledImage),
+    empty:loadedImage(emptyImage),
+    children,
+    status:emptyImage?"emptied ready":filledImage?"populated ready":"ready"
+  };
+}
+
+function imageLikeToGenerated(image,status="done"){
+  const dataUrl=image?.dataUrl||(image?.base64?`data:${image.mimeType||"image/jpeg"};base64,${image.base64}`:"");
+  if(!dataUrl)return null;
+  return {
+    ...image,
+    dataUrl,
+    base64:dataUrlBase64(dataUrl),
+    mimeType:image.mimeType||dataUrlMime(dataUrl),
+    status,
+    importedAt:image.importedAt||Date.now()
+  };
+}
+
+function normalizeImportedSource(source,index=0){
+  const dataUrl=source?.dataUrl||(source?.base64?`data:${source.mimeType||"image/jpeg"};base64,${source.base64}`:"");
+  const name=source?.name||source?.filename||`imported-source-${index+1}.jpg`;
+  return {
+    ...source,
+    id:source?.id||makeId("src"),
+    name,
+    dataUrl,
+    width:source?.width||0,
+    height:source?.height||0,
+    scale:source?.scale||{status:"skipped"},
+    meta:normalizedRowMeta(source),
+    filled:imageLikeToGenerated(source?.filled),
+    empty:imageLikeToGenerated(source?.empty),
+    children:Array.isArray(source?.children)?source.children.map(child=>({...child,id:child.id||makeId("gen"),dataUrl:child.dataUrl||(child.base64?`data:${child.mimeType||"image/jpeg"};base64,${child.base64}`:""),status:child.status||"done"})):[],
+    status:source?.status||((source?.empty?.dataUrl||source?.empty?.base64)?"emptied ready":(source?.filled?.dataUrl||source?.filled?.base64)?"populated ready":"ready")
+  };
+}
+
+function sourcesFromLegacyGeneratorSession(session){
+  const ref=session?.refImage||session?.source||null;
+  const refDataUrl=ref?.dataUrl||(ref?.base64?`data:${ref.mimeType||"image/jpeg"};base64,${ref.base64}`:"");
+  if(!refDataUrl)return [];
+  const generated=(Array.isArray(session.nodes)?session.nodes:[])
+    .filter(node=>node?.type!=="ref"&&node?.type!=="ref-scale"&&node?.img?.dataUrl)
+    .map((node,index)=>({
+      id:makeId("gen"),
+      type:index===0?"custom":"custom",
+      label:node.type==="gen"?"Imported generated image":titleFromId(node.type||`imported-${index+1}`),
+      ...imageLikeToGenerated(node.img)
+    }));
+  return [normalizeImportedSource({
+    name:"legacy-generator-import.jpg",
+    dataUrl:refDataUrl,
+    width:ref.width||0,
+    height:ref.height||0,
+    scale:session?.scale?.shelfH?{status:"set",shelfH:session.scale.shelfH,pxCm:session.scale.pxCm||null}:{status:"skipped"},
+    meta:defaultRowMeta({name:"legacy-generator-import.jpg"}),
+    children:generated
+  })];
+}
+
+function normalizeImportedSession(session){
+  if(Array.isArray(session?.sources))return session.sources.map(normalizeImportedSource);
+  if(Array.isArray(session))return session.map(normalizeImportedSource);
+  const legacy=sourcesFromLegacyGeneratorSession(session);
+  if(legacy.length)return legacy;
+  if(session?.id||session?.title||session?.description){
+    return [normalizeImportedSource({
+      name:`${filenameSafe(session.id||session.title||"imported-config")}.jpg`,
+      meta:{
+        id:filenameSafe(session.id||session.title||"imported-config"),
+        title:session.title||titleFromId(session.id||"imported config"),
+        priceValue:String(parsePriceValue(session.priceValue||session.price)),
+        description:session.description||"",
+        designerUrl:session.designerUrl||"/designer#"
+      },
+      status:"metadata imported"
+    })];
+  }
+  throw new Error("This JSON does not look like a catalog session or compatible Framework config.");
+}
+
+const COST_ESTIMATES={
+  filled:.04,
+  empty:.04,
+  angle:.04,
+  front:.04,
+  custom:.04,
+  "crop-detail":.04,
+  detail:.045,
+  refine:.04
+};
+
+function formatMs(ms){
+  if(!Number.isFinite(ms)||ms<0)return "0s";
+  const total=Math.floor(ms/1000);
+  const min=Math.floor(total/60);
+  const sec=total%60;
+  if(min>=60){
+    const hr=Math.floor(min/60);
+    const rest=min%60;
+    return `${hr}h ${rest}m`;
+  }
+  return min?`${min}m ${String(sec).padStart(2,"0")}s`:`${sec}s`;
+}
+
+function withUserNote(prompt,note,label="USER NOTE"){
+  const clean=String(note||"").trim();
+  if(!clean)return prompt;
+  return `${prompt}
+
+${label}:
+${clean}`;
+}
+
+function AppV2(){
+  const [sources,setSources]=useState([]);
+  const [activeSource,setActiveSource]=useState(null);
+  const [scaleCm,setScaleCm]=useState("");
+  const [background,setBackground]=useState(()=>{
+    try{
+      const saved=JSON.parse(localStorage.getItem(BACKGROUND_STORAGE_KEY)||"{}");
+      if(String(saved?.color||"").toUpperCase()==="#F4E8D2"&&String(saved?.name||"").trim()==="warm ivory")return {...DEFAULT_BACKGROUND};
+      if(String(saved?.color||"").toUpperCase()==="#FBFAFD")return {...DEFAULT_BACKGROUND};
+      if(String(saved?.color||"").toUpperCase()==="#F8F7FC")return {...DEFAULT_BACKGROUND};
+      if(String(saved?.color||"").toUpperCase()==="#F6F5FA")return {...DEFAULT_BACKGROUND};
+      return {...DEFAULT_BACKGROUND,color:saved?.color||DEFAULT_BACKGROUND.color};
+    }catch{return {...DEFAULT_BACKGROUND}}
+  });
+  const [running,setRunning]=useState(false);
+  const [queueItems,setQueueItems]=useState([]);
+  const [activeJobId,setActiveJobId]=useState(null);
+  const [processStartedAt,setProcessStartedAt]=useState(null);
+  const [completedStats,setCompletedStats]=useState({count:0,estimatedSpend:0,elapsedMs:0});
+  const [now,setNow]=useState(Date.now());
+  const [dragging,setDragging]=useState(false);
+  const [log,setLog]=useState([]);
+  const [scaleSession,setScaleSession]=useState(null);
+  // No browser key, ever -- see scene-generator.html. "" selects the server path.
+  const browserKey="";
+  const [firstGenerationNote,setFirstGenerationNote]=useState("");
+  const [previewSelection,setPreviewSelection]=useState(null);
+  const [libraryOpen,setLibraryOpen]=useState(false);
+  const fileRef=useRef(null);
+  const sessionFileRef=useRef(null);
+  const rowZipFileRef=useRef(null);
+  const previewRef=useRef(null);
+  const jobQueueRef=useRef([]);
+  const processingJobsRef=useRef(false);
+  const activeJobsRef=useRef(new Map());
+  const activeSourceLocksRef=useRef(new Set());
+  const sourcesRef=useRef([]);
+  const autosaveReadyRef=useRef(false);
+  useEffect(()=>{localStorage.setItem(BACKGROUND_STORAGE_KEY,JSON.stringify({color:background.color}))},[background]);
+  useEffect(()=>{sourcesRef.current=sources},[sources]);
+  useEffect(()=>{
+    if(!running)return;
+    const timer=setInterval(()=>setNow(Date.now()),1000);
+    return ()=>clearInterval(timer);
+  },[running]);
+  useEffect(()=>{
+    let cancelled=false;
+    idbGet(SESSION_AUTOSAVE_KEY).then(session=>{
+      if(cancelled)return;
+      if(session?.sources?.length){
+        const loadedSources=normalizeImportedSession(session);
+        commitSources(loadedSources);
+        setActiveSource(loadedSources[0]?.id||null);
+        setPreviewSelection(loadedSources[0]?{sourceId:loadedSources[0].id,type:"source",childId:null}:null);
+        setBackground({...DEFAULT_BACKGROUND,...(session.background||{})});
+        setScaleCm(String(session.scaleCm||""));
+        setFirstGenerationNote(String(session.firstGenerationNote||""));
+        setLog(Array.isArray(session.log)?session.log:[]);
+      }
+      autosaveReadyRef.current=true;
+    }).catch(error=>{
+      autosaveReadyRef.current=true;
+      addLog("error",`Browser session restore unavailable: ${safeMsg(error)}`);
+    });
+    return ()=>{cancelled=true};
+  },[]);
+  useEffect(()=>{
+    if(!autosaveReadyRef.current)return;
+    const timer=setTimeout(()=>{
+      idbPut(SESSION_AUTOSAVE_KEY,sessionSnapshot()).catch(error=>addLog("error",`Browser autosave failed: ${safeMsg(error)}`));
+    },900);
+    return ()=>clearTimeout(timer);
+  },[sources,background,scaleCm,firstGenerationNote,log]);
+
+  const active=sources.find(source=>source.id===activeSource)||sources[0]||null;
+  const previewSource=sources.find(source=>source.id===(previewSelection?.sourceId||active?.id))||active||null;
+  const previewChild=previewSelection?.childId&&previewSource?(previewSource.children||[]).find(child=>child.id===previewSelection.childId):null;
+  const previewType=previewSource?(previewSelection?.type||"source"):"source";
+  const previewImage=previewType==="filled"?previewSource?.filled:previewType==="empty"?previewSource?.empty:previewChild||previewSource;
+  const previewTitle=previewType==="source"?"Source":previewType==="filled"?"Populated":previewType==="empty"?"Emptied":previewChild?.label||"Generated image";
+  const activePreview=previewImage?.dataUrl;
+  const scaleSessionActive=scaleSession&&previewSource&&previewType==="source"&&scaleSession.sourceId===previewSource.id;
+  const visibleQueue=queueItems.filter(item=>item.status!=="done").slice(0,30);
+  const activeJobs=queueItems.filter(item=>item.status==="running");
+  const activeJob=activeJobs[0]||null;
+  const elapsedTime=processStartedAt?now-processStartedAt:completedStats.elapsedMs;
+  const averageSessionMs=completedStats.count?completedStats.elapsedMs/completedStats.count:0;
+  const queueSpend=queueItems.filter(item=>item.status==="pending"||item.status==="running").reduce((sum,item)=>sum+(item.estimatedCost||0),0);
+  const totalSpend=completedStats.estimatedSpend+queueSpend;
+
+  function commitSources(updater){
+    const next=typeof updater==="function"?updater(sourcesRef.current):updater;
+    sourcesRef.current=next;
+    setSources(next);
+  }
+
+  function addLog(level,message){
+    setLog(prev=>[{id:makeId("log"),time:new Date().toLocaleTimeString(),level,message},...prev].slice(0,160));
+  }
+
+  function sessionSnapshot(){
+    return {
+      version:2,
+      savedAt:new Date().toISOString(),
+      background,
+      scaleCm,
+      firstGenerationNote,
+      sources:sourcesRef.current,
+      log
+    };
+  }
+
+  function getSource(id){return sourcesRef.current.find(source=>source.id===id)||null}
+
+  function selectPreview(sourceId,type="source",childId=null){
+    setActiveSource(sourceId);
+    setPreviewSelection({sourceId,type,childId});
+  }
+
+  function patchSource(id,patch){
+    commitSources(prev=>prev.map(source=>source.id===id?{...source,...(typeof patch==="function"?patch(source):patch)}:source));
+  }
+
+  function patchChild(sourceId,childId,patch){
+    patchSource(sourceId,source=>({
+      children:(source.children||[]).map(child=>child.id===childId?{...child,...(typeof patch==="function"?patch(child):patch)}:child)
+    }));
+  }
+
+  function updateSourceMeta(sourceId,field,value){
+    patchSource(sourceId,source=>({meta:{...normalizedRowMeta(source),[field]:value}}));
+  }
+
+  async function autoGenerateRowMeta(source){
+    const note=String(normalizedRowMeta(source).aiNote||"").trim();
+    const logger=(level,message)=>addLog(level,`${source.name}: ${message}`);
+    patchSource(source.id,{metaStatus:"generating row copy"});
+    try{
+      const generated=await generateCatalogMeta({
+        image:source.filled,
+        source,
+        note,
+        browserKey:browserKey.trim(),
+        logger
+      });
+      patchSource(source.id,current=>({
+        meta:{
+          ...normalizedRowMeta(current),
+          id:generated.id,
+          title:generated.title,
+          description:generated.description
+        },
+        metaStatus:`row copy filled${generated.modelUsed?` (${generated.modelUsed})`:""}`
+      }));
+    }catch(error){
+      patchSource(source.id,{metaStatus:"row copy error"});
+      addLog("error",`${source.name}: row copy failed - ${safeMsg(error)}`);
+    }
+  }
+
+  function patchGeneratedImage(source,type,updater,child=null){
+    if(type==="filled"){
+      patchSource(source.id,current=>({filled:typeof updater==="function"?updater(current.filled):updater}));
+    }else if(type==="empty"){
+      patchSource(source.id,current=>({empty:typeof updater==="function"?updater(current.empty):updater}));
+    }else if(child){
+      patchChild(source.id,child.id,current=>typeof updater==="function"?updater(current):updater);
+    }
+  }
+
+  function moveImageHistory(source,type,delta,child=null){
+    const current=type==="filled"?source.filled:type==="empty"?source.empty:child;
+    if(!Array.isArray(current?.history))return;
+    const index=(current.historyIndex??current.history.length-1)+delta;
+    patchGeneratedImage(source,type,image=>historyVersion(image,index),child);
+  }
+
+  function beginScale(source){
+    selectPreview(source.id,"source");
+    setScaleSession({sourceId:source.id,phase:"bottom",points:[],heightCm:String(source.scale?.shelfH||scaleCm||"")});
+  }
+
+  function skipScale(source){
+    patchSource(source.id,{scale:{status:"skipped"}});
+    if(scaleSession?.sourceId===source.id)setScaleSession(null);
+    addLog("info",`${source.name}: scale skipped`);
+  }
+
+  function resetScale(source){
+    patchSource(source.id,{scale:{status:"unset"}});
+    if(scaleSession?.sourceId===source.id)setScaleSession(null);
+  }
+
+  function handleSourcePreviewClick(event){
+    if(!previewSource){
+      fileRef.current?.click();
+      return;
+    }
+    if(!scaleSessionActive||!previewRef.current)return;
+    const point=imagePointFromEvent(event,previewRef.current,previewSource.width,previewSource.height);
+    if(scaleSession.phase==="bottom"){
+      setScaleSession({...scaleSession,phase:"top",points:[point]});
+      return;
+    }
+    if(scaleSession.phase==="top"){
+      setScaleSession({...scaleSession,phase:"height",points:[...scaleSession.points,point]});
+    }
+  }
+
+  function confirmScaleHeight(){
+    if(!scaleSession||scaleSession.points.length!==2||!parseFloat(scaleSession.heightCm))return;
+    const shelfH=Number(scaleSession.heightCm);
+    if(!Number.isFinite(shelfH)||shelfH<10||shelfH>500){
+      addLog("error","Shelf height must be between 10 and 500 cm.");
+      return;
+    }
+    const [bottom,top]=scaleSession.points;
+    const px=Math.hypot(top.x-bottom.x,top.y-bottom.y);
+    patchSource(scaleSession.sourceId,{scale:{status:"set",shelfH,pxCm:px/shelfH}});
+    const source=getSource(scaleSession.sourceId);
+    setScaleSession(null);
+    addLog("success",`${source?.name||"Source"}: scale set to ${shelfH} cm`);
+  }
+
+  async function loadFiles(files){
+    files=[...(files||[])].filter(file=>file.type?.startsWith("image/"));
+    if(!files.length)return;
+    addLog("info",`Loading ${files.length} source image${files.length===1?"":"s"}`);
+    try{
+      const loaded=[];
+      for(const file of files){
+        const source=await fileToSource(file);
+        loaded.push({...source,meta:defaultRowMeta(source),filled:null,empty:null,children:[],status:"ready"});
+      }
+      commitSources(prev=>[...prev,...loaded]);
+      setActiveSource(loaded[0].id);
+      selectPreview(loaded[0].id,"source");
+      addLog("success",`Loaded ${loaded.length} source image${loaded.length===1?"":"s"}`);
+    }catch(error){
+      addLog("error",`Image load failed: ${safeMsg(error)}`);
+    }
+  }
+
+  async function loadFromLibrary(record){
+    addLog("info",`Loading ${record.configId||record.hash.slice(0,10)} from Library…`);
+    try{
+      const res=await fetch(window.DamClient.assetUrl(record.hash,record.ext||"jpg"));
+      if(!res.ok)throw new Error(`Library fetch failed (${res.status})`);
+      const blob=await res.blob();
+      const file=new File([blob],`${record.configId||"library"}.jpg`,{type:blob.type||"image/jpeg"});
+      const source=await fileToSource(file);
+      source.meta={...defaultRowMeta(source),id:record.configId||defaultRowMeta(source).id};
+      source.damHash=record.hash;
+      source.damModules=record.modules||null;
+      if(Number.isFinite(record.unitHeightMm)&&record.unitHeightMm>0){
+        source.scale={status:"set",shelfH:Math.round(record.unitHeightMm/10)};
+      }
+      const loadedSource={...source,filled:null,empty:null,children:[],status:"ready"};
+      commitSources(prev=>[...prev,loadedSource]);
+      setActiveSource(loadedSource.id);
+      selectPreview(loadedSource.id,"source");
+      addLog("success",`Loaded ${loadedSource.meta.id} from Library`);
+      setLibraryOpen(false);
+    }catch(error){
+      addLog("error",`Library load failed: ${safeMsg(error)}`);
+    }
+  }
+
+  async function handleFiles(event){
+    await loadFiles([...(event.target.files||[])]);
+    event.target.value="";
+  }
+
+  function handleDrop(event){
+    event.preventDefault();
+    setDragging(false);
+    loadFiles([...(event.dataTransfer?.files||[])]);
+  }
+
+  function deleteSource(sourceId){
+    const source=getSource(sourceId);
+    commitSources(prev=>prev.filter(item=>item.id!==sourceId));
+    if(activeSource===sourceId)setActiveSource(null);
+    if(previewSelection?.sourceId===sourceId)setPreviewSelection(null);
+    if(scaleSession?.sourceId===sourceId)setScaleSession(null);
+    addLog("info",`${source?.name||"Source"} removed. Queued jobs for it will be skipped.`);
+  }
+
+  function requestSnapshot(source){
+    return {scaleLine:scaleLineForSource(source,scaleCm),browserKey};
+  }
+
+  function enqueueJob(job){
+    const record={
+      id:makeId("job"),
+      label:job.label,
+      sourceId:job.sourceId,
+      targetId:job.targetId||null,
+      type:job.type,
+      status:"pending",
+      enqueuedAt:Date.now(),
+      startedAt:null,
+      completedAt:null,
+      estimatedCost:COST_ESTIMATES[job.type]||.04
+    };
+    jobQueueRef.current.push({...job,jobId:record.id});
+    setQueueItems(prev=>[...prev,record].slice(-100));
+    processJobQueue();
+    return record.id;
+  }
+
+  function queueCanStart(job){
+    return job?.sourceId&&!activeSourceLocksRef.current.has(job.sourceId);
+  }
+
+  function resetQueuedTarget(job){
+    if(!job)return;
+    const source=getSource(job.sourceId);
+    if(!source)return;
+    if(job.targetId){
+      if(job.preserveTargetOnCancel){
+        patchChild(job.sourceId,job.targetId,child=>({...child,status:child.dataUrl?"done":"error"}));
+      }else{
+        patchSource(job.sourceId,current=>({children:(current.children||[]).filter(child=>child.id!==job.targetId)}));
+      }
+    }else if(job.type==="filled"||job.imageType==="filled"){
+      patchSource(job.sourceId,current=>({status:source.filled?.dataUrl?"populated ready":"ready",filled:current.filled?.dataUrl?{...current.filled,status:"done"}:current.filled}));
+    }else if(job.type==="empty"||job.imageType==="empty"){
+      patchSource(job.sourceId,current=>({status:source.empty?.dataUrl?"emptied ready":source.filled?.dataUrl?"populated ready":"ready",empty:current.empty?.dataUrl?{...current.empty,status:"done"}:current.empty}));
+    }
+  }
+
+  function cancelQueuedJob(id){
+    const job=jobQueueRef.current.find(item=>item.jobId===id);
+    if(!job){
+      addLog("info","Running jobs cannot be cancelled here; cancel pending jobs before they start.");
+      return;
+    }
+    jobQueueRef.current=jobQueueRef.current.filter(item=>item.jobId!==id);
+    resetQueuedTarget(job);
+    setQueueItems(prev=>prev.filter(item=>item.id!==id));
+    addLog("info",`${job.label}: removed from queue`);
+  }
+
+  function moveQueuedJob(id,direction){
+    const queue=jobQueueRef.current;
+    const index=queue.findIndex(item=>item.jobId===id);
+    if(index<0)return;
+    const nextIndex=index+direction;
+    if(nextIndex<0||nextIndex>=queue.length)return;
+    [queue[index],queue[nextIndex]]=[queue[nextIndex],queue[index]];
+    jobQueueRef.current=[...queue];
+    const order=new Map(jobQueueRef.current.map((item,idx)=>[item.jobId,idx]));
+    setQueueItems(prev=>[...prev].sort((a,b)=>{
+      const aOrder=order.has(a.id)?order.get(a.id):a.status==="running"?-1:9999;
+      const bOrder=order.has(b.id)?order.get(b.id):b.status==="running"?-1:9999;
+      return aOrder-bOrder;
+    }));
+  }
+
+  function processJobQueue(){
+    if(processingJobsRef.current)return;
+    processingJobsRef.current=true;
+    try{
+      while(activeJobsRef.current.size<QUEUE_CONCURRENCY){
+        const index=jobQueueRef.current.findIndex(queueCanStart);
+        if(index<0)break;
+        const [job]=jobQueueRef.current.splice(index,1);
+        runQueuedJob(job);
+      }
+      const hasWork=activeJobsRef.current.size>0||jobQueueRef.current.length>0;
+      setRunning(hasWork);
+      if(hasWork)setProcessStartedAt(start=>start||Date.now());
+      if(!activeJobsRef.current.size)setActiveJobId(null);
+      if(!hasWork)setProcessStartedAt(null);
+    }finally{
+      processingJobsRef.current=false;
+    }
+  }
+
+  async function runQueuedJob(job){
+    const startedAt=Date.now();
+    activeJobsRef.current.set(job.jobId,job);
+    activeSourceLocksRef.current.add(job.sourceId);
+    setActiveJobId(current=>current||job.jobId);
+    setQueueItems(prev=>prev.map(item=>item.id===job.jobId?{...item,status:"running",startedAt}:item));
+    try{
+      await job.run();
+      const completedAt=Date.now();
+      const elapsed=completedAt-startedAt;
+      setQueueItems(prev=>prev.map(item=>item.id===job.jobId?{...item,status:"done",completedAt,elapsedMs:elapsed}:item));
+      setCompletedStats(prev=>({count:prev.count+1,estimatedSpend:prev.estimatedSpend+(COST_ESTIMATES[job.type]||.04),elapsedMs:prev.elapsedMs+elapsed}));
+    }catch(error){
+      job.onError?.(error);
+      addLog("error",`${job.label}: ${safeMsg(error)}`);
+      setQueueItems(prev=>prev.map(item=>item.id===job.jobId?{...item,status:"error",completedAt:Date.now(),error:safeMsg(error)}:item));
+    }finally{
+      activeJobsRef.current.delete(job.jobId);
+      activeSourceLocksRef.current.delete(job.sourceId);
+      setActiveJobId(current=>current===job.jobId?Array.from(activeJobsRef.current.keys())[0]||null:current);
+      setTimeout(processJobQueue,0);
+    }
+  }
+
+  function ensureSourceReady(source){
+    if(!source)throw new Error("Source was removed before this queued job ran.");
+    return source;
+  }
+
+  async function runFilled(sourceId,note=""){
+    const source=ensureSourceReady(getSource(sourceId));
+    const request=requestSnapshot(source);
+    const logger=(level,message)=>addLog(level,`${source.name}: ${message}`);
+    patchSource(sourceId,current=>({status:"generating populated",filled:{...(current.filled||{}),status:"running"},empty:null,children:[]}));
+    const filled=await callImage(
+      withUserNote(filledPrompt({scaleLine:request.scaleLine,sourceName:source.name,variant:1,totalVariants:1,background}),note,"REGENERATION / USER NOTE"),
+      sourceRefs(source),
+      request.browserKey,
+      logger
+    );
+    patchSource(sourceId,current=>({filled:withImageHistory(current.filled,filled,"done"),empty:null,children:[],status:"populated ready"}));
+    selectPreview(sourceId,"filled");
+  }
+
+  async function runEmpty(sourceId,note=""){
+    const source=ensureSourceReady(getSource(sourceId));
+    if(!source.filled?.dataUrl)throw new Error("Generate the populated image before the emptied image.");
+    const request=requestSnapshot(source);
+    const logger=(level,message)=>addLog(level,`${source.name}: ${message}`);
+    patchSource(sourceId,current=>({status:"generating emptied",empty:{...(current.empty||{}),status:"running"},children:[]}));
+    const filledRef={label:`Approved populated anchor image - preserve exact shelf, camera, lighting, ${backgroundLabel(background)} cyclorama, shelf-to-wall gap, and studio identity`,dataUrl:source.filled.dataUrl};
+    const empty=await callImage(
+      withUserNote(emptyPrompt({scaleLine:request.scaleLine,sourceName:source.name,background}),note,"REGENERATION / USER NOTE"),
+      [filledRef],
+      request.browserKey,
+      logger
+    );
+    patchSource(sourceId,current=>({empty:withImageHistory(current.empty,empty,"done"),children:[],status:"emptied ready"}));
+    selectPreview(sourceId,"empty");
+  }
+
+  function enqueueFilled(source,note=""){
+    patchSource(source.id,current=>({status:"queued populated",filled:current.filled?.dataUrl?{...current.filled,status:"queued"}:current.filled}));
+    enqueueJob({
+      label:`${source.name} / populated`,
+      sourceId:source.id,
+      type:"filled",
+      run:()=>runFilled(source.id,note),
+      onError:()=>patchSource(source.id,current=>({status:"error",filled:current.filled?.dataUrl?{...current.filled,status:"error"}:current.filled}))
+    });
+  }
+
+  function enqueueEmpty(source,note=""){
+    patchSource(source.id,current=>({status:"queued emptied",empty:current.empty?.dataUrl?{...current.empty,status:"queued"}:current.empty}));
+    enqueueJob({
+      label:`${source.name} / emptied`,
+      sourceId:source.id,
+      type:"empty",
+      run:()=>runEmpty(source.id,note),
+      onError:()=>patchSource(source.id,current=>({status:"error",empty:current.empty?.dataUrl?{...current.empty,status:"error"}:current.empty}))
+    });
+  }
+
+  function enqueueRequiredSequence(source){
+    enqueueFilled(source,firstGenerationNote);
+    enqueueEmpty(source);
+    addLog("info",`${source.name}: queued populated then emptied.`);
+  }
+
+  function addPendingChild(sourceId,child){
+    patchSource(sourceId,source=>({children:[...(source.children||[]),child]}));
+  }
+
+  async function runGeneratedChild(sourceId,childId,kind,options={}){
+    const source=ensureSourceReady(getSource(sourceId));
+    if(!source.empty?.dataUrl)throw new Error("Generate the emptied image before adding more images.");
+    const request=requestSnapshot(source);
+    const logger=(level,message)=>addLog(level,`${source.name}: ${message}`);
+    const emptyRef={label:`CURRENT DISPLAYED APPROVED EMPTIED IMAGE - this exact visible version is the only visual source for this generation`,dataUrl:source.empty.dataUrl};
+    const emptyOnlyRefs=[emptyRef];
+    patchChild(sourceId,childId,current=>({...current,status:"running"}));
+    let image;
+    if(kind==="angle"){
+      image=await callImage(withUserNote(emptyAnglePrompt({scaleLine:request.scaleLine,sourceName:source.name,background}),options.note,"USER NOTE"),emptyOnlyRefs,request.browserKey,logger);
+    }else if(kind==="front"){
+      image=await callImage(withUserNote(emptyFrontFacingPrompt({scaleLine:request.scaleLine,sourceName:source.name,background}),options.note,"USER NOTE"),emptyOnlyRefs,request.browserKey,logger);
+    }else if(kind==="custom"){
+      image=await callImage(customEmptyPrompt({scaleLine:request.scaleLine,sourceName:source.name,background,note:options.note}),emptyOnlyRefs,request.browserKey,logger);
+    }else if(kind==="crop-detail"){
+      image=await callImage(croppedEmptyDetailPrompt({scaleLine:request.scaleLine,sourceName:source.name,background,note:options.note}),emptyOnlyRefs,request.browserKey,logger);
+    }else if(kind==="detail"){
+      const detail=CATALOG_DETAILS.find(item=>item.id===options.detailId);
+      if(!detail)throw new Error("Detail type is missing.");
+      patchSource(sourceId,{status:`analysing ${detail.label.toLowerCase()} colours`});
+      const configuration=await analyzeDetailConfiguration(emptyRef,detail,request.browserKey,logger);
+      patchChild(sourceId,childId,{configuration});
+      const detailRef={label:`LOCKED EDIT TARGET: selected ${detail.label} construction reference. Preserve every geometric detail; apply only the text configuration in the prompt.`,dataUrl:detail.src};
+      image=await callImage(withUserNote(detailShotPrompt({scaleLine:request.scaleLine,detail,configuration}),options.note,"USER NOTE"),[detailRef],request.browserKey,logger);
+    }else{
+      throw new Error(`Unknown generation type: ${kind}`);
+    }
+    patchChild(sourceId,childId,current=>withImageHistory(current,image,"done"));
+    patchSource(sourceId,{status:"ready"});
+    selectPreview(sourceId,kind,childId);
+  }
+
+  function enqueueChild(source,kind,options={}){
+    if(!source.empty?.dataUrl){
+      addLog("error",`${source.name}: create the emptied image before adding ${kind}.`);
+      return;
+    }
+    const detail=kind==="detail"?CATALOG_DETAILS.find(item=>item.id===options.detailId):null;
+    const label=kind==="detail"?`Detail: ${detail?.label||"Unknown"}`:kind==="angle"?"Empty angle":kind==="front"?"Front-facing empty":kind==="crop-detail"?"Detail from emptied":"Custom";
+    const childId=options.replaceChildId||makeId("gen");
+    if(options.replaceChildId){
+      patchChild(source.id,childId,current=>({...current,status:"queued"}));
+    }else{
+      addPendingChild(source.id,{id:childId,type:kind,label,status:"queued",detailId:options.detailId||null,note:options.note||""});
+    }
+    enqueueJob({
+      label:`${source.name} / ${label}`,
+      sourceId:source.id,
+      targetId:childId,
+      type:kind,
+      preserveTargetOnCancel:Boolean(options.replaceChildId),
+      run:()=>runGeneratedChild(source.id,childId,kind,options),
+      onError:()=>patchChild(source.id,childId,{status:"error"})
+    });
+  }
+
+  function retryGenerated(source,type,child=null){
+    const note=window.prompt("Optional note to add to this regeneration prompt:","");
+    if(note===null)return;
+    if(type==="filled")enqueueFilled(source,note);
+    else if(type==="empty")enqueueEmpty(source,note);
+    else if(child)enqueueChild(source,child.type,{detailId:child.detailId,note,replaceChildId:child.id});
+  }
+
+  async function runRefineGenerated(sourceId,type,childId,note){
+    const source=ensureSourceReady(getSource(sourceId));
+    const child=childId?(source.children||[]).find(item=>item.id===childId):null;
+    const current=type==="filled"?source.filled:type==="empty"?source.empty:child;
+    if(!current?.dataUrl)throw new Error("Refine needs a displayed generated image first.");
+    const request=requestSnapshot(source);
+    const logger=(level,message)=>addLog(level,`${source.name}: ${message}`);
+    const title=type==="filled"?"populated image":type==="empty"?"emptied image":child?.label||"generated image";
+    const editRef={label:`CURRENT DISPLAYED IMAGE - edit this exact version only`,dataUrl:current.dataUrl};
+    const sourceRef={label:"ORIGINAL SOURCE PRODUCT PHOTO - use only to verify shelf geometry and material identity",dataUrl:source.dataUrl};
+    patchGeneratedImage(source,type,image=>({...image,status:"running"}),child);
+    const refined=await callImage(
+      refinePrompt({scaleLine:request.scaleLine,sourceName:source.name,background,title,note}),
+      [editRef,sourceRef],
+      request.browserKey,
+      logger
+    );
+    if(type==="filled"){
+      patchSource(sourceId,currentSource=>({filled:withImageHistory(currentSource.filled,refined,"done"),empty:null,children:[],status:"populated ready"}));
+      selectPreview(sourceId,"filled");
+    }else if(type==="empty"){
+      patchSource(sourceId,currentSource=>({empty:withImageHistory(currentSource.empty,refined,"done"),status:"emptied ready"}));
+      selectPreview(sourceId,"empty");
+    }else if(child){
+      patchChild(sourceId,child.id,currentChild=>withImageHistory(currentChild,refined,"done"));
+      patchSource(sourceId,{status:"ready"});
+      selectPreview(sourceId,child.type,child.id);
+    }
+  }
+
+  function refineGenerated(source,type,child=null){
+    const note=window.prompt("Specific edit to make to this displayed image:");
+    if(!note?.trim())return;
+    patchGeneratedImage(source,type,image=>({...image,status:"queued"}),child);
+    enqueueJob({
+      label:`${source.name} / refine ${type==="filled"?"populated":type==="empty"?"emptied":child?.label||"image"}`,
+      sourceId:source.id,
+      targetId:child?.id||null,
+      type:"refine",
+      imageType:type,
+      preserveTargetOnCancel:Boolean(child?.id),
+      run:()=>runRefineGenerated(source.id,type,child?.id||null,note.trim()),
+      onError:()=>patchGeneratedImage(source,type,image=>({...image,status:"error"}),child)
+    });
+  }
+
+  async function replaceGeneratedImage(source,type,file,child=null){
+    if(!file)return;
+    try{
+      const replacement=await fileToGeneratedImage(file);
+      if(type==="filled"){
+        const cleared=Boolean(source.empty?.dataUrl||(source.children||[]).length);
+        patchSource(source.id,current=>({filled:withImageHistory(current.filled,replacement,"manual"),empty:null,children:[],status:"populated ready"}));
+        selectPreview(source.id,"filled");
+        addLog("success",`${source.name}: replaced populated image${cleared?"; cleared emptied and later images so they can regenerate from it":""}.`);
+      }else if(type==="empty"){
+        patchSource(source.id,current=>({empty:withImageHistory(current.empty,replacement,"manual"),status:"emptied ready"}));
+        selectPreview(source.id,"empty");
+        addLog("success",`${source.name}: replaced emptied image. Future angle, detail, front-facing, and custom generations will use this upload.`);
+      }else if(child){
+        patchChild(source.id,child.id,current=>withImageHistory(current,replacement,"manual"));
+        selectPreview(source.id,child.type,child.id);
+        addLog("success",`${source.name}: replaced ${child.label}.`);
+      }
+    }catch(error){
+      addLog("error",`${source.name}: replacement failed — ${safeMsg(error)}`);
+    }
+  }
+
+  function addCustom(source){
+    const note=window.prompt("What custom image should be generated from the emptied shelf?");
+    if(!note?.trim())return;
+    enqueueChild(source,"custom",{note});
+  }
+
+  function addCropDetail(source){
+    const note=window.prompt("Optional note for the cropped detail from the emptied image:","");
+    if(note===null)return;
+    enqueueChild(source,"crop-detail",{note});
+  }
+
+  function deleteGenerated(source,type,childId=null){
+    if(type==="filled")patchSource(source.id,{filled:null,empty:null,children:[],status:"ready"});
+    else if(type==="empty")patchSource(source.id,{empty:null,children:[],status:"populated ready"});
+    else patchSource(source.id,current=>({children:(current.children||[]).filter(child=>child.id!==childId)}));
+    if(previewSelection?.sourceId===source.id&&previewSelection.type===type&&(!childId||previewSelection.childId===childId)){
+      selectPreview(source.id,"source");
+    }
+  }
+
+  function clearAll(){
+    commitSources([]);
+    setActiveSource(null);
+    setPreviewSelection(null);
+    setScaleSession(null);
+    jobQueueRef.current=[];
+    activeJobsRef.current=new Map();
+    activeSourceLocksRef.current=new Set();
+    setQueueItems([]);
+    setActiveJobId(null);
+    setProcessStartedAt(null);
+    setCompletedStats({count:0,estimatedSpend:0,elapsedMs:0});
+    setLog([]);
+  }
+
+  function downloadSourceSet(source){
+    const meta=normalizedRowMeta(source);
+    const folder=filenameSafe(meta.id);
+    const manifest=rowImageManifest(source);
+    const entries=manifest.map(item=>({name:`${folder}/${item.name}`,bytes:dataUrlBytes(item.dataUrl)}));
+    entries.push({name:`${folder}/${folder}.json`,bytes:textBytes(JSON.stringify(rowJsonObject(source),null,2))});
+    downloadBlob(makeZip(entries),`${folder}.zip`);
+  }
+
+  function downloadAll(){
+    sources.forEach((source,index)=>setTimeout(()=>downloadSourceSet(source),index*250));
+  }
+
+  function saveSession(){
+    const session=sessionSnapshot();
+    downloadBlob(new Blob([JSON.stringify(session,null,2)],{type:"application/json"}),`catalog-session-${new Date().toISOString().slice(0,10)}.json`);
+  }
+
+  async function loadSessionFile(event){
+    const file=event.target.files?.[0];
+    event.target.value="";
+    if(!file)return;
+    try{
+      const session=JSON.parse(await file.text());
+      const loadedSources=normalizeImportedSession(session);
+      commitSources(loadedSources);
+      setActiveSource(loadedSources[0]?.id||null);
+      setPreviewSelection(loadedSources[0]?{sourceId:loadedSources[0].id,type:"source",childId:null}:null);
+      setBackground({...DEFAULT_BACKGROUND,...(session.background||{})});
+      setScaleCm(String(session.scaleCm||""));
+      setFirstGenerationNote(String(session.firstGenerationNote||""));
+      setScaleSession(null);
+      jobQueueRef.current=[];
+      activeJobsRef.current=new Map();
+      activeSourceLocksRef.current=new Set();
+      setQueueItems([]);
+      setActiveJobId(null);
+      setProcessStartedAt(null);
+      setCompletedStats({count:0,estimatedSpend:0,elapsedMs:0});
+      setLog(Array.isArray(session.log)?session.log:[]);
+      addLog("success",`Loaded session from ${file.name}`);
+    }catch(error){
+      addLog("error",`Session load failed: ${safeMsg(error)}`);
+    }
+  }
+
+  async function loadRowZipFile(event){
+    const files=[...(event.target.files||[])];
+    event.target.value="";
+    if(!files.length)return;
+    try{
+      const loaded=[];
+      for(const file of files){
+        loaded.push(await sourceFromRowZip(file));
+      }
+      commitSources(prev=>[...prev,...loaded]);
+      setActiveSource(loaded[0]?.id||null);
+      setPreviewSelection(loaded[0]?{sourceId:loaded[0].id,type:"source",childId:null}:null);
+      addLog("success",`Loaded ${loaded.length} row ZIP${loaded.length===1?"":"s"}`);
+    }catch(error){
+      addLog("error",`Row ZIP load failed: ${safeMsg(error)}`);
+    }
+  }
+
+  // ─── Push to Library (DAM) ─────────────────────────────────────
+  // Writes a source's whole set into the DAM with provenance: the source photo
+  // goes first, then each generated image links back to it via parentHash.
+  // Runs alongside (not instead of) the row-ZIP export.
+  async function pushSourceToDAM(source){
+    const meta=normalizedRowMeta(source);
+    const items=rowImageManifest(source);
+    if(!items.length)return{pushed:0};
+    const mkOrigin=name=>({path:name,root:"catalog",batch:"catalog-push",tool:"catalog",ingestedAt:new Date().toISOString()});
+    let parentHash=source.damHash||null,pushed=0;
+    if(!parentHash){
+      const src=items.find(i=>i.key==="source");
+      if(src){
+        const r=await window.DamClient.putAsset(src.dataUrl,{kind:"photo",configId:meta.id,variant:"source",status:"active",tool:"catalog",batch:"catalog-push",origin:mkOrigin(src.name)});
+        if(r?.ok){parentHash=r.hash;pushed++;}
+      }
+    }
+    for(const item of items){
+      if(item.key==="source")continue;
+      const variant=item.key.replace(/-\d+$/,"").replace(/^filled$/,"populated").replace(/^empty$/,"emptied");
+      const r=await window.DamClient.putAsset(item.dataUrl,{kind:"catalog",configId:meta.id,variant,parentHash,modules:source.damModules||undefined,status:"active",tool:"catalog",batch:"catalog-push",origin:mkOrigin(item.name)});
+      if(r?.ok)pushed++;
+    }
+    return{pushed};
+  }
+  async function pushAllToDAM(){
+    if(!window.DamClient){addLog("error","DAM client not loaded.");return;}
+    if(!(await window.DamClient.available())){addLog("error","The Library is switched off.");return;}
+    addLog("info","Pushing catalog sets to Library…");
+    let total=0,sets=0;
+    for(const source of sourcesRef.current){
+      try{const {pushed}=await pushSourceToDAM(source);if(pushed){total+=pushed;sets++;}}
+      catch(error){addLog("error",`Push failed for ${normalizedRowMeta(source).id}: ${safeMsg(error)}`);}
+    }
+    addLog("success",`Pushed ${total} image(s) from ${sets} set(s) to Library.`);
+  }
+
+  return (
+    <main className="page">
+      <section className="queue-panel">
+        <div className="queue-top">
+          <div>
+            <div className="queue-title">Generation Queue</div>
+            <div className="sub">{activeJobs.length?(activeJobs.length===1?`Running ${activeJob.label}`:`Running ${activeJobs.length} jobs`):visibleQueue.length?`${visibleQueue.length} queued/running`:"Idle"}</div>
+          </div>
+          <div className="queue-stats">
+            <span className="queue-stat">Elapsed: {processStartedAt||completedStats.count?formatMs(elapsedTime):"—"}</span>
+            <span className="queue-stat">Avg session: {completedStats.count?formatMs(averageSessionMs):"—"}</span>
+            <span className="queue-stat">Spend est: ${totalSpend.toFixed(3)}</span>
+            <span className="queue-stat">Queued est: ${queueSpend.toFixed(3)}</span>
+          </div>
+        </div>
+        <div className="queue-strip">
+          {visibleQueue.length?visibleQueue.map(item=>(
+            <div key={item.id} className={`queue-chip ${item.status}`}>
+              <span className="queue-chip-label">{item.status==="running"?"Now":item.status}: {item.label}</span>
+              {item.status==="pending"&&(
+                <span className="queue-chip-actions">
+                  <button type="button" onClick={()=>moveQueuedJob(item.id,-1)} title="Move earlier">↑</button>
+                  <button type="button" onClick={()=>moveQueuedJob(item.id,1)} title="Move later">↓</button>
+                  <button type="button" onClick={()=>cancelQueuedJob(item.id)} title="Remove from queue">×</button>
+                </span>
+              )}
+            </div>
+          )):<div className="queue-chip">No queued jobs</div>}
+        </div>
+        <details className="debug-details">
+          <summary>Debug / activity log</summary>
+          <div className="debug-log">
+            {log.map(row=><div key={row.id} className={`log-row ${row.level}`}><strong>{row.time}</strong> {row.message}</div>)}
+          </div>
+        </details>
+      </section>
+
+      <header className="top">
+        <div>
+          <div className="eyebrow">Framework Designs</div>
+          <h1>Catalog Set Studio</h1>
+        </div>
+        <div className="top-actions">
+          <a className="btn btn-small" href="./index.html">Generator</a>
+          <button className="btn btn-small" onClick={saveSession} disabled={!sources.length}>Save Session</button>
+          <button className="btn btn-small" onClick={()=>sessionFileRef.current?.click()}>Load Session</button>
+          <input ref={sessionFileRef} type="file" accept="application/json,.json" style={{display:"none"}} onChange={loadSessionFile}/>
+          <button className="btn btn-small" onClick={()=>rowZipFileRef.current?.click()}>Load Row ZIP</button>
+          <input ref={rowZipFileRef} type="file" accept=".zip,application/zip" multiple style={{display:"none"}} onChange={loadRowZipFile}/>
+          <button className="btn btn-small" onClick={downloadAll} disabled={!sources.some(source=>source.filled?.dataUrl||source.empty?.dataUrl||(source.children||[]).some(child=>child.dataUrl))}>Download All</button>
+          {window.DamClient?.enabled&&<button className="btn btn-small" onClick={pushAllToDAM} disabled={!sources.some(source=>source.filled?.dataUrl||source.empty?.dataUrl||(source.children||[]).some(child=>child.dataUrl))}>Push → Library</button>}
+          <button className="btn btn-small btn-danger" onClick={clearAll} disabled={!sources.length&&!queueItems.length}>Clear</button>
+        </div>
+      </header>
+
+      <div className="studio">
+        <section className="upload-row">
+          <aside className="panel">
+            <div className="panel-title">
+              <div>
+                <div className="title">Sources</div>
+                <div className="sub">{sources.length?`${sources.length} image${sources.length===1?"":"s"} loaded`:"No image loaded"}</div>
+              </div>
+              <button className="btn btn-small btn-soft" onClick={()=>fileRef.current?.click()}>Upload</button>
+              {window.DamClient?.enabled&&<button className="btn btn-small btn-soft" onClick={()=>setLibraryOpen(true)}>Library</button>}
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFiles}/>
+            {libraryOpen&&<LibraryPickerModal onClose={()=>setLibraryOpen(false)} onPick={loadFromLibrary}/>}
+            <div
+              className={`drop ${scaleSessionActive?"scale-active":""} ${dragging?"dragging":""}`}
+              onClick={handleSourcePreviewClick}
+              onDragOver={event=>{event.preventDefault();setDragging(true)}}
+              onDragLeave={()=>setDragging(false)}
+              onDrop={handleDrop}
+            >
+              {previewSource&&activePreview?<img ref={previewRef} src={activePreview} alt={previewTitle}/>:previewSource?<div className="empty-drop">Metadata imported. Replace or upload a source image before generating.</div>:<div className="empty-drop">Drag one or more product photos here, or click Upload.</div>}
+            </div>
+            {previewSource&&previewType!=="source"&&(
+              <PreviewActionPanel
+                title={previewTitle}
+                image={previewImage}
+                filename={`${filenameSafe(normalizedRowMeta(previewSource).id)}-${filenameSafe(previewTitle)}.jpg`}
+                onRetry={()=>retryGenerated(previewSource,previewType,previewChild)}
+                onRefine={()=>refineGenerated(previewSource,previewType,previewChild)}
+                onReplace={file=>replaceGeneratedImage(previewSource,previewType,file,previewChild)}
+                onDelete={()=>{
+                  deleteGenerated(previewSource,previewType,previewChild?.id||null);
+                  selectPreview(previewSource.id,"source");
+                }}
+                onUndo={()=>moveImageHistory(previewSource,previewType,-1,previewChild)}
+                onRedo={()=>moveImageHistory(previewSource,previewType,1,previewChild)}
+              />
+            )}
+            {previewSource&&previewType==="source"&&(
+              <div className="scale-panel">
+                <div className="scale-copy">
+                  {scaleSessionActive&&scaleSession.phase==="bottom"&&"Click the bottom of the shelf."}
+                  {scaleSessionActive&&scaleSession.phase==="top"&&"Click the top of the shelf."}
+                  {scaleSessionActive&&scaleSession.phase==="height"&&"Enter the shelf height in centimeters."}
+                  {!scaleSessionActive&&previewSource.scale?.status==="set"&&`Scale set: shelf ${previewSource.scale.shelfH} cm.`}
+                  {!scaleSessionActive&&previewSource.scale?.status==="skipped"&&"Scale skipped for this source. Product scale will use approximate catalogue proportions."}
+                  {!scaleSessionActive&&(!previewSource.scale||previewSource.scale.status==="unset")&&"Set scale for this source, or skip it before generating."}
+                </div>
+                <div className="scale-row">
+                  {scaleSessionActive&&scaleSession.phase==="height"&&(
+                    <>
+                      <input className="input" style={{width:110}} inputMode="numeric" placeholder="cm" value={scaleSession.heightCm} onChange={event=>setScaleSession({...scaleSession,heightCm:event.target.value.replace(/[^\d.]/g,"")})} onKeyDown={event=>{if(event.key==="Enter")confirmScaleHeight()}}/>
+                      <button className="btn btn-small btn-primary" onClick={confirmScaleHeight} disabled={!parseFloat(scaleSession.heightCm)}>Set</button>
+                    </>
+                  )}
+                  {!scaleSessionActive&&<button className="btn btn-small btn-soft" onClick={()=>beginScale(previewSource)}>Set Scale</button>}
+                  {!scaleSessionActive&&previewSource.scale?.status!=="skipped"&&<button className="btn btn-small" onClick={()=>skipScale(previewSource)}>Skip Scale</button>}
+                  {(scaleSessionActive||previewSource.scale?.status==="set"||previewSource.scale?.status==="skipped")&&<button className="btn btn-small" onClick={()=>resetScale(previewSource)}>Reset</button>}
+                </div>
+              </div>
+            )}
+            <div className="form-grid">
+              <div className="field">
+                <label htmlFor="scale">Fallback cm</label>
+                <input id="scale" className="input" inputMode="numeric" placeholder="optional" value={scaleCm} onChange={event=>setScaleCm(event.target.value.replace(/[^\d.]/g,""))}/>
+              </div>
+              <div className="field">
+                <label htmlFor="background-color">Background</label>
+                <input id="background-color" className="color-input" type="color" value={background.color} onChange={event=>setBackground(current=>({...current,color:event.target.value.toUpperCase()}))}/>
+              </div>
+            </div>
+            <div className="sub" style={{marginTop:7}}>Background uses the committed default studio treatment; the swatch only sets the starting cyclorama color.</div>
+            <div className="field" style={{marginTop:10}}>
+              <label htmlFor="first-note">First generation note</label>
+              <textarea id="first-note" className="textarea" placeholder="optional direction for populated anchor" value={firstGenerationNote} onChange={event=>setFirstGenerationNote(event.target.value)}/>
+            </div>
+            <div className="field" style={{marginTop:10}}>
+              <div className="sub">On localhost this calls Gemini directly from the browser. Without a key, use Netlify dev for server functions.</div>
+            </div>
+          </aside>
+
+          <section className="notice">
+            Required order per source: source photo → populated catalogue image → emptied catalogue image. After the emptied image exists, use the plus menu to queue angled, front-facing, detail, or custom images. Later images use the current displayed emptied image as their visual source.
+          </section>
+        </section>
+
+        <section className="rows">
+          {!sources.length&&<div className="notice">Upload or drag in one or more shelf product photos to begin.</div>}
+          {sources.map(source=>(
+            <article className="flow-row" key={source.id}>
+              <div className="flow-head">
+                <div>
+                  <div className="flow-title">{source.name}</div>
+                  <div className="flow-status">{source.status||"ready"}</div>
+                </div>
+                <div className="source-tools">
+                  {!source.filled?.dataUrl&&<button className="btn btn-small btn-primary" onClick={()=>enqueueRequiredSequence(source)} disabled={!source.dataUrl}>Generate populated + emptied</button>}
+                  {source.filled?.dataUrl&&!source.empty?.dataUrl&&<button className="btn btn-small btn-primary" onClick={()=>enqueueEmpty(source)}>Generate emptied</button>}
+                  <button className="btn btn-small" onClick={()=>downloadSourceSet(source)} disabled={!(source.filled?.dataUrl||source.empty?.dataUrl||(source.children||[]).some(child=>child.dataUrl))}>Download Row</button>
+                </div>
+              </div>
+              <div className="flow-lane">
+                <FlowSourceCard source={source} onView={()=>selectPreview(source.id,"source")} onScale={()=>beginScale(source)} onSkipScale={()=>skipScale(source)} onDelete={()=>deleteSource(source.id)}/>
+                <GeneratedFlowCard
+                  title="Populated"
+                  subtitle="required first generated image"
+                  image={source.filled}
+                  filename={`${filenameSafe(normalizedRowMeta(source).id)}-01-populated.jpg`}
+                  placeholder="Queue populated"
+                  onGenerate={()=>enqueueFilled(source,firstGenerationNote)}
+                  disableGenerate={!source.dataUrl}
+                  onRetry={()=>retryGenerated(source,"filled")}
+                  onRefine={()=>refineGenerated(source,"filled")}
+                  onReplace={file=>replaceGeneratedImage(source,"filled",file)}
+                  onDelete={()=>deleteGenerated(source,"filled")}
+                  onUndo={()=>moveImageHistory(source,"filled",-1)}
+                  onRedo={()=>moveImageHistory(source,"filled",1)}
+                  onView={()=>selectPreview(source.id,"filled")}
+                />
+                <GeneratedFlowCard
+                  title="Emptied"
+                  subtitle="source for all later images"
+                  image={source.empty}
+                  filename={`${filenameSafe(normalizedRowMeta(source).id)}-02-emptied.jpg`}
+                  placeholder={source.filled?.dataUrl?"Queue emptied":"After populated"}
+                  onGenerate={()=>source.filled?.dataUrl?enqueueEmpty(source):enqueueRequiredSequence(source)}
+                  onRetry={()=>retryGenerated(source,"empty")}
+                  onRefine={()=>refineGenerated(source,"empty")}
+                  onReplace={file=>replaceGeneratedImage(source,"empty",file)}
+                  onDelete={()=>deleteGenerated(source,"empty")}
+                  onUndo={()=>moveImageHistory(source,"empty",-1)}
+                  onRedo={()=>moveImageHistory(source,"empty",1)}
+                  onView={()=>selectPreview(source.id,"empty")}
+                />
+                {source.empty?.dataUrl&&(
+                  <AddMenuFlowCard
+                    onAngle={()=>enqueueChild(source,"angle")}
+                    onFront={()=>enqueueChild(source,"front")}
+                    onCropDetail={()=>addCropDetail(source)}
+                    onCustom={()=>addCustom(source)}
+                    onDetail={detailId=>enqueueChild(source,"detail",{detailId})}
+                  />
+                )}
+                {(source.children||[]).map((child,index)=>(
+                  <GeneratedFlowCard
+                    key={child.id}
+                    title={child.label}
+                    subtitle={child.status==="queued"?"queued":child.status==="running"?"running":child.status==="error"?"error":`generated ${index+1}`}
+                    image={child}
+                    filename={`${filenameSafe(normalizedRowMeta(source).id)}-${String(index+3).padStart(2,"0")}-${filenameSafe(child.label)}.jpg`}
+                    placeholder={child.status||"Waiting"}
+                    onRetry={()=>retryGenerated(source,child.type,child)}
+                    onRefine={()=>refineGenerated(source,child.type,child)}
+                    onReplace={file=>replaceGeneratedImage(source,child.type,file,child)}
+                    onDelete={()=>deleteGenerated(source,child.type,child.id)}
+                    onUndo={()=>moveImageHistory(source,child.type,-1,child)}
+                    onRedo={()=>moveImageHistory(source,child.type,1,child)}
+                    onView={()=>selectPreview(source.id,child.type,child.id)}
+                  />
+                ))}
+                <RowMetaCard source={source} onChange={updateSourceMeta} onAutoMeta={()=>autoGenerateRowMeta(source)}/>
+              </div>
+            </article>
+          ))}
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function App(){
+  const [sources,setSources]=useState([]);
+  const [activeSource,setActiveSource]=useState(null);
+  const [scaleCm,setScaleCm]=useState("");
+  const [variants,setVariants]=useState(1);
+  const [background,setBackground]=useState(()=>{
+    try{
+      const saved=JSON.parse(localStorage.getItem(BACKGROUND_STORAGE_KEY)||"{}");
+      if(String(saved?.color||"").toUpperCase()==="#F4E8D2"&&String(saved?.name||"").trim()==="warm ivory")return {...DEFAULT_BACKGROUND};
+      return {...DEFAULT_BACKGROUND,...saved};
+    }catch{return {...DEFAULT_BACKGROUND}}
+  });
+  const [selectedDetailId,setSelectedDetailId]=useState("");
+  // No browser key, ever -- see scene-generator.html. "" selects the server path.
+  const browserKey="";
+  const [running,setRunning]=useState(false);
+  const [queuedJobs,setQueuedJobs]=useState(0);
+  const [sets,setSets]=useState([]);
+  const [log,setLog]=useState([]);
+  const [scaleSession,setScaleSession]=useState(null);
+  const fileRef=useRef(null);
+  const previewRef=useRef(null);
+  const jobQueueRef=useRef([]);
+  const processingJobsRef=useRef(false);
+
+
+  useEffect(()=>{
+    localStorage.setItem(BACKGROUND_STORAGE_KEY,JSON.stringify(background));
+  },[background]);
+
+  const active=sources.find(source=>source.id===activeSource)||sources[0]||null;
+  const activePreview=active?.dataUrl;
+  const selectedDetail=CATALOG_DETAILS.find(detail=>detail.id===selectedDetailId)||null;
+  const scaleReady=Boolean(sources.length)&&sources.every(source=>source.scale?.status==="set"||source.scale?.status==="skipped");
+  const scaleSessionActive=scaleSession&&active&&scaleSession.sourceId===active.id;
+  const promptSample=useMemo(()=>filledPrompt({
+    scaleLine:scaleLineForSource(active,scaleCm),
+    sourceName:active?.name||"source image",
+    variant:1,
+    totalVariants:Number(variants)||1,
+    background
+  }),[scaleCm,active?.id,active?.name,active?.scale?.status,active?.scale?.shelfH,variants,background]);
+
+  function addLog(level,message){
+    setLog(prev=>[{id:makeId("log"),time:new Date().toLocaleTimeString(),level,message},...prev].slice(0,120));
+  }
+
+  function patchSource(id,patch){
+    setSources(prev=>prev.map(source=>source.id===id?{...source,...(typeof patch==="function"?patch(source):patch)}:source));
+  }
+
+  function beginScale(source){
+    setActiveSource(source.id);
+    setScaleSession({sourceId:source.id,phase:"bottom",points:[],heightCm:String(source.scale?.shelfH||scaleCm||"")});
+  }
+
+  function skipScale(source){
+    patchSource(source.id,{scale:{status:"skipped"}});
+    if(scaleSession?.sourceId===source.id)setScaleSession(null);
+    addLog("info",`${source.name}: scale skipped`);
+  }
+
+  function resetScale(source){
+    patchSource(source.id,{scale:{status:"unset"}});
+    if(scaleSession?.sourceId===source.id)setScaleSession(null);
+  }
+
+  function handleSourcePreviewClick(event){
+    if(!active){
+      if(!running)fileRef.current?.click();
+      return;
+    }
+    if(!scaleSessionActive||!previewRef.current)return;
+    const point=imagePointFromEvent(event,previewRef.current,active.width,active.height);
+    if(scaleSession.phase==="bottom"){
+      setScaleSession({...scaleSession,phase:"top",points:[point]});
+      return;
+    }
+    if(scaleSession.phase==="top"){
+      setScaleSession({...scaleSession,phase:"height",points:[...scaleSession.points,point]});
+      return;
+    }
+  }
+
+  function confirmScaleHeight(){
+    if(!scaleSession||scaleSession.points.length!==2||!parseFloat(scaleSession.heightCm))return;
+    const shelfH=Number(scaleSession.heightCm);
+    if(!Number.isFinite(shelfH)||shelfH<10||shelfH>500){
+      addLog("error","Shelf height must be between 10 and 500 cm.");
+      return;
+    }
+    const [bottom,top]=scaleSession.points;
+    const px=Math.hypot(top.x-bottom.x,top.y-bottom.y);
+    const pxCm=px/shelfH;
+    patchSource(scaleSession.sourceId,{scale:{status:"set",shelfH,pxCm}});
+    setScaleSession(null);
+    const source=sources.find(item=>item.id===scaleSession.sourceId);
+    addLog("success",`${source?.name||"Source"}: scale set to ${shelfH} cm`);
+  }
+
+  async function handleFiles(event){
+    const files=[...(event.target.files||[])].filter(file=>file.type.startsWith("image/"));
+    event.target.value="";
+    if(!files.length)return;
+    addLog("info",`Loading ${files.length} source image${files.length===1?"":"s"}`);
+    try{
+      const loaded=[];
+      for(const file of files)loaded.push(await fileToSource(file));
+      setSources(prev=>[...prev,...loaded]);
+      setActiveSource(loaded[0].id);
+      addLog("success",`Loaded ${loaded.length} source image${loaded.length===1?"":"s"}`);
+    }catch(error){
+      addLog("error",`Image load failed: ${safeMsg(error)}`);
+    }
+  }
+
+  function updateSet(id,patch){
+    setSets(prev=>prev.map(item=>item.id===id?{...item,...patch}:item));
+  }
+
+  function requestSnapshot(source,detail=selectedDetail){
+    return {scaleLine:scaleLineForSource(source,scaleCm),browserKey:browserKey.trim(),detail:detail||null};
+  }
+
+  function enqueueJob(job){
+    jobQueueRef.current.push(job);
+    setQueuedJobs(jobQueueRef.current.length);
+    processJobQueue();
+  }
+
+  async function processJobQueue(){
+    if(processingJobsRef.current)return;
+    processingJobsRef.current=true;
+    setRunning(true);
+    try{
+      while(jobQueueRef.current.length){
+        const job=jobQueueRef.current.shift();
+        setQueuedJobs(jobQueueRef.current.length);
+        try{
+          await job.run();
+        }catch(error){
+          job.onError?.(error);
+          addLog("error",`${job.label}: ${safeMsg(error)}`);
+        }
+      }
+    }finally{
+      processingJobsRef.current=false;
+      setRunning(false);
+      setQueuedJobs(jobQueueRef.current.length);
+      if(jobQueueRef.current.length)processJobQueue();
+    }
+  }
+
+  async function runFilledForSet(item,source,request){
+    const logger=(level,message)=>addLog(level,`${item.label}: ${message}`);
+    updateSet(item.id,{
+      status:"generating filled",
+      pendingJob:"filled",
+      approved:false,
+      empty:null,
+      emptyAngle:null,
+      detail:null,
+      steps:{filled:"active",empty:"pending",angle:"pending",detail:item.detailSpec?"pending":"skip"}
+    });
+    const filled=await callImage(
+      filledPrompt({scaleLine:request.scaleLine,sourceName:source.name,variant:item.variant,totalVariants:item.totalVariants,background:item.background}),
+      sourceRefs(source),
+      request.browserKey,
+      logger
+    );
+    updateSet(item.id,{filled,status:"awaiting approval",pendingJob:null,steps:{filled:"done",empty:"pending",angle:"pending",detail:item.detailSpec?"pending":"skip"}});
+  }
+
+  function enqueueFilled(item,source,request){
+    enqueueJob({
+      label:item.label,
+      run:()=>runFilledForSet(item,source,request),
+      onError:()=>updateSet(item.id,{status:"error",pendingJob:null})
+    });
+  }
+
+  async function runDerivativesForSet(item,source,request){
+    const logger=(level,message)=>addLog(level,`${item.label}: ${message}`);
+    const refsFromSource=sourceRefs(source);
+    const detail=item.detailSpec||request.detail||null;
+    try{
+      updateSet(item.id,{approved:true,pendingJob:"empty sequence",status:"empty front",steps:{filled:"done",empty:"active",angle:"pending",detail:detail?"pending":"skip"}});
+
+      const filledRef={label:`Approved filled anchor image - preserve exact shelf, camera, lighting, ${backgroundLabel(item.background)} cyclorama, shelf-to-wall gap, and studio identity`,dataUrl:item.filled.dataUrl};
+
+      const empty=await callImage(
+        emptyPrompt({scaleLine:request.scaleLine,sourceName:source.name,background:item.background}),
+        [filledRef,...refsFromSource],
+        request.browserKey,
+        logger
+      );
+      updateSet(item.id,{empty,status:"empty angle",steps:{filled:"done",empty:"done",angle:"active",detail:detail?"pending":"skip"}});
+
+      const emptyRef={label:`Approved empty front image - preserve exact empty shelf, ${backgroundLabel(item.background)} cyclorama, lighting, shadow gap, and studio identity`,dataUrl:empty.dataUrl};
+      const emptyAngle=await callImage(
+        emptyAnglePrompt({scaleLine:request.scaleLine,sourceName:source.name,background:item.background}),
+        [emptyRef,filledRef,...refsFromSource],
+        request.browserKey,
+        logger
+      );
+      updateSet(item.id,{emptyAngle,steps:{filled:"done",empty:"done",angle:"done",detail:detail?"active":"skip"}});
+      if(detail){
+        updateSet(item.id,{status:`analysing ${detail.label.toLowerCase()} colours`});
+        const configuration=await analyzeDetailConfiguration(emptyRef,detail,request.browserKey,logger);
+        updateSet(item.id,{detailConfiguration:configuration,status:`detail: ${detail.label.toLowerCase()}`});
+        const detailRef={label:`LOCKED EDIT TARGET: selected ${detail.label} construction reference. Preserve every geometric detail; apply only the text configuration in the prompt.`,dataUrl:detail.src};
+        const detailImage=await callImage(
+          detailShotPrompt({scaleLine:request.scaleLine,detail,configuration}),
+          [detailRef],
+          request.browserKey,
+          logger
+        );
+        updateSet(item.id,{detail:detailImage,status:"done",pendingJob:null,steps:{filled:"done",empty:"done",angle:"done",detail:"done"}});
+      }else{
+        updateSet(item.id,{status:"done",pendingJob:null,steps:{filled:"done",empty:"done",angle:"done",detail:"skip"}});
+      }
+      addLog("success",`${item.label}: approved sequence complete`);
+    }catch(error){
+      updateSet(item.id,{status:"error",pendingJob:null});
+      addLog("error",`${item.label}: ${safeMsg(error)}`);
+    }
+  }
+
+  function queueDerivatives(item){
+    const source=sources.find(src=>src.id===item.sourceId);
+    if(!source||!item.filled||item.pendingJob)return;
+    updateSet(item.id,{approved:true,pendingJob:"empty sequence",status:"queued for empty sequence"});
+    enqueueJob({
+      label:`${item.label} / empty sequence`,
+      run:()=>runDerivativesForSet(item,source,requestSnapshot(source,item.detailSpec))
+    });
+  }
+
+  async function runClearResiduals(item,target,source,request,priorStatus){
+    const key=target==="angle"?"emptyAngle":"empty";
+    const current=item[key];
+    if(!current)return;
+    const logger=(level,message)=>addLog(level,`${item.label}: ${message}`);
+    const view=target==="angle"?"empty angled view":"empty front view";
+    const currentRef={label:`Current ${view} - preserve everything except residual movable props`,dataUrl:current.dataUrl};
+    const filledRef={label:`Approved filled anchor - use only to identify removable contents and preserve ${backgroundLabel(item.background)} studio continuity`,dataUrl:item.filled.dataUrl};
+    updateSet(item.id,{pendingJob:`clear ${target}`,status:`clearing ${target}`});
+    try{
+      const cleaned=await callImage(
+        emptyCleanupPrompt({scaleLine:request.scaleLine,sourceName:source.name,background:item.background,view}),
+        [currentRef,filledRef,...sourceRefs(source)],
+        request.browserKey,
+        logger
+      );
+      updateSet(item.id,{[key]:cleaned,status:priorStatus,pendingJob:null});
+      addLog("success",`${item.label}: residual props cleared from ${view}`);
+    }catch(error){
+      updateSet(item.id,{status:priorStatus,pendingJob:null});
+      addLog("error",`${item.label}: ${safeMsg(error)}`);
+    }
+  }
+
+  function queueClearResiduals(item,target){
+    const source=sources.find(src=>src.id===item.sourceId);
+    const key=target==="angle"?"emptyAngle":"empty";
+    if(!source||!item[key]||item.pendingJob)return;
+    const priorStatus=item.status;
+    updateSet(item.id,{pendingJob:`clear ${target}`,status:`queued to clear ${target}`});
+    enqueueJob({
+      label:`${item.label} / clear ${target}`,
+      run:()=>runClearResiduals(item,target,source,requestSnapshot(source),priorStatus)
+    });
+  }
+
+  function queueRetryFilled(item){
+    const source=sources.find(src=>src.id===item.sourceId);
+    if(!source||item.pendingJob)return;
+    updateSet(item.id,{pendingJob:"filled retry",status:"queued for filled retry"});
+    enqueueFilled(item,source,requestSnapshot(source,item.detailSpec));
+  }
+
+  function generate(){
+    if(!sources.length)return;
+    if(!scaleReady){
+      addLog("error","Set or skip scale for each uploaded source before generating.");
+      return;
+    }
+    const count=Math.max(1,Math.min(4,Number(variants)||1));
+    const queue=[];
+    for(const source of sources){
+      for(let variant=1;variant<=count;variant++){
+        queue.push({
+          id:makeId("set"),
+          sourceId:source.id,
+          sourceName:source.name,
+          variant,
+          totalVariants:count,
+          background:{...background},
+          label:`${source.name.replace(/\.[^.]+$/,"")} / set ${variant}`,
+          status:"queued",
+          pendingJob:"filled",
+          approved:false,
+          detail:null,
+          detailSpec:selectedDetail,
+          steps:{filled:"pending",empty:"pending",angle:"pending",detail:selectedDetail?"pending":"skip"}
+        });
+      }
+    }
+    setSets(prev=>[...prev,...queue]);
+    for(const item of queue){
+      const source=sources.find(src=>src.id===item.sourceId);
+      if(source)enqueueFilled(item,source,requestSnapshot(source,item.detailSpec));
+    }
+    addLog("info",`Added ${queue.length} filled anchor${queue.length===1?"":"s"} to the generation queue with ${browserKey.trim()?"browser key":"server key"}.`);
+  }
+
+  function clearAll(){
+    if(running)return;
+    setSources([]);
+    setActiveSource(null);
+    setSets([]);
+    setLog([]);
+  }
+
+  function downloadSet(item){
+    if(item.filled)downloadDataUrl(item.filled.dataUrl,`${filenameSafe(item.label)}-01-filled.jpg`);
+    if(item.empty)downloadDataUrl(item.empty.dataUrl,`${filenameSafe(item.label)}-02-empty.jpg`);
+    if(item.emptyAngle)downloadDataUrl(item.emptyAngle.dataUrl,`${filenameSafe(item.label)}-03-empty-angle.jpg`);
+    if(item.detail)downloadDataUrl(item.detail.dataUrl,`${filenameSafe(item.label)}-04-detail.jpg`);
+  }
+
+  function downloadAll(){
+    sets.forEach((item,index)=>setTimeout(()=>downloadSet(item),index*250));
+  }
+
+  return (
+    <main className="page">
+      <header className="top">
+        <div>
+          <div className="eyebrow">Framework Designs</div>
+          <h1>Catalog Set Studio</h1>
+        </div>
+        <div className="top-actions">
+          <a className="btn btn-small" href="./index.html">Generator</a>
+          <button className="btn btn-small" onClick={downloadAll} disabled={!sets.some(item=>item.filled||item.empty||item.emptyAngle||item.detail)}>Download All</button>
+          <button className="btn btn-small btn-danger" onClick={clearAll} disabled={running||(!sources.length&&!sets.length)}>Clear</button>
+        </div>
+      </header>
+
+      <div className="grid">
+        <aside className="panel sticky">
+          <div className="panel-title">
+            <div>
+              <div className="title">Source</div>
+              <div className="sub">{sources.length?`${sources.length} image${sources.length===1?"":"s"} loaded`:"No image loaded"}</div>
+            </div>
+            <button className="btn btn-small btn-soft" onClick={()=>fileRef.current?.click()} disabled={running}>Upload</button>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFiles}/>
+          <div className={`drop ${scaleSessionActive?"scale-active":""}`} onClick={handleSourcePreviewClick}>
+            {active?<img ref={previewRef} src={activePreview} alt="Selected source"/>:<div className="empty-drop">Upload one or more product photos.</div>}
+          </div>
+
+          {active&&(
+            <div className="scale-panel">
+              <div className="scale-copy">
+                {scaleSessionActive&&scaleSession.phase==="bottom"&&"Click the bottom of the shelf."}
+                {scaleSessionActive&&scaleSession.phase==="top"&&"Click the top of the shelf."}
+                {scaleSessionActive&&scaleSession.phase==="height"&&"Enter the shelf height in centimeters."}
+                {!scaleSessionActive&&active.scale?.status==="set"&&`Scale set: shelf ${active.scale.shelfH} cm.`}
+                {!scaleSessionActive&&active.scale?.status==="skipped"&&"Scale skipped for this source. Product scale will use approximate catalogue proportions."}
+                {!scaleSessionActive&&(!active.scale||active.scale.status==="unset")&&"Set scale for this source, or skip it before generating."}
+              </div>
+              <div className="scale-row">
+                {scaleSessionActive&&scaleSession.phase==="height"&&(
+                  <>
+                    <input className="input" style={{width:110}} inputMode="numeric" placeholder="cm" value={scaleSession.heightCm} onChange={event=>setScaleSession({...scaleSession,heightCm:event.target.value.replace(/[^\d.]/g,"")})} onKeyDown={event=>{if(event.key==="Enter")confirmScaleHeight()}}/>
+                    <button className="btn btn-small btn-primary" onClick={confirmScaleHeight} disabled={!parseFloat(scaleSession.heightCm)}>Set</button>
+                  </>
+                )}
+                {!scaleSessionActive&&<button className="btn btn-small btn-soft" onClick={()=>beginScale(active)} disabled={running}>Set Scale</button>}
+                {!scaleSessionActive&&active.scale?.status!=="skipped"&&<button className="btn btn-small" onClick={()=>skipScale(active)} disabled={running}>Skip Scale</button>}
+                {(scaleSessionActive||active.scale?.status==="set"||active.scale?.status==="skipped")&&<button className="btn btn-small" onClick={()=>resetScale(active)} disabled={running}>Reset</button>}
+              </div>
+            </div>
+          )}
+
+          {sources.length>0&&(
+            <div className="source-list">
+              {sources.map(source=>(
+                <div className="source-item" key={source.id}>
+                  <img src={source.dataUrl} alt=""/>
+                  <div>
+                    <div className="source-name">{source.name}</div>
+                    <div className="source-meta">{source.width} x {source.height} / {fmtBytes(source.size)}</div>
+                  </div>
+                  <div className="source-actions">
+                    <span className={`status-pill ${source.scale?.status==="set"?"set":source.scale?.status==="skipped"?"skip":"need"}`}>{source.scale?.status==="set"?"Scale set":source.scale?.status==="skipped"?"Scale skipped":"Needs scale"}</span>
+                    <button className="btn btn-small" onClick={()=>setActiveSource(source.id)} disabled={running}>{active?.id===source.id?"On":"View"}</button>
+                    <button className="btn btn-small btn-soft" onClick={()=>beginScale(source)} disabled={running}>Set</button>
+                    <button className="btn btn-small" onClick={()=>skipScale(source)} disabled={running}>Skip</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="form-grid">
+            <div className="field">
+              <label htmlFor="scale">Fallback cm</label>
+              <input id="scale" className="input" inputMode="numeric" placeholder="optional" value={scaleCm} onChange={event=>setScaleCm(event.target.value.replace(/[^\d.]/g,""))} disabled={running}/>
+            </div>
+            <div className="field">
+              <label htmlFor="variants">Sets / source</label>
+              <select id="variants" className="select" value={variants} onChange={event=>setVariants(Number(event.target.value))} disabled={running}>
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+                <option value={4}>4</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="field" style={{marginTop:10}}>
+            <label htmlFor="background-name">Initial background</label>
+            <div className="color-row">
+              <input id="background-color" className="color-input" type="color" value={background.color} onChange={event=>setBackground(current=>({...current,color:event.target.value.toUpperCase()}))} disabled={running}/>
+              <input id="background-name" className="input" placeholder="e.g. warm ivory" value={background.name} onChange={event=>setBackground(current=>({...current,name:event.target.value}))} disabled={running}/>
+            </div>
+            <div className="sub">Used to establish the filled-anchor cyclorama. Empty views copy that approved background.</div>
+          </div>
+
+          <div className="field" style={{marginTop:12}}>
+            <label>Optional matching detail</label>
+            <div className="sub">Adds one close-up after approval, rebuilt from the selected construction reference in the exact empty-shot studio style.</div>
+            <div className="detail-options" role="radiogroup" aria-label="Optional matching detail shot">
+              <button type="button" className={`detail-option none ${!selectedDetailId?"selected":""}`} onClick={()=>setSelectedDetailId("")} disabled={running} role="radio" aria-checked={!selectedDetailId}>No detail shot</button>
+              {CATALOG_DETAILS.map(detail=>(
+                <button type="button" className={`detail-option ${selectedDetailId===detail.id?"selected":""}`} onClick={()=>setSelectedDetailId(detail.id)} disabled={running} key={detail.id} role="radio" aria-checked={selectedDetailId===detail.id}>
+                  <img src={detail.src} alt=""/>
+                  <span>{detail.shortLabel}</span>
+                </button>
+              ))}
+            </div>
+            {selectedDetail&&<div className="detail-preview"><strong>{selectedDetail.label}:</strong> {selectedDetail.description}</div>}
+          </div>
+
+          <div className="field" style={{marginTop:10}}>
+          </div>
+
+          <button className="btn btn-primary" style={{width:"100%",marginTop:12}} onClick={generate} disabled={!sources.length||!scaleReady}>
+            {running?`Add Filled to Queue${queuedJobs?` (${queuedJobs} queued)`:""}`:"Generate Filled"}
+          </button>
+          {sources.length>0&&!scaleReady&&<div className="sub" style={{marginTop:7}}>Set or skip scale for each source first.</div>}
+          {running&&<div className="sub" style={{marginTop:7}}>{queuedJobs?`Generating one job; ${queuedJobs} more queued.`:"Generating one job. You can queue another filled set, approval, or retry now."}</div>}
+          {running&&<div className="progress"><div></div></div>}
+
+          <details className="prompt-preview">
+            <summary>Filled Prompt</summary>
+            <pre>{promptSample}</pre>
+          </details>
+
+          <div className="log">
+            {log.map(row=><div key={row.id} className={`log-row ${row.level}`}><strong>{row.time}</strong> {row.message}</div>)}
+          </div>
+        </aside>
+
+        <section className="sets">
+          {!sets.length&&(
+            <div className="notice">
+              Generate filled anchors first. Approve or retry each filled image before creating the empty front, empty angled, and optional matching-detail images.
+            </div>
+          )}
+          {sets.map(item=>(
+            <article className="set-card" key={item.id}>
+              <div className="set-head">
+                <div>
+                  <div className="set-name">{item.label}</div>
+                  <div className="set-status">{item.status}</div>
+                </div>
+                <div className="steps">
+                  <span className={`step ${item.steps.filled}`}>Filled</span>
+                  <span className={`step ${item.steps.empty}`}>Empty</span>
+                  <span className={`step ${item.steps.angle}`}>Angle</span>
+                  <span className={`step ${item.steps.detail||"skip"}`}>Detail</span>
+                </div>
+              </div>
+              <div className="result-grid">
+                <ResultCard title="Filled" image={item.filled} filename={`${filenameSafe(item.label)}-01-filled.jpg`}/>
+                <ResultCard title="Empty" image={item.empty} filename={`${filenameSafe(item.label)}-02-empty.jpg`}/>
+                <ResultCard title="Empty Angle" image={item.emptyAngle} filename={`${filenameSafe(item.label)}-03-empty-angle.jpg`}/>
+                <ResultCard title={item.detailSpec?`Detail: ${item.detailSpec.label}`:"Detail (not selected)"} image={item.detail} filename={`${filenameSafe(item.label)}-04-detail.jpg`}/>
+              </div>
+              <div className="download-row">
+                {item.filled&&!item.approved&&item.status==="awaiting approval"&&<button className="btn btn-small btn-primary" onClick={()=>queueDerivatives(item)} disabled={Boolean(item.pendingJob)}>Approve Filled</button>}
+                {item.filled&&!item.approved&&item.status==="awaiting approval"&&<button className="btn btn-small" onClick={()=>queueRetryFilled(item)} disabled={Boolean(item.pendingJob)}>Retry Filled</button>}
+                {item.empty&&<button className="btn btn-small" onClick={()=>queueClearResiduals(item,"front")} disabled={Boolean(item.pendingJob)}>Clear Empty Props</button>}
+                {item.emptyAngle&&<button className="btn btn-small" onClick={()=>queueClearResiduals(item,"angle")} disabled={Boolean(item.pendingJob)}>Clear Angle Props</button>}
+                <button className="btn btn-small" onClick={()=>downloadSet(item)} disabled={!(item.filled||item.empty||item.emptyAngle||item.detail)}>Download Set</button>
+              </div>
+            </article>
+          ))}
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function ResultCard({title,image,filename}){
+  return (
+    <div className="result">
+      <div className="result-title">
+        <span>{title}</span>
+        <button className="btn btn-small" onClick={()=>downloadDataUrl(image.dataUrl,filename)} disabled={!image}>Save</button>
+      </div>
+      <div className="thumb">
+        {image?<img src={image.dataUrl} alt={title}/>:<div className="placeholder">Waiting</div>}
+      </div>
+    </div>
+  );
+}
+
+function PreviewActionPanel({title,image,filename,onRetry,onRefine,onReplace,onDelete,onUndo,onRedo}){
+  const replaceRef=useRef(null);
+  const ready=Boolean(image?.dataUrl);
+  const status=image?.status;
+  const historyIndex=image?.historyIndex??(Array.isArray(image?.history)?image.history.length-1:0);
+  const hasHistory=Array.isArray(image?.history)&&image.history.length>1;
+  const busy=status==="running"||status==="queued";
+  async function handleReplace(event){
+    const file=event.target.files?.[0];
+    event.target.value="";
+    if(file&&onReplace)await onReplace(file);
+  }
+  return (
+    <div className="preview-actions">
+      <div className="preview-actions-top">
+        <div>
+          <div className="title">{title}</div>
+          <div className="sub">{status==="running"?"running":status==="queued"?"queued":status==="manual"?"manually replaced":"selected image"}</div>
+        </div>
+        <button className="btn btn-small" onClick={()=>downloadDataUrl(image.dataUrl,filename)} disabled={!ready}>Save</button>
+      </div>
+      <div className="preview-actions-buttons">
+        <button className="btn btn-small" onClick={onUndo} disabled={!hasHistory||historyIndex<=0}>Undo</button>
+        <button className="btn btn-small" onClick={onRedo} disabled={!hasHistory||historyIndex>=image.history.length-1}>Redo</button>
+        {hasHistory&&<span className="card-sub">{historyIndex+1} / {image.history.length}</span>}
+      </div>
+      <div className="preview-actions-buttons">
+        <button className="btn btn-small btn-soft" onClick={onRetry} disabled={!ready||busy}>{status==="running"?"Running":status==="queued"?"Queued":"Retry + note"}</button>
+        <button className="btn btn-small btn-soft" onClick={onRefine} disabled={!ready||busy}>Refine</button>
+        <button className="btn btn-small" onClick={()=>replaceRef.current?.click()}>Replace</button>
+        <input ref={replaceRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleReplace}/>
+        <button className="btn btn-small btn-danger" onClick={onDelete}>Delete</button>
+      </div>
+    </div>
+  );
+}
+
+function LibraryPickerModal({onClose,onPick}){
+  const [status,setStatus]=useState("loading");
+  const [records,setRecords]=useState([]);
+  const [kindFilter,setKindFilter]=useState("all");
+  const [query,setQuery]=useState("");
+  const [pickingHash,setPickingHash]=useState(null);
+  useEffect(()=>{
+    let cancelled=false;
+    (async()=>{
+      if(!window.DamClient){if(!cancelled)setStatus("unavailable");return;}
+      if(!(await window.DamClient.available())){if(!cancelled)setStatus("unavailable");return;}
+      try{
+        const [renders,photos]=await Promise.all([
+          window.DamClient.listAssets({kind:"render"}),
+          window.DamClient.listAssets({kind:"photo"})
+        ]);
+        if(cancelled)return;
+        const merged=[...(renders||[]),...(photos||[])].sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+        setRecords(merged);
+        setStatus("ready");
+      }catch{
+        if(!cancelled)setStatus("unavailable");
+      }
+    })();
+    return ()=>{cancelled=true};
+  },[]);
+  const filtered=records.filter(record=>{
+    if(kindFilter!=="all"&&record.kind!==kindFilter)return false;
+    const needle=query.trim().toLowerCase();
+    if(!needle)return true;
+    const haystack=`${record.configId||""} ${record.origins?.[0]?.path||""}`.toLowerCase();
+    return haystack.includes(needle);
+  });
+  async function handlePick(record){
+    setPickingHash(record.hash);
+    try{await onPick(record);}
+    finally{setPickingHash(null);}
+  }
+  return (
+    <div className="lib-overlay" onClick={onClose}>
+      <div className="lib-modal" onClick={event=>event.stopPropagation()}>
+        <div className="lib-head">
+          <div className="title">From Library</div>
+          <button className="lib-close" onClick={onClose}>×</button>
+        </div>
+        <div className="lib-filters">
+          <div className="lib-kinds">
+            <button className={`btn btn-small ${kindFilter==="all"?"btn-soft":""}`} onClick={()=>setKindFilter("all")}>All</button>
+            <button className={`btn btn-small ${kindFilter==="render"?"btn-soft":""}`} onClick={()=>setKindFilter("render")}>Renders</button>
+            <button className={`btn btn-small ${kindFilter==="photo"?"btn-soft":""}`} onClick={()=>setKindFilter("photo")}>Photos</button>
+          </div>
+          <input className="input lib-search" placeholder="Filter by config id or path…" value={query} onChange={event=>setQuery(event.target.value)}/>
+        </div>
+        <div className="lib-body">
+          {status==="loading"&&<div className="lib-empty">Loading library…</div>}
+          {status==="unavailable"&&<div className="lib-empty">The Library is switched off. Open a source image from your computer instead.</div>}
+          {status==="ready"&&!filtered.length&&<div className="lib-empty">No assets match this filter.</div>}
+          {status==="ready"&&Boolean(filtered.length)&&(
+            <div className="lib-grid">
+              {filtered.map(record=>(
+                <button key={record.hash} type="button" className="lib-item" disabled={pickingHash===record.hash} onClick={()=>handlePick(record)}>
+                  <div className="lib-thumb"><img src={window.DamClient.thumbUrl(record.hash)} alt={record.configId||record.hash}/></div>
+                  <div className="lib-label">
+                    <div className="name">{record.configId||record.origins?.[0]?.path||record.hash.slice(0,10)}</div>
+                    <div className="kind">{pickingHash===record.hash?"Loading…":record.kind}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FlowSourceCard({source,onView,onScale,onSkipScale,onDelete}){
+  return (
+    <div className="flow-card source-card">
+      <div className="card-title">
+        <div>
+          <span>Source</span>
+          <div className="card-sub">{source.width} x {source.height}</div>
+        </div>
+      </div>
+      <div className={`thumb ${source.dataUrl?"clickable":""}`} onClick={source.dataUrl?onView:undefined}>
+        {source.dataUrl?<img src={source.dataUrl} alt="Source"/>:<div className="placeholder">Metadata only</div>}
+      </div>
+      <div className="card-actions">
+        <button className="btn btn-small" onClick={onView}>View</button>
+        <button className="btn btn-small btn-soft" onClick={onScale}>Set Scale</button>
+        <button className="btn btn-small" onClick={onSkipScale}>Skip Scale</button>
+        <button className="btn btn-small btn-danger" onClick={onDelete}>Delete</button>
+      </div>
+    </div>
+  );
+}
+
+function GeneratedFlowCard({title,subtitle,image,filename,placeholder,onGenerate,disableGenerate,onRetry,onRefine,onReplace,onDelete,onUndo,onRedo,onView}){
+  const replaceRef=useRef(null);
+  const ready=Boolean(image?.dataUrl);
+  const status=image?.status;
+  const statusText=status==="running"?"running":status==="queued"?"queued":status==="manual"?"manually replaced":subtitle;
+  const historyIndex=image?.historyIndex??(Array.isArray(image?.history)?image.history.length-1:0);
+  const hasHistory=Array.isArray(image?.history)&&image.history.length>1;
+  const busy=status==="running"||status==="queued";
+  async function handleReplace(event){
+    const file=event.target.files?.[0];
+    event.target.value="";
+    if(file&&onReplace)await onReplace(file);
+  }
+  return (
+    <div className="flow-card">
+      <div className="card-title">
+        <div>
+          <span>{title}</span>
+          <div className="card-sub">{statusText}</div>
+        </div>
+        <button className="btn btn-small" onClick={()=>downloadDataUrl(image.dataUrl,filename)} disabled={!ready}>Save</button>
+      </div>
+      <div className={`thumb ${ready?"clickable":""}`} onClick={ready&&onView?onView:undefined}>
+        {ready?<img src={image.dataUrl} alt={title}/>:<div className="placeholder">{status==="running"?"Running":status==="queued"?"Queued":placeholder}</div>}
+      </div>
+      <div className="history-row">
+        <button className="btn btn-small" onClick={onUndo} disabled={!hasHistory||historyIndex<=0}>Undo</button>
+        <button className="btn btn-small" onClick={onRedo} disabled={!hasHistory||historyIndex>=image.history.length-1}>Redo</button>
+        {hasHistory&&<span className="card-sub">{historyIndex+1} / {image.history.length}</span>}
+      </div>
+      <div className="card-actions">
+        {!ready&&onGenerate&&<button className="btn btn-small btn-primary" onClick={onGenerate} disabled={disableGenerate}>Generate</button>}
+        {ready&&<button className="btn btn-small btn-soft" onClick={onRetry} disabled={busy}>{status==="running"?"Running":status==="queued"?"Queued":"Retry + note"}</button>}
+        {ready&&onRefine&&<button className="btn btn-small btn-soft" onClick={onRefine} disabled={busy}>Refine</button>}
+        {onReplace&&<>
+          <button className="btn btn-small" onClick={()=>replaceRef.current?.click()}>Replace</button>
+          <input ref={replaceRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleReplace}/>
+        </>}
+        <button className="btn btn-small btn-danger" onClick={onDelete}>Delete</button>
+      </div>
+    </div>
+  );
+}
+
+function RowMetaCard({source,onChange,onAutoMeta}){
+  const meta=normalizedRowMeta(source);
+  const manifest=rowImageManifest(source);
+  const pricePreview=formatKshPrice(meta.priceValue,meta.price);
+  return (
+    <div className="flow-card meta-card">
+      <div className="title">Row export</div>
+      <div className="sub">{source.metaStatus||"Product JSON and file names are generated from the file ID."}</div>
+      <div className="meta-grid">
+        <div className="field">
+          <label>File ID</label>
+          <input className="input" value={meta.id} onChange={event=>onChange(source.id,"id",filenameInputSafe(event.target.value))}/>
+        </div>
+        <div className="field">
+          <label>Title</label>
+          <input className="input" value={meta.title} onChange={event=>onChange(source.id,"title",event.target.value)}/>
+        </div>
+        <div className="field">
+          <label>Price (Ksh)</label>
+          <input className="input" inputMode="numeric" value={meta.priceValue} onChange={event=>onChange(source.id,"priceValue",event.target.value.replace(/[^\d.]/g,""))}/>
+        </div>
+        <div className="field">
+          <label>Export price</label>
+          <input className="input" value={pricePreview} readOnly/>
+        </div>
+        <div className="field">
+          <label>Design code</label>
+          <input className="input" placeholder="1Y3MK7P" maxLength={7}
+            style={{textTransform:"uppercase",letterSpacing:".08em"}}
+            value={meta.designCode||""}
+            onChange={event=>onChange(source.id,"designCode",event.target.value.toUpperCase().replace(/[^0-9A-Z]/g,"").slice(0,7))}/>
+        </div>
+        <div className="field full">
+          <label>Description</label>
+          <textarea className="textarea" value={meta.description} onChange={event=>onChange(source.id,"description",event.target.value)}/>
+        </div>
+        <div className="field full">
+          <label>Designer URL</label>
+          <input className="input" value={meta.designerUrl} onChange={event=>onChange(source.id,"designerUrl",event.target.value)}/>
+        </div>
+        <div className="field full">
+          <label>Gemini row note</label>
+          <textarea className="textarea" placeholder="optional naming/copy direction" value={meta.aiNote||""} onChange={event=>onChange(source.id,"aiNote",event.target.value)}/>
+        </div>
+      </div>
+      <div className="card-actions" style={{padding:"8px 0 0",borderTop:0,minHeight:0}}>
+        <button className="btn btn-small btn-soft" onClick={onAutoMeta} disabled={!source.filled?.dataUrl||source.metaStatus==="generating row copy"}>Auto-fill from populated</button>
+      </div>
+      <div className="meta-filenames">
+        {manifest.map(item=><div className="meta-file" key={item.key}>{item.name}{item.json?"":" (reference only)"}</div>)}
+        <div className="meta-file">{filenameSafe(meta.id)}.json</div>
+      </div>
+    </div>
+  );
+}
+
+function AddMenuFlowCard({onAngle,onFront,onCropDetail,onCustom,onDetail}){
+  return (
+    <div className="flow-card add-card">
+      <div className="add-inner">
+        <div>
+          <div className="title">+ Add from emptied</div>
+          <div className="sub">Uses the current displayed emptied image only.</div>
+        </div>
+        <div className="menu-grid">
+          <button className="btn btn-small btn-primary" onClick={onAngle}>Angled</button>
+          <button className="btn btn-small btn-primary" onClick={onFront}>Front-facing</button>
+          <button className="btn btn-small btn-soft" onClick={onCropDetail}>Detail from emptied</button>
+          {CATALOG_DETAILS.map(detail=>(
+            <button className="btn btn-small" onClick={()=>onDetail(detail.id)} key={detail.id}>{detail.shortLabel}</button>
+          ))}
+          <button className="btn btn-small btn-soft" onClick={onCustom}>Custom…</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// See scene-generator.html: nothing mounts until the gate is satisfied.
+window.FrameworkGate.ready().then(function(){
+  ReactDOM.createRoot(document.getElementById("root")).render(<AppV2/>);
+});
+</script>
+</body>
+</html>

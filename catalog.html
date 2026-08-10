@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>Framework — Catalog Manager</title>
+  <link rel="stylesheet" href="/css/gate.css">
+  <script src="/js/gate.js"></script>
   <style>
     :root { --bg:#0f1115; --card:#171a21; --line:#262b36; --ink:#e6e9ef; --dim:#9aa4b2; --accent:#22c55e; --warn:#f59e0b; --danger:#ef4444; --blue:#3b82f6; }
     * { box-sizing:border-box; }
@@ -149,7 +151,7 @@
   <input type="file" id="fileInput" multiple accept=".json,.zip,image/*" style="display:none">
 
   <script>
-    var key = new URLSearchParams(location.search).get('key');
+    // The key comes from the shared gate, not the URL. See js/gate.js.
     var kes = function (n) { return 'KSh ' + Math.round(n||0).toLocaleString('en-US'); };
     var esc = function (s) { return String(s==null?'':s).replace(/[&<>"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
     var show = function (h) { document.getElementById('main').innerHTML = h; };
@@ -158,14 +160,11 @@
       view:'grid', filter:'all', sort:'openedDirect', dir:-1, q:'', expanded:null, legend:false };
     var saveTimer = null;
 
-    if (!key) {
-      show('<div class="msg">This page is private. Add your key to the URL:<br><br><code>' + location.origin + '/catalog.html?key=YOUR_KEY</code></div>');
-    } else {
-      document.getElementById('navMetrics').href = '/metrics.html?key=' + encodeURIComponent(key);
-      load();
-    }
+    document.getElementById('navMetrics').href = '/metrics.html';
+    // Nothing loads until the gate has a key the server accepts.
+    FrameworkGate.ready().then(load);
 
-    function api(path, opts) { return fetch(path + (path.indexOf('?')<0?'?':'&') + 'key=' + encodeURIComponent(key), opts); }
+    function api(path, opts) { return FrameworkGate.fetch(path, opts); }
 
     function load() {
       api('/api/catalog').then(function (r) {

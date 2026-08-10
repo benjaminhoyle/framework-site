@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="/css/gate.css">
+<script src="/js/gate.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Framework — Image Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:#0f0f0f;color:#e5e5e5;font-family:'DM Sans','Segoe UI',sans-serif;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+button:hover:not(:disabled){filter:brightness(1.1)}button:disabled{opacity:.5;cursor:not-allowed}
+input:focus,textarea:focus{border-color:#d97706!important}
+@keyframes pulse{0%,100%{opacity:.6;width:30%}50%{opacity:1;width:80%}}
+@media(max-width:900px){
+  .studio-grid{grid-template-columns:1fr!important;gap:0!important}
+  .sticky-pane{position:static!important}
+}
+</style>
+</head>
+<body>
+<div style="display:flex;gap:4px;align-items:center;padding:7px 14px;background:#141414;border-bottom:1px solid #2a2a2a;font-family:'DM Sans',system-ui,sans-serif">
+  <span style="color:#d5a25d;font-weight:800;letter-spacing:.1em;font-size:10px;text-transform:uppercase;margin-right:14px">Framework</span>
+  <a href="/builder" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">3D Builder</a>
+  <a href="/scene-generator" style="text-decoration:none;background:#2a2213;color:#f6bd64;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Scene Studio</a>
+  <a href="/catalog-generator" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Catalog Studio</a>
+  <a href="/catalog.html" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Catalog Manager</a>
+  <a href="/metrics.html" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Monitor</a>
+</div>
+<div id="root"></div>
+<script src="/js/studio/framework-names.js"></script>
+<script src="/js/studio/prompt-config.js"></script>
+<script>
+const {
+  CONFIG,
+  PARAMS,
+  ROOM_GROUPS,
+  DEFAULTS,
+  REFINE_CATS,
+  REFINE_LVLS,
+  REFINE_QUAL,
+  DEFAULT_REFINE,
+  ASPECTS,
+  RECIPE_GROUPS,
+  REFINE_PRESETS,
+} = window.PROMPT_CONFIG;
+
+const PROVIDERS = {
+  gemini: {
+    label: "Gemini",
+    generateModel: "gemini-3-pro-image-preview",
+    generateModels: [
+      "gemini-3-pro-image-preview",
+      "gemini-3.1-flash-image-preview",
+      "gemini-2.5-flash-image"
+    ],
+    validateModel: "gemini-3.5-flash",
+    validateModels: [
+      "gemini-3.5-flash",
+      "gemini-2.5-flash"
+    ],
+    imageCost: 0.134,
+    textCost: 0.01
+  },
+  openai: {
+    label: "ChatGPT",
+    generateModel: "gpt-image-2",
+    imageModels: [
+      "gpt-image-2",
+      "gpt-image-1.5",
+      "gpt-image-1"
+    ],
+    validateModel: "gpt-4.1-mini",
+    imageCost: 0.165,
+    textCost: 0.01
+  }
+};
+const DEFAULT_PROVIDER = "gemini";
+const OPENAI_API = "https://api.openai.com/v1";
+const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+const MAX_DIM = 1500; const UPLOAD_MAX_DIM = 2048; const SERVER_MAX_DIM = 1280; const COST_GEN = 0.134; const COST_VAL = 0.01;
+const GEMINI_IMAGE_TIMEOUT_MS = 240_000; const GEMINI_TEXT_TIMEOUT_MS = 60_000;
+const SCALE_H_CM = 180;
+const PROVIDER_STORAGE_KEY = "frameworkProviderV2";
+const ACTIVE_JOB_STORAGE_KEY = "frameworkActiveJobV1";
+const SCALE_SVG = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDIwMDEwOTA0Ly9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9UUi8yMDAxL1JFQy1TVkctMjAwMTA5MDQvRFREL3N2ZzEwLmR0ZCI+CjxzdmcgdmVyc2lvbj0iMS4wIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiB3aWR0aD0iMTI4MC4wMDAwMDBwdCIgaGVpZ2h0PSIxMjgwLjAwMDAwMHB0IiB2aWV3Qm94PSIwIDAgMTI4MC4wMDAwMDAgMTI4MC4wMDAwMDAiCiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWlkWU1pZCBtZWV0Ij4KPG1ldGFkYXRhPgpDcmVhdGVkIGJ5IHBvdHJhY2UgMS4xNSwgd3JpdHRlbiBieSBQZXRlciBTZWxpbmdlciAyMDAxLTIwMTcKPC9tZXRhZGF0YT4KPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMC4wMDAwMDAsMTI4MC4wMDAwMDApIHNjYWxlKDAuMTAwMDAwLC0wLjEwMDAwMCkiCmZpbGw9IiMwMDAwMDAiIHN0cm9rZT0ibm9uZSI+CjxwYXRoIGQ9Ik02MjQwIDEyMTg3IGMtMTMwIC00MSAtMjI3IC04NyAtMjYxIC0xMjQgLTE1IC0xNSAtNjMgLTEwNiAtMTA4Ci0yMDIgbC04MSAtMTc0IDEwIC05NSBjNiAtNTMgMjAgLTEzNSAzMSAtMTg0IDE3IC03NCAxOSAtOTcgMTAgLTEzMyAtMTQgLTU3Ci0xNCAtMjEwIDAgLTIzOCA3IC0xMiAzMyAtNDkgNTkgLTgyIDQ2IC01OCA0NyAtNjMgNTkgLTE2MyAxMSAtOTQgMTYgLTExMCA1NwotMTc3IDM2IC02MCA0NCAtODEgNDQgLTEyMSAwIC04NSAtMiAtODcgLTExOCAtMTM0IC0xNDggLTU5IC0zNTEgLTE2MiAtNDUyCi0yMjggLTQ3IC0zMSAtMTI4IC05OSAtMTgwIC0xNTEgLTgwIC04MSAtMTA0IC0xMTIgLTE0NyAtMTk2IC0yOCAtNTUgLTY4Ci0xNDUgLTg4IC0yMDAgbC0zOCAtMTAwIC05IC0zMzAgLTkgLTMzMCAtMzUgLTEyNSBjLTQ1IC0xNjQgLTgwIC0zNDcgLTk5Ci01MjggLTkgLTgxIC0yMCAtMTc0IC0yNSAtMjA3IC0zOCAtMjUwIC01MCAtNDE1IC00OSAtNjkzIDAgLTE1OCA0IC0zMjMgOAotMzY3IGw4IC04MCAtMzAgLTI5IGMtMzYgLTM1IC02MyAtOTQgLTcyIC0xNTcgLTYgLTM5IC0yIC01OCAyNCAtMTE3IDI5IC02NgozMiAtODEgMzUgLTIwNyBsNCAtMTM2IC02NSAtMTUyIGMtMTAyIC0yMzYgLTk5IC0yODkgMjkgLTQ3NCA0NSAtNjQgNjEgLTgwCjEwOCAtMTAyIDQ3IC0yMiA2OSAtMjUgMTU1IC0yNiA1NSAwIDExMSAzIDEyNSA3IGwyNSA3IDEgLTI0MiBjMSAtMTMzIDkgLTM0NQoxNyAtNDcyIDMxIC00NDggMzkgLTYyMiAzMiAtNzUyIGwtNiAtMTMzIDc3IC0xNDcgYzYxIC0xMTcgOTAgLTE2MiAxNDAgLTIxMwo1MyAtNTQgNjYgLTc2IDgzIC0xMzAgMTEgLTM2IDQ5IC0xNjYgODYgLTI4OSA4NiAtMjg5IDE2MiAtNDQxIDMyMCAtNjM5IDM5Ci00OCA2NSAtMTI0IDY1IC0xODggMCAtNDUgOCAtNTEgOTQgLTcwIDQwIC05IDQwIC05IDczIC0xMDUgNjMgLTE4MyA2NyAtMzIzCjE0IC00NzIgLTQzIC0xMjIgLTYwIC0xNTIgLTE4OSAtMzM3IC05NiAtMTM2IC0xMTggLTE3NSAtMTMwIC0yMjUgLTIwIC04NyAtOQotMTU5IDI4IC0xODUgNjcgLTQ4IDE5NCAtNDYgMzcyIDYgMjMgNyAtOTYgLTI5MSAtMTUyIC0zODAgbC00MiAtNjYgMTcgLTUwCmM5IC0yOSAyNiAtNTYgMzggLTYzIDE1IC04IDczIC0xMiAxODIgLTEyIDI3MCAwIDUyOSA1MCA1ODcgMTEzIDMyIDM1IDgzIDEyMAoxMTQgMTkxIDE0IDMxIDQ5IDgxIDc4IDExMSA3OCA4MSA4MiAxMDcgNDcgMjU1IC00MCAxNjYgLTQ1IDIyMCAtMjYgMjc1IDkgMjUKMTkgNzEgMjIgMTA0IDYgNTcgNyA2MCA1NCA4OSA0MyAyNiA0OSAzNSA2MCA4MiAxMSA0OCAxMCA1NSAtMTEgODMgLTM3IDUwCi00MSA5MSAtMTMgMTMwIDMyIDQzIDUzIDk1IDYzIDE1NiA4IDQ4IDUgNTYgLTM4IDEzOCBsLTQ1IDg2IDIxIDQ5IGMyNCA1NSA0OAoxODIgNTcgMjk4IDMgNDQgMTUgMTU5IDI2IDI1NSAyNCAyMTIgMzkgNDcxIDQwIDY3NyBsMSAxNTMgLTQyIDcxIC00MiA3MiAxMQo3MCBjNiAzOCAxNiA3OCAyMSA4OCAxOCAzMiAxMiAxNDYgLTEwIDE4OSAtMTEgMjEgLTI0IDQxIC0zMCA0NSAtMTYgMTAgLTEyCjQ1IDkgNzkgMTEgMTcgMzAgNjkgNDQgMTE2IDIyIDc0IDI4IDEyMyA0MiAzODAgOCAxNjIgMTggMzI2IDIyIDM2MyBsNiA2OCA1MwozNCBjMzYgMjMgNjAgNDggNzUgNzcgMjkgNTggNzMgMTIwIDEyMyAxNzcgNDEgNDYgNDIgNDkgNTUgMTU2IDcgNjEgMjEgMTQ0CjMxIDE4NSAxMCA0MSAyNiAxMTUgMzQgMTYzIDE2IDk0IDI4IDExOCAxNDYgMzA5IDUyIDgyIDcwIDEyMSA3OSAxNzAgMTEgNTgKOTAgMzk0IDE2NCA2OTggbDMxIDEyNSAzIDYzNSBjNCA1MzkgMiA2NTIgLTExIDc0NSAtOSA2MSAtMjUgMjE4IC0zNiAzNTAgLTMwCjM3NCAtNjEgNTIwIC0xNTQgNzE2IC0yOSA2MyAtNzEgMTY0IC05MSAyMjQgLTIxIDYxIC00NSAxMTcgLTU1IDEyNSAtOSA4Ci0xODcgMTEzIC0zOTYgMjMzIGwtMzc5IDIxOSAtNzYgMTAyIC03NiAxMDIgMTggOTkgYzEwIDU1IDE4IDEyMiAxOSAxNDkgMCA0NAo1IDU0IDQ0IDk2IDM1IDM3IDQ2IDU5IDU2IDEwNiAxNCA2NSA4IDE2NSAtMTEgMjA4IC0xMCAyMiAtOSAzNiA0IDgwIDkgMjkgMTcKNjUgMTcgODAgMCAxNSAxMCA3NSAyMSAxMzMgMjAgOTYgMjEgMTE1IDEwIDE4NiAtMTQgOTAgLTc1IDIzNCAtMTE5IDI4MSAtMzQKMzYgLTE1MSAxMjMgLTIxNiAxNjEgLTQ3IDI4IC01NCAyOSAtMjEwIDMyIC0xNTkgMyAtMTYyIDMgLTI2NiAtMzB6IG0tOTM5Ci01Nzg0IGMtMyAtMTI1IC0xNSAtMjEwIC00NiAtMzM0IC0yNCAtOTQgLTU1IC0zMTQgLTU1IC0zOTEgMCAtNjIgLTcgLTcwIC00MwotNDcgLTE4IDEwIC00MCAxOSAtNDkgMTkgLTEwIDAgLTE4IDYgLTE4IDEzIDAgNiAtNCA1MCAtMTAgOTYgLTggNjggLTcgODggNgoxMTIgOCAxNyAyMCA4MSAyNiAxNDQgOCA4NSAxNSAxMTUgMjUgMTE1IDE4IDAgMjcgMjYgNTIgMTUwIDE5IDkzIDUxIDE5MCA3NAoyMjggNiA4IDE0IDkgMjUgMyAxMyAtOCAxNiAtMjUgMTMgLTEwOHogbTEwOTkgLTE2NDMgYzIwIC0xMDkgMzAgLTE5OSAzMAotMjYyIDAgLTUyIDUgLTEyMCAxMiAtMTQ5IDcgLTMwIDEyIC04NSAxMyAtMTI0IDAgLTM4IDkgLTEwOCAxOSAtMTU1IDE0IC02NAoxNyAtMTA1IDEyIC0xNzAgLTcgLTg5IDE1IC0yMzUgNDggLTMyOSAxOSAtNTMgMjEgLTE5NCA1IC01MDEgLTEyIC0yMzggLTI2Ci0zNDEgLTI4IC0yMDYgLTEgNzggLTIgODIgLTgyIDI0NSAtMTcwIDM0NiAtMjA3IDQyNyAtMjIwIDQ3NiAtNyAyOCAtMjMgNzUKLTM2IDEwNSAtMjEgNDcgLTI0IDY0IC0xOCAxMjAgMyAzNiAxMCAxNjQgMTUgMjg1IDUgMTIxIDE2IDI3MCAyNCAzMzAgOCA2MQoyMCAxNTMgMjYgMjA1IDcgNTEgMTkgMTEyIDI3IDEzNSA3IDIyIDI3IDk0IDQ0IDE1OSA0MyAxNzIgNDkgMTc5IDY2IDgxIDcKLTQ0IDI3IC0xNTQgNDMgLTI0NXoiLz4KPC9nPgo8L3N2Zz4K";
+</script>
+<script type="text/babel">
+const {useState,useRef,useCallback,useEffect,useMemo} = React;
+
+// ─── UTILITIES ──────────────────────────────────────────────────────────────
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const pickN=(a,n)=>[...a].sort(()=>Math.random()-.5).slice(0,Math.min(n,a.length));
+const optionIds=(key,exclude=["auto"])=>CONFIG[key].map(o=>o.id).filter(id=>!exclude.includes(id));
+function getOpts(p){return CONFIG[p.cfgKey]||[];}
+function parseJsonObject(text){
+  const cleaned=String(text||"").replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();
+  const start=cleaned.indexOf("{"),end=cleaned.lastIndexOf("}");
+  if(start<0||end<start)throw new Error("No JSON object returned");
+  return JSON.parse(cleaned.slice(start,end+1));
+}
+
+function resize(file,max){return new Promise(r=>{const i=new Image();i.onload=()=>{let{width:w,height:h}=i;if(Math.max(w,h)>max){const s=max/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s)}const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(i,0,0,w,h);const d=c.toDataURL("image/jpeg",.85);URL.revokeObjectURL(i.src);r({base64:d.split(",")[1],width:w,height:h,dataUrl:d})};i.src=URL.createObjectURL(file)})}
+function resizeDataUrl(du,max){return new Promise(r=>{const i=new Image();i.onload=()=>{let{width:w,height:h}=i;if(Math.max(w,h)>max){const s=max/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s)}const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(i,0,0,w,h);const d=c.toDataURL("image/jpeg",.85);r({base64:d.split(",")[1],width:w,height:h,dataUrl:d})};i.src=du})}
+function cropImg(du,rect){return new Promise(r=>{const i=new Image();i.onload=()=>{const c=document.createElement("canvas");const sx=Math.round(rect.x*i.naturalWidth),sy=Math.round(rect.y*i.naturalHeight),sw=Math.round(rect.w*i.naturalWidth),sh=Math.round(rect.h*i.naturalHeight);c.width=sw;c.height=sh;c.getContext("2d").drawImage(i,sx,sy,sw,sh,0,0,sw,sh);const d=c.toDataURL("image/jpeg",.9);r({base64:d.split(",")[1],width:sw,height:sh,dataUrl:d})};i.src=du})}
+function compositeScale(url,w,h,pc,fx,fy,exp){return new Promise(r=>{const fh=SCALE_H_CM*pc,fw=fh,dx=fx-fw/2,ty=fy-fh;let cw=w,ch=h,ox=0,es=null;if(exp){if(dx<0){const e=Math.abs(dx)+10;cw+=e;ox=e;es="left"}else if(dx+fw>w){cw+=(dx+fw)-w+10;es="right"}}const cv=document.createElement("canvas");cv.width=cw;cv.height=ch;const ctx=cv.getContext("2d");if(es){ctx.fillStyle="#e0e0e0";ctx.fillRect(0,0,cw,ch)}const bg=new Image();bg.onload=()=>{ctx.drawImage(bg,ox,0);const fg=new Image();fg.onload=()=>{ctx.globalAlpha=.45;ctx.drawImage(fg,dx+ox,ty,fw,fh);ctx.globalAlpha=1;const d=cv.toDataURL("image/jpeg",.9);r({base64:d.split(",")[1],dataUrl:d,expandedSide:es})};fg.src=SCALE_SVG};bg.src=url})}
+const fmtBytes=n=>n>1_000_000?`${(n/1_000_000).toFixed(2)} MB`:n>1_000?`${(n/1_000).toFixed(1)} KB`:`${n} B`;
+const safeMsg=e=>String(e?.message||e||"Unknown error").replace(/\s+/g," ").slice(0,500);
+const logStep=(logger,type,msg)=>{if(typeof logger==="function")logger(type,msg)};
+function dataUrlMime(dataUrl){return String(dataUrl||"").match(/^data:([^;,]+)[;,]/)?.[1]||null}
+function base64ToBlob(base64,mimeType="image/jpeg"){
+  const binary=atob(base64);
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  return new Blob([bytes],{type:mimeType});
+}
+function openAIImageSize(aspect,model){
+  if(aspect==="1:1")return"1024x1024";
+  if(aspect==="4:5"||aspect==="9:16")return"1024x1536";
+  return"1536x1024";
+}
+function targetOutputSize(provider,aspect){
+  if(provider==="openai"){
+    const [width,height]=openAIImageSize(aspect,"gpt-image-2").split("x").map(Number);
+    return {width,height,label:`${width}x${height}`};
+  }
+  const ratios={"1:1":[1,1],"4:5":[4,5],"9:16":[9,16],"16:9":[16,9],"4:3":[4,3]};
+  const [rw,rh]=ratios[aspect]||ratios["4:3"];
+  const scale=2048/Math.max(rw,rh);
+  const width=Math.round(rw*scale),height=Math.round(rh*scale);
+  return {width,height,label:`${width}x${height}`};
+}
+function upscaleInfo(img,provider,aspect){
+  const target=targetOutputSize(provider,aspect);
+  const needed=(img?.width||0)<target.width||(img?.height||0)<target.height;
+  return {needed,width:img?.width||0,height:img?.height||0,targetWidth:target.width,targetHeight:target.height,targetLabel:target.label,mode:needed?"with-refine":null};
+}
+function geminiGenerationConfig(model,options={}){
+  const image={aspectRatio:options.aspect||"4:3"};
+  if(model==="gemini-3-pro-image-preview"||model==="gemini-3.1-flash-image-preview")image.imageSize=options.imageSize||"2K";
+  return {
+    responseModalities:["TEXT","IMAGE"],
+    imageConfig:image
+  };
+}
+function shouldTryNextOpenAI(error){
+  const retryStatuses=new Set([400,404,408,409,429,500,502,503,504]);
+  if(retryStatuses.has(error?.status)){
+    return /model|not found|does not exist|unsupported|invalid|rate|limit|busy|overload|capacity|timeout|deadline|unavailable/i.test(shortErr(error));
+  }
+  return /model|not found|does not exist|unsupported|rate|limit|busy|overload|capacity|timeout|deadline|unavailable/i.test(shortErr(error));
+}
+async function fetchWithContext(url,options,label){
+  // Everything this page asks of /api goes through the gate, which attaches the
+  // access key as a header. The endpoints hold the provider key and spend real
+  // money, so they refuse anything without it.
+  const send=String(url).startsWith("/api/")?window.FrameworkGate.fetch:fetch;
+  try{return await send(url,options)}
+  catch(error){
+    const err=new Error(`${label}: network request failed (${safeMsg(error)}). The browser could not complete this request; check connection, function timeout, or CORS/provider availability.`);
+    err.originalError=error;
+    throw err;
+  }
+}
+
+async function callOpenAIText(key,model,input,logger){
+  logStep(logger,"debug",`OpenAI text request: ${model}`);
+  const content = Array.isArray(input)
+    ? input.map(part => part.inlineData
+      ? {type:"input_image",image_url:`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`}
+      : {type:"input_text",text:part.text || ""})
+    : [{type:"input_text",text:String(input || "")}];
+
+  const r = await fetchWithContext(`${OPENAI_API}/responses`,{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":`Bearer ${key}`
+    },
+    body:JSON.stringify({
+      model,
+      input:[{role:"user",content}]
+    })
+  },`OpenAI text request (${model})`);
+
+  if(!r.ok){
+    const e = await r.text();
+    throw new Error(`API ${r.status}: ${e.substring(0,500)}`);
+  }
+
+  return r.json();
+}
+
+
+async function callOpenAIImageApi(key,model,prompt,imageBase64=null,logger,imageBase64s=null,options={}){
+  const images=(Array.isArray(imageBase64s)&&imageBase64s.length?imageBase64s:[imageBase64]).filter(Boolean);
+  const size=openAIImageSize(options.aspect,model);
+  const quality=options.quality||"high";
+  const outputFormat=options.outputFormat||"jpeg";
+  logStep(logger,"debug",`OpenAI ${model} image edit: prompt ${prompt.length} chars, ${size}, ${quality}${images.length?`, ${images.length} image(s) ${fmtBytes(images.reduce((sum,img)=>sum+img.length*.75,0))}`:""}`);
+
+  let r;
+  if(images.length){
+    const form=new FormData();
+    form.append("model",model);
+    form.append("prompt",prompt);
+    form.append("size",size);
+    form.append("quality",quality);
+    form.append("output_format",outputFormat);
+    if(model!=="gpt-image-2")form.append("input_fidelity","high");
+    images.forEach((img,i)=>{
+      const mime=options.imageMimeTypes?.[i]||"image/jpeg";
+      const ext=mime.includes("png")?"png":"jpg";
+      form.append("image[]",base64ToBlob(img,mime),`reference-${i+1}.${ext}`);
+    });
+    r = await fetchWithContext(`${OPENAI_API}/images/edits`,{
+      method:"POST",
+      headers:{"Authorization":`Bearer ${key}`},
+      body:form
+    },`OpenAI ${model} image edit`);
+  }else{
+    r = await fetchWithContext(`${OPENAI_API}/images/generations`,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":`Bearer ${key}`
+      },
+      body:JSON.stringify({model,prompt,size,quality,output_format:outputFormat})
+    },`OpenAI ${model} image generation`);
+  }
+
+  if(!r.ok){
+    const e = await r.text();
+    const err=new Error(`OpenAI ${model} ${r.status}: ${e.substring(0,500)}`);
+    err.status=r.status;
+    err.model=model;
+    throw err;
+  }
+
+  return r.json();
+}
+
+async function callGemini(key,model,contents,wantImg=false,logger,options={}){
+  logStep(logger,"debug",`Gemini ${wantImg?"image":"text"} request: ${model}`);
+  const u=`${GEMINI_API_BASE}/${model}:generateContent?key=${key}`;
+  const b={contents,generationConfig:{}};
+  if(wantImg)b.generationConfig=geminiGenerationConfig(model,options);
+  const timeoutMs=wantImg?GEMINI_IMAGE_TIMEOUT_MS:GEMINI_TEXT_TIMEOUT_MS;
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),timeoutMs);
+  let r;
+  try{
+    r=await fetchWithContext(u,{method:"POST",headers:{"Content-Type":"application/json"},signal:controller.signal,body:JSON.stringify(b)},`Gemini ${model} ${wantImg?"image":"text"} request`);
+  }catch(error){
+    const err=new Error(`Gemini ${model} ${wantImg?"image":"text"} request failed: ${error?.originalError?.name==="AbortError"?`timed out after ${Math.round(timeoutMs/1000)}s`:safeMsg(error)}`);
+    err.status=error?.originalError?.name==="AbortError"?504:503;
+    err.model=model;
+    throw err;
+  }finally{
+    clearTimeout(timeout);
+  }
+  if(!r.ok){
+    const body=await r.text();
+    const err=new Error(`Gemini ${model} ${r.status}: ${body.substring(0,500)}`);
+    err.status=r.status;
+    err.model=model;
+    throw err;
+  }
+  return r.json();
+}
+
+function modelCandidates(cfg,listKey,singleKey){
+  const list=Array.isArray(cfg?.[listKey])?cfg[listKey].filter(Boolean):[];
+  if(list.length)return list;
+  return cfg?.[singleKey]?[cfg[singleKey]]:[];
+}
+function shortErr(error){return safeMsg(error).slice(0,220)}
+function shouldTryNextGemini(error){
+  const retryStatuses=new Set([404,408,409,429,500,502,503,504]);
+  if(retryStatuses.has(error?.status))return true;
+  return /fetch failed|network|overloaded|busy|capacity|unavailable|resource_exhausted|deadline|timeout|timed out|not found|model/i.test(shortErr(error));
+}
+async function callGeminiImageWithFallback(key,cfg,contents,logger,options={}){
+  const models=modelCandidates(cfg,"generateModels","generateModel");
+  const errors=[];
+  for(let i=0;i<models.length;i++){
+    const model=models[i];
+    try{
+      logStep(logger,"info",`Gemini image model ${i+1}/${models.length}: ${model}`);
+      const modelOptions={...options,imageSize:model==="gemini-2.5-flash-image"?null:(options.imageSize||"2K")};
+      const resp=await callGemini(key,model,contents,true,logger,modelOptions);
+      const res=extract(resp);
+      if(!res.images.length){
+        const err=new Error(`No image from ${model}: ${res.text||res.finish||"empty response"}`);
+        err.status=502;
+        throw err;
+      }
+      logStep(logger,"success",`Gemini image model succeeded: ${model}${i>0?" (fallback)":""}`);
+      return {...res,modelUsed:model,fallbackUsed:i>0,fallbackErrors:i>0?[...errors]:[]};
+    }catch(error){
+      errors.push(`${model}: ${shortErr(error)}`);
+      logStep(logger,i===models.length-1||!shouldTryNextGemini(error)?"error":"info",`Gemini ${model} failed: ${shortErr(error)}${i<models.length-1&&shouldTryNextGemini(error)?" — trying fallback":""}`);
+      if(i===models.length-1||!shouldTryNextGemini(error)){
+        throw new Error(errors.length>1?`Gemini fallback failed: ${errors.join(" | ")}`:shortErr(error));
+      }
+    }
+  }
+  throw new Error("No Gemini image models configured");
+}
+async function callGeminiTextWithFallback(key,cfg,contents,logger){
+  const models=modelCandidates(cfg,"validateModels","validateModel");
+  const errors=[];
+  for(let i=0;i<models.length;i++){
+    const model=models[i];
+    try{
+      logStep(logger,"debug",`Gemini text model ${i+1}/${models.length}: ${model}`);
+      const res=extract(await callGemini(key,model,contents,false,logger));
+      return {...res,modelUsed:model,fallbackUsed:i>0,fallbackErrors:i>0?[...errors]:[]};
+    }catch(error){
+      errors.push(`${model}: ${shortErr(error)}`);
+      logStep(logger,i===models.length-1||!shouldTryNextGemini(error)?"error":"info",`Gemini text ${model} failed: ${shortErr(error)}${i<models.length-1&&shouldTryNextGemini(error)?" — trying fallback":""}`);
+      if(i===models.length-1||!shouldTryNextGemini(error)){
+        throw new Error(errors.length>1?`Gemini text fallback failed: ${errors.join(" | ")}`:shortErr(error));
+      }
+    }
+  }
+  throw new Error("No Gemini text models configured");
+}
+async function callOpenAIImageWithFallback(key,cfg,prompt,imageBase64,logger,imageBase64s=null,options={}){
+  const models=modelCandidates(cfg,"imageModels","generateModel");
+  const errors=[];
+  for(let i=0;i<models.length;i++){
+    const model=models[i];
+    try{
+      logStep(logger,"info",`OpenAI image model ${i+1}/${models.length}: ${model}`);
+      const res=extractOpenAIImage(await callOpenAIImageApi(key,model,prompt,imageBase64,logger,imageBase64s,options),options);
+      logStep(logger,"success",`OpenAI image model succeeded: ${model}${i>0?" (fallback)":""}`);
+      return {...res,modelUsed:model,fallbackUsed:i>0,fallbackErrors:i>0?[...errors]:[]};
+    }catch(error){
+      errors.push(`${model}: ${shortErr(error)}`);
+      logStep(logger,i===models.length-1||!shouldTryNextOpenAI(error)?"error":"info",`OpenAI ${model} failed: ${shortErr(error)}${i<models.length-1&&shouldTryNextOpenAI(error)?" — trying fallback":""}`);
+      if(i===models.length-1||!shouldTryNextOpenAI(error)){
+        throw new Error(errors.length>1?`OpenAI image fallback failed: ${errors.join(" | ")}`:shortErr(error));
+      }
+    }
+  }
+  throw new Error("No OpenAI image models configured");
+}
+
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+function makeJobId(){return `job_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,12)}`}
+async function startImageJob(provider,prompt,imageBase64,geminiContents,logger,imageBase64s=null,onJobStart=null,openaiOptions=null,geminiOptions=null){
+  const jobId=makeJobId();
+  const payload={jobId,action:"image",provider,prompt};
+  if(provider==="openai"){
+    payload.imageBase64=imageBase64;
+    if(Array.isArray(imageBase64s)&&imageBase64s.length)payload.imageBase64s=imageBase64s;
+    if(openaiOptions)payload.openaiOptions=openaiOptions;
+  }
+  else{
+    payload.geminiContents=geminiContents;
+    if(geminiOptions)payload.geminiOptions=geminiOptions;
+  }
+  const requestBody=JSON.stringify(payload);
+  logStep(logger,"info",`Starting Netlify background job ${jobId} (${fmtBytes(requestBody.length)} request)`);
+  if(requestBody.length>5_500_000)throw new Error(`Background job request is too large (${(requestBody.length/1_000_000).toFixed(1)} MB). Try a smaller reference crop or browser API key.`);
+  const r=await fetchWithContext("/api/ai-start",{method:"POST",headers:{"Content-Type":"application/json"},body:requestBody},"Netlify ai-start");
+  if(![200,202].includes(r.status)){
+    const raw=await r.text();
+    throw new Error(`Could not start background job (${r.status}): ${raw.slice(0,220)}`);
+  }
+  logStep(logger,"success",`Background job queued: ${jobId}`);
+  if(typeof onJobStart==="function")onJobStart(jobId);
+  return jobId;
+}
+async function pollImageJob(jobId,logger){
+  const started=Date.now();
+  let interval=1800;
+  let lastState="";
+  let lastHeartbeat=0;
+  let pollFailures=0;
+  while(Date.now()-started<14*60*1000){
+    await wait(interval);
+    interval=Math.min(4500,interval+350);
+    let r;
+    try{
+      r=await fetchWithContext(`/api/ai-result?id=${encodeURIComponent(jobId)}&t=${Date.now()}`,{headers:{"Accept":"application/json"}},`Netlify ai-result poll (${jobId})`);
+      pollFailures=0;
+    }catch(error){
+      pollFailures+=1;
+      logStep(logger,pollFailures>=8?"error":"info",`Poll ${pollFailures}/8 failed after ${Math.round((Date.now()-started)/1000)}s: ${safeMsg(error)}`);
+      if(pollFailures>=8){
+        const err=new Error(`Lost connection while checking background job ${jobId}. The job may still finish on Netlify; use Resume job instead of starting over.`);
+        err.originalError=error;
+        err.jobId=jobId;
+        throw err;
+      }
+      continue;
+    }
+    const raw=await r.text();
+    let body;
+    try{body=JSON.parse(raw)}catch{throw new Error(`Job poll ${r.status} non-JSON: ${raw.slice(0,220)}`)}
+    const elapsed=Math.round((Date.now()-started)/1000);
+    if(body.state!==lastState){
+      lastState=body.state;
+      logStep(logger,"info",`Background job ${jobId}: ${body.state}${elapsed?` after ${elapsed}s`:""}`);
+    }else if(elapsed-lastHeartbeat>=20){
+      lastHeartbeat=elapsed;
+      logStep(logger,"debug",`Still ${body.state||"waiting"} (${elapsed}s elapsed)`);
+    }
+    if(body.state==="pending"||body.state==="queued"||body.state==="processing")continue;
+    if(body.state==="error")throw new Error(`Background generation failed (${jobId}): ${body.error||"Unknown error"}`);
+    if(body.state==="done"){
+      const result=body.result||{};
+      if(result.images)result.images=await Promise.all(result.images.map(async img=>{
+        if(img.dataUrl||img.base64){
+          logStep(logger,"success",`Generated image returned inline (${fmtBytes((img.base64||"").length*0.75)}, ${img.mimeType||"image/png"})`);
+          return {...img,dataUrl:img.dataUrl||`data:${img.mimeType||"image/png"};base64,${img.base64}`};
+        }
+        if(img.url){
+          logStep(logger,"info",`Downloading generated image for ${jobId}`);
+          let downloadedImage;
+          for(let attempt=1;attempt<=5;attempt++){
+            try{
+              const imageResponse=await fetchWithContext(`${img.url}${img.url.includes("?")?"&":"?"}t=${Date.now()}`,undefined,`Generated image download (${jobId})`);
+              if(!imageResponse.ok)throw new Error(`Generated image fetch failed (${imageResponse.status})`);
+              const blob=await imageResponse.blob();
+              const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob)});
+              logStep(logger,"success",`Generated image downloaded (${fmtBytes(blob.size)}, ${blob.type||img.mimeType||"image/png"})`);
+              downloadedImage={...img,mimeType:blob.type||img.mimeType||"image/png",dataUrl,base64:String(dataUrl).split(",")[1]};
+              break;
+            }catch(error){
+              logStep(logger,attempt===5?"error":"info",`Generated image download/read attempt ${attempt}/5 failed: ${safeMsg(error)}`);
+              if(attempt===5)throw error;
+              await wait(1000*attempt);
+            }
+          }
+          return downloadedImage;
+        }
+        return img;
+      }));
+      logStep(logger,"success",`Background job complete: ${result.images?.length||0} image(s)`);
+      return result;
+    }
+  }
+  throw new Error("Background generation did not finish within 14 minutes");
+}
+
+async function callProviderImage(provider,key,prompt,imageBase64,geminiContents,logger,imageBase64s=null,onJobStart=null,openaiOptions=null,geminiOptions=null){
+  const cfg=PROVIDERS[provider];
+  logStep(logger,"info",`${cfg.label} image path: server key`);
+  if(!key){
+    if(/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?/i.test(window.location.origin)){
+      throw new Error("No API key on this computer. Paste a Gemini key in the box at the top right -- it is saved in this browser, so this is a one-time thing.");
+    }
+    const jobId=await startImageJob(provider,prompt,imageBase64,geminiContents,logger,imageBase64s,onJobStart,openaiOptions,geminiOptions);
+    return pollImageJob(jobId,logger);
+  }
+  if(provider==="openai"){
+    return callOpenAIImageWithFallback(key,cfg,prompt,imageBase64,logger,imageBase64s,openaiOptions||{});
+  }
+  return callGeminiImageWithFallback(key,cfg,geminiContents,logger,geminiOptions||{});
+}
+
+async function callProviderText(provider,key,partsOrText,logger){
+  const cfg=PROVIDERS[provider];
+  if(!key){
+    const normalizedParts=Array.isArray(partsOrText)?partsOrText:[{text:String(partsOrText||"")}];
+    const requestBody=JSON.stringify({action:"text",provider,partsOrText:normalizedParts});
+    logStep(logger,"debug",`${cfg.label} text via Netlify (${fmtBytes(requestBody.length)} request)`);
+    const r=await fetchWithContext("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:requestBody},"Netlify ai text");
+    const raw=await r.text();
+    let parsed;
+    try{parsed=JSON.parse(raw)}catch{const trimmed=raw.trim();throw new Error(trimmed?`Function ${r.status} non-JSON: ${trimmed.slice(0,220)}`:"Function ended before returning JSON. Netlify likely timed out during image generation; try again, or enter a browser API key for this run.")}
+    if(!r.ok||parsed.status>=400)throw new Error(parsed.error||`Function ${parsed.status||r.status}`);
+    return parsed;
+  }
+  if(provider==="openai"){
+    return extractOpenAIText(await callOpenAIText(key,cfg.validateModel,partsOrText,logger));
+  }
+  const contents=Array.isArray(partsOrText)?[{parts:partsOrText}]:[{parts:[{text:String(partsOrText||"")}]}];
+  return callGeminiTextWithFallback(key,cfg,contents,logger);
+}
+
+
+function extractOpenAIText(r){
+  return {
+    text: r.output_text || ""
+  };
+}
+
+
+function extractOpenAIImage(r,options={}){
+  const dataItem=r?.data?.[0];
+  const b64=dataItem?.b64_json;
+  if(!b64){
+    console.error(r);
+    throw new Error("No image returned from OpenAI");
+  }
+  const format=(r.output_format||options.outputFormat||"jpeg").replace("jpg","jpeg");
+  const mimeType=`image/${format}`;
+  return {
+    images:[{
+      base64:b64,
+      mimeType,
+      dataUrl:`data:${mimeType};base64,${b64}`
+    }],
+    allParts:[],
+    revisedPrompt:dataItem?.revised_prompt||null,
+    usage:r.usage||null
+  };
+}
+
+
+function extract(r){const c=r?.candidates?.[0];if(!c)throw new Error("No candidates");const p=c.content?.parts||[];return{text:p.filter(x=>x.text).map(x=>x.text).join("\n"),images:p.filter(x=>x.inlineData).map(x=>({base64:x.inlineData.data,dataUrl:`data:${x.inlineData.mimeType};base64,${x.inlineData.data}`})),allParts:p,finish:c.finishReason}}
+function compactHistoryParts(parts=[]){return parts.map(part=>part.inlineData?{text:"[image omitted from local history]"}:part)}
+let _nid=0;function mkId(){return"n"+(++_nid)}
+
+// IndexedDB autosave (mirrors the catalog studio's approach).
+const AUTOSAVE_KEY="scene-v1-autosave";
+function openSceneDb(){return new Promise((res,rej)=>{const rq=indexedDB.open("frameworkSceneStudio",1);rq.onupgradeneeded=()=>rq.result.createObjectStore("sessions");rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error)})}
+async function sceneIdbPut(v){const db=await openSceneDb();return new Promise((res,rej)=>{const tx=db.transaction("sessions","readwrite");tx.objectStore("sessions").put(v,AUTOSAVE_KEY);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
+async function sceneIdbGet(){const db=await openSceneDb();return new Promise((res,rej)=>{const tx=db.transaction("sessions","readonly");const rq=tx.objectStore("sessions").get(AUTOSAVE_KEY);rq.onsuccess=()=>res(rq.result||null);rq.onerror=()=>rej(rq.error)})}
+
+// Compute diff between two param sets
+function paramDiff(base,curr){
+  const d={};
+  for(const p of PARAMS){
+    const k=p.id,bv=base[k],cv=curr[k];
+    if(p.type==="multi"){
+      const bs=new Set(bv||[]),cs=new Set(cv||[]);
+      if(bs.size!==cs.size||[...cs].some(x=>!bs.has(x))) d[k]={from:bv,to:cv};
+    } else if(bv!==cv) d[k]={from:bv,to:cv};
+  }
+  if((base.customNotes||"")!==(curr.customNotes||"")) d.customNotes={from:base.customNotes,to:curr.customNotes};
+  if(base.aspect!==curr.aspect) d.aspect={from:base.aspect,to:curr.aspect};
+  return Object.keys(d).length?d:null;
+}
+
+// ─── COMPONENTS ─────────────────────────────────────────────────────────────
+
+function getImgCoords(e,imgEl,natW,natH){const rect=imgEl.getBoundingClientRect();const na=natW/natH,ea=rect.width/rect.height;let rW,rH,ox,oy;if(na>ea){rW=rect.width;rH=rect.width/na;ox=0;oy=(rect.height-rH)/2;}else{rH=rect.height;rW=rect.height*na;ox=(rect.width-rW)/2;oy=0;}return{x:(e.clientX-rect.left-ox)*(natW/rW),y:(e.clientY-rect.top-oy)*(natH/rH),rW,rH};}
+
+function LogPanel({entries}){const cRef=useRef(null);useEffect(()=>{if(cRef.current)cRef.current.scrollTop=cRef.current.scrollHeight},[entries]);const colors={error:"#ef4444",warning:"#f6bd64",success:"#22c55e",cost:"#f59e0b",debug:"#60a5fa",info:"#c8c0b2"};return(<div ref={cRef} style={{maxHeight:168,overflowY:"auto",fontFamily:"ui-monospace, SFMono-Regular, Menlo, monospace",fontSize:10,lineHeight:1.45,padding:"7px 8px",background:"#0a0a0a",borderRadius:4,border:"1px solid #24211b"}}>{entries.map((e,i)=>(<div key={i} style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere",padding:"1px 0"}}><span style={{color:"#555"}}>{e.time}</span> <span style={{color:colors[e.type]||"#aaa"}}>[{e.type}]</span> {e.msg}</div>))}</div>)}
+
+function CropTool({src,onApply,onCancel}){
+  const ref=useRef(null);const[drag,setDrag]=useState(false);const[dType,setDType]=useState(null);const[start,setStart]=useState(null);const[crop,setCrop]=useState({x:.1,y:.1,w:.8,h:.8});const[orig,setOrig]=useState(null);
+  const pos=e=>{const r=ref.current.getBoundingClientRect();return{rx:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),ry:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))}};
+  const down=(e,t)=>{e.preventDefault();e.stopPropagation();setDrag(true);setDType(t);setStart(pos(e));setOrig({...crop})};
+  useEffect(()=>{if(!drag)return;const mv=e=>{const{rx,ry}=pos(e);const o=orig;if(dType==="create"){setCrop({x:Math.min(start.rx,rx),y:Math.min(start.ry,ry),w:Math.abs(rx-start.rx),h:Math.abs(ry-start.ry)})}else if(dType==="move"){setCrop({...o,x:Math.max(0,Math.min(1-o.w,o.x+rx-start.rx)),y:Math.max(0,Math.min(1-o.h,o.y+ry-start.ry))})}else if(dType==="se"){setCrop({...o,w:Math.max(.05,Math.min(1-o.x,rx-o.x)),h:Math.max(.05,Math.min(1-o.y,ry-o.y))})}else if(dType==="nw"){const nx=Math.max(0,Math.min(o.x+o.w-.05,rx)),ny=Math.max(0,Math.min(o.y+o.h-.05,ry));setCrop({x:nx,y:ny,w:o.x+o.w-nx,h:o.y+o.h-ny})}};const up=()=>setDrag(false);window.addEventListener("mousemove",mv);window.addEventListener("mouseup",up);return()=>{window.removeEventListener("mousemove",mv);window.removeEventListener("mouseup",up)}},[drag]);
+  const hs={position:"absolute",width:10,height:10,background:"#d97706",border:"2px solid #0a0a0a",borderRadius:2,cursor:"pointer",zIndex:10};
+  return(<div>
+    <div ref={ref} style={{position:"relative",display:"inline-block",cursor:"crosshair",userSelect:"none",maxWidth:"100%"}} onMouseDown={e=>{const{rx,ry}=pos(e);if(rx>=crop.x&&rx<=crop.x+crop.w&&ry>=crop.y&&ry<=crop.y+crop.h){down(e,"move")}else{setCrop({x:rx,y:ry,w:0,h:0});setDrag(true);setDType("create");setStart({rx,ry});setOrig({x:rx,y:ry,w:0,h:0})}}}>
+      <img src={src} alt="" style={{maxWidth:"100%",maxHeight:400,display:"block",borderRadius:6}} draggable={false}/>
+      <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,pointerEvents:"none"}}><svg width="100%" height="100%" style={{position:"absolute",top:0,left:0}}><defs><mask id="cm"><rect width="100%" height="100%" fill="white"/><rect x={`${crop.x*100}%`} y={`${crop.y*100}%`} width={`${crop.w*100}%`} height={`${crop.h*100}%`} fill="black"/></mask></defs><rect width="100%" height="100%" fill="rgba(0,0,0,.55)" mask="url(#cm)"/></svg></div>
+      <div style={{position:"absolute",left:`${crop.x*100}%`,top:`${crop.y*100}%`,width:`${crop.w*100}%`,height:`${crop.h*100}%`,border:"2px solid #d97706",pointerEvents:"none"}}/>
+      <div style={{...hs,left:`calc(${crop.x*100}% - 5px)`,top:`calc(${crop.y*100}% - 5px)`,cursor:"nw-resize"}} onMouseDown={e=>down(e,"nw")}/>
+      <div style={{...hs,left:`calc(${(crop.x+crop.w)*100}% - 5px)`,top:`calc(${(crop.y+crop.h)*100}% - 5px)`,cursor:"se-resize"}} onMouseDown={e=>down(e,"se")}/>
+    </div>
+    <div style={{display:"flex",gap:8,marginTop:6,alignItems:"center"}}>
+      <button style={{padding:"6px 14px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:600,fontSize:12,background:"#d97706",color:"#0a0a0a",fontFamily:"inherit"}} onClick={()=>onApply(crop)}>Apply</button>
+      <button style={{padding:"6px 14px",borderRadius:6,border:"1px solid #404040",cursor:"pointer",fontSize:12,background:"#262626",color:"#e5e5e5",fontFamily:"inherit"}} onClick={onCancel}>Cancel</button>
+      <span style={{fontSize:10,color:"#737373"}}>{Math.round(crop.w*100)}% × {Math.round(crop.h*100)}%</span>
+    </div>
+  </div>);
+}
+
+// ─── MAIN APP ───────────────────────────────────────────────────────────────
+function App(){
+  const[provider,setProvider]=useState(()=>localStorage.getItem(PROVIDER_STORAGE_KEY)||DEFAULT_PROVIDER);
+  // No browser key, ever. The provider key lives in this site's environment and
+  // is used by /api/ai, which the gate protects -- so the key is never delivered
+  // to a browser and the spend cannot be run up by anyone who finds the URL.
+  // The call helpers still take a key argument; passing "" is what selects the
+  // server path.
+  const apiKey="";
+  const providerCfg=PROVIDERS[provider]||PROVIDERS[DEFAULT_PROVIDER];
+  const updateProvider=val=>{
+    setProvider(val);
+    localStorage.setItem(PROVIDER_STORAGE_KEY,val);
+  };
+
+  // Pipeline nodes: [{id,type:"ref"|"ref-scale"|"gen",parentId,img,params,refinements,history,ts}]
+  const[nodes,setNodes]=useState([]);
+  const[selId,setSelId]=useState(null);
+
+  // Editing state
+  const[params,setParams]=useState({...DEFAULTS});
+  const[baseParams,setBaseParams]=useState(null); // what the selected node was generated with
+  const[mode,setMode]=useState("refine"); // "refine" | "regenerate"
+  const[refAdj,setRefAdj]=useState({...DEFAULT_REFINE});
+  const[refineFB,setRefineFB]=useState("");
+
+  // Ref & scale
+  const[refImage,setRefImage]=useState(null);
+  const[augImg,setAugImg]=useState(null);
+  const[scaleMode,setScaleMode]=useState(false);const[scalePM,setScalePM]=useState(false);
+  const[scalePts,setScalePts]=useState([]);const[scaleDim,setScaleDim]=useState("");
+  const[pxCm,setPxCm]=useState(null);const[shelfH,setShelfH]=useState(null);
+  const[scaleOK,setScaleOK]=useState(false);const[expandF,setExpandF]=useState(false);
+  const[scaleFx,setScaleFx]=useState(null);const[scaleFy,setScaleFy]=useState(null);
+  const[figDrag,setFigDrag]=useState(false);
+  const dragPosRef=useRef({fx:null,fy:null,startMouseX:0,startMouseY:0,origFx:null,origFy:null});
+  const imgRef=useRef(null);
+
+  // Review
+  const[cropMode,setCropMode]=useState(false);const[croppedImg,setCroppedImg]=useState(null);
+  const[valResult,setValResult]=useState(null);const[captions,setCaptions]=useState(null);const[capLoading,setCapLoading]=useState(false);
+
+  // UI
+  const[processing,setProcessing]=useState(false);const[procMsg,setProcMsg]=useState("");
+  const[promptEditorOpen,setPromptEditorOpen]=useState(false);const[editablePrompt,setEditablePrompt]=useState("");
+  const[promptEditorContext,setPromptEditorContext]=useState(null);
+  const[showAllScenes,setShowAllScenes]=useState(false);
+  const[showFine,setShowFine]=useState(false);
+  const[libOpen,setLibOpen]=useState(false);
+  const[libAssets,setLibAssets]=useState(null);
+  const[damSource,setDamSource]=useState(null); // {hash, configId, modules, unitHeightMm} when source came from Library
+  const[variations,setVariations]=useState(1);
+  const[restoreAvailable,setRestoreAvailable]=useState(false);
+  const[pendingUpload,setPendingUpload]=useState(null);
+  const[activeJob,setActiveJob]=useState(()=>{
+    try{return JSON.parse(localStorage.getItem(ACTIVE_JOB_STORAGE_KEY)||"null")}catch{return null}
+  });
+  const[totalCost,setTotalCost]=useState(0);const[log,setLog]=useState([]);
+  const baseUploadRef=useRef(null);const sessionRef=useRef(null);
+  // The design this session is about, read off the base image's filename.
+  const[designCode,setDesignCode]=useState(null);
+  // Names handed out this session, so a second export of one scene does not
+  // reuse a number. A browser cannot see the downloads folder, so this is the
+  // only thing that knows -- and a genuine collision there comes back as
+  // "… (1).jpg", which the parser handles.
+  const exportedNames=useRef(new Set());
+  const addLog=useCallback((t,m)=>setLog(p=>[...p,{time:new Date().toLocaleTimeString(),type:t,msg:m}]),[]);
+  const clearReview=()=>{setCropMode(false);setCroppedImg(null);setValResult(null);setCaptions(null)};
+  const saveActiveJob=job=>{setActiveJob(job);localStorage.setItem(ACTIVE_JOB_STORAGE_KEY,JSON.stringify(job))};
+  const clearActiveJob=()=>{setActiveJob(null);localStorage.removeItem(ACTIVE_JOB_STORAGE_KEY)};
+
+  // ─── Derived ───────────────────────────────────────────────────
+  const selNode=nodes.find(n=>n.id===selId);
+  const isGen=selNode?.type==="gen";
+  const diff=useMemo(()=>baseParams?paramDiff(baseParams,params):null,[baseParams,params]);
+  const changedKeys=useMemo(()=>diff?new Set(Object.keys(diff)):new Set(),[diff]);
+  const hasRefAdj=Object.values(refAdj).some(v=>v!==0);
+  const hasRefineText=refineFB.trim().length>0;
+  const selectedUpscale=useMemo(()=>{
+    if(!isGen||selNode?.source!=="uploaded-refine"||!selNode?.img)return null;
+    const info=upscaleInfo(selNode.img,provider,params.aspect);
+    const storedMode=Object.prototype.hasOwnProperty.call(selNode.upscale||{},"mode")?selNode.upscale.mode:info.mode;
+    return {...info,mode:info.needed?storedMode:null};
+  },[isGen,selNode?.id,selNode?.source,selNode?.img?.width,selNode?.img?.height,selNode?.upscale?.mode,provider,params.aspect]);
+  const hasUpscaleIntent=isGen&&mode==="refine"&&selectedUpscale?.needed&&!!selectedUpscale.mode;
+  const isDirty=changedKeys.size>0||hasRefAdj||hasRefineText||hasUpscaleIntent;
+  const dirtyLabels=useMemo(()=>{
+    const labels=[];
+    if(changedKeys.size)labels.push(`${changedKeys.size} settings`);
+    if(hasRefAdj)labels.push("dials");
+    if(hasRefineText)labels.push("text");
+    if(hasUpscaleIntent)labels.push(selectedUpscale?.mode==="only"?"upscale only":"upscale");
+    return labels;
+  },[changedKeys,hasRefAdj,hasRefineText,hasUpscaleIntent,selectedUpscale?.mode]);
+  const fidelityWarnings=useMemo(()=>{
+    const w=[];
+        if(!scaleOK)w.push("Scale is not set; shelf size may be less consistent relative to rooms and furniture.");
+    if(params.shotType==="use"&&["full","packed"].includes(params.fullness))w.push("Full shelves can hide structure; keep visible tubes and shelf edges in the result.");
+    if(params.customNotes&&/(pantry|food|inventory|storage|wardrobe|packed|stuffed|hold|holds)/i.test(params.customNotes))w.push("Notes ask for storage/use; inspect shelf count, spacing, material, and colour carefully.");
+    return w;
+  },[apiKey,scaleOK,params.shotType,params.fullness,params.customNotes]);
+
+  // Source node for generation (last ref-type node)
+  const genSource=useMemo(()=>{
+    const r=nodes.filter(n=>n.type==="ref"||n.type==="ref-scale");
+    return r.length?r[r.length-1]:null;
+  },[nodes]);
+  const selectedParentNode=useMemo(()=>nodes.find(n=>n.id===selNode?.parentId),[nodes,selNode?.parentId]);
+  const usesCurrentImageAsProductRef=isGen&&selNode?.source==="uploaded-refine"&&selectedParentNode?.type==="ref"&&selectedParentNode?.img?.dataUrl===selNode?.img?.dataUrl;
+
+  // ─── Selection ─────────────────────────────────────────────────
+  const handleSelect=(id)=>{
+    setSelId(id);clearReview();setRefAdj({...DEFAULT_REFINE});setRefineFB("");setPromptEditorOpen(false);setPromptEditorContext(null);
+    const node=nodes.find(n=>n.id===id);
+    if(node?.params){
+      setParams(normalizeParams(node.params));
+      setBaseParams(normalizeParams(node.params));
+      setMode("refine");
+    } else {
+      // ref node
+      setBaseParams(null);
+      setMode("refine");
+    }
+  };
+
+  // ─── Param changes ────────────────────────────────────────────
+  const sceneOptionsFor=useCallback(settingType=>{
+    const ids=ROOM_GROUPS[settingType]||ROOM_GROUPS.residential||[];
+    return CONFIG.scenes.filter(s=>ids.includes(s.id));
+  },[]);
+  const normalizeParams=useCallback(next=>{
+    const n={...DEFAULTS,...next};
+    if(n.shotType==="clean"){
+      n.productBackground=n.productBackground||"warm-wall-floor";
+      return n;
+    }
+    n.shotType="use";
+    n.settingType=n.settingType||"residential";
+    const sceneIds=ROOM_GROUPS[n.settingType]||ROOM_GROUPS.residential||[];
+    if(!sceneIds.includes(n.scene))n.scene=sceneIds[0]||"living-room";
+    if(n.fullness==="empty")n.fullness="moderate";
+    if(n.livedIn==="showroom")n.livedIn="lived-in";
+    if(!Array.isArray(n.details)||!n.details.length)n.details=["british-socket","wall-scuffs"];
+    if(!Array.isArray(n.humanTraces))n.humanTraces=[];
+    return n;
+  },[]);
+  const setP=(key,val)=>setParams(p=>normalizeParams({...p,[key]:val}));
+  const updateSingle=(key,id)=>setParams(p=>{
+    const next={...p,[key]:id};
+    if(key==="shotType"){
+      if(id==="clean"){
+        next.productBackground=next.productBackground||"warm-wall-floor";
+        next.fullness="empty";
+        next.livedIn="showroom";
+        next.details=[];
+        next.humanTraces=[];
+        next.persona="auto";
+      }else{
+        next.settingType=next.settingType||"residential";
+        next.scene=(ROOM_GROUPS[next.settingType]||ROOM_GROUPS.residential||[])[0]||"living-room";
+        next.fullness="moderate";
+        next.livedIn="lived-in";
+        next.details=["british-socket","wall-scuffs"];
+      }
+    }
+    if(key==="settingType"){
+      const ids=ROOM_GROUPS[id]||[];
+      if(!ids.includes(next.scene))next.scene=ids[0]||next.scene;
+    }
+    if(key==="scene"){
+      const owner=Object.entries(ROOM_GROUPS).find(([,ids])=>ids.includes(id))?.[0];
+      if(owner)next.settingType=owner;
+    }
+    return normalizeParams(next);
+  });
+  const toggleMulti=(key,id)=>setParams(p=>{
+    const set=new Set(p[key]||[]);
+    set.has(id)?set.delete(id):set.add(id);
+    return normalizeParams({...p,[key]:[...set]});
+  });
+  const setSelectedUpscaleMode=mode=>{
+    if(!selNode?.id)return;
+    setNodes(prev=>prev.map(node=>node.id===selNode.id?{...node,upscale:{...(node.upscale||{}),mode}}:node));
+  };
+  const paramVisible=(param,current=params)=>{
+    if(current.shotType==="clean")return ["shotType","productBackground","camera","framing","light"].includes(param.id);
+    if(param.id==="productBackground")return false;
+    return true;
+  };
+  const optionsForParam=(param,current=params)=>{
+    if(param.id==="scene")return showAllScenes?CONFIG.scenes:sceneOptionsFor(current.settingType);
+    return getOpts(param);
+  };
+
+  // ─── Base upload ───────────────────────────────────────────────
+  // The design code arrives in the filename of whatever is dropped in -- a
+  // render from the console is called fw-1Y3MK7P-r-…png -- and every image
+  // generated from it inherits it, so a scene that ends up in a chat still says
+  // which shelf it is of. Nothing else carries that: the node tree knows the
+  // lineage, and the node tree does not leave this page.
+  const handleBaseUpload=async e=>{
+    const f=e.target.files[0];if(!f)return;
+    try{
+      const img=await resize(f,Math.max(MAX_DIM,UPLOAD_MAX_DIM));
+      setPendingUpload({img,name:f.name||"uploaded image",ts:Date.now()});
+      const found=window.FrameworkNames?.parseLoose(f.name||"");
+      setDesignCode(found?.code||null);
+      clearReview();
+      addLog("info",`Base image uploaded: ${img.width}×${img.height}`);
+      if(found?.code)addLog("success",`Design code ${found.code} — generated images will carry it.`);
+      else addLog("info","No design code in that filename — generated images will not link back to a shelf.");
+    }catch(err){addLog("error",safeMsg(err));}
+    e.target.value="";
+  };
+  const usePendingAsSource=()=>{
+    if(!pendingUpload?.img)return;
+    const r=pendingUpload.img;
+    setRefImage(r);
+    setScalePts([]);setScaleOK(false);setAugImg(null);setScalePM(false);setPxCm(null);setShelfH(null);
+    const refNode={id:"ref",type:"ref",parentId:null,img:r,params:null,history:null,ts:Date.now()};
+    setNodes([refNode]);setSelId("ref");setBaseParams(null);setMode("refine");
+    setRefAdj({...DEFAULT_REFINE});setRefineFB("");setPromptEditorOpen(false);setPromptEditorContext(null);setPendingUpload(null);
+    addLog("success",`Source product photo set: ${r.width}×${r.height}`);
+  };
+  const usePendingAsRefine=()=>{
+    if(!pendingUpload?.img)return;
+    const r=pendingUpload.img;
+    const gp=normalizeParams(params);
+    const parentId=refImage?(genSource?.id||"ref"):"ref";
+    const upscale=upscaleInfo(r,provider,gp.aspect);
+    const genNode={id:mkId(),type:"gen",parentId,img:r,params:{...gp},history:null,source:"uploaded-refine",upscale,ts:Date.now()};
+    if(refImage){
+      setNodes(p=>[...p,genNode]);
+    }else{
+      setRefImage(r);
+      setScalePts([]);setScaleOK(false);setAugImg(null);setScalePM(false);setPxCm(null);setShelfH(null);
+      const refNode={id:"ref",type:"ref",parentId:null,img:r,params:null,history:null,ts:Date.now()};
+      setNodes([refNode,genNode]);
+    }
+    setSelId(genNode.id);
+    setParams(gp);
+    setBaseParams(gp);
+    setMode("refine");
+    setRefAdj({...DEFAULT_REFINE});
+    setRefineFB("");
+    setPromptEditorOpen(false);setPromptEditorContext(null);
+    setPendingUpload(null);
+    clearReview();
+    addLog("success",`Existing image ready to refine: ${r.width}×${r.height}${upscale.needed?` — below ${upscale.targetLabel}, upscale queued`:""}`);
+  };
+
+  // ─── Scale ─────────────────────────────────────────────────────
+  const handleImgClick=e=>{
+    if(!scaleMode&&!scalePM||!refImage)return;
+    const {x,y}=getImgCoords(e,imgRef.current||e.target,refImage.width,refImage.height);
+    if(scaleMode&&scalePts.length<2) setScalePts(p=>[...p,{x,y}]);
+    else if(scalePM){(async()=>{
+      const r=await compositeScale(refImage.dataUrl,refImage.width,refImage.height,pxCm,x,y,expandF);
+      setAugImg(r);setScaleOK(true);setScalePM(false);setScaleFx(x);setScaleFy(y);
+      const sn={id:"ref-scale",type:"ref-scale",parentId:"ref",img:{dataUrl:r.dataUrl,base64:r.base64,width:refImage.width,height:refImage.height},params:null,history:null,ts:Date.now()};
+      setNodes(p=>[...p.filter(n=>n.id!=="ref-scale"),sn]);setSelId("ref-scale");
+      addLog("success","Scale figure placed");
+    })()}
+  };
+  const confirmScale=()=>{if(scalePts.length!==2||!scaleDim)return;const dx=scalePts[1].x-scalePts[0].x,dy=scalePts[1].y-scalePts[0].y,h=parseFloat(scaleDim),pc=Math.sqrt(dx*dx+dy*dy)/h;setPxCm(pc);setShelfH(h);setScaleMode(false);setScalePM(true);addLog("info",`${h}cm — click feet position`)};
+  const resetScale=()=>{setScaleOK(false);setAugImg(null);setScaleMode(false);setScalePM(false);setScalePts([]);setPxCm(null);setShelfH(null);setScaleFx(null);setScaleFy(null);setFigDrag(false);setNodes(p=>p.filter(n=>n.id!=="ref-scale"));if(selId==="ref-scale")setSelId("ref")};
+
+  // ─── Figure drag ───────────────────────────────────────────────
+  const handleImgMouseDown=useCallback(e=>{
+    if(!scaleOK||scaleFx==null||!pxCm||scaleMode||scalePM||!imgRef.current)return;
+    const {x:imgX,y:imgY}=getImgCoords(e,imgRef.current,refImage.width,refImage.height);
+    const fh=SCALE_H_CM*pxCm,fw=fh,pad=fw*0.3;
+    if(imgX>=scaleFx-fw/2-pad&&imgX<=scaleFx+fw/2+pad&&imgY>=scaleFy-fh-pad&&imgY<=scaleFy+pad){
+      e.preventDefault();
+      dragPosRef.current={fx:scaleFx,fy:scaleFy,startMouseX:e.clientX,startMouseY:e.clientY,origFx:scaleFx,origFy:scaleFy};
+      setFigDrag(true);
+    }
+  },[scaleOK,scaleFx,scaleFy,pxCm,scaleMode,scalePM,refImage]);
+
+  useEffect(()=>{
+    if(!figDrag||!imgRef.current||!refImage)return;
+    const rect=imgRef.current.getBoundingClientRect();
+    const na=refImage.width/refImage.height,ea=rect.width/rect.height;
+    const rW=na>ea?rect.width:rect.height*na,rH=na>ea?rect.width/na:rect.height;
+    const scaleX=refImage.width/rW,scaleY=refImage.height/rH;
+    const mv=e=>{
+      const dx=(e.clientX-dragPosRef.current.startMouseX)*scaleX;
+      const dy=(e.clientY-dragPosRef.current.startMouseY)*scaleY;
+      const newFx=dragPosRef.current.origFx+dx;
+      const newFy=dragPosRef.current.origFy+dy;
+      dragPosRef.current.fx=newFx;dragPosRef.current.fy=newFy;
+      setScaleFx(newFx);setScaleFy(newFy);
+    };
+    const up=async()=>{
+      setFigDrag(false);
+      const {fx,fy}=dragPosRef.current;
+      const r=await compositeScale(refImage.dataUrl,refImage.width,refImage.height,pxCm,fx,fy,expandF);
+      setAugImg(r);
+      const sn={id:"ref-scale",type:"ref-scale",parentId:"ref",img:{dataUrl:r.dataUrl,base64:r.base64,width:refImage.width,height:refImage.height},params:null,history:null,ts:Date.now()};
+      setNodes(p=>[...p.filter(n=>n.id!=="ref-scale"),sn]);
+    };
+    window.addEventListener("mousemove",mv);window.addEventListener("mouseup",up);
+    return()=>{window.removeEventListener("mousemove",mv);window.removeEventListener("mouseup",up)};
+  },[figDrag]);
+
+  // ─── Prompt ────────────────────────────────────────────────────
+  const buildPrompt=(p)=>{
+    const gp=(k,id)=>id==="auto"?"":CONFIG[k]?.find(o=>o.id===id)?.prompt||"";
+    const camP=gp("camera",p.camera),frmP=gp("framing",p.framing),litP=gp("light",p.light);
+    let photo="";if(camP)photo+=camP+"\n";if(frmP)photo+=frmP+"\n";if(litP)photo+=litP+"\n";
+    let scale="";
+    if(scaleOK&&shelfH){const h=shelfH;let rel=h<80?"desk height":h<120?"chest height":h<160?"shoulder height":"taller than most adults";
+      scale=`\nSCALE: Shelf is EXACTLY ${h}cm tall (${rel}). Scale figure in reference is for reference only — do NOT include in output.${augImg?.expandedSide?` Image extended ${augImg.expandedSide} — fill entire frame.`:""}`;}
+    let notes="";if(p.customNotes?.trim())notes=`\nADDITIONAL NOTES: ${p.customNotes.trim()}`;
+    const productTruth=`${CONFIG.referenceRolePrompt}\n\n${CONFIG.preservationPrompt}`;
+
+    if(p.shotType==="clean"){
+      const bg=CONFIG.productBackgrounds.find(o=>o.id===p.productBackground)?.prompt||CONFIG.productBackgrounds[0]?.prompt||"A simple neutral background.";
+      return `You are a professional product photographer creating product imagery for Framework Designs, a modular steel shelving company in Nairobi, Kenya.\n\nTASK: Using the attached reference photo, generate a CLEAN PRODUCT SHOT of this EXACT shelf.\n\n${productTruth}\n\nBACKGROUND: ${bg}\n\nSHELF CONTENTS: Keep the shelf empty unless objects are already present in the reference photo. Do not add lifestyle props.\n\n${CONFIG.negativePrompt}\n${photo?`\n${photo}`:""}\nAspect ratio: ${p.aspect}.${scale}${notes}`;
+    }
+
+    // ── In-use scene: narrative structure. THE PLACE (one coherent paragraph,
+    // from an archetype when set) → THE SHELF IN THE PLACE → THE PHOTOGRAPH
+    // (explicitly overrides mood implied by the place) → AUTHENTICITY →
+    // PHOTOGRAPHIC FLOOR → constraints. A described *place* beats a checklist.
+    const scn=CONFIG.scenes.find(s=>s.id===p.scene)?.prompt||"";
+    const wallP=gp("walls",p.wall),floorP=gp("floors",p.floor),rugP=gp("rugs",p.rug);
+    const furnP=gp("furniture",p.furniture),winP=gp("windowView",p.windowView),moodP=gp("colourMood",p.colourMood);
+    const per=CONFIG.persona.find(x=>x.id===p.persona);
+    const contents=per&&per.contents?per.contents:"items appropriate for the room type";
+    const full=CONFIG.fullness.find(x=>x.id===p.fullness)?.prompt||"moderate";
+    const lived=CONFIG.livedIn.find(x=>x.id===p.livedIn)?.prompt||"lived-in";
+    const dets=(p.details||[]).map(id=>CONFIG.details.find(d=>d.id===id)?.prompt).filter(Boolean).map(s=>"- "+s).join("\n");
+    const traces=(p.humanTraces||[]).map(id=>CONFIG.humanTraces.find(d=>d.id===id)?.prompt).filter(Boolean).map(s=>"- "+s).join("\n");
+    const shelfVisibility=["full","packed"].includes(p.fullness)||p.persona!=="auto"
+      ?"\nSHELF VISIBILITY: Objects can sit on the shelf, but must not cover, replace, thicken, or redraw the structural tubes, shelf edges, legs, bolt points, or tier gaps."
+      :"";
+
+    const arch=(CONFIG.archetypes||[]).find(a=>a.id===p.archetype);
+    let placeBlock="";
+    if(arch){
+      // The archetype narrative is the place; user changes become explicit adjustments.
+      const adj=[];
+      const adjKeys=[["wall","walls","WALLS"],["floor","floors","FLOOR"],["rug","rugs","RUG"],["furniture","furniture","FURNITURE"],["windowView","windowView","WINDOW VIEW"],["colourMood","colourMood","COLOUR MOOD"]];
+      for(const[key,cfgKey,label]of adjKeys){
+        if(p[key]!==arch.params[key]&&p[key]!=="auto"){const t=gp(cfgKey,p[key]);if(t)adj.push(`- ${label}: ${t}`);}
+      }
+      if(p.scene!==arch.params.scene&&scn)adj.push(`- ROOM: ${scn}`);
+      placeBlock=`THE PLACE:\n${arch.place}`+(adj.length?`\n\nADJUST THE PLACE AS FOLLOWS (these override the paragraph above):\n${adj.join("\n")}`:"");
+    }else{
+      let sur="";if(wallP)sur+=`- Walls: ${wallP}\n`;if(floorP)sur+=`- Floor: ${floorP}\n`;if(rugP)sur+=`- Rug: ${rugP}\n`;if(furnP)sur+=`- Furniture: ${furnP}\n`;if(winP)sur+=`- Window view: ${winP}\n`;
+      placeBlock=`THE PLACE:\n${scn}.\n${sur}${moodP?moodP+"\n":""}`.trim();
+    }
+    const shelfBlock=`THE SHELF IN THIS PLACE:\n- The shelf stands against a wall of this room, naturally placed as real furniture.${scale?`\n- ${scale.trim().replace(/^SCALE: /,"SCALE: ")}`:""}\n- Contents: ${contents}. Fill level: ${full}.\n- Condition of the room: ${lived}.${shelfVisibility}`;
+
+    const photoBlock=`THE PHOTOGRAPH:\n${photo?photo.trim():"Natural, competent photography appropriate to the place."}\n- If the light or mood described here conflicts with the place description above, THIS section wins.`;
+
+    const authBlock=`${CONFIG.nairobiTruthPrompt||""}${dets?`\nGROUNDING DETAILS (include naturally, not as a checklist):\n${dets}`:""}${traces?`\nTRACES OF PEOPLE (subtle, at most as described):\n${traces}`:""}`;
+
+    return `You are a location photographer shooting real interiors for Framework Designs, a modular steel shelving company in Nairobi, Kenya. Your photographs must feel like actual Nairobi spaces that happen to be beautifully shot — never like showroom renders.\n\nTASK: Using the attached reference photo, generate a NEW photorealistic image placing this EXACT shelf in the space described below.\n\n${productTruth}\n\n${placeBlock}\n\n${shelfBlock}\n\n${photoBlock}\n\n${authBlock}\n\n${CONFIG.craftFloorPrompt||""}\n\n${CONFIG.negativePrompt}\n\nAspect ratio: ${p.aspect}.${notes}`;
+  };
+	  const refineAdjustmentText=(cat,val)=>{
+	    if(val===0)return null;
+	    const meta=REFINE_CATS.find(c=>c.id===cat);
+	    const dir=Math.abs(val)>1?"dramatically":"slightly";
+	    const q=val<0?(REFINE_QUAL[cat]?.[val<-1?"n2":"n1"]||REFINE_QUAL[cat]?.n):REFINE_QUAL[cat]?.p;
+	    if(!q)return null;
+	    const label=(meta?.label||cat).toLowerCase();
+	    const sentence=q.length>90?`${dir==="dramatically"?"Strongly":"Subtly"} ${q.charAt(0).toLowerCase()+q.slice(1)}`:`Make ${label} ${dir} ${q}`;
+	    return sentence.endsWith(".")?sentence:sentence+".";
+	  };
+	  const buildRefinePrompt=()=>{
+	    const adjs=Object.entries(refAdj).map(([cat,val])=>refineAdjustmentText(cat,val)).filter(Boolean);
+	    const productReferenceLine=usesCurrentImageAsProductRef
+	      ?"2. Product reference/current image: no separate product reference was provided, so this may duplicate the current image. Use it to preserve the shelf exactly as shown."
+	      :"2. Original product reference: use this only as the truth source for the shelf product's geometry, colour, material, scale, and joint details.";
+	    let refinePrompt=`Refine the CURRENT IMAGE. This is a surgical edit to the existing image, not a new scene from scratch.\n\nIMAGE ORDER:\n1. Current image: use this as the base image to edit.\n${productReferenceLine}\n\nPRODUCT LOCK:\n- Product fidelity has priority over every requested edit.\n- Do not redraw, redesign, reinterpret, resize, crop, or restage the shelf.\n- Preserve the shelf geometry, proportions, tier count, shelf spacing, frame colour, powder-coat finish, shelf material, scale, and bolt/joint details exactly.\n- If a requested edit might alter the shelf shape, shelves, tubes, legs, proportions, colour, or material, skip that part of the edit.\n- Do not add or remove shelves, brackets, lights, drawers, doors, glass, wood, logos, wall panels, or decorative features.\n- Do not attach any lamp or lighting to the shelf.\n- Do not show open books. Any book lying on a shelf, sofa, table, or floor must be closed.\n- Books must obey simple physics: vertical books need support from a shelf side, a post, bookends, a heavy object, or a horizontal stack; no unsupported freestanding books.\n- Pendant lights should have a simple shade over the bulb. Do not show bare-bulb pendant lights unless the user explicitly asks for one.\n- Keep the current room, camera angle, perspective, crop, and overall setting unless the requested edits explicitly change them.\n- Apply refinements mostly to lighting, background, surrounding room, surface clutter, and photographic finish, while leaving the shelf itself stable.\n- Maintain believable Nairobi/Kenya realism already present in the image.\n`;
+	    if(selectedUpscale?.needed&&selectedUpscale.mode){
+	      refinePrompt+=`\nUPSCALE REQUIREMENT:\n- The uploaded image is ${selectedUpscale.width}x${selectedUpscale.height}, below the current target output of ${selectedUpscale.targetLabel}.\n- Upscale to the target output resolution for the selected aspect ratio.\n- Reconstruct and sharpen plausible real photographic detail; do not merely enlarge or blur/interpolate pixels.\n- Keep edges, shelf tubes, textural detail, lighting direction, camera angle, crop, and composition natural.\n`;
+	      if(selectedUpscale.mode==="only")refinePrompt+=`- This is an upscale-only pass: do not intentionally change styling, objects, composition, colours, lighting, or scene content except what is necessary for high-quality detail restoration.\n`;
+	      else refinePrompt+=`- Apply this upscale as part of the requested refinement edits.\n`;
+	    }
+	    if(adjs.length)refinePrompt+=`\nREQUESTED EDITS:\n${adjs.map(a=>"- "+a).join("\n")}`;
+	    if(refineFB.trim())refinePrompt+=`\n\nUSER FEEDBACK:\n${refineFB.trim()}`;
+	    refinePrompt+=`\n\nOUTPUT: Return one refined photorealistic image. Make only the requested changes and keep everything else stable.`;
+	    return refinePrompt;
+	  };
+	  const promptForProvider=(prompt,isRefineRun)=>{
+	    if(provider==="openai"){
+	      const modeText=isRefineRun
+	        ?"OPENAI IMAGE EDIT MODE:\n- Edit input image 1 in place. Use input image 2 as the exact shelf product reference when available.\n- If input image 2 duplicates input image 1, preserve the shelf as shown in the current image.\n- Change only the requested refinements; leave product geometry, material, colour, scale, and scene identity stable."
+	        :"OPENAI IMAGE EDIT MODE:\n- Use the attached shelf photo as the exact product reference for an image edit/reference workflow.\n- Do not invent a similar shelf from memory. Preserve the reference product before following scene, styling, or photography instructions.";
+	      return `${modeText}\n\n${prompt}`;
+	    }
+	    if(provider==="gemini"){
+	      const modeText=isRefineRun
+	        ?"GEMINI NATIVE IMAGE EDIT MODE:\n- This is iterative text-and-image-to-image editing. Edit input image 1 in place.\n- Use input image 2 as the high-fidelity product truth for shelf geometry, colour, material, and joints when available.\n- If input image 2 duplicates input image 1, preserve the shelf as shown in the current image.\n- Make small requested changes and keep the product and camera perspective stable."
+	        :"GEMINI NATIVE IMAGE COMPOSITION MODE:\n- Use the attached shelf photo as the high-fidelity product reference in a text-and-image-to-image workflow.\n- Preserve the exact shelf before following scene, styling, or photography instructions.\n- Do not create a generic or redesigned shelf.";
+	      return `${modeText}\n\n${prompt}`;
+	    }
+	    return prompt;
+	  };
+	  const livePrompt=useMemo(()=>buildPrompt(params),[params,scaleOK,shelfH,augImg?.expandedSide]);
+	  const isLiveRefineRun=isGen&&mode==="refine";
+	  const editableRunPrompt=useMemo(()=>{
+	    return isLiveRefineRun?buildRefinePrompt():livePrompt;
+	  },[livePrompt,isLiveRefineRun,selNode?.id,selNode?.source,usesCurrentImageAsProductRef,selectedUpscale?.needed,selectedUpscale?.mode,selectedUpscale?.targetLabel,refAdj,refineFB]);
+
+  // ─── Generate / Refine ─────────────────────────────────────────
+  const handleRun=async(promptOverride="")=>{
+    if(!refImage)return;
+    const editedPrompt=String(promptOverride||"").trim();
+    setProcessing(true);setProcMsg("Generating...");clearReview();
+    const runId=Date.now().toString(36).slice(-5).toUpperCase();
+    const runLog=(type,msg)=>addLog(type,`#${runId} ${msg}`);
+    try{
+      const gp={...params};
+      let parentId, parentNode, isRefine=false;
+
+      if(isGen&&mode==="refine"){
+        // Refine: apply changes to selected image
+        parentId=selNode.id; parentNode=selNode; isRefine=true;
+      } else if(isGen&&mode==="regenerate"){
+        // Regenerate: branch from selected node's parent
+        parentId=selNode.parentId; parentNode=nodes.find(n=>n.id===selNode.parentId);
+      } else {
+        // Fresh generation from ref source
+        parentId=genSource?.id; parentNode=genSource;
+      }
+      if(!parentId){addLog("error","No source node");return}
+
+      const promptModeMatches=!editedPrompt||(
+        promptEditorContext?.basePrompt===editableRunPrompt&&(
+          (isRefine&&promptEditorContext?.mode==="refine"&&promptEditorContext?.selId===selNode?.id)||
+          (!isRefine&&promptEditorContext?.mode==="generate")
+        )
+      );
+      if(!promptModeMatches)throw new Error("Prompt editor is out of date for the current mode or selected image. Reset the prompt editor and try again.");
+
+      const rawPrompt=editedPrompt||(isRefine?buildRefinePrompt():buildPrompt(gp));
+      const prompt=promptForProvider(rawPrompt,isRefine);
+      runLog("info",`${isRefine?"Refine":"Generate"} start / ${providerCfg.label}`);
+      runLog("info",`Prompt: ${prompt.length} chars${editedPrompt?" (edited)":""}; aspect ${gp.aspect}; selected ${selNode?.id||parentId}`);
+      setProcMsg("Preparing source image...");
+      const sourceImg=isRefine?(croppedImg||parentNode.img):(augImg||refImage);
+      const apiImg=!apiKey&&sourceImg?.dataUrl?await resizeDataUrl(sourceImg.dataUrl,SERVER_MAX_DIM):sourceImg;
+      runLog("info",`Source image: ${sourceImg?.width||"?"}x${sourceImg?.height||"?"}${apiImg!==sourceImg?` -> API ${apiImg.width}x${apiImg.height}`:""} (${fmtBytes((apiImg.base64||"").length*0.75)})`);
+      const productRefImg=isRefine&&refImage?.dataUrl?(!apiKey?await resizeDataUrl(refImage.dataUrl,SERVER_MAX_DIM):refImage):null;
+      if(productRefImg)runLog("info",`Product reference lock image: ${productRefImg.width||"?"}x${productRefImg.height||"?"} (${fmtBytes((productRefImg.base64||"").length*0.75)})`);
+      const openaiOptions=provider==="openai"?{
+        aspect:gp.aspect,
+        quality:"high",
+        outputFormat:"jpeg",
+        imageMimeTypes:[dataUrlMime(apiImg.dataUrl)||"image/jpeg",...(productRefImg?[dataUrlMime(productRefImg.dataUrl)||"image/jpeg"]:[])]
+      }:null;
+      const geminiOptions=provider==="gemini"?{
+        aspect:gp.aspect,
+        imageSize:"2K"
+      }:null;
+      if(openaiOptions)runLog("info",`OpenAI mode: Image API edits / target ${openAIImageSize(gp.aspect,"gpt-image-2")} / ${openaiOptions.quality} quality / ${openaiOptions.outputFormat}`);
+      if(geminiOptions)runLog("info",`Gemini mode: native image edit / aspect ${geminiOptions.aspect} / 2K where supported`);
+      setProcMsg("Generating — 15-30s...");
+      const parts=[{text:prompt},{inlineData:{mimeType:"image/jpeg",data:apiImg.base64}}];
+      let contents=[{parts}];
+      let finalPrompt=prompt;
+      let imageBase64s=[apiImg.base64];
+
+      if(isRefine){
+        const refinePrompt=prompt;
+        finalPrompt=refinePrompt;
+        runLog("info",`Refine prompt: ${refinePrompt.length} chars; crop ${croppedImg?"yes":"no"}; product reference ${productRefImg?"yes":"no"}`);
+        const rParts=[
+          {text:refinePrompt},
+          {text:"CURRENT IMAGE - edit this image in place:"},
+          {inlineData:{mimeType:"image/jpeg",data:apiImg.base64}},
+        ];
+        if(productRefImg){
+          rParts.push({text:usesCurrentImageAsProductRef
+            ?"PRODUCT REFERENCE / CURRENT IMAGE DUPLICATE - no separate product reference was provided; preserve the shelf exactly as shown:"
+            :"ORIGINAL PRODUCT REFERENCE - use only to lock shelf geometry, colour, material, scale, and joints:"});
+          rParts.push({inlineData:{mimeType:"image/jpeg",data:productRefImg.base64}});
+          imageBase64s=[apiImg.base64,productRefImg.base64];
+        }
+        contents=[{parts:rParts}];
+      }
+
+      const refinementMeta=isRefine&&(hasRefAdj||hasRefineText||hasUpscaleIntent)?{...refAdj,feedback:refineFB,upscale:hasUpscaleIntent?selectedUpscale:null}:null;
+      const activeMeta={provider,parentId,isRefine,params:{...gp},refinements:refinementMeta,promptChars:finalPrompt.length,ts:Date.now()};
+      const rememberJob=jobId=>saveActiveJob({...activeMeta,id:jobId});
+      if(!apiKey)setProcMsg("Generating — background job...");
+      const res = await callProviderImage(provider,apiKey,finalPrompt,apiImg.base64,isRefine?contents:[{parts}],runLog,imageBase64s,rememberJob,openaiOptions,geminiOptions);
+      if(!res.images.length) throw new Error("No image returned");
+
+      const nn={id:mkId(),type:"gen",parentId,img:{dataUrl:res.images[0].dataUrl,base64:res.images[0].base64,mimeType:res.images[0].mimeType},
+        params:{...gp}, refinements:refinementMeta,
+        modelUsed:res.modelUsed||null, fallbackUsed:!!res.fallbackUsed, fallbackErrors:res.fallbackErrors||[],
+        history:apiKey&&isRefine&&parentNode?.history
+          ?[...parentNode.history,{role:"user",parts:[{text:"refine"}]},{role:"model",parts:res.allParts}]
+          :[{parts:compactHistoryParts(parts)},{role:"model",parts:compactHistoryParts(res.allParts)}],
+        ts:Date.now()};
+      setNodes(p=>[...p,nn]);setSelId(nn.id);setBaseParams({...gp});
+      setRefAdj({...DEFAULT_REFINE});setRefineFB("");setCroppedImg(null);setMode("refine");
+      setPromptEditorOpen(false);setPromptEditorContext(null);
+      clearActiveJob();
+      setTotalCost(p=>p+providerCfg.imageCost);runLog("cost",`~$${providerCfg.imageCost.toFixed(3)}`);
+
+      // Variations: re-run the same fresh-generation prompt for extra takes.
+      const wantRuns=!isRefine?Math.max(1,Math.min(6,Number(variations)||1)):1;
+      for(let vi=1;vi<wantRuns;vi++){
+        try{
+          setProcMsg(`Variation ${vi+1}/${wantRuns}…`);
+          runLog("info",`Variation ${vi+1}/${wantRuns}`);
+          const resV=await callProviderImage(provider,apiKey,finalPrompt,apiImg.base64,[{parts}],runLog,[apiImg.base64],rememberJob,openaiOptions,geminiOptions);
+          if(!resV.images.length){runLog("error",`Variation ${vi+1}: no image`);continue;}
+          const nv={id:mkId(),type:"gen",parentId,img:{dataUrl:resV.images[0].dataUrl,base64:resV.images[0].base64,mimeType:resV.images[0].mimeType},
+            params:{...gp},refinements:null,modelUsed:resV.modelUsed||null,fallbackUsed:!!resV.fallbackUsed,fallbackErrors:resV.fallbackErrors||[],
+            history:[{parts:compactHistoryParts(parts)},{role:"model",parts:compactHistoryParts(resV.allParts)}],ts:Date.now()};
+          setNodes(p=>[...p,nv]);
+          clearActiveJob();
+          setTotalCost(p=>p+providerCfg.imageCost);runLog("cost",`~$${providerCfg.imageCost.toFixed(3)}`);
+        }catch(errV){runLog("error",`Variation ${vi+1} failed: ${safeMsg(errV)}`);}
+      }
+      if(res.fallbackUsed)runLog("warning",`Fallback image model used (${res.modelUsed||"unknown"}). Inspect product geometry before using this shot.${res.fallbackErrors?.length?` Earlier failure: ${res.fallbackErrors[0]}`:""}`);
+      if(res.revisedPrompt)runLog("debug",`OpenAI revised prompt: ${res.revisedPrompt.slice(0,500)}`);
+      runLog("success",`${isRefine?"Refined":"Generated"} with ${providerCfg.label}${res.modelUsed?` (${res.modelUsed}${res.fallbackUsed?", fallback":""})`:""}`);
+    }catch(e){runLog("error",safeMsg(e))}finally{setProcessing(false);setProcMsg("")}
+  };
+
+  const resumeActiveJob=async()=>{
+    if(!activeJob?.id)return;
+    setProcessing(true);setProcMsg("Resuming job...");clearReview();
+    const runId=Date.now().toString(36).slice(-5).toUpperCase();
+    const runLog=(type,msg)=>addLog(type,`#${runId} ${msg}`);
+    try{
+      const parentId=activeJob.parentId||genSource?.id;
+      if(!parentId||!nodes.some(n=>n.id===parentId))throw new Error("Cannot resume job because its source image is not loaded in this session.");
+      const jobProvider=activeJob.provider||provider;
+      const jobCfg=PROVIDERS[jobProvider]||providerCfg;
+      runLog("info",`Resuming Netlify job ${activeJob.id} (${jobCfg.label})`);
+      const res=await pollImageJob(activeJob.id,runLog);
+      if(!res.images?.length)throw new Error("Background job finished without an image");
+      const nn={id:mkId(),type:"gen",parentId,img:{dataUrl:res.images[0].dataUrl,base64:res.images[0].base64,mimeType:res.images[0].mimeType},
+        params:normalizeParams(activeJob.params||params),
+        refinements:activeJob.refinements||null,
+        modelUsed:res.modelUsed||null, fallbackUsed:!!res.fallbackUsed, fallbackErrors:res.fallbackErrors||[],
+        history:[{role:"model",parts:compactHistoryParts(res.allParts||[])}],
+        ts:Date.now()};
+      setNodes(p=>[...p,nn]);setSelId(nn.id);setBaseParams(normalizeParams(activeJob.params||params));
+      clearActiveJob();
+      setTotalCost(p=>p+(jobCfg.imageCost||providerCfg.imageCost));
+      if(res.fallbackUsed)runLog("warning",`Fallback image model used (${res.modelUsed||"unknown"}). Inspect product geometry before using this shot.${res.fallbackErrors?.length?` Earlier failure: ${res.fallbackErrors[0]}`:""}`);
+      runLog("success",`Recovered generated image from ${activeJob.id}`);
+    }catch(e){
+      runLog("error",safeMsg(e));
+    }finally{setProcessing(false);setProcMsg("")}
+  };
+
+  // ─── Validate / Caption / Export ──────────────────────────────
+  const handleValidate=async()=>{if(!selNode?.img)return;setProcessing(true);setProcMsg("Validating...");try{const id=croppedImg||selNode.img;const vp=[{text:VAL_PROMPT},{text:"REFERENCE:"},{inlineData:{mimeType:"image/jpeg",data:refImage.base64}},{text:"GENERATED:"},{inlineData:{mimeType:"image/jpeg",data:id.base64}}];addLog("info",`Validation request / ${providerCfg.label}`);const vr=await callProviderText(provider,apiKey,vp,addLog);setTotalCost(p=>p+providerCfg.textCost);try{const j=parseJsonObject(vr.text);setValResult(j);addLog(j.overall_pass?"success":"error",`Validation ${j.overall_pass?"PASSED":"FAILED"}`)}catch{setValResult({overall_pass:null,raw:vr.text});addLog("error","Validation returned non-JSON")}}catch(e){addLog("error",safeMsg(e))}finally{setProcessing(false);setProcMsg("")}};
+  const VAL_PROMPT=`You are a quality checker for product photography of modular steel shelving. Compare GENERATED vs REFERENCE. Product fidelity is the main pass/fail criterion. Respond ONLY JSON:\n{"tier_count_match":bool,"shelf_spacing_match":bool,"frame_shape_match":bool,"color_match":bool,"materials_correct":bool,"no_added_features":bool,"overall_pass":bool,"issues":[]}`;
+  const handleCaption=async()=>{if(!selNode?.img)return;setCapLoading(true);try{const img=croppedImg||selNode.img;const prompt=`Write 3 Instagram captions for Framework Designs (modular steel shelving, Nairobi). Understated, confident. Each 1-3 sentences. NO hashtags. Respond ONLY JSON: {"captions":[{"text":"...","angle":"one-word"}]}`;addLog("info",`Caption request / ${providerCfg.label}`);const vr=await callProviderText(provider,apiKey,[{text:prompt},{inlineData:{mimeType:"image/jpeg",data:img.base64}}],addLog);setTotalCost(p=>p+providerCfg.textCost);try{const j=parseJsonObject(vr.text);setCaptions(j.captions||[])}catch{addLog("error","Caption parse issue")}}catch(e){addLog("error",safeMsg(e))}finally{setCapLoading(false)}};
+  const handleCrop=async rect=>{if(!selNode?.img)return;const c=await cropImg(selNode.img.dataUrl,rect);setCroppedImg(c);setCropMode(false);addLog("success",`Cropped ${c.width}×${c.height}`)};
+  const dl=(img,name)=>{const a=document.createElement("a");a.href=img.dataUrl;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a)};
+
+  /**
+   * What to call a generated image on the way out.
+   *
+   * fw-1Y3MK7P-s-living-room-02.jpg when the design code is known, which is the
+   * whole point -- the file is about to leave this page, and the name is the
+   * only thing going with it. Without a code there is nothing honest to claim,
+   * so it falls back to the old node-id name rather than inventing one.
+   */
+  const exportName=node=>{
+    const N=window.FrameworkNames;
+    if(!designCode||!N)return `framework_${node.id}.jpg`;
+    const slug=node.params?.scene||null;
+    const taken=[...exportedNames.current];
+    const first=N.build(designCode,"scene",{slug,sequence:1,ext:"jpg"});
+    const name=N.build(designCode,"scene",{slug,sequence:N.nextSequence(taken,first),ext:"jpg"});
+    exportedNames.current.add(name);
+    return name;
+  };
+
+  const handleExport=()=>{
+    const gn=nodes.filter(n=>n.type==="gen");
+    // Several downloads in a row makes Chrome ask once whether to allow them.
+    gn.forEach((n,i)=>{setTimeout(()=>{dl(n.img,exportName(n))},i*200)});
+    addLog("success",`Exported ${gn.length} images${gn.length>1?" — allow multiple downloads if the browser asks":""}`);
+  };
+
+  // ─── Recipe helpers ───────────────────────────────────────────
+  const recipeGroups=useMemo(()=>RECIPE_GROUPS.map(g=>({
+    ...g,
+    controls:g.keys.map(key=>PARAMS.find(p=>p.id===key)).filter(Boolean).filter(p=>paramVisible(p,params))
+  })).filter(g=>g.controls.length),[params.shotType,params.settingType]);
+
+  const suggestDetails=()=>{
+    const detailBySetting={
+      residential:["british-socket","wall-scuffs","floor-wear","light-switch","aluminium-window","extension-cable","shelf-plants","floor-plant"],
+      commercial:["british-socket","conduit","light-switch","aluminium-window","floor-wear","extension-cable"]
+    };
+    const tracesByScene={
+      "living-room":["mug","phone-cable","book-facedown","glasses"],
+      "study-nook":["laptop","mug","phone-cable","glasses","headphones"],
+      "library-wall":["glasses","book-facedown","mug"],
+      "bedroom-corner":["book-facedown","phone-cable","jacket"],
+      "bedroom-wardrobe":["jacket","tote-bag"],
+      "kids-room":["tote-bag","book-facedown"],
+      "nursery":["mug","tote-bag"],
+      "kitchen-dining":["mug","phone-cable"],
+      "entryway":["tote-bag","jacket"],
+      "covered-terrace":["mug","book-facedown"],
+      "office-commercial":["laptop","mug","phone-cable","headphones"],
+      "cafe-display":["mug","glasses"],
+      "retail-boutique":["tote-bag","mug","phone-cable"],
+      "creative-studio":["laptop","headphones","mug","glasses"]
+    };
+    setParams(p=>{
+      if(p.shotType==="clean")return p;
+      const currentD=new Set(p.details||[]);
+      const currentH=new Set(p.humanTraces||[]);
+      const detailPool=(detailBySetting[p.settingType]||detailBySetting.residential).filter(id=>!currentD.has(id));
+      const tracePool=(tracesByScene[p.scene]||["mug","phone-cable","glasses"]).filter(id=>!currentH.has(id));
+      const nextD=[...currentD,...pickN(detailPool,Math.max(0,Math.min(3,5-currentD.size)))].slice(0,5);
+      const nextH=[...currentH,...pickN(tracePool,Math.max(0,Math.min(2,3-currentH.size)))].slice(0,3);
+      return normalizeParams({...p,details:nextD,humanTraces:nextH,livedIn:p.livedIn==="showroom"?"lived-in":p.livedIn});
+    });
+    addLog("info","Suggested grounded details");
+  };
+
+  const surpriseScene=()=>{
+    setParams(p=>{
+      const residential=Math.random()<0.78;
+      const settingType=residential?"residential":"commercial";
+      const scene=pick(ROOM_GROUPS[settingType]);
+      const wallPool=optionIds("walls",["auto","raw-concrete"]);
+      const floorPool=optionIds("floors",["auto"]);
+      const furniturePool=optionIds("furniture",["auto","industrial"]);
+      const moodPool=optionIds("colourMood",["auto","stone-pops"]);
+      const personaPool=["reader","collector","minimalist","creative","plant-parent"];
+      const fullnessPool=["sparse","light","moderate","full"];
+      const lightPool=["soft-cloudy","bright-soft","flat-overcast","golden"];
+      const cameraPool=["decent-phone","entry-camera","pro"];
+      const framingPool=["casual","considered","professional"];
+      const detailPool=settingType==="residential"
+        ?["british-socket","wall-scuffs","floor-wear","light-switch","aluminium-window","extension-cable","shelf-plants","floor-plant"]
+        :["british-socket","conduit","light-switch","aluminium-window","floor-wear","extension-cable"];
+      const tracePool=["mug","phone-cable","glasses","book-facedown","laptop","tote-bag"];
+      return normalizeParams({...p,
+        shotType:"use",
+        settingType,
+        scene,
+        wall:pick(wallPool),
+        floor:pick(floorPool),
+        rug:Math.random()<0.55?pick(optionIds("rugs",["auto"])):"auto",
+        furniture:pick(furniturePool),
+        windowView:Math.random()<0.75?pick(optionIds("windowView",["auto"])):"auto",
+        colourMood:pick(moodPool),
+        persona:pick(personaPool),
+        fullness:pick(fullnessPool),
+        livedIn:pick(["tidy","lived-in","settled"]),
+        camera:pick(cameraPool),
+        framing:pick(framingPool),
+        light:pick(lightPool),
+        details:pickN(detailPool,3),
+        humanTraces:pickN(tracePool,2),
+      });
+    });
+    addLog("info","Surprise scene loaded");
+  };
+
+  const applyArchetype=a=>{
+    setParams(p=>normalizeParams({...p,...a.params,archetype:a.id,shotType:"use"}));
+    addLog("info",`Place archetype: ${a.name}`);
+  };
+
+  // ─── Library (DAM) ─────────────────────────────────────────────
+  const openLibrary=async()=>{
+    setLibOpen(true);setLibAssets(null);
+    if(!window.DamClient){setLibAssets({error:"dam-client not loaded"});return;}
+    try{
+      const[r,c,ph]=await Promise.all([
+        window.DamClient.listAssets({kind:"render"}),
+        window.DamClient.listAssets({kind:"catalog"}),
+        window.DamClient.listAssets({kind:"photo"}),
+      ]);
+      setLibAssets({records:[...r,...c,...ph].sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))});
+    }catch(e){setLibAssets({error:safeMsg(e)});}
+  };
+  const pickFromLibrary=async(rec)=>{
+    try{
+      setProcessing(true);setProcMsg("Loading from Library...");
+      const resp=await fetch(window.DamClient.assetUrl(rec.hash,rec.ext||"jpg"));
+      if(!resp.ok)throw new Error(`fetch ${resp.status}`);
+      const blob=await resp.blob();
+      const du=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(blob);});
+      const img=await resizeDataUrl(du,Math.max(MAX_DIM,UPLOAD_MAX_DIM));
+      setRefImage(img);
+      setScalePts([]);setAugImg(null);setScalePM(false);setPxCm(null);setScaleFx(null);setScaleFy(null);
+      const refNode={id:"ref",type:"ref",parentId:null,img,params:null,history:null,ts:Date.now()};
+      setNodes([refNode]);setSelId("ref");setBaseParams(null);setMode("refine");
+      setRefAdj({...DEFAULT_REFINE});setRefineFB("");setPromptEditorOpen(false);setPromptEditorContext(null);setPendingUpload(null);
+      if(rec.unitHeightMm>0){setShelfH(Math.round(rec.unitHeightMm/10));setScaleOK(true);}
+      else{setShelfH(null);setScaleOK(false);}
+      setDamSource({hash:rec.hash,configId:rec.configId||null,modules:rec.modules||null,unitHeightMm:rec.unitHeightMm||null});
+      setLibOpen(false);
+      addLog("success",`Library source: ${rec.configId||rec.hash.slice(0,10)}${rec.unitHeightMm>0?` — scale auto-set to ${Math.round(rec.unitHeightMm/10)}cm from its config`:""}`);
+    }catch(e){addLog("error",`Library load failed: ${safeMsg(e)}`);}
+    finally{setProcessing(false);setProcMsg("");}
+  };
+  const saveToLibrary=async()=>{
+    if(!selNode?.img||selNode.type!=="gen")return;
+    if(!window.DamClient)return addLog("error","dam-client not loaded");
+    try{
+      setProcessing(true);setProcMsg("Saving to Library...");
+      const r=await window.DamClient.putAsset(selNode.img.dataUrl,{
+        kind:"ai-scene",configId:damSource?.configId||null,modules:damSource?.modules||undefined,
+        parentHash:damSource?.hash||null,status:"active",tool:"scene-studio",batch:"scene-promote",
+        recipe:{params:selNode.params||null,refinements:selNode.refinements||null,archetype:selNode.params?.archetype||null},
+      });
+      if(!r?.ok)throw new Error(r?.error||"push failed");
+      addLog("success",`Saved to Library${r.existed?" (already there)":""}: ${r.hash.slice(0,10)}${damSource?.configId?` · config ${damSource.configId}`:""}`);
+    }catch(e){addLog("error",`Save to Library failed: ${safeMsg(e)}`);}
+    finally{setProcessing(false);setProcMsg("");}
+  };
+
+  // ─── Autosave ──────────────────────────────────────────────────
+  useEffect(()=>{
+    if(!nodes.length)return;
+    const t=setTimeout(()=>{sceneIdbPut({version:2,ts:Date.now(),provider,nodes,refImage,augImg,scale:{pxCm,shelfH,scaleFx,scaleFy,expandF,scaleOK},params,baseParams,selId,totalCost,damSource}).catch(()=>{});},1500);
+    return()=>clearTimeout(t);
+  },[nodes,params,selId,damSource,scaleOK,shelfH,totalCost]);
+  useEffect(()=>{sceneIdbGet().then(s=>{if(s?.nodes?.length)setRestoreAvailable(true);}).catch(()=>{});},[]);
+  const restoreAutosave=async()=>{
+    try{
+      const s=await sceneIdbGet();if(!s)return setRestoreAvailable(false);
+      if(s.provider&&PROVIDERS[s.provider])updateProvider(s.provider);
+      if(s.nodes)setNodes(s.nodes);
+      if(s.refImage)setRefImage(s.refImage);
+      setAugImg(s.augImg||null);
+      if(s.scale){setPxCm(s.scale.pxCm??null);setShelfH(s.scale.shelfH??null);setScaleFx(s.scale.scaleFx??null);setScaleFy(s.scale.scaleFy??null);setExpandF(s.scale.expandF??false);setScaleOK(s.scale.scaleOK??false);}
+      if(s.params)setParams(normalizeParams(s.params));
+      setBaseParams(s.baseParams?normalizeParams(s.baseParams):null);
+      if(s.selId)setSelId(s.selId);
+      if(s.totalCost!=null)setTotalCost(s.totalCost);
+      setDamSource(s.damSource||null);
+      setRestoreAvailable(false);
+      addLog("success",`Autosaved session restored — ${s.nodes?.length??0} node(s)`);
+    }catch(e){addLog("error",`Restore failed: ${safeMsg(e)}`);}
+  };
+
+  const applyRefinePreset=preset=>{
+    setMode("refine");
+    setPromptEditorOpen(false);setPromptEditorContext(null);
+    setRefineFB(preset.feedback);
+    setRefAdj(p=>({...p,...preset.adj}));
+    addLog("info",`${preset.label} refinement loaded`);
+  };
+
+  // ─── Session save / load ───────────────────────────────────────
+  const handleSave=()=>{
+    const session={version:2,ts:Date.now(),provider,nodes,refImage,augImg,
+      scale:{pxCm,shelfH,scaleFx,scaleFy,expandF,scaleOK},
+      params,baseParams,selId,totalCost,damSource};
+    const blob=new Blob([JSON.stringify(session)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download=`framework_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+    addLog("success",`Session saved — ${nodes.length} node(s)`);
+  };
+  const handleLoad=async e=>{
+    const f=e.target.files[0];if(!f)return;
+    try{
+      const s=JSON.parse(await f.text());
+      if(!s.version)throw new Error("Not a valid session file");
+      if(s.provider&&PROVIDERS[s.provider])updateProvider(s.provider);
+      if(s.nodes)setNodes(s.nodes);
+      if(s.refImage)setRefImage(s.refImage);
+      if(s.augImg)setAugImg(s.augImg);else setAugImg(null);
+      if(s.scale){const{pxCm:pc,shelfH:sh,scaleFx:sfx,scaleFy:sfy,expandF:ef,scaleOK:sok}=s.scale;
+        setPxCm(pc??null);setShelfH(sh??null);setScaleFx(sfx??null);setScaleFy(sfy??null);
+        setExpandF(ef??false);setScaleOK(sok??false);}
+      if(s.params)setParams(normalizeParams(s.params));
+      if(s.baseParams)setBaseParams(normalizeParams(s.baseParams));else setBaseParams(null);
+      if(s.selId)setSelId(s.selId);
+      if(s.totalCost!=null)setTotalCost(s.totalCost);
+      setDamSource(s.damSource||null);
+      setScaleMode(false);setScalePM(false);setScalePts([]);setFigDrag(false);
+      setCropMode(false);setCroppedImg(null);setValResult(null);setCaptions(null);
+      setRefAdj({...DEFAULT_REFINE});setRefineFB("");setPromptEditorContext(null);
+      addLog("success",`Session loaded — ${s.nodes?.length??0} node(s)`);
+    }catch(err){addLog("error",`Load failed: ${err.message}`);}
+    e.target.value="";
+  };
+
+  // ─── STYLES ────────────────────────────────────────────────────
+  const S={
+    page:{minHeight:"100vh",background:"#10100e",color:"#ece7dd",padding:"18px",maxWidth:1540,margin:"0 auto"},
+    top:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:14,paddingBottom:12,borderBottom:"1px solid #292722"},
+    eyebrow:{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:".08em",color:"#a3a092"},
+    h1:{fontSize:22,fontWeight:700,lineHeight:1.1,color:"#fffaf0"},
+    workspace:{display:"grid",gridTemplateColumns:"minmax(360px,5fr) minmax(420px,7fr)",gap:14,alignItems:"start"},
+    left:{position:"sticky",top:14,minWidth:0},
+    panel:{background:"#181712",border:"1px solid #2a2923",borderRadius:8,padding:14,marginBottom:10,boxShadow:"0 12px 32px rgba(0,0,0,.16)"},
+    panelTight:{background:"#181712",border:"1px solid #2a2923",borderRadius:8,padding:10,marginBottom:10},
+    titleRow:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:10},
+    title:{fontSize:13,fontWeight:700,color:"#fffaf0"},
+    sub:{fontSize:11,color:"#8d887c",lineHeight:1.35},
+    btn:{padding:"8px 13px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,fontFamily:"inherit",transition:"all .15s",whiteSpace:"nowrap"},
+    btnP:{background:"#d88a26",color:"#14110a"},
+    btnS:{background:"#24231e",color:"#ece7dd",border:"1px solid #3a3830"},
+    btnSm:{padding:"5px 9px",fontSize:11},
+    input:{background:"#0d0d0b",border:"1px solid #35332d",borderRadius:6,padding:"8px 10px",color:"#ece7dd",fontSize:12,width:"100%",outline:"none",fontFamily:"inherit"},
+    miniGrid:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(172px,1fr))",gap:8},
+    preset:{background:"#11100d",border:"1px solid #302e27",borderRadius:8,padding:10,cursor:"pointer",minHeight:92},
+    presetTitle:{fontSize:12,fontWeight:800,color:"#fffaf0",marginBottom:3},
+    presetRole:{fontSize:10,color:"#c48a45",fontWeight:700,marginBottom:6},
+    presetDesc:{fontSize:11,color:"#a09a8e",lineHeight:1.35},
+    chip:{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 8px",borderRadius:5,border:"1px solid #3f3b33",background:"#11100d",fontSize:11,color:"#ece7dd"},
+    chipAdd:{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 8px",borderRadius:5,border:"1px dashed #4a463d",background:"#11100d",fontSize:11,color:"#aaa396",cursor:"pointer"},
+    pill:{display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"6px 9px",borderRadius:6,border:"1px solid #35332d",background:"#11100d",color:"#bdb6a7",fontSize:11,fontWeight:700,cursor:"pointer"},
+    pillOn:{border:"1px solid #d88a26",background:"#2b1d0d",color:"#ffd08d"},
+    label:{fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:".06em",color:"#8d887c",marginBottom:6},
+  };
+  const genNodes=nodes.filter(n=>n.type==="gen");
+  const runDisabled=processing||!refImage||(isGen&&mode==="refine"&&!isDirty);
+  const runLabel=!refImage?"Upload base image first":isGen&&mode==="refine"?"Apply refinement":isGen&&mode==="regenerate"?"Generate new version":"Generate product photo";
+  const editRunLabel=isGen&&mode==="refine"?"Edit prompt then apply":"Edit prompt then generate";
+  const editedRunLabel=isGen&&mode==="refine"?"Apply edited prompt":"Generate edited prompt";
+  const currentPromptContext=()=>isGen&&mode==="refine"?{mode:"refine",selId:selNode?.id,basePrompt:editableRunPrompt}:{mode:"generate",selId:selNode?.id||genSource?.id||null,basePrompt:editableRunPrompt};
+  const openPromptEditor=()=>{setEditablePrompt(editableRunPrompt);setPromptEditorContext(currentPromptContext());setPromptEditorOpen(true)};
+  const switchMode=nextMode=>{setMode(nextMode);setPromptEditorOpen(false);setPromptEditorContext(null)};
+  const optionName=(param,o)=>o[param.nameKey||"label"]||o.label||o.name||o.id;
+  const renderParamControl=param=>{
+    const opts=optionsForParam(param);
+    const value=params[param.id];
+    const isChanged=changedKeys.has(param.id);
+    const isCard=["shotType","productBackground","scene"].includes(param.id);
+    if(param.type==="multi"){
+      const selected=new Set(value||[]);
+      return(<div key={param.id} style={{marginBottom:10}}>
+        <div style={{fontSize:10,color:isChanged?"#f6bd64":"#8d887c",fontWeight:800,marginBottom:5}}>{param.label}{isChanged?" *":""}</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5,maxHeight:132,overflowY:"auto",paddingRight:2}}>
+          {opts.map(o=>{
+            const on=selected.has(o.id);
+            return <button key={o.id} onClick={()=>toggleMulti(param.id,o.id)} style={{...S.pill,...(on?S.pillOn:{}),whiteSpace:"normal",lineHeight:1.15,textAlign:"left"}}>{on?"On: ":""}{optionName(param,o)}</button>;
+          })}
+        </div>
+      </div>);
+    }
+    return(<div key={param.id} style={{marginBottom:10}}>
+      <div style={{fontSize:10,color:isChanged?"#f6bd64":"#8d887c",fontWeight:800,marginBottom:5}}>{param.label}{isChanged?" *":""}</div>
+      <div style={isCard?{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:7,maxHeight:param.id==="scene"?190:"none",overflowY:param.id==="scene"?"auto":"visible",paddingRight:2}:{display:"flex",flexWrap:"wrap",gap:5}}>
+        {opts.map(o=>{
+          const on=value===o.id;
+          const label=optionName(param,o);
+          if(isCard){
+            return <button key={o.id} onClick={()=>updateSingle(param.id,o.id)} style={{...S.preset,minHeight:param.id==="shotType"?82:44,padding:"8px 9px",fontFamily:"inherit",textAlign:"left",border:on?"1px solid #d88a26":"1px solid #302e27",background:on?"#2b1d0d":"#11100d"}}>
+              <div style={{fontSize:12,fontWeight:800,color:on?"#ffd08d":"#fffaf0",lineHeight:1.15}}>{label}</div>
+              {(param.id==="shotType"||param.id==="productBackground")&&o.prompt?<div style={{fontSize:10,color:"#9b9487",lineHeight:1.25,marginTop:4}}>{o.prompt}</div>:null}
+            </button>;
+          }
+          return <button key={o.id} onClick={()=>updateSingle(param.id,o.id)} style={{...S.pill,...(on?S.pillOn:{}),whiteSpace:"normal",lineHeight:1.15}}>{label}</button>;
+        })}
+      </div>
+    </div>);
+  };
+  const renderRecipeGroup=group=>(<div key={group.id} style={{background:"#11100d",border:"1px solid #302e27",borderRadius:8,padding:"10px 10px 8px",minWidth:0}}>
+    <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}>
+      <div>
+        <div style={{fontSize:11,fontWeight:900,color:"#fffaf0",textTransform:"uppercase",letterSpacing:".04em"}}>{group.label}</div>
+        <div style={{fontSize:9,color:"#8d887c"}}>{group.kind==="multi"?"choose several":"one choice per row"}</div>
+      </div>
+      <div style={{display:"flex",gap:5,flexWrap:"wrap",justifyContent:"flex-end"}}>
+        {group.id==="shot"?<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={surpriseScene} disabled={processing}>Surprise scene</button>:null}
+        {group.id==="shot"&&params.shotType==="use"?<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setShowAllScenes(v=>!v)} disabled={processing}>{showAllScenes?"Filtered rooms":"All rooms"}</button>:null}
+        {group.id==="details"?<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={suggestDetails} disabled={params.shotType==="clean"||processing}>Suggest details</button>:null}
+      </div>
+    </div>
+    {group.controls.map(renderParamControl)}
+    {group.id==="photo"?(<div style={{marginBottom:4}}>
+      <div style={{fontSize:10,color:changedKeys.has("aspect")?"#f6bd64":"#8d887c",fontWeight:800,marginBottom:5}}>Aspect{changedKeys.has("aspect")?" *":""}</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+        {ASPECTS.map(a=><button key={a.id} onClick={()=>setP("aspect",a.id)} style={{...S.pill,...(params.aspect===a.id?S.pillOn:{})}}>{a.l}</button>)}
+      </div>
+    </div>):null}
+  </div>);
+
+  // ─── Pipeline rendering ────────────────────────────────────────
+  function renderChain(nodeId,depth=0){
+    const node=nodes.find(n=>n.id===nodeId);if(!node)return null;
+    const children=nodes.filter(n=>n.parentId===nodeId);
+    const isSel=selId===nodeId;
+    const borderColor=isSel?"#d97706":node.type==="ref"||node.type==="ref-scale"?"#3b82f6":"#333";
+    const badge=node.type==="ref"?"REF":node.type==="ref-scale"?"SCALE":node.id;
+    const badgeBg=node.type==="ref"||node.type==="ref-scale"?"rgba(59,130,246,.85)":node.refinements?"rgba(139,92,246,.85)":"rgba(217,119,6,.85)";
+    return(
+      <div style={{display:"flex",alignItems:"flex-start"}}>
+        <div onClick={()=>handleSelect(nodeId)} style={{flexShrink:0,position:"relative",cursor:"pointer"}}>
+          <div style={{width:52,height:52,borderRadius:6,overflow:"hidden",border:`2px solid ${borderColor}`,transition:"border-color .15s"}}>
+            {node.img?<img src={node.img.dataUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<div style={{width:"100%",height:"100%",background:"#1a1a1a"}}/>}
+          </div>
+          <div style={{position:"absolute",bottom:1,left:1,right:1,fontSize:7,background:badgeBg,color:"#fff",textAlign:"center",borderRadius:"0 0 4px 4px",padding:"1px 0"}}>{badge}</div>
+        </div>
+        {children.length>0&&(<div style={{display:"flex",flexDirection:"column"}}>
+          {children.map((ch,i)=>(<div key={ch.id} style={{display:"flex",alignItems:"center",marginTop:i>0?4:0}}>
+            <div style={{width:20,height:0,borderTop:"2px solid #404040",margin:"0 2px"}}/>
+            <div style={{width:0,height:0,borderLeft:"5px solid #404040",borderTop:"3px solid transparent",borderBottom:"3px solid transparent"}}/>
+            {renderChain(ch.id,depth+1)}
+          </div>))}
+        </div>)}
+      </div>
+    );
+  }
+
+  // ─── RENDER ────────────────────────────────────────────────────
+  return(
+    <div style={S.page}>
+      <div style={S.top}>
+        <div>
+          <div style={S.eyebrow}>Framework Designs</div>
+          <h1 style={S.h1}>Product Content Studio</h1>
+          {/* Whether what leaves this page will still say which shelf it is of.
+              Said plainly either way: a missing code is not an error, but it is
+              something to know before the image is out in the world. */}
+          {nodes.length>0&&(designCode
+            ? <div style={{fontSize:11,fontWeight:700,color:"#7fd1a0",letterSpacing:".04em"}}>
+                Design {designCode} — carried into every export
+              </div>
+            : <div style={{fontSize:11,fontWeight:600,color:"#c9a227"}}>
+                No design code — these images will not link back to a shelf
+              </div>)}
+        </div>
+        <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
+          <select value={provider} onChange={e=>updateProvider(e.target.value)} style={{...S.input,width:120,padding:"6px 8px"}}>
+            {Object.entries(PROVIDERS).map(([id,cfg])=><option key={id} value={id}>{cfg.label}</option>)}
+          </select>
+          <span style={{background:"#252017",border:"1px solid #4a3822",padding:"5px 10px",borderRadius:6,fontSize:11,fontWeight:800,color:"#f6bd64"}}>${totalCost.toFixed(3)}</span>
+          <input ref={baseUploadRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleBaseUpload}/>
+          <input ref={sessionRef} type="file" accept=".json,application/json" style={{display:"none"}} onChange={handleLoad}/>
+          <a href="./catalog.html" style={{...S.btn,...S.btnSm,...S.btnS,textDecoration:"none"}}>Catalog Sets</a>
+          <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>sessionRef.current?.click()}>Load</button>
+          <button style={{...S.btn,...S.btnSm,...S.btnS,opacity:nodes.length?1:.45}} onClick={handleSave} disabled={!nodes.length}>Save</button>
+        </div>
+      </div>
+
+      {restoreAvailable&&!nodes.length&&(
+        <div style={{background:"#1a2030",border:"1px solid #315271",borderRadius:8,padding:"8px 12px",marginBottom:10,display:"flex",gap:10,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap"}}>
+          <span style={{fontSize:11,color:"#d7ecff",fontWeight:700}}>A previous session was autosaved.</span>
+          <div style={{display:"flex",gap:6}}>
+            <button style={{...S.btn,...S.btnSm,...S.btnP}} onClick={restoreAutosave}>Restore</button>
+            <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setRestoreAvailable(false)}>Dismiss</button>
+          </div>
+        </div>
+      )}
+
+      {libOpen&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.78)",zIndex:60,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setLibOpen(false)}>
+          <div style={{background:"#14130f",border:"1px solid #3a3830",borderRadius:10,width:"min(880px,94vw)",maxHeight:"84vh",display:"flex",flexDirection:"column",padding:14}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div>
+                <div style={{fontWeight:900,fontSize:13,color:"#fffaf0"}}>Choose a source from the Library</div>
+                <div style={{fontSize:10,color:"#8d887c",marginTop:2}}>Renders arrive here automatically from the 3D Builder — with product identity and true scale attached.</div>
+              </div>
+              <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setLibOpen(false)}>Close</button>
+            </div>
+            <div style={{overflowY:"auto",minHeight:120}}>
+              {!libAssets?<div style={{color:"#8d887c",fontSize:12,padding:20}}>Loading…</div>
+              :libAssets.error?<div style={{color:"#f6bd64",fontSize:12,padding:20}}>The Library is switched off.</div>
+              :!libAssets.records.length?<div style={{color:"#8d887c",fontSize:12,padding:20}}>Nothing in the working set yet. Render a design in the 3D Builder — it lands here automatically.</div>
+              :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8}}>
+                {libAssets.records.map(r=>(
+                  <div key={r.hash} onClick={()=>pickFromLibrary(r)} style={{cursor:"pointer",border:"1px solid #2d2a23",borderRadius:8,overflow:"hidden",background:"#0f0e0b"}}>
+                    <img src={window.DamClient.thumbUrl(r.hash)} loading="lazy" style={{width:"100%",aspectRatio:"1",objectFit:"cover",display:"block",background:"#0a0a08"}}/>
+                    <div style={{padding:"5px 7px"}}>
+                      <div style={{fontSize:10,fontWeight:800,color:"#e8e2d4",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.configId||r.origins?.[0]?.path||r.hash.slice(0,10)}</div>
+                      <div style={{fontSize:9,color:"#8d887c"}}>{r.kind}{r.unitHeightMm>0?` · ${Math.round(r.unitHeightMm/10)}cm`:""}{r.variant?` · ${r.variant}`:""}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={S.workspace} className="studio-grid">
+        <section style={S.left} className="sticky-pane">
+          <div style={S.panel}>
+            <div style={S.titleRow}>
+              <div>
+                <div style={S.title}>Product source</div>
+                <div style={S.sub}>{refImage?"Reference loaded. Product lock stays strict.":"Upload one image, then choose how to use it."}</div>
+              </div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                <button style={{...S.btn,...S.btnSm,...S.btnP}} onClick={()=>baseUploadRef.current?.click()} disabled={processing}>Upload Base Image</button>
+                {window.DamClient?.enabled&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={openLibrary} disabled={processing}>From Library</button>}
+              </div>
+            </div>
+            {pendingUpload?(
+              <div style={{background:"#11100d",border:"1px solid #3a3830",borderRadius:8,padding:12,marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",flexWrap:"wrap"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:900,color:"#fffaf0"}}>What is this image?</div>
+                    <div style={{fontSize:10,color:"#8d887c",lineHeight:1.35,marginTop:3}}>
+                      {pendingUpload.name} / {pendingUpload.img.width}x{pendingUpload.img.height}
+                    </div>
+                  </div>
+                  <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setPendingUpload(null)}>Cancel</button>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:8,marginTop:10}}>
+                  <button style={{...S.preset,minHeight:72,textAlign:"left",fontFamily:"inherit"}} onClick={usePendingAsSource}>
+                    <div style={S.presetTitle}>Source product photo</div>
+                    <div style={S.presetDesc}>Use this as the product reference, then create fresh images from it.</div>
+                  </button>
+                  <button style={{...S.preset,minHeight:72,textAlign:"left",fontFamily:"inherit"}} onClick={usePendingAsRefine}>
+                    <div style={S.presetTitle}>Existing AI image</div>
+                    <div style={S.presetDesc}>Start in refine mode from this already-made shot.</div>
+                  </button>
+                </div>
+              </div>
+            ):!selNode?(
+              <div style={{width:"100%",minHeight:140,border:"1px solid #302e27",background:"#11100d",borderRadius:8,color:"#8d887c",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,textAlign:"center",padding:18}}>No base image loaded.</div>
+            ):cropMode?(
+              <CropTool src={selNode.img.dataUrl} onApply={handleCrop} onCancel={()=>setCropMode(false)}/>
+            ):(
+              <div>
+                <img ref={imgRef} src={croppedImg?croppedImg.dataUrl:(selNode.type==="ref"&&augImg?augImg.dataUrl:selNode.img?.dataUrl)} alt=""
+                  style={{width:"100%",maxHeight:520,objectFit:"contain",borderRadius:8,border:"1px solid #343129",background:"#0b0b09",cursor:(scaleMode||scalePM)?"crosshair":scaleOK&&scaleFx!=null?(figDrag?"grabbing":"grab"):"default"}}
+                  onClick={handleImgClick}
+                  onMouseDown={handleImgMouseDown}/>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginTop:9}}>
+                  <div style={{fontSize:11,color:"#9f9789"}}>
+                    {selNode.type==="ref"?"Reference":selNode.type==="ref-scale"?"Reference + scale":selNode.source==="uploaded-refine"?"Uploaded shot":selNode.refinements?"Refined shot":"Generated shot"}
+                    {selNode.ts&&selNode.type==="gen"?` / ${new Date(selNode.ts).toLocaleTimeString()}`:""}
+                    {selNode.type==="gen"&&selNode.modelUsed?<span style={{color:selNode.fallbackUsed?"#f6bd64":"#8bd17c",marginLeft:8}}>{selNode.modelUsed}{selNode.fallbackUsed?" fallback":""}</span>:null}
+                    {scaleOK&&selNode.type==="ref"?<span style={{color:"#8bd17c",marginLeft:8}}>Scale set</span>:null}
+                  </div>
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                    {selNode.type==="ref"&&!scaleMode&&!scalePM&&!scaleOK&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setScaleMode(true);setScalePts([])}}>Set scale</button>}
+                    {scaleMode&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setScaleMode(false);setScalePts([])}}>Cancel</button>}
+                    {scalePM&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={resetScale}>Cancel</button>}
+                    {scaleOK&&selNode.type==="ref"&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={resetScale}>Reset scale</button>}
+                    {isGen&&(<>
+                      <button style={{...S.btn,...S.btnSm,...S.btnP}} onClick={()=>dl(croppedImg||selNode.img,exportName(selNode))}>Download</button>
+                      <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setCropMode(true);setCroppedImg(null)}}>Crop</button>
+                      <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={handleValidate} disabled={processing}>Check</button>
+                      {window.DamClient?.enabled&&selNode?.type==="gen"&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={saveToLibrary} disabled={processing}>Save to Library</button>}
+                      <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={handleCaption} disabled={capLoading}>{capLoading?"Writing":"Captions"}</button>
+                      {genNodes.length>1&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={handleExport}>Export all</button>}
+                    </>)}
+                  </div>
+                </div>
+
+                {(scaleMode||scalePM||(scaleOK&&scaleFx!=null&&selNode.type==="ref"))&&(
+                  <div style={{marginTop:10,padding:12,background:"#201a0d",border:"1px solid #6a4519",borderRadius:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                    {scaleMode&&scalePts.length===0&&<span style={{fontSize:13,fontWeight:800,color:"#ffd08d"}}>Click shelf bottom</span>}
+                    {scaleMode&&scalePts.length===1&&<span style={{fontSize:13,fontWeight:800,color:"#ffd08d"}}>Click shelf top</span>}
+                    {scaleMode&&scalePts.length===2&&(<>
+                      <span style={{fontSize:13,fontWeight:800,color:"#ffd08d"}}>Shelf height</span>
+                      <input autoFocus style={{...S.input,width:96,border:"2px solid #d88a26"}} type="number" placeholder="cm" value={scaleDim} onChange={ev=>setScaleDim(ev.target.value)} onKeyDown={ev=>{if(ev.key==="Enter"&&scaleDim)confirmScale()}}/>
+                      <label style={{fontSize:12,color:"#c5bba8",display:"flex",alignItems:"center",gap:5,cursor:"pointer"}}>
+                        <input type="checkbox" checked={expandF} onChange={ev=>setExpandF(ev.target.checked)}/>Expand frame
+                      </label>
+                      <button style={{...S.btn,...S.btnP,opacity:scaleDim?1:.5}} onClick={confirmScale} disabled={!scaleDim}>Set</button>
+                    </>)}
+                    {scalePM&&<span style={{fontSize:13,fontWeight:800,color:"#ffd08d"}}>Click figure feet position</span>}
+                    {scaleOK&&scaleFx!=null&&selNode.type==="ref"&&<span style={{fontSize:12,color:"#8bd17c"}}>Drag figure to adjust</span>}
+                  </div>
+                )}
+                {croppedImg&&<div style={{fontSize:10,color:"#8bd17c",marginTop:6,padding:"4px 8px",background:"#122214",borderRadius:5}}>Cropped {croppedImg.width}x{croppedImg.height} <span style={{color:"#cbe8c5",cursor:"pointer",textDecoration:"underline"}} onClick={()=>setCroppedImg(null)}>Undo</span></div>}
+                {valResult&&(<div style={{background:"#0e0e0c",border:"1px solid #2d2a23",borderRadius:8,padding:9,marginTop:8}}>
+                  <span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:valResult.overall_pass?"#56c46e":"#e06457",marginRight:6}}/>
+                  <span style={{fontSize:12,fontWeight:800,color:valResult.overall_pass?"#88d596":"#f0a09a"}}>{valResult.overall_pass?"Passed":"Needs work"}</span>
+                  {valResult.issues?.length>0&&<div style={{fontSize:10,color:"#d9a09a",marginTop:5}}>{valResult.issues.join("; ")}</div>}
+                </div>)}
+                {captions?.length>0&&(<div style={{background:"#0e0e0c",border:"1px solid #2d2a23",borderRadius:8,padding:9,marginTop:8}}>
+                  {captions.map((c,i)=>(<div key={i} style={{padding:"5px 7px",background:"#181712",borderRadius:5,marginBottom:4,cursor:"pointer",border:"1px solid #2d2a23"}} onClick={()=>{navigator.clipboard.writeText(c.text);addLog("info","Copied")}}>
+                    <span style={{fontSize:11,color:"#ece7dd"}}>{c.text}</span><span style={{fontSize:8,color:"#8d887c",marginLeft:6}}>{c.angle} / copy</span>
+                  </div>))}
+                </div>)}
+              </div>
+            )}
+          </div>
+
+          <div style={S.panelTight}>
+            <div style={{...S.titleRow,marginBottom:6}}>
+              <div>
+                <div style={S.title}>Shot map</div>
+                <div style={S.sub}>{genNodes.length} generated</div>
+              </div>
+              {selId&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setSelId(null);setBaseParams(null);setPromptEditorOpen(false);setPromptEditorContext(null);clearReview()}}>Deselect</button>}
+            </div>
+            <div style={{overflowX:"auto",padding:"4px 0"}}>
+              {nodes.length===0?<span style={{fontSize:11,color:"#8d887c"}}>No source yet.</span>:<div style={{display:"inline-flex",alignItems:"flex-start"}}>{renderChain("ref")}</div>}
+            </div>
+          </div>
+
+	          <div style={S.panelTight}>
+	            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:6}}>
+	              <span style={S.label}>Activity</span>
+	              <div style={{display:"flex",gap:5,alignItems:"center"}}>
+	                <span style={{fontSize:9,color:"#8d887c"}}>{log.length}</span>
+	                {log.length>0&&<button style={{...S.btn,...S.btnSm,...S.btnS,padding:"3px 6px",fontSize:9}} onClick={()=>{navigator.clipboard.writeText(log.map(e=>`${e.time} [${e.type}] ${e.msg}`).join("\n"));addLog("info","Log copied")}}>Copy</button>}
+	                {log.length>0&&<button style={{...S.btn,...S.btnSm,...S.btnS,padding:"3px 6px",fontSize:9}} onClick={()=>setLog([])}>Clear</button>}
+	              </div>
+	            </div>
+	            <LogPanel entries={log}/>
+	          </div>
+        </section>
+
+        <section style={{minWidth:0}}>
+          <div style={S.panel}>
+            <div style={S.titleRow}>
+              <div>
+                <div style={S.title}>{isGen&&mode==="refine"?"Improve selected shot":"Plan product shot"}</div>
+                <div style={S.sub}>{isGen&&mode==="refine"?"Text edits and reality dials are enough for most revisions.":"Choose clean product or shelf in use, then tune the recipe."}</div>
+              </div>
+              {isGen&&(<div style={{display:"flex",borderRadius:7,overflow:"hidden",border:"1px solid #3a3830"}}>
+                <button onClick={()=>switchMode("refine")} style={{padding:"7px 12px",fontSize:11,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit",background:mode==="refine"?"#d88a26":"#24231e",color:mode==="refine"?"#14110a":"#bdb6a7"}}>Refine</button>
+                <button onClick={()=>switchMode("regenerate")} style={{padding:"7px 12px",fontSize:11,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit",background:mode==="regenerate"?"#d88a26":"#24231e",color:mode==="regenerate"?"#14110a":"#bdb6a7"}}>New version</button>
+              </div>)}
+            </div>
+
+            <div style={{background:"#0f120f",border:"1px solid #2f3b2b",borderRadius:8,padding:10,marginBottom:10}}>
+              <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:fidelityWarnings.length?6:0}}>
+                <span style={{fontSize:11,fontWeight:900,color:"#dcefd7",textTransform:"uppercase",letterSpacing:".04em"}}>Product lock</span>
+                <span style={{...S.chip,border:"1px solid #42613d",background:"#152015",color:"#a9e6a5"}}>Strict</span>
+                <span style={S.chip}>{apiKey?"Browser ref":"Server ref"} {apiKey?"full detail":`${SERVER_MAX_DIM}px`}</span>
+                {provider==="openai"?<span style={S.chip}>GPT Image 2 high</span>:null}
+                {provider==="gemini"?<span style={S.chip}>Gemini native 2K</span>:null}
+                <span style={{...S.chip,color:scaleOK?"#a9e6a5":"#f6bd64"}}>{scaleOK?"Scale set":"Scale unset"}</span>
+                {damSource&&<span style={{...S.chip,color:"#a9c6e6"}}>Library: {damSource.configId||damSource.hash.slice(0,8)}</span>}
+              </div>
+              {fidelityWarnings.length?(
+                <div style={{display:"grid",gap:4}}>
+                  {fidelityWarnings.map((w,i)=><div key={i} style={{fontSize:10,color:"#d6c39a",lineHeight:1.35}}>- {w}</div>)}
+                </div>
+              ):null}
+            </div>
+
+            {isGen&&mode==="refine"?(
+              <div>
+                {selectedUpscale?.needed&&(
+                  <div style={{background:"#171d24",border:"1px solid #315271",borderRadius:8,padding:10,marginBottom:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"flex-start",flexWrap:"wrap"}}>
+                      <div>
+                        <div style={{fontSize:11,fontWeight:900,color:"#d7ecff",textTransform:"uppercase",letterSpacing:".04em"}}>Upscale recommended</div>
+                        <div style={{fontSize:10,color:"#a9bed0",lineHeight:1.35,marginTop:3}}>
+                          Uploaded {selectedUpscale.width}x{selectedUpscale.height}; target {selectedUpscale.targetLabel}. The next refine run will restore detail while upscaling.
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:5,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                        <button style={{...S.btn,...S.btnSm,...(selectedUpscale.mode==="only"?S.btnP:S.btnS)}} onClick={()=>setSelectedUpscaleMode("only")}>Upscale only</button>
+                        <button style={{...S.btn,...S.btnSm,...(selectedUpscale.mode==="with-refine"?S.btnP:S.btnS)}} onClick={()=>setSelectedUpscaleMode("with-refine")}>With edits</button>
+                        <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setSelectedUpscaleMode(null)}>Skip</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div style={S.miniGrid}>
+                  {REFINE_PRESETS.map(p=><button key={p.id} style={{...S.preset,textAlign:"left",fontFamily:"inherit"}} onClick={()=>applyRefinePreset(p)}>
+                    <div style={S.presetTitle}>{p.label}</div>
+                    <div style={S.presetDesc}>{p.feedback.slice(0,95)}</div>
+                  </button>)}
+                </div>
+                <textarea value={refineFB} onChange={e=>setRefineFB(e.target.value)} placeholder="What should change?" style={{...S.input,minHeight:86,resize:"vertical",marginTop:10}}/>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(96px,1fr))",gap:7,marginTop:10}}>
+                  {REFINE_CATS.map(cat=>(<div key={cat.id}>
+                    <div style={{fontSize:9,color:"#8d887c",marginBottom:3}}>{cat.label}</div>
+                    <div style={{display:"flex",gap:2}}>{REFINE_LVLS.map(lv=>(<span key={lv.v} onClick={()=>setRefAdj(p=>({...p,[cat.id]:lv.v}))} style={{padding:"3px 0",borderRadius:4,fontSize:9,cursor:"pointer",flex:1,textAlign:"center",fontWeight:800,
+                      background:refAdj[cat.id]===lv.v?(lv.v<0?"#182a20":lv.v>0?"#2b1d0d":"#24231e"):"#11100d",
+                      border:`1px solid ${refAdj[cat.id]===lv.v?(lv.v<0?"#356c4b":lv.v>0?"#d88a26":"#3a3830"):"#282620"}`,
+                      color:refAdj[cat.id]===lv.v?(lv.v<0?"#9ee0ad":lv.v>0?"#ffd08d":"#bdb6a7"):"#746f64"}}>{lv.l}</span>))}</div>
+                  </div>))}
+                </div>
+              </div>
+            ):(
+              <div>
+                {params.shotType!=="clean"&&(
+                  <div style={{marginBottom:10}}>
+                    <div style={{...S.label,marginBottom:6}}>Start from a Nairobi place</div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:7}}>
+                      {(CONFIG.archetypes||[]).map(a=>(
+                        <button key={a.id} onClick={()=>applyArchetype(a)} style={{...S.preset,textAlign:"left",fontFamily:"inherit",border:`1px solid ${params.archetype===a.id?"#d88a26":"#2d2a23"}`,background:params.archetype===a.id?"#241c10":undefined}}>
+                          <div style={S.presetTitle}>{a.name}</div>
+                          <div style={S.presetDesc}>{a.blurb}</div>
+                        </button>
+                      ))}
+                      <button onClick={()=>setParams(p=>normalizeParams({...p,archetype:null}))} style={{...S.preset,textAlign:"left",fontFamily:"inherit",border:`1px solid ${!params.archetype?"#d88a26":"#2d2a23"}`,background:!params.archetype?"#241c10":undefined}}>
+                        <div style={S.presetTitle}>Custom</div>
+                        <div style={S.presetDesc}>Assemble the place from fine controls</div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+                  <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setShowFine(v=>!v)}>{showFine?"Hide fine controls":"Fine controls…"}</button>
+                  <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>updateSingle("shotType",params.shotType==="clean"?"use":"clean")}>{params.shotType==="clean"?"← Back to scene shots":"Clean product shot instead"}</button>
+                  {params.archetype&&<span style={{fontSize:10,color:"#8d887c"}}>Fine-control changes become explicit adjustments to the place.</span>}
+                </div>
+                {(showFine||params.shotType==="clean")&&(
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:10}}>
+                    {recipeGroups.map(renderRecipeGroup)}
+                  </div>
+                )}
+                <div style={{marginTop:10}}>
+                  <div style={S.label}>Brief note</div>
+                  <textarea value={params.customNotes||""} onChange={e=>setP("customNotes",e.target.value)} placeholder="Optional direction for this shot" style={{...S.input,minHeight:70,resize:"vertical"}}/>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{...S.panel,position:"relative",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <div>
+              <div style={S.title}>Ready for content</div>
+              <div style={S.sub}>{providerCfg.label} / approx ${providerCfg.imageCost.toFixed(2)} per image</div>
+              {activeJob?.id&&<div style={{fontSize:10,color:"#f6bd64",marginTop:4}}>Unfinished Netlify job saved: {activeJob.id}</div>}
+            </div>
+            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
+              {isDirty&&<span style={{fontSize:11,color:"#f6bd64"}}>{dirtyLabels.join(" + ")}</span>}
+              {!(isGen&&mode==="refine")&&(
+                <label style={{display:"flex",gap:5,alignItems:"center",fontSize:10,color:"#8d887c"}}>Takes
+                  <select value={variations} onChange={e=>setVariations(Number(e.target.value))} style={{...S.input,width:52,padding:"6px 6px"}}>
+                    {[1,2,3,4,6].map(n=><option key={n} value={n}>{n}</option>)}
+                  </select>
+                </label>
+              )}
+              {activeJob?.id&&<button style={{...S.btn,...S.btnS,padding:"11px 14px",fontSize:13}} disabled={processing} onClick={resumeActiveJob}>{processing?"Working":"Resume job"}</button>}
+              {activeJob?.id&&<button style={{...S.btn,...S.btnS,padding:"11px 10px",fontSize:12}} disabled={processing} onClick={clearActiveJob}>Forget</button>}
+              <button style={{...S.btn,...S.btnP,padding:"11px 18px",fontSize:13,opacity:runDisabled ? .5 : 1}} disabled={runDisabled} onClick={()=>handleRun()}>
+                {processing?procMsg:runLabel}
+              </button>
+              <button style={{...S.btn,...S.btnS,opacity:runDisabled ? .5 : 1}} disabled={runDisabled} onClick={openPromptEditor}>{editRunLabel}</button>
+            </div>
+            {processing&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:"#25231d",borderRadius:"0 0 8px 8px",overflow:"hidden"}}><div style={{height:"100%",background:"#d88a26",animation:"pulse 1.5s ease-in-out infinite"}}/></div>}
+          </div>
+
+          {promptEditorOpen&&<div style={S.panelTight}>
+            <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:7}}>
+              <div>
+                <div style={S.title}>Prompt editor</div>
+                <div style={S.sub}>{editablePrompt.length} chars</div>
+              </div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{navigator.clipboard.writeText(editablePrompt);addLog("info","Prompt copied")}}>Copy</button>
+                <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setEditablePrompt(editableRunPrompt);setPromptEditorContext(currentPromptContext())}}>Reset</button>
+                <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setPromptEditorOpen(false);setPromptEditorContext(null)}}>Cancel</button>
+                <button style={{...S.btn,...S.btnSm,...S.btnP,opacity:(processing||!editablePrompt.trim()) ? .5 : 1}} disabled={processing||!editablePrompt.trim()} onClick={()=>handleRun(editablePrompt)}>{editedRunLabel}</button>
+              </div>
+            </div>
+            <textarea value={editablePrompt} onChange={e=>setEditablePrompt(e.target.value)} style={{...S.input,minHeight:260,maxHeight:460,resize:"vertical",fontFamily:"ui-monospace, SFMono-Regular, Menlo, monospace",fontSize:10,lineHeight:1.45,whiteSpace:"pre-wrap"}}/>
+          </div>}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+// Nothing mounts until there is a key /api/auth accepts. The page holds no
+// secret, but it is useless without one, and a half-drawn studio that fails on
+// every request is a worse experience than being asked for the key.
+window.FrameworkGate.ready().then(function(){
+  ReactDOM.render(<App/>,document.getElementById("root"));
+});
+</script>
+</body>
+</html>

@@ -24,6 +24,7 @@
 // that is the intended fallback, not a failure.
 
 import { getStore } from '@netlify/blobs';
+import { refuse } from './_auth.mjs';
 import { CONFIG_IMAGE_DIR, THUMB_DIR, buildPublish } from '../../scripts/lib/catalog-build.mjs';
 
 // The manager uploads a 180px thumbnail beside each image, named like this
@@ -90,10 +91,8 @@ function github(env) {
 
 export default async (req) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-  const key = new URL(req.url).searchParams.get('key');
-  if (!process.env.SITE_EXPORT_KEY || key !== process.env.SITE_EXPORT_KEY) {
-    return new Response('unauthorized', { status: 401 });
-  }
+  const denied = refuse(req);
+  if (denied) return denied;
 
   const gh = github(process.env);
   if (!gh) {

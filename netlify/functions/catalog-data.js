@@ -12,6 +12,7 @@
 // stored is stats keyed by product id.
 
 import { getStore } from '@netlify/blobs';
+import { refuse } from './_auth.mjs';
 
 const MAX = 3 * 1024 * 1024;
 
@@ -33,9 +34,8 @@ function statsFrom(body) {
 
 export default async (req) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-  const key = new URL(req.url).searchParams.get('key');
-  if (!process.env.SITE_EXPORT_KEY || key !== process.env.SITE_EXPORT_KEY) return new Response('unauthorized', { status: 401 });
-
+  const denied = refuse(req);
+  if (denied) return denied;
   const raw = await req.text();
   if (!raw || raw.length > MAX) return json({ ok: false, error: 'bad_size' }, 400);
   let body;

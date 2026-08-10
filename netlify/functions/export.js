@@ -10,6 +10,7 @@
 // HTTP roundtrip; thousands of events × ~100ms would take minutes).
 
 import { getStore } from '@netlify/blobs';
+import { refuse } from './_auth.mjs';
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const POOL = 24; // concurrent blob fetches
@@ -39,10 +40,9 @@ async function pooled(items, fn) {
 }
 
 export default async (req) => {
-  const secret = process.env.SITE_EXPORT_KEY;
+  const denied = refuse(req);
+  if (denied) return denied;
   const url = new URL(req.url);
-  const key = url.searchParams.get('key');
-  if (!secret || key !== secret) return new Response('unauthorized', { status: 401 });
 
   const until = url.searchParams.get('until') || new Date().toISOString().slice(0, 10);
   const since = url.searchParams.get('since') || until;

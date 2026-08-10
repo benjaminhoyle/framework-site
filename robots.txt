@@ -1,4 +1,13 @@
 User-agent: *
 Allow: /
 
+# The private tools. They are also noindex in the page itself, and useless
+# without an access key, but there is no reason to have them crawled.
+Disallow: /metrics.html
+Disallow: /catalog.html
+Disallow: /scene-generator
+Disallow: /catalog-generator
+Disallow: /catalog-generator.html
+Disallow: /scene-generator.html
+
 Sitemap: https://www.framework.co.ke/sitemap.xml

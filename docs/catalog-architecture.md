@@ -4,8 +4,9 @@
 and then looking properly at what it was publishing into. §7 records how it
 landed; §11 is what remains.
 
-Supersedes `docs/shelving-catalog-workflow.md`, which describes the Dropbox
-folder and "ask Codex to run the importer" flow that the manager replaced.
+Replaced `docs/shelving-catalog-workflow.md`, which described the Dropbox folder
+and "ask Codex to run the importer" flow the manager had already superseded.
+See also `docs/studios.md` for the gate in front of all of this.
 
 ---
 

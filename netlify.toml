@@ -28,6 +28,18 @@
   to = "/builder.html"
   status = 200
 
+# The two private studios. Clean URLs like the rest; the pages themselves are
+# noindex and do nothing until js/gate.js has a key /api/auth accepts.
+[[redirects]]
+  from = "/scene-generator"
+  to = "/scene-generator.html"
+  status = 200
+
+[[redirects]]
+  from = "/catalog-generator"
+  to = "/catalog-generator.html"
+  status = 200
+
 # A saved design: /builder/1Y3MK7P. The page is served unchanged and reads the
 # code off its own path, then resolves it through /api/design. The URL stays as
 # typed, which is the point -- it is what the share image prints.

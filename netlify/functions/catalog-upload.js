@@ -4,14 +4,15 @@
 // well under the function payload limit. Auth reuses SITE_EXPORT_KEY.
 
 import { getStore } from '@netlify/blobs';
+import { refuse } from './_auth.mjs';
 
 const MAX = 12 * 1024 * 1024; // generous per-image ceiling (source photos)
 const SAFE = /^[a-z0-9][a-z0-9._-]{0,80}$/i;
 
 export default async (req) => {
   const u = new URL(req.url);
-  const key = u.searchParams.get('key');
-  if (!process.env.SITE_EXPORT_KEY || key !== process.env.SITE_EXPORT_KEY) return new Response('unauthorized', { status: 401 });
+  const denied = refuse(req);
+  if (denied) return denied;
   const store = getStore('catalog-uploads');
   const id = u.searchParams.get('id') || '';
   const file = u.searchParams.get('file') || '';
