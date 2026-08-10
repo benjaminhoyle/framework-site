@@ -3,14 +3,15 @@
 // Shared-secret export for the local reconciler (framework-ops). Returns the
 // `wa_handoff` events and the short-code payloads in the range; with events=all,
 // every checkpoint event (for the dashboard's cohort funnel + catalog stats).
-// No PII by construction. Auth is SITE_EXPORT_KEY; without it → 401.
+// No PII by construction. No browser calls this, so it takes SITE_EXPORT_KEY
+// only — the typed gate key is not enough for the raw lake; without it → 401.
 //
 // Blob fetches run through a bounded concurrency pool — sequential awaits would
 // blow the function's 10s limit once real traffic accumulates (each get is an
 // HTTP roundtrip; thousands of events × ~100ms would take minutes).
 
 import { getStore } from '@netlify/blobs';
-import { refuse } from './_auth.mjs';
+import { refuseMachine } from './_auth.mjs';
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const POOL = 24; // concurrent blob fetches
@@ -40,7 +41,7 @@ async function pooled(items, fn) {
 }
 
 export default async (req) => {
-  const denied = refuse(req);
+  const denied = refuseMachine(req);
   if (denied) return denied;
   const url = new URL(req.url);
 

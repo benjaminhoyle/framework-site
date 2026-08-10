@@ -1,6 +1,7 @@
 // POST /api/catalog-data?key=<secret> — the ops runner publishes per-product
-// performance stats here for the gated manager page. Auth reuses SITE_EXPORT_KEY.
-// Tokens stay local; Netlify only stores + serves.
+// performance stats here for the gated manager page. Only the runner posts, so
+// it takes SITE_EXPORT_KEY only; the manager reads the stats back through
+// /api/catalog. Tokens stay local; Netlify only stores + serves.
 //
 // This used to receive the whole catalogue with stats attached, and that
 // snapshot became the manager's idea of what was live — a second write path for
@@ -12,7 +13,7 @@
 // stored is stats keyed by product id.
 
 import { getStore } from '@netlify/blobs';
-import { refuse } from './_auth.mjs';
+import { refuseMachine } from './_auth.mjs';
 
 const MAX = 3 * 1024 * 1024;
 
@@ -34,7 +35,7 @@ function statsFrom(body) {
 
 export default async (req) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-  const denied = refuse(req);
+  const denied = refuseMachine(req);
   if (denied) return denied;
   const raw = await req.text();
   if (!raw || raw.length > MAX) return json({ ok: false, error: 'bad_size' }, 400);

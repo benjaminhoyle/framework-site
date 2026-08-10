@@ -42,11 +42,17 @@ js/gate.js  ──►  POST /api/auth          "is this key right?"
 netlify/functions/_auth.mjs  ──►  the one place a request is accepted or refused
 ```
 
-- **One secret**, `SITE_EXPORT_KEY`, for all four pages. Proportionate at three
-  people; per-person accounts would not be.
+- **Two secrets, by audience.** `SITE_LOGIN_KEY` is the password a person types
+  to open all four pages; `SITE_EXPORT_KEY` is the long one the ops runner
+  sends, and it opens those same pages *plus* the three endpoints no browser
+  calls — `/api/export`, `/api/dashboard-data`, `/api/catalog-data`. Guessing
+  the typed password therefore does not hand over the raw event lake or the
+  ability to overwrite what the dashboard shows. Per-person accounts would still
+  not be proportionate at three people.
 - **One check**, `_auth.mjs`. A new endpoint cannot be added without an author
-  having to decide about auth, which is the point of it being a shared import
-  rather than four copies of an `if`.
+  having to decide about auth — and now to choose an audience: `refuse` for
+  anything a page calls, `refuseMachine` for the runner's own. That is the point
+  of it being a shared import rather than four copies of an `if`.
 - **The key travels in a header.** `?key=` still works — the ops runner sends it
   that way and old bookmarks carry it — but the gate moves a `?key=` into storage
   and strips it from the address bar the first time it sees one, because secrets
@@ -186,7 +192,8 @@ existing job and multiply the spend.
 
 | Variable | For |
 |---|---|
-| `SITE_EXPORT_KEY` | the gate on all four pages and every private endpoint |
+| `SITE_LOGIN_KEY` | the typed password for all four pages |
+| `SITE_EXPORT_KEY` | the ops runner's key: those pages, plus the machine-only endpoints. Accepted everywhere on its own if `SITE_LOGIN_KEY` is unset |
 | `GEMINI_API_KEY` | image generation |
 | `OPENAI_API_KEY` | image generation, when the provider is switched to OpenAI |
 | `GITHUB_TOKEN`, `GITHUB_REPO` | publishing the catalogue (see catalog-architecture.md) |
@@ -194,6 +201,7 @@ existing job and multiply the spend.
 ## Working on them locally
 
 `netlify dev` from the repo root, so the functions run. The pages will ask for
-the access key; use whatever `SITE_EXPORT_KEY` is set to locally. A plain static
+the access key; use whatever `SITE_LOGIN_KEY` is set to locally (or
+`SITE_EXPORT_KEY` — it opens the pages too). A plain static
 server will serve the pages but every request will 401, which is correct
 behaviour and not a bug to work around.

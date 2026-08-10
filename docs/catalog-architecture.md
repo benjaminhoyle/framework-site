@@ -279,9 +279,14 @@ is the one worth having.
 - **`GITHUB_TOKEN` and `GITHUB_REPO`** are still unset, so `/api/catalog-publish`
   answers 501 and the Publish dialog shows the `catalog.command` instructions.
   That is the fallback working as intended.
-- **The publish secret is still the shared `SITE_EXPORT_KEY`**, in the query
-  string. The `by=` name that lands in the commit message shipped; splitting the
-  secret did not. §6 stands as the next thing to do here.
+- **The publish secret is still the page-login secret.** The shared key has
+  since been split in two — `SITE_LOGIN_KEY` for people, `SITE_EXPORT_KEY` for
+  the ops runner, which alone opens `/api/export`, `/api/dashboard-data` and
+  `/api/catalog-data` — and the key now travels in a header, so the query-string
+  half of §6 is done. But that split is by *caller*, not by *capability*: anyone
+  who can open the manager can still publish, which is the half of §6 that
+  matters here. The `by=` name in the commit message shipped. A publish-only
+  secret stands as the next thing to do.
 - **Nobody has watched a real publish.** The pure half is tested; the commit
   half has never run against the real repository, because doing that is a
   production write.

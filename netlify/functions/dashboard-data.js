@@ -2,16 +2,17 @@
 // WS3 dashboard JSON here (per-ad economics + monthly cohort funnel), and it's
 // stored in a Blob for the gated dashboard page to read. Keeps the Airtable/Meta
 // tokens local (the runner assembles the data); Netlify only stores + serves it.
-// Auth reuses SITE_EXPORT_KEY (same trust level as the reconciler export).
+// Only the runner posts here, so it takes SITE_EXPORT_KEY only: the typed login
+// key can read the dashboard (/api/dashboard) but not overwrite it.
 
 import { getStore } from '@netlify/blobs';
-import { refuse } from './_auth.mjs';
+import { refuseMachine } from './_auth.mjs';
 
 const MAX = 4 * 1024 * 1024;
 
 export default async (req) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-  const denied = refuse(req);
+  const denied = refuseMachine(req);
   if (denied) return denied;
   const raw = await req.text();
   if (!raw || raw.length > MAX) return new Response(JSON.stringify({ ok: false, error: 'bad_size' }), { status: 400 });
