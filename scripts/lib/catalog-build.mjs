@@ -84,6 +84,7 @@ export function catalogJson(products) {
     // Which shelf this product is, when it came from a render. Nothing reads it
     // yet; it is carried because publish is the only moment it can be captured.
     if (p.designCode) out.designCode = p.designCode;
+    if (p.size) out.size = p.size;
     return out;
   });
   return JSON.stringify({ schema: 'framework-catalog@1', updatedAt: new Date().toISOString(), products: next }, null, 2) + '\n';
@@ -113,6 +114,8 @@ export function publicCatalog(active) {
         description: p.description || '',
       };
       if (p.designerUrl) out.designerUrl = p.designerUrl;
+      // Public: a shopper wants the size, and it is not editorial.
+      if (p.size) out.size = p.size;
       return out;
     }),
   }, null, 2) + '\n';

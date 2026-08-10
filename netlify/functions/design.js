@@ -36,13 +36,19 @@ export default async (req, context) => {
     try {
       const stored = await getStore('design').get(code, { type: 'json' });
       if (!stored) return json({ ok: false, error: 'not_found' }, 404);
-      // Only the parts that rebuild the shelf. The arrival details are for us.
+      // What the shelf is, and what it was quoted at. The arrival details --
+      // session, referrer, ad, country -- stay ours. The price is here because
+      // the catalogue studio builds a product row from a code, and re-deriving
+      // the total would be a second opinion about what a customer was told.
       return json({
         ok: true,
         code,
         hash: stored.hash || null,
         design: stored.design || null,
         mode: stored.mode || null,
+        finish: stored.finish || null,
+        pieces: stored.pieces ?? null,
+        total_ksh: stored.total_ksh ?? null,
         created_at: stored.created_at || null
       });
     } catch (err) {

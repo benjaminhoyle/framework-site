@@ -4,8 +4,8 @@ Four pages on this site are not for the public:
 
 | Page | What it does |
 |---|---|
-| `/scene-generator` | puts a shelf into a generated room |
-| `/catalog-generator` | builds a product image set and its package JSON |
+| `/scene-studio` | puts a shelf into a generated room |
+| `/catalog-studio` | builds a product image set and its package JSON |
 | `/catalog.html` | the catalogue manager: edit, toggle, publish |
 | `/metrics.html` | the funnel monitor |
 
@@ -59,8 +59,8 @@ Both studios also `noindex`, and all four are disallowed in `robots.txt`.
 ## What is where
 
 ```txt
-scene-generator.html            the scene studio
-catalog-generator.html          the catalogue studio
+scene-studio.html               the scene studio
+catalog-studio.html             the catalogue studio
 js/gate.js  css/gate.css        the gate
 js/studio/                      prompt-config, framework-names, product reference
 images/studio/details/          the detail photographs the catalogue studio uses

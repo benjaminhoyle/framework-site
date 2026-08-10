@@ -5,9 +5,9 @@ Allow: /
 # without an access key, but there is no reason to have them crawled.
 Disallow: /metrics.html
 Disallow: /catalog.html
-Disallow: /scene-generator
-Disallow: /catalog-generator
-Disallow: /catalog-generator.html
-Disallow: /scene-generator.html
+Disallow: /scene-studio
+Disallow: /catalog-studio
+Disallow: /scene-studio.html
+Disallow: /catalog-studio.html
 
 Sitemap: https://www.framework.co.ke/sitemap.xml

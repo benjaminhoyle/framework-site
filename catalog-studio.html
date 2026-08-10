@@ -200,12 +200,13 @@ h1{margin:3px 0 0;font-size:24px;line-height:1.05}
 <div style="display:flex;gap:4px;align-items:center;padding:7px 14px;background:#141414;border-bottom:1px solid #2a2a2a;font-family:'DM Sans',system-ui,sans-serif">
   <span style="color:#d5a25d;font-weight:800;letter-spacing:.1em;font-size:10px;text-transform:uppercase;margin-right:14px">Framework</span>
   <a href="/builder" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">3D Builder</a>
-  <a href="/scene-generator" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Scene Studio</a>
-  <a href="/catalog-generator" style="text-decoration:none;background:#2a2213;color:#f6bd64;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Catalog Studio</a>
+  <a href="/scene-studio" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Scene Studio</a>
+  <a href="/catalog-studio" style="text-decoration:none;background:#2a2213;color:#f6bd64;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Catalog Studio</a>
   <a href="/catalog.html" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Catalog Manager</a>
   <a href="/metrics.html" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Monitor</a>
 </div>
 <div id="root"></div>
+<script src="/js/builder/engine.js"></script>
 <script src="/js/studio/framework-names.js"></script>
 <script src="/js/studio/prompt-config.js"></script>
 <script src="/js/studio/catalog-product-reference.js"></script>
@@ -298,6 +299,44 @@ function formatKshPrice(value,fallback=""){
   if(!numeric)return "";
   return `Ksh ${new Intl.NumberFormat("en-US",{maximumFractionDigits:0}).format(numeric)}`;
 }
+/**
+ * Everything a design code already knows about the product.
+ *
+ * The code resolves to the design itself, so the price it was quoted at, the
+ * size, the finish and its address in the builder are all facts we hold -- there
+ * is no reason to make someone retype them, or to have a model guess them from a
+ * photograph. Returns null when the code does not resolve; a wrong code should
+ * leave the row alone rather than half-fill it.
+ */
+async function factsFromDesignCode(code){
+  if(!window.FrameworkNames?.CODE?.test(String(code||"")))return null;
+  const res=await window.FrameworkGate.fetch(`/api/design?code=${encodeURIComponent(code)}`);
+  if(!res.ok)return null;
+  const body=await res.json();
+  if(!body.ok||!body.design)return null;
+
+  const facts={
+    designerUrl:`https://framework.co.ke/builder/${body.code}`,
+    priceValue:body.total_ksh||"",
+    pieces:body.pieces??null,
+    sizeCm:null
+  };
+  // Size from the design's own bounds, using the builder's engine. Works for
+  // designs saved before the record carried anything but the shelf.
+  try{
+    const engine=window.FrameworkDesignerEngine;
+    if(engine){
+      const catalog=engine.normalizeCatalog(await (await fetch("/assets/shelving/catalog.json")).json());
+      const bounds=engine.designBounds(catalog,engine.deserializeState(catalog,body.design));
+      if(bounds){
+        const cm=n=>Math.round(n/10);
+        facts.sizeCm={w:cm(bounds[3]-bounds[0]),d:cm(bounds[4]-bounds[1]),h:cm(bounds[5]-bounds[2])};
+      }
+    }
+  }catch(error){/* size is a nicety; the price and the link are the point */}
+  return facts;
+}
+
 function defaultRowMeta(source){
   const sourceName=String(source?.name||"standard-stack");
   const ours=window.FrameworkNames?.parseLoose(sourceName);
@@ -316,7 +355,10 @@ function defaultRowMeta(source){
     // console and still had its name. The package images keep their product-id
     // names -- starter-front.jpg is more use to a person than a hash -- so the
     // code travels in the JSON instead, and rides through to catalog.json.
-    designCode:ours?.code||""
+    designCode:ours?.code||"",
+    // Width x depth x height in cm, from the design the code names. A fact we
+    // hold rather than something to guess from a photograph.
+    sizeCm:null
   };
 }
 function normalizedRowMeta(source){
@@ -368,6 +410,7 @@ function rowJsonObject(source){
   // Only when there is one, so a package without a code does not claim an empty
   // string as an answer.
   if(meta.designCode)row.designCode=meta.designCode;
+  if(meta.sizeCm)row.size=`${meta.sizeCm.w} × ${meta.sizeCm.d} × ${meta.sizeCm.h} cm`;
   return row;
 }
 function imageVersion(image){
@@ -730,13 +773,44 @@ function productReferenceText(){
   ].filter(Boolean).join("\n")).join("\n\n");
 }
 
-function catalogMetaPrompt({referenceText,note}){
+/**
+ * What the live catalogue already calls things.
+ *
+ * Passed to the model as ground to avoid, not as style to imitate: without it
+ * you get a second Curator and a description that reads like the one three rows
+ * up. Read through the gate so retired products count too -- a name that was
+ * used and turned off is still spent.
+ */
+async function catalogueLanguageInUse(){
+  try{
+    const res=await window.FrameworkGate.fetch("/api/catalog");
+    if(!res.ok)return null;
+    const body=await res.json();
+    const products=(body.published&&body.published.products)||[];
+    if(!products.length)return null;
+    return products.map(p=>`- ${p.title||p.id}: ${String(p.description||"").trim()}`).join("\n");
+  }catch(error){return null;}
+}
+
+function catalogMetaPrompt({referenceText,note,inUse}){
   return `You are writing product catalogue metadata for Framework Designs' modular shelving configurations in Nairobi.
 
 Use the attached populated shelf image to understand the configuration, scale, colour story, use case, and visual character. Use the reference examples below only for naming/copy style and product vocabulary.
 
 REFERENCE EXAMPLES:
 ${referenceText}
+
+ALREADY IN THE CATALOGUE — do not repeat any of this:
+${inUse||"(none yet)"}
+
+DISTINCTNESS RULES (these outrank style):
+- The new name must not reuse any distinctive word from the names above. If a
+  product is already called "The Curator", nothing else may be a Curator.
+- Do not echo the sentence shape or opening words of the descriptions above.
+- Do not reuse their characteristic adjectives and metaphors. Reach for the
+  thing this shelf actually is instead.
+- Ordinary words (shelf, steel, Nairobi, storage) are fine to repeat; it is the
+  memorable ones that must stay unique.
 
 STYLE RULES:
 - Create a short product name that feels like it belongs with the examples.
@@ -760,7 +834,7 @@ Respond with JSON only:
 
 async function generateCatalogMeta({image,source,note,browserKey,logger}){
   if(!image?.dataUrl)throw new Error("Generate a populated image before auto-filling row copy.");
-  const prompt=catalogMetaPrompt({referenceText:productReferenceText(),note});
+  const prompt=catalogMetaPrompt({referenceText:productReferenceText(),note,inUse:await catalogueLanguageInUse()});
   const parts=[
     {text:prompt},
     {text:`POPULATED SHELF IMAGE for ${source?.name||"this row"}:`},
@@ -1571,7 +1645,7 @@ function AppV2(){
   const [dragging,setDragging]=useState(false);
   const [log,setLog]=useState([]);
   const [scaleSession,setScaleSession]=useState(null);
-  // No browser key, ever -- see scene-generator.html. "" selects the server path.
+  // No browser key, ever -- see scene-studio.html. "" selects the server path.
   const browserKey="";
   const [firstGenerationNote,setFirstGenerationNote]=useState("");
   const [previewSelection,setPreviewSelection]=useState(null);
@@ -2530,7 +2604,7 @@ function App(){
     }catch{return {...DEFAULT_BACKGROUND}}
   });
   const [selectedDetailId,setSelectedDetailId]=useState("");
-  // No browser key, ever -- see scene-generator.html. "" selects the server path.
+  // No browser key, ever -- see scene-studio.html. "" selects the server path.
   const browserKey="";
   const [running,setRunning]=useState(false);
   const [queuedJobs,setQueuedJobs]=useState(0);
@@ -3219,6 +3293,30 @@ function GeneratedFlowCard({title,subtitle,image,filename,placeholder,onGenerate
 }
 
 function RowMetaCard({source,onChange,onAutoMeta}){
+  // Filling from the design code is a network call, so it gets a busy state and
+  // says what it did -- silently changing three fields would be worse than not
+  // changing them.
+  const [codeBusy,setCodeBusy]=React.useState(false);
+  const [codeNote,setCodeNote]=React.useState(null);
+  const onFillFromCode=async()=>{
+    const code=(source?.meta?.designCode||"").toUpperCase();
+    setCodeBusy(true);setCodeNote(null);
+    try{
+      const facts=await factsFromDesignCode(code);
+      if(!facts){setCodeNote({ok:false,text:`No design called ${code}. Check the seven characters on the share image.`});return;}
+      const filled=[];
+      if(facts.priceValue){onChange(source.id,"priceValue",String(facts.priceValue));filled.push("price");}
+      onChange(source.id,"designerUrl",facts.designerUrl);filled.push("designer link");
+      if(facts.sizeCm){
+        onChange(source.id,"sizeCm",facts.sizeCm);
+        filled.push(`size ${facts.sizeCm.w}×${facts.sizeCm.d}×${facts.sizeCm.h} cm`);
+      }
+      setCodeNote({ok:true,text:`From design ${code}: ${filled.join(", ")}.`});
+    }catch(error){
+      setCodeNote({ok:false,text:safeMsg(error)});
+    }finally{setCodeBusy(false);}
+  };
+
   const meta=normalizedRowMeta(source);
   const manifest=rowImageManifest(source);
   const pricePreview=formatKshPrice(meta.priceValue,meta.price);
@@ -3244,11 +3342,24 @@ function RowMetaCard({source,onChange,onAutoMeta}){
           <input className="input" value={pricePreview} readOnly/>
         </div>
         <div className="field">
+          <label>Size (from the design)</label>
+          <input className="input" readOnly
+            value={meta.sizeCm?`${meta.sizeCm.w} × ${meta.sizeCm.d} × ${meta.sizeCm.h} cm`:""}
+            placeholder="Fill from the design code"/>
+        </div>
+        <div className="field">
           <label>Design code</label>
-          <input className="input" placeholder="1Y3MK7P" maxLength={7}
-            style={{textTransform:"uppercase",letterSpacing:".08em"}}
-            value={meta.designCode||""}
-            onChange={event=>onChange(source.id,"designCode",event.target.value.toUpperCase().replace(/[^0-9A-Z]/g,"").slice(0,7))}/>
+          <div style={{display:"flex",gap:6}}>
+            <input className="input" placeholder="1Y3MK7P" maxLength={7}
+              style={{textTransform:"uppercase",letterSpacing:".08em"}}
+              value={meta.designCode||""}
+              onChange={event=>onChange(source.id,"designCode",event.target.value.toUpperCase().replace(/[^0-9A-Z]/g,"").slice(0,7))}/>
+            <button className="btn btn-small btn-soft" style={{whiteSpace:"nowrap"}}
+              disabled={!/^[0-9A-Z]{7}$/.test(meta.designCode||"")||codeBusy}
+              title="Fill the price, size and designer link from the design this code names"
+              onClick={onFillFromCode}>{codeBusy?"…":"Fill"}</button>
+          </div>
+          {codeNote&&<div style={{fontSize:11,color:codeNote.ok?"#7fd1a0":"#e0a94a",marginTop:4}}>{codeNote.text}</div>}
         </div>
         <div className="field full">
           <label>Description</label>
@@ -3296,7 +3407,7 @@ function AddMenuFlowCard({onAngle,onFront,onCropDetail,onCustom,onDetail}){
   );
 }
 
-// See scene-generator.html: nothing mounts until the gate is satisfied.
+// See scene-studio.html: nothing mounts until the gate is satisfied.
 window.FrameworkGate.ready().then(function(){
   ReactDOM.createRoot(document.getElementById("root")).render(<AppV2/>);
 });

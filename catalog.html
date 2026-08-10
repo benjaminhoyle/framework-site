@@ -685,6 +685,7 @@
       // straight through to catalog.json — nothing on the site reads it yet, but
       // it is the only chance to capture it, and it costs a field.
       if (meta.designCode) product.designCode = meta.designCode;
+      if (meta.size) product.size = meta.size;
       // preview via the first uploaded image
       if (images[0]) state.objectUrls[id] = URL.createObjectURL(images[0]);
       // upsert into working
