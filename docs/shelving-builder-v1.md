@@ -82,7 +82,7 @@ Build a reliable parser/export step for the updated Rhino source blocks, then fe
 Current Rhino source:
 
 ```txt
-/Users/ben/code/framework/shelving-3d-pipeline/source/260629_standard-configs.3dm
+/Users/ben/code/framework/framework-renderer/source/260629_standard-configs.3dm
 ```
 
 Observed source facts from the updated file:

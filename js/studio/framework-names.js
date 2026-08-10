@@ -3,7 +3,7 @@
  *
  *     fw-1Y3MK7P-s-living-room-02.jpg
  *
- * A twin of `shelving-3d-pipeline/scripts/lib/names.py`, which is the
+ * A twin of `framework-renderer/scripts/lib/names.py`, which is the
  * authoritative implementation of the grammar; keep the two in step. This side
  * exists because the studios never touch the pipeline's Python: they read the
  * code off a file someone dropped in, and write it into the name of what they

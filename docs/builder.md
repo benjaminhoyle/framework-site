@@ -3,7 +3,7 @@
 A 3D shelf designer at `/builder`, running in parallel with the existing
 `/designer` and `/simplified-designer` pages. Neither of those is touched by it.
 
-It is the desktop 3D builder from `shelving-3d-pipeline` rebuilt for the public
+It is the desktop 3D builder from `framework-renderer` rebuilt for the public
 site: same placement engine and same Rhino-derived module geometry, but sized and
 paced for a mid-range Android phone on a slow connection.
 
@@ -111,7 +111,7 @@ the old number also rewrote two SVG path commands that contained it.
 
 ## Where the geometry comes from
 
-Rhino, through the `shelving-3d-pipeline` repo beside this one. Its
+Rhino, through the `framework-renderer` repo beside this one. Its
 `docs/pipeline-spec.md` is the account of that chain; what matters here is the
 seam.
 
@@ -145,7 +145,7 @@ contract:
 node scripts/build-builder-assets.mjs
 ```
 
-It reads the vendored contract and `../shelving-3d-pipeline`'s GLBs
+It reads the vendored contract and `../framework-renderer`'s GLBs
 (`--pipeline <path>` to override) and rewrites `assets/shelving/`. Then run the
 tests:
 

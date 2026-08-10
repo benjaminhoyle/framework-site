@@ -17,13 +17,13 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { validateConfig, resolveSiteAlias, FRAMEWORK_CONFIG_SCHEMA } from
-  '../../shelving-3d-pipeline/shared/framework-config.mjs';
+  '../../framework-renderer/shared/framework-config.mjs';
 import { hashToConfig } from './designer-hash-to-config.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SITE = path.resolve(HERE, '..');
 const PAGE = path.join(SITE, 'shelving.html');
-const DEFAULT_VOCAB = path.resolve(SITE, '../shelving-3d-pipeline/shared/module-vocabulary.json');
+const DEFAULT_VOCAB = path.resolve(SITE, '../framework-renderer/shared/module-vocabulary.json');
 
 const THEME_TO_FINISH = { THEME_1: 'marine', THEME_2: 'sage', THEME_3: 'charcoal', THEME_4: 'coral' };
 

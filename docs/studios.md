@@ -72,7 +72,7 @@ netlify/functions/_auth.mjs     the shared check
 netlify/functions/auth.mjs      /api/auth
 ```
 
-`js/studio/framework-names.js` is a twin of `shelving-3d-pipeline`'s
+`js/studio/framework-names.js` is a twin of `framework-renderer`'s
 `scripts/lib/names.py`, and that repo's `check-names.py` holds the two to the
 same answers. It will drift otherwise — see the pipeline's CLAUDE.md.
 

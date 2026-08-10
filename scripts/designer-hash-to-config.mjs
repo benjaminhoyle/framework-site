@@ -19,7 +19,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { resolveSiteAlias, FRAMEWORK_CONFIG_SCHEMA } from
-  '../../shelving-3d-pipeline/shared/framework-config.mjs';
+  '../../framework-renderer/shared/framework-config.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ENGINE = path.resolve(HERE, '../js/designer-engine.js');

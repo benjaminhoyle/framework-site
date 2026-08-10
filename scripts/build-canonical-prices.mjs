@@ -3,7 +3,7 @@
 // (the only place unit prices are recorded), for use by the 3D builder's price
 // list and anywhere else that needs a KSh price per canonical module type.
 //
-// Output: shelving-3d-pipeline/shared/prices.json
+// Output: framework-renderer/shared/prices.json
 //
 // Usage:
 //   node scripts/build-canonical-prices.mjs [--check]
@@ -12,13 +12,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { resolveSiteAlias } from '../../shelving-3d-pipeline/shared/framework-config.mjs';
+import { resolveSiteAlias } from '../../framework-renderer/shared/framework-config.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SITE = path.resolve(HERE, '..');
 const ENGINE = path.join(SITE, 'js/designer-engine.js');
-const VOCAB = path.resolve(SITE, '../shelving-3d-pipeline/shared/module-vocabulary.json');
-const OUT = path.resolve(SITE, '../shelving-3d-pipeline/shared/prices.json');
+const VOCAB = path.resolve(SITE, '../framework-renderer/shared/module-vocabulary.json');
+const OUT = path.resolve(SITE, '../framework-renderer/shared/prices.json');
 
 function loadModuleFilenames() {
   const src = fs.readFileSync(ENGINE, 'utf8');

@@ -24,7 +24,7 @@ const engine = require(path.join(ROOT, "js/builder/engine.js"));
 const rawCatalog = JSON.parse(fs.readFileSync(path.join(ROOT, "assets/shelving/catalog.json"), "utf8"));
 const catalog = engine.normalizeCatalog(rawCatalog);
 const contract = JSON.parse(fs.readFileSync(path.join(ROOT, "assets/shelving/builder-contract.json"), "utf8"));
-const PIPELINE = path.resolve(ROOT, "..", "shelving-3d-pipeline");
+const PIPELINE = path.resolve(ROOT, "..", "framework-renderer");
 
 // This fixture exists in the pipeline precisely because it is illegal: two
 // accessories fight over one support socket.

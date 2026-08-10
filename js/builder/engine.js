@@ -2,7 +2,7 @@
  * Framework shelving placement engine.
  *
  * Pure logic: no DOM, no WebGL. Ported from the desktop builder's core
- * (shelving-3d-pipeline/app/js/shelving-builder-v2-core.js), which is validated
+ * (framework-renderer/app/js/shelving-builder-v2-core.js), which is validated
  * against the Python pipeline's golden configs; scripts/test-builder.mjs
  * re-runs those same fixtures against this copy.
  *
