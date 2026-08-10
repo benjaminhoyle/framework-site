@@ -62,6 +62,9 @@ Both studios also `noindex`, and all four are disallowed in `robots.txt`.
 scene-studio.html               the scene studio
 catalog-studio.html             the catalogue studio
 js/gate.js  css/gate.css        the gate
+js/studio/chrome.js             nav, buttons, fields, panels, activity log
+js/studio/scale.js              measuring a shelf and standing a figure in it
+js/studio/handoff.js            row -> scene studio -> row
 js/studio/                      prompt-config, framework-names, product reference
 images/studio/details/          the detail photographs the catalogue studio uses
 netlify/functions/ai*.mjs       provider calls, holding the key
@@ -72,6 +75,57 @@ netlify/functions/auth.mjs      /api/auth
 `js/studio/framework-names.js` is a twin of `shelving-3d-pipeline`'s
 `scripts/lib/names.py`, and that repo's `check-names.py` holds the two to the
 same answers. It will drift otherwise — see the pipeline's CLAUDE.md.
+
+## What the two studios share
+
+They do different work and look different where they do. Everywhere they do the
+*same* thing there is one implementation and both pages import it. Load order
+matters: `chrome.js`, then `scale.js` (whose panel uses chrome's buttons), then
+`handoff.js`.
+
+| Module | What it owns |
+|---|---|
+| `chrome.js` | the nav (it marks its own current page), the button family, fields, panels, and the activity log |
+| `scale.js` | the whole scale flow: measure, place the 180 cm figure, drag it, the composite, and the words on screen |
+| `handoff.js` | the round trip between a catalogue row and a scene studio session |
+
+Each page keeps only what is genuinely its own: the scene studio's node pipeline
+and its recipe vocabulary, the catalogue studio's job queue and row sequence.
+
+### The scale figure
+
+A photograph carries no size, and a stated height in the prompt is routinely
+ignored — the model cannot relate "180 cm" to the pixels in front of it. So the
+height fixes pixels-per-centimetre, and a 180 cm silhouette is composited into
+the reference at that scale. The number and the picture together are what works;
+neither does on its own.
+
+Both studios now do this identically, and `figureNote()` is the one prompt
+sentence they must agree on: the figure is a measuring stick, not content. The
+rest of each SCALE line stays with its own page, because a scene prompt and a
+catalogue-set prompt are asking for different things.
+
+### The handoff
+
+**Scene shots** on a catalogue row writes an IndexedDB record and opens
+`/scene-studio?handoff=<id>`, carrying the row's best product image (emptied,
+then populated, then the source photo), its design code and its scale. **Send to
+row** on a finished shot writes the result into the same record and returns; the
+catalogue studio collects it on load and on focus and files it as a child of that
+row, beside the angles and detail shots.
+
+The id travels in the URL and the payload does not — a photograph is a megabyte
+or two, and no query string holds that. The id is moved into `sessionStorage` and
+stripped from the address bar on arrival, exactly as the gate does with `?key=`,
+so a reload keeps the banner and a bookmark cannot re-enter a finished handoff.
+
+Two things worth knowing:
+
+- **Pixels-per-centimetre does not travel to a generated image.** It was measured
+  in the source photograph's pixels; a generated image is a different size, so
+  only the shelf height crosses and the figure is placed again if it is wanted.
+- **A returned shot is never binned.** If no open row matches, the record waits
+  rather than being deleted. Records go stale after a week.
 
 ## Image generation, in outline
 

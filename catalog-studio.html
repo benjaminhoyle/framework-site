@@ -173,6 +173,7 @@ img{display:block}
 <script src="/js/builder/engine.js"></script>
 <script src="/js/studio/framework-names.js"></script>
 <script src="/js/studio/scale.js"></script>
+<script src="/js/studio/handoff.js"></script>
 <script src="/js/studio/prompt-config.js"></script>
 <script src="/js/studio/catalog-product-reference.js"></script>
 <script type="text/babel">
@@ -1630,11 +1631,20 @@ function AppV2(){
         setLog(Array.isArray(session.log)?session.log:[]);
       }
       autosaveReadyRef.current=true;
+      collectSceneShots();
     }).catch(error=>{
       autosaveReadyRef.current=true;
       addLog("error",`Browser session restore unavailable: ${safeMsg(error)}`);
     });
     return ()=>{cancelled=true};
+  },[]);
+
+  // Coming back from the scene studio is a page load, so the collection happens
+  // above. Coming back to an already-open tab is not, so it also happens on
+  // focus -- somebody can be sending shots home from a second window.
+  useEffect(()=>{
+    window.addEventListener("focus",collectSceneShots);
+    return ()=>window.removeEventListener("focus",collectSceneShots);
   },[]);
   useEffect(()=>{
     if(!autosaveReadyRef.current)return;
@@ -2046,6 +2056,103 @@ function AppV2(){
     addLog("info",`${source.name}: queued populated then emptied.`);
   }
 
+  /**
+   * The image a scene shot should be built from.
+   *
+   * The emptied catalogue image is the right one: a clean shelf on a plain
+   * ground, which is exactly what a room wants dropped into it. Populated is the
+   * next best, and the raw source photograph is a last resort that will drag its
+   * own room into the scene — so the caller says which it got.
+   */
+  /**
+   * Take delivery of anything the scene studio sent back.
+   *
+   * A returned shot arrives as a child of its row, beside the angles and the
+   * detail shots, so it downloads with the row ZIP and pushes to the library
+   * like every other generated image without needing a slot of its own.
+   */
+  async function collectSceneShots(){
+    try{
+      const {collected,waiting}=await FrameworkHandoff.collect(
+        rowId=>sourcesRef.current.some(source=>source.id===rowId));
+      for(const record of collected){
+        const child={
+          id:makeId("gen"),
+          type:"scene",
+          label:record.resultLabel||"Scene shot",
+          status:"done",
+          dataUrl:record.result.dataUrl,
+          base64:record.result.base64||dataUrlBase64(record.result.dataUrl),
+          mimeType:dataUrlMime(record.result.dataUrl),
+          importedAt:Date.now()
+        };
+        patchSource(record.rowId,current=>({children:[...(current.children||[]),child]}));
+        selectPreview(record.rowId,child.type,child.id);
+        addLog("success",`${record.rowTitle||"Row"}: scene shot came back from the scene studio.`);
+      }
+      if(waiting)addLog("info",`${waiting} scene shot(s) are waiting for a row this session does not have.`);
+    }catch(error){
+      addLog("error",`Could not read the scene studio handoff: ${safeMsg(error)}`);
+    }
+  }
+
+  function handoffScale(source,kind){
+    const scale=source?.scale;
+    if(!FrameworkScale.isSet(scale))return null;
+    if(kind==="source photo")return scale;
+    return {status:"set",shelfH:scale.shelfH,pxCm:null,expandFrame:false,fx:null,fy:null,expandedSide:null,offsetX:0};
+  }
+
+  function sceneSourceFor(source){
+    if(source?.empty?.dataUrl)return {image:source.empty,kind:"emptied"};
+    if(source?.filled?.dataUrl)return {image:source.filled,kind:"populated"};
+    if(source?.dataUrl)return {image:source,kind:"source photo"};
+    return null;
+  }
+
+  /**
+   * Hand this row to the scene studio and follow it there.
+   *
+   * The scale goes too -- the record and the photograph with the figure already
+   * composited into it -- so nobody measures the same shelf twice. Leaving with
+   * the queue running would kill it mid-generation, so that is refused rather
+   * than silently losing an image somebody has already paid for.
+   */
+  async function openInSceneStudio(source){
+    const picked=sceneSourceFor(source);
+    if(!picked){addLog("error",`${source.name}: nothing to send yet.`);return}
+    if(queueItems.some(item=>item.status==="running"||item.status==="pending")){
+      addLog("error","Finish or clear the queue before leaving for the scene studio.");
+      return;
+    }
+    const meta=normalizedRowMeta(source);
+    addLog("info",`${meta.title||source.name}: opening the scene studio with the ${picked.kind} image.`);
+    try{
+      await FrameworkHandoff.send({
+        from:"catalog-studio",
+        rowId:source.id,
+        rowTitle:meta.title||source.name,
+        designCode:meta.designCode||"",
+        imageKind:picked.kind,
+        image:{
+          dataUrl:picked.image.dataUrl,
+          base64:dataUrlBase64(picked.image.dataUrl),
+          width:picked.image.width||source.width||0,
+          height:picked.image.height||source.height||0
+        },
+        // Only the source photograph was measured, so only it can carry the
+        // figure. Pixels-per-centimetre is measured in *that* image's pixels; a
+        // generated image is a different size, and reusing the number there
+        // would stand a wrongly scaled figure next to the shelf. The height
+        // survives either way -- it is a fact about the shelf, not the file.
+        scale:handoffScale(source,picked.kind),
+        scaleImage:picked.kind==="source photo"?(source.scaleImage||null):null
+      });
+    }catch(error){
+      addLog("error",`Could not open the scene studio: ${safeMsg(error)}`);
+    }
+  }
+
   function addPendingChild(sourceId,child){
     patchSource(sourceId,source=>({children:[...(source.children||[]),child]}));
   }
@@ -2446,6 +2553,7 @@ function AppV2(){
                 <div className="source-tools">
                   {!source.filled?.dataUrl&&<button className="btn btn-small btn-primary" onClick={()=>enqueueRequiredSequence(source)} disabled={!source.dataUrl}>Generate populated + emptied</button>}
                   {source.filled?.dataUrl&&!source.empty?.dataUrl&&<button className="btn btn-small btn-primary" onClick={()=>enqueueEmpty(source)}>Generate emptied</button>}
+                  <button className="btn btn-small btn-soft" onClick={()=>openInSceneStudio(source)} disabled={!sceneSourceFor(source)} title="Open this row in the scene studio; the shot you choose comes back here">Scene shots</button>
                   <button className="btn btn-small" onClick={()=>downloadSourceSet(source)} disabled={!(source.filled?.dataUrl||source.empty?.dataUrl||(source.children||[]).some(child=>child.dataUrl))}>Download row</button>
                 </div>
               </div>
@@ -2499,7 +2607,7 @@ function AppV2(){
                     image={child}
                     filename={`${filenameSafe(normalizedRowMeta(source).id)}-${String(index+3).padStart(2,"0")}-${filenameSafe(child.label)}.jpg`}
                     placeholder={child.status||"Waiting"}
-                    onRetry={()=>retryGenerated(source,child.type,child)}
+                    onRetry={()=>child.type==="scene"?openInSceneStudio(source):retryGenerated(source,child.type,child)}
                     onRefine={()=>refineGenerated(source,child.type,child)}
                     onReplace={file=>replaceGeneratedImage(source,child.type,file,child)}
                     onDelete={()=>deleteGenerated(source,child.type,child.id)}

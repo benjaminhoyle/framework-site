@@ -30,6 +30,7 @@ input:focus,textarea:focus{border-color:#d97706!important}
 <script src="/js/studio/chrome.js"></script>
 <script src="/js/studio/framework-names.js"></script>
 <script src="/js/studio/scale.js"></script>
+<script src="/js/studio/handoff.js"></script>
 <script src="/js/studio/prompt-config.js"></script>
 <script>
 const {
@@ -609,6 +610,9 @@ function App(){
   // the figure composited into it.
   const[refImage,setRefImage]=useState(null);
   const[augImg,setAugImg]=useState(null);
+  // The catalogue row this session was opened for, when it was. See
+  // js/studio/handoff.js -- the chosen shot goes back to that row.
+  const[handoff,setHandoff]=useState(null);
   const[scale,setScale]=useState(FrameworkScale.UNSET);
   const scaleOK=FrameworkScale.isSet(scale);
   const imgRef=useRef(null);
@@ -1266,6 +1270,53 @@ function App(){
     }catch(e){addLog("error",`Library load failed: ${safeMsg(e)}`);}
     finally{setProcessing(false);setProcMsg("");}
   };
+  /**
+   * Open a catalogue row's handoff, if this page was opened by one.
+   *
+   * Everything the row already knew comes with it -- the image, the design code
+   * and the scale, figure and all -- so the first thing anybody does here is
+   * choose a room, not re-measure a shelf they have already measured once.
+   */
+  const loadHandoff=useCallback(async (id,fresh)=>{
+    try{
+      const record=await FrameworkHandoff.get(id);
+      if(!record||record.status!=="open"){FrameworkHandoff.forget();return}
+      // A reload is not an arrival. The workspace is already the row's; all that
+      // is needed is the banner back, and the autosave restores the rest.
+      if(!fresh){setHandoff(record);return}
+      const img=record.image;
+      setRefImage(img);
+      const refNode={id:"ref",type:"ref",parentId:null,img,params:null,history:null,ts:Date.now()};
+      const nextNodes=[refNode];
+      if(record.scaleImage?.dataUrl){
+        nextNodes.push({id:"ref-scale",type:"ref-scale",parentId:"ref",img:record.scaleImage,params:null,history:null,ts:Date.now()});
+        setAugImg(record.scaleImage);
+      }else setAugImg(null);
+      setNodes(nextNodes);
+      setSelId(nextNodes.length>1?"ref-scale":"ref");
+      setScale(record.scale?scaleFromSession(record.scale):FrameworkScale.UNSET);
+      if(record.designCode)setDesignCode(record.designCode);
+      setBaseParams(null);setMode("refine");setDamSource(null);
+      setHandoff(record);
+      addLog("success",`Scene shots for ${record.rowTitle||"a catalogue row"} — from its ${record.imageKind||"image"}.`);
+    }catch(e){
+      addLog("error",`Could not open the catalogue handoff: ${safeMsg(e)}`);
+      FrameworkHandoff.forget();
+    }
+  },[]);
+  useEffect(()=>{const claim=FrameworkHandoff.claimFromUrl();if(claim)loadHandoff(claim.id,claim.fresh)},[loadHandoff]);
+
+  /** Send the shot on screen back to the row that asked for it. */
+  const sendToRow=async()=>{
+    if(!handoff||!selNode?.img)return;
+    const img=croppedImg||selNode.img;
+    try{
+      await FrameworkHandoff.returnResult(handoff.id,
+        {dataUrl:img.dataUrl,base64:img.base64,width:img.width,height:img.height},
+        "Scene shot");
+    }catch(e){addLog("error",`Could not send it back: ${safeMsg(e)}`);}
+  };
+
   const saveToLibrary=async()=>{
     if(!selNode?.img||selNode.type!=="gen")return;
     if(!window.DamClient)return addLog("error","dam-client not loaded");
@@ -1519,6 +1570,21 @@ function App(){
         </div>
       </header>
 
+      {/* Where this session came from and where its result is going. Standing
+          above everything else because it changes what the Download button on a
+          finished shot is for. */}
+      {handoff&&(
+        <div style={{background:"#182523",border:"1px solid #375247",borderRadius:8,padding:"8px 12px",marginBottom:10,display:"flex",gap:10,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap"}}>
+          <span style={{fontSize:11,color:"#d9f0e4",fontWeight:700}}>
+            Scene shots for <strong>{handoff.rowTitle||"a catalogue row"}</strong> — pick one and send it back to the row.
+          </span>
+          <div style={{display:"flex",gap:6}}>
+            <a className="btn btn-small" href="/catalog-studio">Back to the row</a>
+            <button className="btn btn-small" onClick={()=>{FrameworkHandoff.forget();setHandoff(null);addLog("info","Working on its own now — nothing will go back to the row.")}}>Work on its own</button>
+          </div>
+        </div>
+      )}
+
       {restoreAvailable&&!nodes.length&&(
         <div style={{background:"#1a2030",border:"1px solid #315271",borderRadius:8,padding:"8px 12px",marginBottom:10,display:"flex",gap:10,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap"}}>
           <span style={{fontSize:11,color:"#d7ecff",fontWeight:700}}>A previous session was autosaved.</span>
@@ -1615,8 +1681,9 @@ function App(){
                     {scaleOK&&selNode.type==="ref"?<span style={{color:"#8bd17c",marginLeft:8}}>Scale set</span>:null}
                   </div>
                   <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                    {isGen&&handoff&&<button className="btn btn-small btn-primary" onClick={sendToRow}>Send to row</button>}
                     {isGen&&(<>
-                      <button className="btn btn-small btn-primary" onClick={()=>dl(croppedImg||selNode.img,exportName(selNode))}>Download</button>
+                      <button className={`btn btn-small ${handoff?"":"btn-primary"}`} onClick={()=>dl(croppedImg||selNode.img,exportName(selNode))}>Download</button>
                       <button className="btn btn-small" onClick={()=>{setCropMode(true);setCroppedImg(null)}}>Crop</button>
                       <button className="btn btn-small" onClick={handleValidate} disabled={processing}>Check</button>
                       {window.DamClient?.enabled&&selNode?.type==="gen"&&<button className="btn btn-small" onClick={saveToLibrary} disabled={processing}>Save to library</button>}
