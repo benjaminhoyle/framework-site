@@ -1847,22 +1847,28 @@ function AppV2(){
   }
 
   async function loadFiles(files){
-    files=[...(files||[])].filter(file=>file.type?.startsWith("image/"));
-    if(!files.length)return;
-    addLog("info",`Loading ${files.length} source image${files.length===1?"":"s"}`);
+    const [file]=[...(files||[])].filter(item=>item.type?.startsWith("image/"));
+    if(!file)return;
+    // Replacing, not appending -- so say what is about to be lost. Generated
+    // images cost real money and are not worth dropping on a stray drag.
+    if(sources.length&&hasGeneratedWork(sources[0])
+       &&!window.confirm("Start a new row?\n\nThe images generated for the current row will be cleared. Download them first if you want to keep them."))return;
+    addLog("info",`Loading ${file.name}`);
     try{
-      const loaded=[];
-      for(const file of files){
-        const source=await fileToSource(file);
-        loaded.push({...source,meta:defaultRowMeta(source),filled:null,empty:null,children:[],status:"ready"});
-      }
-      commitSources(prev=>[...prev,...loaded]);
-      setActiveSource(loaded[0].id);
-      selectPreview(loaded[0].id,"source");
-      addLog("success",`Loaded ${loaded.length} source image${loaded.length===1?"":"s"}`);
+      const source=await fileToSource(file);
+      const row={...source,meta:defaultRowMeta(source),filled:null,empty:null,children:[],status:"ready"};
+      commitSources([row]);
+      setActiveSource(row.id);
+      selectPreview(row.id,"source");
+      addLog("success",`Row source: ${file.name}`);
     }catch(error){
       addLog("error",`Image load failed: ${safeMsg(error)}`);
     }
+  }
+
+  /** Whether a row holds anything that cost a generation. */
+  function hasGeneratedWork(source){
+    return Boolean(source&&(source.filled?.dataUrl||source.empty?.dataUrl||(source.children||[]).some(child=>child.dataUrl)));
   }
 
   async function loadFromLibrary(record){
@@ -2274,9 +2280,6 @@ function AppV2(){
     downloadBlob(makeZip(entries),`${folder}.zip`);
   }
 
-  function downloadAll(){
-    sources.forEach((source,index)=>setTimeout(()=>downloadSourceSet(source),index*250));
-  }
 
   function saveSession(){
     const session=sessionSnapshot();
@@ -2316,14 +2319,11 @@ function AppV2(){
     event.target.value="";
     if(!files.length)return;
     try{
-      const loaded=[];
-      for(const file of files){
-        loaded.push(await sourceFromRowZip(file));
-      }
-      commitSources(prev=>[...prev,...loaded]);
-      setActiveSource(loaded[0]?.id||null);
-      setPreviewSelection(loaded[0]?{sourceId:loaded[0].id,type:"source",childId:null}:null);
-      addLog("success",`Loaded ${loaded.length} row ZIP${loaded.length===1?"":"s"}`);
+      const row=await sourceFromRowZip(files[0]);
+      commitSources([row]);
+      setActiveSource(row.id);
+      setPreviewSelection({sourceId:row.id,type:"source",childId:null});
+      addLog("success",`Loaded row ${normalizedRowMeta(row).id}`);
     }catch(error){
       addLog("error",`Row ZIP load failed: ${safeMsg(error)}`);
     }
@@ -2409,15 +2409,13 @@ function AppV2(){
           <h1>Catalog Set Studio</h1>
         </div>
         <div className="top-actions">
-          <a className="btn btn-small" href="./index.html">Generator</a>
           <button className="btn btn-small" onClick={saveSession} disabled={!sources.length}>Save Session</button>
           <button className="btn btn-small" onClick={()=>sessionFileRef.current?.click()}>Load Session</button>
           <input ref={sessionFileRef} type="file" accept="application/json,.json" style={{display:"none"}} onChange={loadSessionFile}/>
           <button className="btn btn-small" onClick={()=>rowZipFileRef.current?.click()}>Load Row ZIP</button>
-          <input ref={rowZipFileRef} type="file" accept=".zip,application/zip" multiple style={{display:"none"}} onChange={loadRowZipFile}/>
-          <button className="btn btn-small" onClick={downloadAll} disabled={!sources.some(source=>source.filled?.dataUrl||source.empty?.dataUrl||(source.children||[]).some(child=>child.dataUrl))}>Download All</button>
+          <input ref={rowZipFileRef} type="file" accept=".zip,application/zip" style={{display:"none"}} onChange={loadRowZipFile}/>
           {window.DamClient?.enabled&&<button className="btn btn-small" onClick={pushAllToDAM} disabled={!sources.some(source=>source.filled?.dataUrl||source.empty?.dataUrl||(source.children||[]).some(child=>child.dataUrl))}>Push → Library</button>}
-          <button className="btn btn-small btn-danger" onClick={clearAll} disabled={!sources.length&&!queueItems.length}>Clear</button>
+          <button className="btn btn-small btn-danger" onClick={clearAll} disabled={!sources.length&&!queueItems.length}>New row</button>
         </div>
       </header>
 
@@ -2426,13 +2424,13 @@ function AppV2(){
           <aside className="panel">
             <div className="panel-title">
               <div>
-                <div className="title">Sources</div>
-                <div className="sub">{sources.length?`${sources.length} image${sources.length===1?"":"s"} loaded`:"No image loaded"}</div>
+                <div className="title">Product row</div>
+                <div className="sub">{sources.length?(normalizedRowMeta(sources[0]).title||sources[0].name):"No image yet"}</div>
               </div>
-              <button className="btn btn-small btn-soft" onClick={()=>fileRef.current?.click()}>Upload</button>
+              <button className="btn btn-small btn-soft" onClick={()=>fileRef.current?.click()}>{sources.length?"Replace":"Upload"}</button>
               {window.DamClient?.enabled&&<button className="btn btn-small btn-soft" onClick={()=>setLibraryOpen(true)}>Library</button>}
             </div>
-            <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFiles}/>
+            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleFiles}/>
             {libraryOpen&&<LibraryPickerModal onClose={()=>setLibraryOpen(false)} onPick={loadFromLibrary}/>}
             <div
               className={`drop ${scaleSessionActive?"scale-active":""} ${dragging?"dragging":""}`}
@@ -2508,7 +2506,7 @@ function AppV2(){
         </section>
 
         <section className="rows">
-          {!sources.length&&<div className="notice">Upload or drag in one or more shelf product photos to begin.</div>}
+          {!sources.length&&<div className="notice">Upload or drag in one shelf photo to begin a product row.</div>}
           {sources.map(source=>(
             <article className="flow-row" key={source.id}>
               <div className="flow-head">
@@ -2591,527 +2589,7 @@ function AppV2(){
   );
 }
 
-function App(){
-  const [sources,setSources]=useState([]);
-  const [activeSource,setActiveSource]=useState(null);
-  const [scaleCm,setScaleCm]=useState("");
-  const [variants,setVariants]=useState(1);
-  const [background,setBackground]=useState(()=>{
-    try{
-      const saved=JSON.parse(localStorage.getItem(BACKGROUND_STORAGE_KEY)||"{}");
-      if(String(saved?.color||"").toUpperCase()==="#F4E8D2"&&String(saved?.name||"").trim()==="warm ivory")return {...DEFAULT_BACKGROUND};
-      return {...DEFAULT_BACKGROUND,...saved};
-    }catch{return {...DEFAULT_BACKGROUND}}
-  });
-  const [selectedDetailId,setSelectedDetailId]=useState("");
-  // No browser key, ever -- see scene-studio.html. "" selects the server path.
-  const browserKey="";
-  const [running,setRunning]=useState(false);
-  const [queuedJobs,setQueuedJobs]=useState(0);
-  const [sets,setSets]=useState([]);
-  const [log,setLog]=useState([]);
-  const [scaleSession,setScaleSession]=useState(null);
-  const fileRef=useRef(null);
-  const previewRef=useRef(null);
-  const jobQueueRef=useRef([]);
-  const processingJobsRef=useRef(false);
 
-
-  useEffect(()=>{
-    localStorage.setItem(BACKGROUND_STORAGE_KEY,JSON.stringify(background));
-  },[background]);
-
-  const active=sources.find(source=>source.id===activeSource)||sources[0]||null;
-  const activePreview=active?.dataUrl;
-  const selectedDetail=CATALOG_DETAILS.find(detail=>detail.id===selectedDetailId)||null;
-  const scaleReady=Boolean(sources.length)&&sources.every(source=>source.scale?.status==="set"||source.scale?.status==="skipped");
-  const scaleSessionActive=scaleSession&&active&&scaleSession.sourceId===active.id;
-  const promptSample=useMemo(()=>filledPrompt({
-    scaleLine:scaleLineForSource(active,scaleCm),
-    sourceName:active?.name||"source image",
-    variant:1,
-    totalVariants:Number(variants)||1,
-    background
-  }),[scaleCm,active?.id,active?.name,active?.scale?.status,active?.scale?.shelfH,variants,background]);
-
-  function addLog(level,message){
-    setLog(prev=>[{id:makeId("log"),time:new Date().toLocaleTimeString(),level,message},...prev].slice(0,120));
-  }
-
-  function patchSource(id,patch){
-    setSources(prev=>prev.map(source=>source.id===id?{...source,...(typeof patch==="function"?patch(source):patch)}:source));
-  }
-
-  function beginScale(source){
-    setActiveSource(source.id);
-    setScaleSession({sourceId:source.id,phase:"bottom",points:[],heightCm:String(source.scale?.shelfH||scaleCm||"")});
-  }
-
-  function skipScale(source){
-    patchSource(source.id,{scale:{status:"skipped"}});
-    if(scaleSession?.sourceId===source.id)setScaleSession(null);
-    addLog("info",`${source.name}: scale skipped`);
-  }
-
-  function resetScale(source){
-    patchSource(source.id,{scale:{status:"unset"}});
-    if(scaleSession?.sourceId===source.id)setScaleSession(null);
-  }
-
-  function handleSourcePreviewClick(event){
-    if(!active){
-      if(!running)fileRef.current?.click();
-      return;
-    }
-    if(!scaleSessionActive||!previewRef.current)return;
-    const point=imagePointFromEvent(event,previewRef.current,active.width,active.height);
-    if(scaleSession.phase==="bottom"){
-      setScaleSession({...scaleSession,phase:"top",points:[point]});
-      return;
-    }
-    if(scaleSession.phase==="top"){
-      setScaleSession({...scaleSession,phase:"height",points:[...scaleSession.points,point]});
-      return;
-    }
-  }
-
-  function confirmScaleHeight(){
-    if(!scaleSession||scaleSession.points.length!==2||!parseFloat(scaleSession.heightCm))return;
-    const shelfH=Number(scaleSession.heightCm);
-    if(!Number.isFinite(shelfH)||shelfH<10||shelfH>500){
-      addLog("error","Shelf height must be between 10 and 500 cm.");
-      return;
-    }
-    const [bottom,top]=scaleSession.points;
-    const px=Math.hypot(top.x-bottom.x,top.y-bottom.y);
-    const pxCm=px/shelfH;
-    patchSource(scaleSession.sourceId,{scale:{status:"set",shelfH,pxCm}});
-    setScaleSession(null);
-    const source=sources.find(item=>item.id===scaleSession.sourceId);
-    addLog("success",`${source?.name||"Source"}: scale set to ${shelfH} cm`);
-  }
-
-  async function handleFiles(event){
-    const files=[...(event.target.files||[])].filter(file=>file.type.startsWith("image/"));
-    event.target.value="";
-    if(!files.length)return;
-    addLog("info",`Loading ${files.length} source image${files.length===1?"":"s"}`);
-    try{
-      const loaded=[];
-      for(const file of files)loaded.push(await fileToSource(file));
-      setSources(prev=>[...prev,...loaded]);
-      setActiveSource(loaded[0].id);
-      addLog("success",`Loaded ${loaded.length} source image${loaded.length===1?"":"s"}`);
-    }catch(error){
-      addLog("error",`Image load failed: ${safeMsg(error)}`);
-    }
-  }
-
-  function updateSet(id,patch){
-    setSets(prev=>prev.map(item=>item.id===id?{...item,...patch}:item));
-  }
-
-  function requestSnapshot(source,detail=selectedDetail){
-    return {scaleLine:scaleLineForSource(source,scaleCm),browserKey:browserKey.trim(),detail:detail||null};
-  }
-
-  function enqueueJob(job){
-    jobQueueRef.current.push(job);
-    setQueuedJobs(jobQueueRef.current.length);
-    processJobQueue();
-  }
-
-  async function processJobQueue(){
-    if(processingJobsRef.current)return;
-    processingJobsRef.current=true;
-    setRunning(true);
-    try{
-      while(jobQueueRef.current.length){
-        const job=jobQueueRef.current.shift();
-        setQueuedJobs(jobQueueRef.current.length);
-        try{
-          await job.run();
-        }catch(error){
-          job.onError?.(error);
-          addLog("error",`${job.label}: ${safeMsg(error)}`);
-        }
-      }
-    }finally{
-      processingJobsRef.current=false;
-      setRunning(false);
-      setQueuedJobs(jobQueueRef.current.length);
-      if(jobQueueRef.current.length)processJobQueue();
-    }
-  }
-
-  async function runFilledForSet(item,source,request){
-    const logger=(level,message)=>addLog(level,`${item.label}: ${message}`);
-    updateSet(item.id,{
-      status:"generating filled",
-      pendingJob:"filled",
-      approved:false,
-      empty:null,
-      emptyAngle:null,
-      detail:null,
-      steps:{filled:"active",empty:"pending",angle:"pending",detail:item.detailSpec?"pending":"skip"}
-    });
-    const filled=await callImage(
-      filledPrompt({scaleLine:request.scaleLine,sourceName:source.name,variant:item.variant,totalVariants:item.totalVariants,background:item.background}),
-      sourceRefs(source),
-      request.browserKey,
-      logger
-    );
-    updateSet(item.id,{filled,status:"awaiting approval",pendingJob:null,steps:{filled:"done",empty:"pending",angle:"pending",detail:item.detailSpec?"pending":"skip"}});
-  }
-
-  function enqueueFilled(item,source,request){
-    enqueueJob({
-      label:item.label,
-      run:()=>runFilledForSet(item,source,request),
-      onError:()=>updateSet(item.id,{status:"error",pendingJob:null})
-    });
-  }
-
-  async function runDerivativesForSet(item,source,request){
-    const logger=(level,message)=>addLog(level,`${item.label}: ${message}`);
-    const refsFromSource=sourceRefs(source);
-    const detail=item.detailSpec||request.detail||null;
-    try{
-      updateSet(item.id,{approved:true,pendingJob:"empty sequence",status:"empty front",steps:{filled:"done",empty:"active",angle:"pending",detail:detail?"pending":"skip"}});
-
-      const filledRef={label:`Approved filled anchor image - preserve exact shelf, camera, lighting, ${backgroundLabel(item.background)} cyclorama, shelf-to-wall gap, and studio identity`,dataUrl:item.filled.dataUrl};
-
-      const empty=await callImage(
-        emptyPrompt({scaleLine:request.scaleLine,sourceName:source.name,background:item.background}),
-        [filledRef,...refsFromSource],
-        request.browserKey,
-        logger
-      );
-      updateSet(item.id,{empty,status:"empty angle",steps:{filled:"done",empty:"done",angle:"active",detail:detail?"pending":"skip"}});
-
-      const emptyRef={label:`Approved empty front image - preserve exact empty shelf, ${backgroundLabel(item.background)} cyclorama, lighting, shadow gap, and studio identity`,dataUrl:empty.dataUrl};
-      const emptyAngle=await callImage(
-        emptyAnglePrompt({scaleLine:request.scaleLine,sourceName:source.name,background:item.background}),
-        [emptyRef,filledRef,...refsFromSource],
-        request.browserKey,
-        logger
-      );
-      updateSet(item.id,{emptyAngle,steps:{filled:"done",empty:"done",angle:"done",detail:detail?"active":"skip"}});
-      if(detail){
-        updateSet(item.id,{status:`analysing ${detail.label.toLowerCase()} colours`});
-        const configuration=await analyzeDetailConfiguration(emptyRef,detail,request.browserKey,logger);
-        updateSet(item.id,{detailConfiguration:configuration,status:`detail: ${detail.label.toLowerCase()}`});
-        const detailRef={label:`LOCKED EDIT TARGET: selected ${detail.label} construction reference. Preserve every geometric detail; apply only the text configuration in the prompt.`,dataUrl:detail.src};
-        const detailImage=await callImage(
-          detailShotPrompt({scaleLine:request.scaleLine,detail,configuration}),
-          [detailRef],
-          request.browserKey,
-          logger
-        );
-        updateSet(item.id,{detail:detailImage,status:"done",pendingJob:null,steps:{filled:"done",empty:"done",angle:"done",detail:"done"}});
-      }else{
-        updateSet(item.id,{status:"done",pendingJob:null,steps:{filled:"done",empty:"done",angle:"done",detail:"skip"}});
-      }
-      addLog("success",`${item.label}: approved sequence complete`);
-    }catch(error){
-      updateSet(item.id,{status:"error",pendingJob:null});
-      addLog("error",`${item.label}: ${safeMsg(error)}`);
-    }
-  }
-
-  function queueDerivatives(item){
-    const source=sources.find(src=>src.id===item.sourceId);
-    if(!source||!item.filled||item.pendingJob)return;
-    updateSet(item.id,{approved:true,pendingJob:"empty sequence",status:"queued for empty sequence"});
-    enqueueJob({
-      label:`${item.label} / empty sequence`,
-      run:()=>runDerivativesForSet(item,source,requestSnapshot(source,item.detailSpec))
-    });
-  }
-
-  async function runClearResiduals(item,target,source,request,priorStatus){
-    const key=target==="angle"?"emptyAngle":"empty";
-    const current=item[key];
-    if(!current)return;
-    const logger=(level,message)=>addLog(level,`${item.label}: ${message}`);
-    const view=target==="angle"?"empty angled view":"empty front view";
-    const currentRef={label:`Current ${view} - preserve everything except residual movable props`,dataUrl:current.dataUrl};
-    const filledRef={label:`Approved filled anchor - use only to identify removable contents and preserve ${backgroundLabel(item.background)} studio continuity`,dataUrl:item.filled.dataUrl};
-    updateSet(item.id,{pendingJob:`clear ${target}`,status:`clearing ${target}`});
-    try{
-      const cleaned=await callImage(
-        emptyCleanupPrompt({scaleLine:request.scaleLine,sourceName:source.name,background:item.background,view}),
-        [currentRef,filledRef,...sourceRefs(source)],
-        request.browserKey,
-        logger
-      );
-      updateSet(item.id,{[key]:cleaned,status:priorStatus,pendingJob:null});
-      addLog("success",`${item.label}: residual props cleared from ${view}`);
-    }catch(error){
-      updateSet(item.id,{status:priorStatus,pendingJob:null});
-      addLog("error",`${item.label}: ${safeMsg(error)}`);
-    }
-  }
-
-  function queueClearResiduals(item,target){
-    const source=sources.find(src=>src.id===item.sourceId);
-    const key=target==="angle"?"emptyAngle":"empty";
-    if(!source||!item[key]||item.pendingJob)return;
-    const priorStatus=item.status;
-    updateSet(item.id,{pendingJob:`clear ${target}`,status:`queued to clear ${target}`});
-    enqueueJob({
-      label:`${item.label} / clear ${target}`,
-      run:()=>runClearResiduals(item,target,source,requestSnapshot(source),priorStatus)
-    });
-  }
-
-  function queueRetryFilled(item){
-    const source=sources.find(src=>src.id===item.sourceId);
-    if(!source||item.pendingJob)return;
-    updateSet(item.id,{pendingJob:"filled retry",status:"queued for filled retry"});
-    enqueueFilled(item,source,requestSnapshot(source,item.detailSpec));
-  }
-
-  function generate(){
-    if(!sources.length)return;
-    if(!scaleReady){
-      addLog("error","Set or skip scale for each uploaded source before generating.");
-      return;
-    }
-    const count=Math.max(1,Math.min(4,Number(variants)||1));
-    const queue=[];
-    for(const source of sources){
-      for(let variant=1;variant<=count;variant++){
-        queue.push({
-          id:makeId("set"),
-          sourceId:source.id,
-          sourceName:source.name,
-          variant,
-          totalVariants:count,
-          background:{...background},
-          label:`${source.name.replace(/\.[^.]+$/,"")} / set ${variant}`,
-          status:"queued",
-          pendingJob:"filled",
-          approved:false,
-          detail:null,
-          detailSpec:selectedDetail,
-          steps:{filled:"pending",empty:"pending",angle:"pending",detail:selectedDetail?"pending":"skip"}
-        });
-      }
-    }
-    setSets(prev=>[...prev,...queue]);
-    for(const item of queue){
-      const source=sources.find(src=>src.id===item.sourceId);
-      if(source)enqueueFilled(item,source,requestSnapshot(source,item.detailSpec));
-    }
-    addLog("info",`Added ${queue.length} filled anchor${queue.length===1?"":"s"} to the generation queue with ${browserKey.trim()?"browser key":"server key"}.`);
-  }
-
-  function clearAll(){
-    if(running)return;
-    setSources([]);
-    setActiveSource(null);
-    setSets([]);
-    setLog([]);
-  }
-
-  function downloadSet(item){
-    if(item.filled)downloadDataUrl(item.filled.dataUrl,`${filenameSafe(item.label)}-01-filled.jpg`);
-    if(item.empty)downloadDataUrl(item.empty.dataUrl,`${filenameSafe(item.label)}-02-empty.jpg`);
-    if(item.emptyAngle)downloadDataUrl(item.emptyAngle.dataUrl,`${filenameSafe(item.label)}-03-empty-angle.jpg`);
-    if(item.detail)downloadDataUrl(item.detail.dataUrl,`${filenameSafe(item.label)}-04-detail.jpg`);
-  }
-
-  function downloadAll(){
-    sets.forEach((item,index)=>setTimeout(()=>downloadSet(item),index*250));
-  }
-
-  return (
-    <main className="page">
-      <header className="top">
-        <div>
-          <div className="eyebrow">Framework Designs</div>
-          <h1>Catalog Set Studio</h1>
-        </div>
-        <div className="top-actions">
-          <a className="btn btn-small" href="./index.html">Generator</a>
-          <button className="btn btn-small" onClick={downloadAll} disabled={!sets.some(item=>item.filled||item.empty||item.emptyAngle||item.detail)}>Download All</button>
-          <button className="btn btn-small btn-danger" onClick={clearAll} disabled={running||(!sources.length&&!sets.length)}>Clear</button>
-        </div>
-      </header>
-
-      <div className="grid">
-        <aside className="panel sticky">
-          <div className="panel-title">
-            <div>
-              <div className="title">Source</div>
-              <div className="sub">{sources.length?`${sources.length} image${sources.length===1?"":"s"} loaded`:"No image loaded"}</div>
-            </div>
-            <button className="btn btn-small btn-soft" onClick={()=>fileRef.current?.click()} disabled={running}>Upload</button>
-          </div>
-          <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFiles}/>
-          <div className={`drop ${scaleSessionActive?"scale-active":""}`} onClick={handleSourcePreviewClick}>
-            {active?<img ref={previewRef} src={activePreview} alt="Selected source"/>:<div className="empty-drop">Upload one or more product photos.</div>}
-          </div>
-
-          {active&&(
-            <div className="scale-panel">
-              <div className="scale-copy">
-                {scaleSessionActive&&scaleSession.phase==="bottom"&&"Click the bottom of the shelf."}
-                {scaleSessionActive&&scaleSession.phase==="top"&&"Click the top of the shelf."}
-                {scaleSessionActive&&scaleSession.phase==="height"&&"Enter the shelf height in centimeters."}
-                {!scaleSessionActive&&active.scale?.status==="set"&&`Scale set: shelf ${active.scale.shelfH} cm.`}
-                {!scaleSessionActive&&active.scale?.status==="skipped"&&"Scale skipped for this source. Product scale will use approximate catalogue proportions."}
-                {!scaleSessionActive&&(!active.scale||active.scale.status==="unset")&&"Set scale for this source, or skip it before generating."}
-              </div>
-              <div className="scale-row">
-                {scaleSessionActive&&scaleSession.phase==="height"&&(
-                  <>
-                    <input className="input" style={{width:110}} inputMode="numeric" placeholder="cm" value={scaleSession.heightCm} onChange={event=>setScaleSession({...scaleSession,heightCm:event.target.value.replace(/[^\d.]/g,"")})} onKeyDown={event=>{if(event.key==="Enter")confirmScaleHeight()}}/>
-                    <button className="btn btn-small btn-primary" onClick={confirmScaleHeight} disabled={!parseFloat(scaleSession.heightCm)}>Set</button>
-                  </>
-                )}
-                {!scaleSessionActive&&<button className="btn btn-small btn-soft" onClick={()=>beginScale(active)} disabled={running}>Set Scale</button>}
-                {!scaleSessionActive&&active.scale?.status!=="skipped"&&<button className="btn btn-small" onClick={()=>skipScale(active)} disabled={running}>Skip Scale</button>}
-                {(scaleSessionActive||active.scale?.status==="set"||active.scale?.status==="skipped")&&<button className="btn btn-small" onClick={()=>resetScale(active)} disabled={running}>Reset</button>}
-              </div>
-            </div>
-          )}
-
-          {sources.length>0&&(
-            <div className="source-list">
-              {sources.map(source=>(
-                <div className="source-item" key={source.id}>
-                  <img src={source.dataUrl} alt=""/>
-                  <div>
-                    <div className="source-name">{source.name}</div>
-                    <div className="source-meta">{source.width} x {source.height} / {fmtBytes(source.size)}</div>
-                  </div>
-                  <div className="source-actions">
-                    <span className={`status-pill ${source.scale?.status==="set"?"set":source.scale?.status==="skipped"?"skip":"need"}`}>{source.scale?.status==="set"?"Scale set":source.scale?.status==="skipped"?"Scale skipped":"Needs scale"}</span>
-                    <button className="btn btn-small" onClick={()=>setActiveSource(source.id)} disabled={running}>{active?.id===source.id?"On":"View"}</button>
-                    <button className="btn btn-small btn-soft" onClick={()=>beginScale(source)} disabled={running}>Set</button>
-                    <button className="btn btn-small" onClick={()=>skipScale(source)} disabled={running}>Skip</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="form-grid">
-            <div className="field">
-              <label htmlFor="scale">Fallback cm</label>
-              <input id="scale" className="input" inputMode="numeric" placeholder="optional" value={scaleCm} onChange={event=>setScaleCm(event.target.value.replace(/[^\d.]/g,""))} disabled={running}/>
-            </div>
-            <div className="field">
-              <label htmlFor="variants">Sets / source</label>
-              <select id="variants" className="select" value={variants} onChange={event=>setVariants(Number(event.target.value))} disabled={running}>
-                <option value={1}>1</option>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
-                <option value={4}>4</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="field" style={{marginTop:10}}>
-            <label htmlFor="background-name">Initial background</label>
-            <div className="color-row">
-              <input id="background-color" className="color-input" type="color" value={background.color} onChange={event=>setBackground(current=>({...current,color:event.target.value.toUpperCase()}))} disabled={running}/>
-              <input id="background-name" className="input" placeholder="e.g. warm ivory" value={background.name} onChange={event=>setBackground(current=>({...current,name:event.target.value}))} disabled={running}/>
-            </div>
-            <div className="sub">Used to establish the filled-anchor cyclorama. Empty views copy that approved background.</div>
-          </div>
-
-          <div className="field" style={{marginTop:12}}>
-            <label>Optional matching detail</label>
-            <div className="sub">Adds one close-up after approval, rebuilt from the selected construction reference in the exact empty-shot studio style.</div>
-            <div className="detail-options" role="radiogroup" aria-label="Optional matching detail shot">
-              <button type="button" className={`detail-option none ${!selectedDetailId?"selected":""}`} onClick={()=>setSelectedDetailId("")} disabled={running} role="radio" aria-checked={!selectedDetailId}>No detail shot</button>
-              {CATALOG_DETAILS.map(detail=>(
-                <button type="button" className={`detail-option ${selectedDetailId===detail.id?"selected":""}`} onClick={()=>setSelectedDetailId(detail.id)} disabled={running} key={detail.id} role="radio" aria-checked={selectedDetailId===detail.id}>
-                  <img src={detail.src} alt=""/>
-                  <span>{detail.shortLabel}</span>
-                </button>
-              ))}
-            </div>
-            {selectedDetail&&<div className="detail-preview"><strong>{selectedDetail.label}:</strong> {selectedDetail.description}</div>}
-          </div>
-
-          <div className="field" style={{marginTop:10}}>
-          </div>
-
-          <button className="btn btn-primary" style={{width:"100%",marginTop:12}} onClick={generate} disabled={!sources.length||!scaleReady}>
-            {running?`Add Filled to Queue${queuedJobs?` (${queuedJobs} queued)`:""}`:"Generate Filled"}
-          </button>
-          {sources.length>0&&!scaleReady&&<div className="sub" style={{marginTop:7}}>Set or skip scale for each source first.</div>}
-          {running&&<div className="sub" style={{marginTop:7}}>{queuedJobs?`Generating one job; ${queuedJobs} more queued.`:"Generating one job. You can queue another filled set, approval, or retry now."}</div>}
-          {running&&<div className="progress"><div></div></div>}
-
-          <details className="prompt-preview">
-            <summary>Filled Prompt</summary>
-            <pre>{promptSample}</pre>
-          </details>
-
-          <div className="log">
-            {log.map(row=><div key={row.id} className={`log-row ${row.level}`}><strong>{row.time}</strong> {row.message}</div>)}
-          </div>
-        </aside>
-
-        <section className="sets">
-          {!sets.length&&(
-            <div className="notice">
-              Generate filled anchors first. Approve or retry each filled image before creating the empty front, empty angled, and optional matching-detail images.
-            </div>
-          )}
-          {sets.map(item=>(
-            <article className="set-card" key={item.id}>
-              <div className="set-head">
-                <div>
-                  <div className="set-name">{item.label}</div>
-                  <div className="set-status">{item.status}</div>
-                </div>
-                <div className="steps">
-                  <span className={`step ${item.steps.filled}`}>Filled</span>
-                  <span className={`step ${item.steps.empty}`}>Empty</span>
-                  <span className={`step ${item.steps.angle}`}>Angle</span>
-                  <span className={`step ${item.steps.detail||"skip"}`}>Detail</span>
-                </div>
-              </div>
-              <div className="result-grid">
-                <ResultCard title="Filled" image={item.filled} filename={`${filenameSafe(item.label)}-01-filled.jpg`}/>
-                <ResultCard title="Empty" image={item.empty} filename={`${filenameSafe(item.label)}-02-empty.jpg`}/>
-                <ResultCard title="Empty Angle" image={item.emptyAngle} filename={`${filenameSafe(item.label)}-03-empty-angle.jpg`}/>
-                <ResultCard title={item.detailSpec?`Detail: ${item.detailSpec.label}`:"Detail (not selected)"} image={item.detail} filename={`${filenameSafe(item.label)}-04-detail.jpg`}/>
-              </div>
-              <div className="download-row">
-                {item.filled&&!item.approved&&item.status==="awaiting approval"&&<button className="btn btn-small btn-primary" onClick={()=>queueDerivatives(item)} disabled={Boolean(item.pendingJob)}>Approve Filled</button>}
-                {item.filled&&!item.approved&&item.status==="awaiting approval"&&<button className="btn btn-small" onClick={()=>queueRetryFilled(item)} disabled={Boolean(item.pendingJob)}>Retry Filled</button>}
-                {item.empty&&<button className="btn btn-small" onClick={()=>queueClearResiduals(item,"front")} disabled={Boolean(item.pendingJob)}>Clear Empty Props</button>}
-                {item.emptyAngle&&<button className="btn btn-small" onClick={()=>queueClearResiduals(item,"angle")} disabled={Boolean(item.pendingJob)}>Clear Angle Props</button>}
-                <button className="btn btn-small" onClick={()=>downloadSet(item)} disabled={!(item.filled||item.empty||item.emptyAngle||item.detail)}>Download Set</button>
-              </div>
-            </article>
-          ))}
-        </section>
-      </div>
-    </main>
-  );
-}
-
-function ResultCard({title,image,filename}){
-  return (
-    <div className="result">
-      <div className="result-title">
-        <span>{title}</span>
-        <button className="btn btn-small" onClick={()=>downloadDataUrl(image.dataUrl,filename)} disabled={!image}>Save</button>
-      </div>
-      <div className="thumb">
-        {image?<img src={image.dataUrl} alt={title}/>:<div className="placeholder">Waiting</div>}
-      </div>
-    </div>
-  );
-}
 
 function PreviewActionPanel({title,image,filename,onRetry,onRefine,onReplace,onDelete,onUndo,onRedo}){
   const replaceRef=useRef(null);
