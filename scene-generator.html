@@ -625,6 +625,7 @@ function App(){
   const[variations,setVariations]=useState(1);
   const[restoreAvailable,setRestoreAvailable]=useState(false);
   const[pendingUpload,setPendingUpload]=useState(null);
+  const[dropDepth,setDropDepth]=useState(0);
   const[activeJob,setActiveJob]=useState(()=>{
     try{return JSON.parse(localStorage.getItem(ACTIVE_JOB_STORAGE_KEY)||"null")}catch{return null}
   });
@@ -771,8 +772,9 @@ function App(){
   // generated from it inherits it, so a scene that ends up in a chat still says
   // which shelf it is of. Nothing else carries that: the node tree knows the
   // lineage, and the node tree does not leave this page.
-  const handleBaseUpload=async e=>{
-    const f=e.target.files[0];if(!f)return;
+  const acceptBaseImage=async f=>{
+    if(!f)return;
+    if(!/^image\//.test(f.type||"")){addLog("error",`${f.name||"That file"} is not an image.`);return;}
     try{
       const img=await resize(f,Math.max(MAX_DIM,UPLOAD_MAX_DIM));
       setPendingUpload({img,name:f.name||"uploaded image",ts:Date.now()});
@@ -781,8 +783,11 @@ function App(){
       clearReview();
       addLog("info",`Base image uploaded: ${img.width}×${img.height}`);
       if(found?.code)addLog("success",`Design code ${found.code} — generated images will carry it.`);
-      else addLog("info","No design code in that filename — generated images will not link back to a shelf.");
+      else addLog("info",`No design code in "${f.name||"that file"}" — type one in the header, or re-download the render from the console, which names it fw-<CODE>-r-….png`);
     }catch(err){addLog("error",safeMsg(err));}
+  };
+  const handleBaseUpload=async e=>{
+    await acceptBaseImage(e.target.files[0]);
     e.target.value="";
   };
   const usePendingAsSource=()=>{
@@ -1300,9 +1305,9 @@ function App(){
   // ─── Autosave ──────────────────────────────────────────────────
   useEffect(()=>{
     if(!nodes.length)return;
-    const t=setTimeout(()=>{sceneIdbPut({version:2,ts:Date.now(),provider,nodes,refImage,augImg,scale:{pxCm,shelfH,scaleFx,scaleFy,expandF,scaleOK},params,baseParams,selId,totalCost,damSource}).catch(()=>{});},1500);
+    const t=setTimeout(()=>{sceneIdbPut({version:3,ts:Date.now(),provider,nodes,refImage,augImg,designCode,scale:{pxCm,shelfH,scaleFx,scaleFy,expandF,scaleOK},params,baseParams,selId,totalCost,damSource}).catch(()=>{});},1500);
     return()=>clearTimeout(t);
-  },[nodes,params,selId,damSource,scaleOK,shelfH,totalCost]);
+  },[nodes,params,selId,damSource,scaleOK,shelfH,totalCost,designCode]);
   useEffect(()=>{sceneIdbGet().then(s=>{if(s?.nodes?.length)setRestoreAvailable(true);}).catch(()=>{});},[]);
   const restoreAutosave=async()=>{
     try{
@@ -1310,6 +1315,9 @@ function App(){
       if(s.provider&&PROVIDERS[s.provider])updateProvider(s.provider);
       if(s.nodes)setNodes(s.nodes);
       if(s.refImage)setRefImage(s.refImage);
+      // Sessions saved before v3 have no code; leave whatever is set rather than
+      // clearing it, so reloading one does not silently drop a code typed by hand.
+      if(s.designCode)setDesignCode(s.designCode);
       setAugImg(s.augImg||null);
       if(s.scale){setPxCm(s.scale.pxCm??null);setShelfH(s.scale.shelfH??null);setScaleFx(s.scale.scaleFx??null);setScaleFy(s.scale.scaleFy??null);setExpandF(s.scale.expandF??false);setScaleOK(s.scale.scaleOK??false);}
       if(s.params)setParams(normalizeParams(s.params));
@@ -1332,7 +1340,7 @@ function App(){
 
   // ─── Session save / load ───────────────────────────────────────
   const handleSave=()=>{
-    const session={version:2,ts:Date.now(),provider,nodes,refImage,augImg,
+    const session={version:3,ts:Date.now(),provider,nodes,refImage,augImg,designCode,
       scale:{pxCm,shelfH,scaleFx,scaleFy,expandF,scaleOK},
       params,baseParams,selId,totalCost,damSource};
     const blob=new Blob([JSON.stringify(session)],{type:"application/json"});
@@ -1349,6 +1357,9 @@ function App(){
       if(s.provider&&PROVIDERS[s.provider])updateProvider(s.provider);
       if(s.nodes)setNodes(s.nodes);
       if(s.refImage)setRefImage(s.refImage);
+      // Sessions saved before v3 have no code; leave whatever is set rather than
+      // clearing it, so reloading one does not silently drop a code typed by hand.
+      if(s.designCode)setDesignCode(s.designCode);
       if(s.augImg)setAugImg(s.augImg);else setAugImg(null);
       if(s.scale){const{pxCm:pc,shelfH:sh,scaleFx:sfx,scaleFy:sfy,expandF:ef,scaleOK:sok}=s.scale;
         setPxCm(pc??null);setShelfH(sh??null);setScaleFx(sfx??null);setScaleFy(sfy??null);
@@ -1488,21 +1499,50 @@ function App(){
 
   // ─── RENDER ────────────────────────────────────────────────────
   return(
-    <div style={S.page}>
+    <div style={S.page}
+      onDragEnter={e=>{if(e.dataTransfer?.types?.includes("Files")){e.preventDefault();setDropDepth(d=>d+1);}}}
+      onDragOver={e=>{if(e.dataTransfer?.types?.includes("Files"))e.preventDefault();}}
+      onDragLeave={()=>setDropDepth(d=>Math.max(0,d-1))}
+      onDrop={e=>{
+        setDropDepth(0);
+        if(!e.dataTransfer?.files?.length)return;
+        e.preventDefault();
+        acceptBaseImage(e.dataTransfer.files[0]);
+      }}>
+      {dropDepth>0&&(
+        <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",
+                     background:"rgba(16,16,14,.86)",border:"2px dashed #d88a26",pointerEvents:"none"}}>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontSize:17,fontWeight:800,color:"#f6bd64"}}>Drop the render here</div>
+            <div style={{fontSize:12,color:"#a09a8e",marginTop:6}}>
+              Its filename sets the design code, so the images you make carry it
+            </div>
+          </div>
+        </div>)}
       <div style={S.top}>
         <div>
           <div style={S.eyebrow}>Framework Designs</div>
           <h1 style={S.h1}>Product Content Studio</h1>
           {/* Whether what leaves this page will still say which shelf it is of.
-              Said plainly either way: a missing code is not an error, but it is
-              something to know before the image is out in the world. */}
-          {nodes.length>0&&(designCode
-            ? <div style={{fontSize:11,fontWeight:700,color:"#7fd1a0",letterSpacing:".04em"}}>
-                Design {designCode} — carried into every export
-              </div>
-            : <div style={{fontSize:11,fontWeight:600,color:"#c9a227"}}>
-                No design code — these images will not link back to a shelf
-              </div>)}
+              Editable, because the filename is only the usual way it arrives --
+              a renamed file, a session reloaded, an image that came from
+              somewhere else entirely, and it has to be settable by hand. */}
+          {(nodes.length>0||pendingUpload)&&(
+            <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
+              <span style={{fontSize:10,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:"#8a8a82"}}>Design</span>
+              <input
+                value={designCode||""}
+                onChange={e=>setDesignCode(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g,"").slice(0,7)||null)}
+                placeholder="1Y3MK7P"
+                maxLength={7}
+                title="The seven characters from the share image. Exports carry it, so the picture says which shelf it is of."
+                style={{width:96,padding:"2px 6px",borderRadius:5,border:`1px solid ${designCode?"#2f6f4a":"#5a4a1e"}`,
+                        background:designCode?"#16241c":"#231d0e",color:designCode?"#7fd1a0":"#e8c46a",
+                        font:"700 12px ui-monospace,Menlo,monospace",letterSpacing:".1em"}}/>
+              <span style={{fontSize:11,fontWeight:600,color:designCode?"#7fd1a0":"#c9a227"}}>
+                {designCode?"carried into every export":"without one, exports will not link back to a shelf"}
+              </span>
+            </div>)}
         </div>
         <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
           <select value={provider} onChange={e=>updateProvider(e.target.value)} style={{...S.input,width:120,padding:"6px 8px"}}>
@@ -1755,12 +1795,12 @@ function App(){
                     <div style={{...S.label,marginBottom:6}}>Start from a Nairobi place</div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:7}}>
                       {(CONFIG.archetypes||[]).map(a=>(
-                        <button key={a.id} onClick={()=>applyArchetype(a)} style={{...S.preset,textAlign:"left",fontFamily:"inherit",border:`1px solid ${params.archetype===a.id?"#d88a26":"#2d2a23"}`,background:params.archetype===a.id?"#241c10":undefined}}>
+                        <button key={a.id} onClick={()=>applyArchetype(a)} style={{...S.preset,textAlign:"left",fontFamily:"inherit",border:`1px solid ${params.archetype===a.id?"#d88a26":"#2d2a23"}`,background:params.archetype===a.id?"#241c10":S.preset.background}}>
                           <div style={S.presetTitle}>{a.name}</div>
                           <div style={S.presetDesc}>{a.blurb}</div>
                         </button>
                       ))}
-                      <button onClick={()=>setParams(p=>normalizeParams({...p,archetype:null}))} style={{...S.preset,textAlign:"left",fontFamily:"inherit",border:`1px solid ${!params.archetype?"#d88a26":"#2d2a23"}`,background:!params.archetype?"#241c10":undefined}}>
+                      <button onClick={()=>setParams(p=>normalizeParams({...p,archetype:null}))} style={{...S.preset,textAlign:"left",fontFamily:"inherit",border:`1px solid ${!params.archetype?"#d88a26":"#2d2a23"}`,background:!params.archetype?"#241c10":S.preset.background}}>
                         <div style={S.presetTitle}>Custom</div>
                         <div style={S.presetDesc}>Assemble the place from fine controls</div>
                       </button>
