@@ -57,10 +57,7 @@
   }
 
   /**
-   * The filename for one finished image. A token is written only when it
-   * differs from the default, which keeps a plain scene at
-   * `fw-1Y3MK7P-s-living-room-01.jpg` rather than carrying five that all say
-   * "the usual".
+   * The filename for one finished image: which design, what kind, which one.
    */
   function build(code, stage, options) {
     const opts = options || {};
@@ -68,16 +65,9 @@
     if (!STAGES[stage]) throw new Error(`${stage} is not a stage`);
 
     const parts = [PREFIX, code, STAGES[stage]];
-    if (VIEWS.indexOf(opts.view) >= 0) {
-      parts.push(opts.view);
-    } else if (opts.azimuth != null && opts.elevation != null) {
-      const tilt = Math.round(opts.elevation);
-      parts.push(`a${((Math.round(opts.azimuth) % 360) + 360) % 360}e${tilt < 0 ? "n" : ""}${Math.abs(tilt)}`);
-    }
-    if (opts.zoom != null && Math.round(opts.zoom) !== 100) parts.push(`z${Math.round(opts.zoom)}`);
-    const lighting = opts.lighting == null ? 1 : opts.lighting;
-    if (Math.round(lighting * 10) !== 10) parts.push(`l${Math.round(lighting * 10)}`);
-    if (BACKGROUNDS[opts.background]) parts.push(BACKGROUNDS[opts.background]);
+    // Camera, lighting and background are deliberately absent: identity is what
+    // a filename is for, and the render's full recipe is inside the PNG. The
+    // options are still accepted so callers need not change. See names.py.
     if (opts.slug) parts.push(slugify(opts.slug));
 
     parts.push(String(Math.max(1, Number(opts.sequence) || 1)).padStart(2, "0"));
