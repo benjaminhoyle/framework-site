@@ -107,12 +107,21 @@ catalogue-set prompt are asking for different things.
 
 ### The handoff
 
-**Scene shots** on a catalogue row writes an IndexedDB record and opens
-`/scene-studio?handoff=<id>`, carrying the row's best product image (emptied,
-then populated, then the source photo), its design code and its scale. **Send to
-row** on a finished shot writes the result into the same record and returns; the
-catalogue studio collects it on load and on focus and files it as a child of that
-row, beside the angles and detail shots.
+**Add scene** on a catalogue row opens a picker of every image the row has — the
+source photo or render, populated, emptied, and any generated child including an
+earlier scene shot. Choosing one writes an IndexedDB record and opens
+`/scene-studio?handoff=<id>`, carrying that image, the design code and the scale.
+**Send to row** on a finished shot writes the result into the same record and
+returns; the catalogue studio collects it on load and on focus and files it as a
+child of that row, beside the angles and detail shots.
+
+Which image is right is a judgement about the shot somebody wants, so it is
+asked rather than inferred. The emptied image is usually it, but the original
+render is the answer when the generated ones have drifted from the product.
+
+Walking away without sending is normal, so the row says so: it shows **Resume
+scene** instead of **Add scene** while a session is open, and resuming reopens
+the same record rather than minting a second one.
 
 The id travels in the URL and the payload does not — a photograph is a megabyte
 or two, and no query string holds that. The id is moved into `sessionStorage` and
@@ -126,6 +135,12 @@ Two things worth knowing:
   only the shelf height crosses and the figure is placed again if it is wanted.
 - **A returned shot is never binned.** If no open row matches, the record waits
   rather than being deleted. Records go stale after a week.
+- **Writes resolve on `transaction.oncomplete`, not on request success.** Those
+  are different moments, and both halves navigate the instant their write
+  resolves. Resolving at the earlier one meant leaving with the write still in
+  flight, where the navigation could abort it — the handoff, or the finished
+  shot, simply never existed. Intermittent, and the cause of the first report
+  that a generated scene did not come back.
 
 ## Image generation, in outline
 

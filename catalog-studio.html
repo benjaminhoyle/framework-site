@@ -151,6 +151,7 @@ img{display:block}
 .lib-label{padding:6px 8px;font-size:10px;line-height:1.35}
 .lib-label .name{font-weight:800;color:#f3efe8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lib-label .kind{color:#98a39d;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.lib-label .kind.note{text-transform:none;letter-spacing:0;line-height:1.4}
 .lib-empty{padding:30px 10px;text-align:center;color:#9da6a1;font-size:12px;line-height:1.5}
 @keyframes slide{from{transform:translateX(-70%)}to{transform:translateX(220%)}}
 @media(max-width:980px){
@@ -1599,6 +1600,8 @@ function AppV2(){
   const [firstGenerationNote,setFirstGenerationNote]=useState("");
   const [previewSelection,setPreviewSelection]=useState(null);
   const [libraryOpen,setLibraryOpen]=useState(false);
+  const [scenePickerFor,setScenePickerFor]=useState(null);
+  const [openScene,setOpenScene]=useState(null);
   const fileRef=useRef(null);
   const sessionFileRef=useRef(null);
   const rowZipFileRef=useRef(null);
@@ -1670,6 +1673,7 @@ function AppV2(){
   const averageSessionMs=completedStats.count?completedStats.elapsedMs/completedStats.count:0;
   const queueSpend=queueItems.filter(item=>item.status==="pending"||item.status==="running").reduce((sum,item)=>sum+(item.estimatedCost||0),0);
   const totalSpend=completedStats.estimatedSpend+queueSpend;
+  const queueBusy=queueItems.some(item=>item.status==="running"||item.status==="pending");
 
   // Measuring the shelf and standing the figure in the photograph is
   // FrameworkScale's, shared with the scene studio. This page only says which
@@ -2057,20 +2061,26 @@ function AppV2(){
   }
 
   /**
-   * The image a scene shot should be built from.
-   *
-   * The emptied catalogue image is the right one: a clean shelf on a plain
-   * ground, which is exactly what a room wants dropped into it. Populated is the
-   * next best, and the raw source photograph is a last resort that will drag its
-   * own room into the scene — so the caller says which it got.
-   */
-  /**
    * Take delivery of anything the scene studio sent back.
    *
    * A returned shot arrives as a child of its row, beside the angles and the
    * detail shots, so it downloads with the row ZIP and pushes to the library
    * like every other generated image without needing a slot of its own.
    */
+  /**
+   * A scene session for this row that was opened and never sent back.
+   *
+   * Leaving the scene studio without sending is a normal thing to do -- you go
+   * and look at something else. Saying so on the row, with a way straight back
+   * into it, is the difference between that and losing the session.
+   */
+  async function refreshOpenScene(){
+    try{
+      const row=sourcesRef.current[0];
+      setOpenScene(row?await FrameworkHandoff.openFor(row.id):null);
+    }catch{setOpenScene(null)}
+  }
+
   async function collectSceneShots(){
     try{
       const {collected,waiting}=await FrameworkHandoff.collect(
@@ -2093,6 +2103,10 @@ function AppV2(){
       if(waiting)addLog("info",`${waiting} scene shot(s) are waiting for a row this session does not have.`);
     }catch(error){
       addLog("error",`Could not read the scene studio handoff: ${safeMsg(error)}`);
+    }finally{
+      // Even if collection failed, the row still needs to know whether a session
+      // is sitting open — that is the thing that explains a missing shot.
+      await refreshOpenScene();
     }
   }
 
@@ -2103,11 +2117,29 @@ function AppV2(){
     return {status:"set",shelfH:scale.shelfH,pxCm:null,expandFrame:false,fx:null,fy:null,expandedSide:null,offsetX:0};
   }
 
-  function sceneSourceFor(source){
-    if(source?.empty?.dataUrl)return {image:source.empty,kind:"emptied"};
-    if(source?.filled?.dataUrl)return {image:source.filled,kind:"populated"};
-    if(source?.dataUrl)return {image:source,kind:"source photo"};
-    return null;
+  /**
+   * Every image in the row that could start a scene, in the order they were made.
+   *
+   * Which one is right is a judgement about the shot somebody wants, not
+   * something to infer. The emptied image is usually it — a clean shelf, ready
+   * to be put in a room — but the original render is the answer when the
+   * generated ones have drifted from the product, and a scene shot already in
+   * the row is the answer when the next one should match it. So the list is
+   * shown and the choice is made.
+   */
+  function sceneSources(source){
+    const options=[];
+    if(source?.dataUrl)options.push({key:"source",kind:"source photo",label:"Source",
+      hint:"The photo or render this row was built from.",image:source});
+    if(source?.filled?.dataUrl)options.push({key:"filled",kind:"populated",label:"Populated",
+      hint:"Styled, on the studio background.",image:source.filled});
+    if(source?.empty?.dataUrl)options.push({key:"empty",kind:"emptied",label:"Emptied",
+      hint:"Usually the one: a clean shelf on a plain ground.",image:source.empty});
+    for(const child of source?.children||[]){
+      if(child?.dataUrl)options.push({key:child.id,kind:(child.label||"generated image").toLowerCase(),
+        label:child.label||"Generated",hint:"Already in this row — start from it to match it.",image:child});
+    }
+    return options;
   }
 
   /**
@@ -2118,10 +2150,9 @@ function AppV2(){
    * the queue running would kill it mid-generation, so that is refused rather
    * than silently losing an image somebody has already paid for.
    */
-  async function openInSceneStudio(source){
-    const picked=sceneSourceFor(source);
-    if(!picked){addLog("error",`${source.name}: nothing to send yet.`);return}
-    if(queueItems.some(item=>item.status==="running"||item.status==="pending")){
+  async function openInSceneStudio(source,picked){
+    if(!picked){addLog("error",`${source.name}: nothing to build a scene from yet.`);return}
+    if(queueBusy){
       addLog("error","Finish or clear the queue before leaving for the scene studio.");
       return;
     }
@@ -2488,6 +2519,15 @@ function AppV2(){
             </div>
             <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleFiles}/>
             {libraryOpen&&<LibraryPickerModal onClose={()=>setLibraryOpen(false)} onPick={loadFromLibrary}/>}
+            {scenePickerFor&&(()=>{
+              const row=sources.find(item=>item.id===scenePickerFor);
+              if(!row)return null;
+              return <ScenePickerModal
+                row={row}
+                options={sceneSources(row)}
+                onClose={()=>setScenePickerFor(null)}
+                onPick={option=>{setScenePickerFor(null);openInSceneStudio(row,option)}}/>;
+            })()}
             <div
               className={`drop ${scaleTool.active?"scale-active":""} ${dragging?"dragging":""}`}
               onClick={handleSourcePreviewClick}
@@ -2553,7 +2593,11 @@ function AppV2(){
                 <div className="source-tools">
                   {!source.filled?.dataUrl&&<button className="btn btn-small btn-primary" onClick={()=>enqueueRequiredSequence(source)} disabled={!source.dataUrl}>Generate populated + emptied</button>}
                   {source.filled?.dataUrl&&!source.empty?.dataUrl&&<button className="btn btn-small btn-primary" onClick={()=>enqueueEmpty(source)}>Generate emptied</button>}
-                  <button className="btn btn-small btn-soft" onClick={()=>openInSceneStudio(source)} disabled={!sceneSourceFor(source)} title="Open this row in the scene studio; the shot you choose comes back here">Scene shots</button>
+                  {openScene?.rowId===source.id
+                    ?<button className="btn btn-small btn-soft" onClick={()=>FrameworkHandoff.resume(openScene.id)} title="A scene session for this row is still open">Resume scene</button>
+                    :<button className="btn btn-small btn-soft" onClick={()=>setScenePickerFor(source.id)}
+                       disabled={!sceneSources(source).length||queueBusy}
+                       title={queueBusy?"Finish or clear the queue first — leaving would kill it mid-generation":"Pick an image, build a scene from it, and send the one you like back to this row"}>Add scene</button>}
                   <button className="btn btn-small" onClick={()=>downloadSourceSet(source)} disabled={!(source.filled?.dataUrl||source.empty?.dataUrl||(source.children||[]).some(child=>child.dataUrl))}>Download row</button>
                 </div>
               </div>
@@ -2607,7 +2651,7 @@ function AppV2(){
                     image={child}
                     filename={`${filenameSafe(normalizedRowMeta(source).id)}-${String(index+3).padStart(2,"0")}-${filenameSafe(child.label)}.jpg`}
                     placeholder={child.status||"Waiting"}
-                    onRetry={()=>child.type==="scene"?openInSceneStudio(source):retryGenerated(source,child.type,child)}
+                    onRetry={()=>child.type==="scene"?setScenePickerFor(source.id):retryGenerated(source,child.type,child)}
                     onRefine={()=>refineGenerated(source,child.type,child)}
                     onReplace={file=>replaceGeneratedImage(source,child.type,file,child)}
                     onDelete={()=>deleteGenerated(source,child.type,child.id)}
@@ -2660,6 +2704,49 @@ function PreviewActionPanel({title,image,filename,onRetry,onRefine,onReplace,onD
         <button className="btn btn-small" onClick={()=>replaceRef.current?.click()}>Replace</button>
         <input ref={replaceRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleReplace}/>
         <button className="btn btn-small btn-danger" onClick={onDelete}>Delete</button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Which image should the scene be built from?
+ *
+ * One screen, every image the row has, each with the thing it is good for.
+ * Choosing is one click and it leaves for the scene studio immediately -- the
+ * whole point of the flow is that there is nothing to name, download or upload,
+ * so there is no reason to make somebody confirm a choice they just made.
+ */
+function ScenePickerModal({row,options,onClose,onPick}){
+  useEffect(()=>{
+    const onKey=event=>{if(event.key==="Escape")onClose()};
+    window.addEventListener("keydown",onKey);
+    return ()=>window.removeEventListener("keydown",onKey);
+  },[onClose]);
+  const title=normalizedRowMeta(row).title||row.name;
+  return (
+    <div className="lib-overlay" onClick={onClose}>
+      <div className="lib-modal" style={{width:"min(720px,100%)"}} onClick={event=>event.stopPropagation()}>
+        <div className="lib-head">
+          <div>
+            <div className="title">Add a scene to {title}</div>
+            <div className="sub">Pick the image the room should be built around. The shot you choose in the scene studio comes back to this row.</div>
+          </div>
+          <button className="lib-close" onClick={onClose}>×</button>
+        </div>
+        <div className="lib-body">
+          <div className="lib-grid">
+            {options.map(option=>(
+              <button key={option.key} type="button" className="lib-item" onClick={()=>onPick(option)}>
+                <div className="lib-thumb"><img src={option.image.dataUrl} alt={option.label}/></div>
+                <div className="lib-label">
+                  <div className="name">{option.label}</div>
+                  <div className={`kind ${option.hint?"note":""}`}>{option.hint||option.kind}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

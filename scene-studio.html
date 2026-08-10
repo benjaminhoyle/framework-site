@@ -1314,7 +1314,7 @@ function App(){
       await FrameworkHandoff.returnResult(handoff.id,
         {dataUrl:img.dataUrl,base64:img.base64,width:img.width,height:img.height},
         "Scene shot");
-    }catch(e){addLog("error",`Could not send it back: ${safeMsg(e)}`);}
+    }catch(e){addLog("error",`Could not send it back: ${safeMsg(e)} — download it and add it to the row by hand.`);}
   };
 
   const saveToLibrary=async()=>{
@@ -1576,11 +1576,15 @@ function App(){
       {handoff&&(
         <div style={{background:"#182523",border:"1px solid #375247",borderRadius:8,padding:"8px 12px",marginBottom:10,display:"flex",gap:10,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap"}}>
           <span style={{fontSize:11,color:"#d9f0e4",fontWeight:700}}>
-            Scene shots for <strong>{handoff.rowTitle||"a catalogue row"}</strong> — pick one and send it back to the row.
+            Scene for <strong>{handoff.rowTitle||"a catalogue row"}</strong>
+            {handoff.imageKind?` — from its ${handoff.imageKind}`:""}. Generate, then
+            press <strong>Send to row</strong> on the one you want.
           </span>
           <div style={{display:"flex",gap:6}}>
-            <a className="btn btn-small" href="/catalog-studio">Back to the row</a>
-            <button className="btn btn-small" onClick={()=>{FrameworkHandoff.forget();setHandoff(null);addLog("info","Working on its own now — nothing will go back to the row.")}}>Work on its own</button>
+            <button className="btn btn-small" onClick={()=>{
+              if(!window.confirm("Leave without sending a shot back?\n\nThe row keeps waiting for this session — you can resume it from the row."))return;
+              window.location.href="/catalog-studio";
+            }}>Leave without sending</button>
           </div>
         </div>
       )}

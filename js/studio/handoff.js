@@ -58,14 +58,27 @@
     });
   }
 
-  /** One store operation, resolved with whatever the request returned. */
+  /**
+   * One store operation.
+   *
+   * A write resolves on `transaction.oncomplete`, **not** on the request's own
+   * success. Those are different moments: the request succeeds first and the
+   * transaction commits after it, and both `send` and `returnResult` navigate
+   * the moment their write resolves. Resolving at the earlier point meant
+   * leaving for the other page with the write still in flight, where the
+   * navigation could abort it — the handoff, or the finished scene shot, simply
+   * never existed. It failed perhaps one time in some, which is the worst rate
+   * a bug can have.
+   */
   function run(mode, method, ...args){
     return open().then(db => new Promise((resolve, reject) => {
       const transaction = db.transaction(STORE, mode);
       const request = transaction.objectStore(STORE)[method](...args);
-      request.onsuccess = () => resolve(request.result);
+      let value;
+      request.onsuccess = () => { value = request.result; };
+      transaction.oncomplete = () => resolve(value);
       transaction.onerror = () => reject(transaction.error);
-      transaction.onabort = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error || new Error("The handoff write was interrupted."));
     }));
   }
 
@@ -98,6 +111,7 @@
    * too big to, and because a reload on the other side has to find it again.
    */
   async function send(record){
+    await expire().catch(() => {});
     const saved = await put({
       ...record,
       id: newId(),
@@ -105,9 +119,22 @@
       status: "open",
       result: null
     });
-    expire().catch(() => {});
     window.location.href = `/scene-studio?${URL_PARAM}=${encodeURIComponent(saved.id)}`;
     return saved;
+  }
+
+  /** An unfinished session for this row, if somebody left one open. */
+  async function openFor(rowId){
+    if(!rowId) return null;
+    const rows = await all();
+    return rows
+      .filter(row => row.status === "open" && row.rowId === rowId)
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0] || null;
+  }
+
+  /** Reopen one that was left open, without writing a second record. */
+  function resume(id){
+    window.location.href = `/scene-studio?${URL_PARAM}=${encodeURIComponent(id)}`;
   }
 
   /**
@@ -170,7 +197,7 @@
   window.FrameworkHandoff = {
     DB_NAME, STORE, URL_PARAM, MAX_AGE_MS,
     put, get, remove, all, expire,
-    send, collect,
+    send, collect, openFor, resume,
     claimFromUrl, forget, returnResult
   };
 })();
