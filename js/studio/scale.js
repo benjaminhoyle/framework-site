@@ -268,21 +268,16 @@
 .fw-scale.is-active .fw-scale-hint{color:#ffd08d;font-weight:800}
 .fw-scale-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .fw-scale-row:empty{display:none}
-.fw-scale-btn{height:30px;padding:0 10px;border-radius:6px;border:1px solid #3c4140;background:#262929;color:#f6f2e9;font:inherit;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
-.fw-scale-btn:not(:disabled){cursor:pointer}
-.fw-scale-btn:hover:not(:disabled){background:#323737}
-.fw-scale-btn:disabled{cursor:not-allowed;opacity:.5}
-.fw-scale-btn.is-primary{background:#e6a44d;color:#17130c;border-color:#f0ba71}
-.fw-scale-btn.is-primary:hover:not(:disabled){background:#f0b866}
-.fw-scale-btn.is-soft{background:#182523;border-color:#375247;color:#d9f0e4}
-.fw-scale-input{height:30px;width:96px;border-radius:6px;border:1px solid #3a403e;background:#101212;color:#f4efe6;padding:0 9px;font:inherit;font-size:12px;outline:none}
+.fw-scale-input{width:96px}
 .fw-scale.is-active .fw-scale-input{border-color:#d88a26}
 .fw-scale-check{display:flex;align-items:center;gap:5px;font-size:12px;color:#c5bba8;cursor:pointer}
 `;
-
   let stylesInjected = false;
   function injectStyles(){
     if(stylesInjected || typeof document === "undefined") return;
+    // The panel's buttons and field come from the shared chrome, so that this
+    // is not a third button vocabulary on pages that already have one.
+    if(window.FrameworkStudio) window.FrameworkStudio.injectStyles();
     stylesInjected = true;
     const el = document.createElement("style");
     el.setAttribute("data-framework-scale", "");
@@ -480,7 +475,7 @@
     const controls = [];
     if(session?.phase === "height"){
       controls.push(h("input", {
-        key: "cm", className: "fw-scale-input", autoFocus: true, inputMode: "decimal",
+        key: "cm", className: "input input-small fw-scale-input", autoFocus: true, inputMode: "decimal",
         placeholder: "cm", value: session.heightCm,
         onChange: e => onHeightText(e.target.value),
         onKeyDown: e => { if(e.key === "Enter") onConfirm(); }
@@ -490,20 +485,20 @@
         "Expand frame"
       ));
       controls.push(h("button", {
-        key: "set", className: "fw-scale-btn is-primary",
+        key: "set", className: "btn btn-small btn-primary",
         onClick: onConfirm, disabled: !parseFloat(session.heightCm)
       }, "Set"));
     }
     if(active){
-      controls.push(h("button", {key: "cancel", className: "fw-scale-btn", onClick: onCancel}, "Cancel"));
+      controls.push(h("button", {key: "cancel", className: "btn btn-small", onClick: onCancel}, "Cancel"));
     }else{
-      controls.push(h("button", {key: "begin", className: "fw-scale-btn is-soft", onClick: onBegin},
+      controls.push(h("button", {key: "begin", className: "btn btn-small btn-soft", onClick: onBegin},
         isSet(scale) ? "Set scale again" : "Set scale"));
       if(canSkip && scale?.status !== "skipped"){
-        controls.push(h("button", {key: "skip", className: "fw-scale-btn", onClick: onSkip}, "Skip scale"));
+        controls.push(h("button", {key: "skip", className: "btn btn-small", onClick: onSkip}, "Skip scale"));
       }
       if(isSet(scale) || scale?.status === "skipped"){
-        controls.push(h("button", {key: "reset", className: "fw-scale-btn", onClick: onReset}, "Reset"));
+        controls.push(h("button", {key: "reset", className: "btn btn-small", onClick: onReset}, "Reset"));
       }
     }
 

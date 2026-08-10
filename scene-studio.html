@@ -6,7 +6,7 @@
 <script src="/js/gate.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Framework — Image Generator</title>
+<title>Framework — Scene Studio</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -25,15 +25,9 @@ input:focus,textarea:focus{border-color:#d97706!important}
 </style>
 </head>
 <body>
-<div style="display:flex;gap:4px;align-items:center;padding:7px 14px;background:#141414;border-bottom:1px solid #2a2a2a;font-family:'DM Sans',system-ui,sans-serif">
-  <span style="color:#d5a25d;font-weight:800;letter-spacing:.1em;font-size:10px;text-transform:uppercase;margin-right:14px">Framework</span>
-  <a href="/builder" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">3D Builder</a>
-  <a href="/scene-studio" style="text-decoration:none;background:#2a2213;color:#f6bd64;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Scene Studio</a>
-  <a href="/catalog-studio" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Catalog Studio</a>
-  <a href="/catalog.html" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Catalog Manager</a>
-  <a href="/metrics.html" style="text-decoration:none;color:#cfcfcf;font-size:12px;font-weight:600;padding:5px 11px;border-radius:6px">Monitor</a>
-</div>
+<div id="framework-nav"></div>
 <div id="root"></div>
+<script src="/js/studio/chrome.js"></script>
 <script src="/js/studio/framework-names.js"></script>
 <script src="/js/studio/scale.js"></script>
 <script src="/js/studio/prompt-config.js"></script>
@@ -561,7 +555,6 @@ function paramDiff(base,curr){
 // ─── COMPONENTS ─────────────────────────────────────────────────────────────
 
 
-function LogPanel({entries}){const cRef=useRef(null);useEffect(()=>{if(cRef.current)cRef.current.scrollTop=cRef.current.scrollHeight},[entries]);const colors={error:"#ef4444",warning:"#f6bd64",success:"#22c55e",cost:"#f59e0b",debug:"#60a5fa",info:"#c8c0b2"};return(<div ref={cRef} style={{maxHeight:168,overflowY:"auto",fontFamily:"ui-monospace, SFMono-Regular, Menlo, monospace",fontSize:10,lineHeight:1.45,padding:"7px 8px",background:"#0a0a0a",borderRadius:4,border:"1px solid #24211b"}}>{entries.map((e,i)=>(<div key={i} style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere",padding:"1px 0"}}><span style={{color:"#555"}}>{e.time}</span> <span style={{color:colors[e.type]||"#aaa"}}>[{e.type}]</span> {e.msg}</div>))}</div>)}
 
 function CropTool({src,onApply,onCancel}){
   const ref=useRef(null);const[drag,setDrag]=useState(false);const[dType,setDType]=useState(null);const[start,setStart]=useState(null);const[crop,setCrop]=useState({x:.1,y:.1,w:.8,h:.8});const[orig,setOrig]=useState(null);
@@ -1364,21 +1357,8 @@ function App(){
   // ─── STYLES ────────────────────────────────────────────────────
   const S={
     page:{minHeight:"100vh",background:"#10100e",color:"#ece7dd",padding:"18px",maxWidth:1540,margin:"0 auto"},
-    top:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:14,paddingBottom:12,borderBottom:"1px solid #292722"},
-    eyebrow:{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:".08em",color:"#a3a092"},
-    h1:{fontSize:22,fontWeight:700,lineHeight:1.1,color:"#fffaf0"},
     workspace:{display:"grid",gridTemplateColumns:"minmax(360px,5fr) minmax(420px,7fr)",gap:14,alignItems:"start"},
-    left:{position:"sticky",top:14,minWidth:0},
-    panel:{background:"#181712",border:"1px solid #2a2923",borderRadius:8,padding:14,marginBottom:10,boxShadow:"0 12px 32px rgba(0,0,0,.16)"},
-    panelTight:{background:"#181712",border:"1px solid #2a2923",borderRadius:8,padding:10,marginBottom:10},
-    titleRow:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:10},
-    title:{fontSize:13,fontWeight:700,color:"#fffaf0"},
-    sub:{fontSize:11,color:"#8d887c",lineHeight:1.35},
-    btn:{padding:"8px 13px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,fontFamily:"inherit",transition:"all .15s",whiteSpace:"nowrap"},
-    btnP:{background:"#d88a26",color:"#14110a"},
-    btnS:{background:"#24231e",color:"#ece7dd",border:"1px solid #3a3830"},
-    btnSm:{padding:"5px 9px",fontSize:11},
-    input:{background:"#0d0d0b",border:"1px solid #35332d",borderRadius:6,padding:"8px 10px",color:"#ece7dd",fontSize:12,width:"100%",outline:"none",fontFamily:"inherit"},
+    left:{position:"sticky",top:14,minWidth:0,display:"flex",flexDirection:"column",gap:10},
     miniGrid:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(172px,1fr))",gap:8},
     preset:{background:"#11100d",border:"1px solid #302e27",borderRadius:8,padding:10,cursor:"pointer",minHeight:92},
     presetTitle:{fontSize:12,fontWeight:800,color:"#fffaf0",marginBottom:3},
@@ -1388,7 +1368,6 @@ function App(){
     chipAdd:{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 8px",borderRadius:5,border:"1px dashed #4a463d",background:"#11100d",fontSize:11,color:"#aaa396",cursor:"pointer"},
     pill:{display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"6px 9px",borderRadius:6,border:"1px solid #35332d",background:"#11100d",color:"#bdb6a7",fontSize:11,fontWeight:700,cursor:"pointer"},
     pillOn:{border:"1px solid #d88a26",background:"#2b1d0d",color:"#ffd08d"},
-    label:{fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:".06em",color:"#8d887c",marginBottom:6},
   };
   const genNodes=nodes.filter(n=>n.type==="gen");
   const runDisabled=processing||!refImage||(isGen&&mode==="refine"&&!isDirty);
@@ -1440,9 +1419,9 @@ function App(){
         <div style={{fontSize:9,color:"#8d887c"}}>{group.kind==="multi"?"choose several":"one choice per row"}</div>
       </div>
       <div style={{display:"flex",gap:5,flexWrap:"wrap",justifyContent:"flex-end"}}>
-        {group.id==="shot"?<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={surpriseScene} disabled={processing}>Surprise scene</button>:null}
-        {group.id==="shot"&&params.shotType==="use"?<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setShowAllScenes(v=>!v)} disabled={processing}>{showAllScenes?"Filtered rooms":"All rooms"}</button>:null}
-        {group.id==="details"?<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={suggestDetails} disabled={params.shotType==="clean"||processing}>Suggest details</button>:null}
+        {group.id==="shot"?<button className="btn btn-small" onClick={surpriseScene} disabled={processing}>Surprise scene</button>:null}
+        {group.id==="shot"&&params.shotType==="use"?<button className="btn btn-small" onClick={()=>setShowAllScenes(v=>!v)} disabled={processing}>{showAllScenes?"Filtered rooms":"All rooms"}</button>:null}
+        {group.id==="details"?<button className="btn btn-small" onClick={suggestDetails} disabled={params.shotType==="clean"||processing}>Suggest details</button>:null}
       </div>
     </div>
     {group.controls.map(renderParamControl)}
@@ -1503,10 +1482,10 @@ function App(){
             </div>
           </div>
         </div>)}
-      <div style={S.top}>
+      <header className="top">
         <div>
-          <div style={S.eyebrow}>Framework Designs</div>
-          <h1 style={S.h1}>Product Content Studio</h1>
+          <div className="eyebrow">Framework Designs</div>
+          <h1>Scene Studio</h1>
           {/* Whether what leaves this page will still say which shelf it is of.
               Editable, because the filename is only the usual way it arrives --
               a renamed file, a session reloaded, an image that came from
@@ -1528,25 +1507,24 @@ function App(){
               </span>
             </div>)}
         </div>
-        <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
-          <select value={provider} onChange={e=>updateProvider(e.target.value)} style={{...S.input,width:120,padding:"6px 8px"}}>
+        <div className="top-actions">
+          <select className="select select-small" value={provider} onChange={e=>updateProvider(e.target.value)} style={{width:120}}>
             {Object.entries(PROVIDERS).map(([id,cfg])=><option key={id} value={id}>{cfg.label}</option>)}
           </select>
           <span style={{background:"#252017",border:"1px solid #4a3822",padding:"5px 10px",borderRadius:6,fontSize:11,fontWeight:800,color:"#f6bd64"}}>${totalCost.toFixed(3)}</span>
           <input ref={baseUploadRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleBaseUpload}/>
           <input ref={sessionRef} type="file" accept=".json,application/json" style={{display:"none"}} onChange={handleLoad}/>
-          <a href="./catalog.html" style={{...S.btn,...S.btnSm,...S.btnS,textDecoration:"none"}}>Catalog Sets</a>
-          <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>sessionRef.current?.click()}>Load</button>
-          <button style={{...S.btn,...S.btnSm,...S.btnS,opacity:nodes.length?1:.45}} onClick={handleSave} disabled={!nodes.length}>Save</button>
+          <button className="btn btn-small" onClick={()=>sessionRef.current?.click()}>Load session</button>
+          <button className="btn btn-small" onClick={handleSave} disabled={!nodes.length}>Save session</button>
         </div>
-      </div>
+      </header>
 
       {restoreAvailable&&!nodes.length&&(
         <div style={{background:"#1a2030",border:"1px solid #315271",borderRadius:8,padding:"8px 12px",marginBottom:10,display:"flex",gap:10,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap"}}>
           <span style={{fontSize:11,color:"#d7ecff",fontWeight:700}}>A previous session was autosaved.</span>
           <div style={{display:"flex",gap:6}}>
-            <button style={{...S.btn,...S.btnSm,...S.btnP}} onClick={restoreAutosave}>Restore</button>
-            <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setRestoreAvailable(false)}>Dismiss</button>
+            <button className="btn btn-small btn-primary" onClick={restoreAutosave}>Restore</button>
+            <button className="btn btn-small" onClick={()=>setRestoreAvailable(false)}>Dismiss</button>
           </div>
         </div>
       )}
@@ -1559,7 +1537,7 @@ function App(){
                 <div style={{fontWeight:900,fontSize:13,color:"#fffaf0"}}>Choose a source from the Library</div>
                 <div style={{fontSize:10,color:"#8d887c",marginTop:2}}>Renders arrive here automatically from the 3D Builder — with product identity and true scale attached.</div>
               </div>
-              <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setLibOpen(false)}>Close</button>
+              <button className="btn btn-small" onClick={()=>setLibOpen(false)}>Close</button>
             </div>
             <div style={{overflowY:"auto",minHeight:120}}>
               {!libAssets?<div style={{color:"#8d887c",fontSize:12,padding:20}}>Loading…</div>
@@ -1583,15 +1561,15 @@ function App(){
 
       <div style={S.workspace} className="studio-grid">
         <section style={S.left} className="sticky-pane">
-          <div style={S.panel}>
-            <div style={S.titleRow}>
+          <div className="panel">
+            <div className="panel-title">
               <div>
-                <div style={S.title}>Product source</div>
-                <div style={S.sub}>{refImage?"Reference loaded. Product lock stays strict.":"Upload one image, then choose how to use it."}</div>
+                <div className="title">Product source</div>
+                <div className="sub">{refImage?"Reference loaded. Product lock stays strict.":"Upload one image, then choose how to use it."}</div>
               </div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                <button style={{...S.btn,...S.btnSm,...S.btnP}} onClick={()=>baseUploadRef.current?.click()} disabled={processing}>Upload Base Image</button>
-                {window.DamClient?.enabled&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={openLibrary} disabled={processing}>From Library</button>}
+                <button className="btn btn-small btn-primary" onClick={()=>baseUploadRef.current?.click()} disabled={processing}>Upload base image</button>
+                {window.DamClient?.enabled&&<button className="btn btn-small" onClick={openLibrary} disabled={processing}>From library</button>}
               </div>
             </div>
             {pendingUpload?(
@@ -1603,7 +1581,7 @@ function App(){
                       {pendingUpload.name} / {pendingUpload.img.width}x{pendingUpload.img.height}
                     </div>
                   </div>
-                  <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setPendingUpload(null)}>Cancel</button>
+                  <button className="btn btn-small" onClick={()=>setPendingUpload(null)}>Cancel</button>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:8,marginTop:10}}>
                   <button style={{...S.preset,minHeight:72,textAlign:"left",fontFamily:"inherit"}} onClick={usePendingAsSource}>
@@ -1638,12 +1616,12 @@ function App(){
                   </div>
                   <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
                     {isGen&&(<>
-                      <button style={{...S.btn,...S.btnSm,...S.btnP}} onClick={()=>dl(croppedImg||selNode.img,exportName(selNode))}>Download</button>
-                      <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setCropMode(true);setCroppedImg(null)}}>Crop</button>
-                      <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={handleValidate} disabled={processing}>Check</button>
-                      {window.DamClient?.enabled&&selNode?.type==="gen"&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={saveToLibrary} disabled={processing}>Save to Library</button>}
-                      <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={handleCaption} disabled={capLoading}>{capLoading?"Writing":"Captions"}</button>
-                      {genNodes.length>1&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={handleExport}>Export all</button>}
+                      <button className="btn btn-small btn-primary" onClick={()=>dl(croppedImg||selNode.img,exportName(selNode))}>Download</button>
+                      <button className="btn btn-small" onClick={()=>{setCropMode(true);setCroppedImg(null)}}>Crop</button>
+                      <button className="btn btn-small" onClick={handleValidate} disabled={processing}>Check</button>
+                      {window.DamClient?.enabled&&selNode?.type==="gen"&&<button className="btn btn-small" onClick={saveToLibrary} disabled={processing}>Save to library</button>}
+                      <button className="btn btn-small" onClick={handleCaption} disabled={capLoading}>{capLoading?"Writing":"Captions"}</button>
+                      {genNodes.length>1&&<button className="btn btn-small" onClick={handleExport}>Export all</button>}
                     </>)}
                   </div>
                 </div>
@@ -1666,38 +1644,30 @@ function App(){
             )}
           </div>
 
-          <div style={S.panelTight}>
-            <div style={{...S.titleRow,marginBottom:6}}>
+          <div className="panel-tight">
+            <div className="panel-title" style={{marginBottom:6}}>
               <div>
-                <div style={S.title}>Shot map</div>
-                <div style={S.sub}>{genNodes.length} generated</div>
+                <div className="title">Shot map</div>
+                <div className="sub">{genNodes.length} generated</div>
               </div>
-              {selId&&<button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setSelId(null);setBaseParams(null);setPromptEditorOpen(false);setPromptEditorContext(null);clearReview()}}>Deselect</button>}
+              {selId&&<button className="btn btn-small" onClick={()=>{setSelId(null);setBaseParams(null);setPromptEditorOpen(false);setPromptEditorContext(null);clearReview()}}>Deselect</button>}
             </div>
             <div style={{overflowX:"auto",padding:"4px 0"}}>
               {nodes.length===0?<span style={{fontSize:11,color:"#8d887c"}}>No source yet.</span>:<div style={{display:"inline-flex",alignItems:"flex-start"}}>{renderChain("ref")}</div>}
             </div>
           </div>
 
-	          <div style={S.panelTight}>
-	            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:6}}>
-	              <span style={S.label}>Activity</span>
-	              <div style={{display:"flex",gap:5,alignItems:"center"}}>
-	                <span style={{fontSize:9,color:"#8d887c"}}>{log.length}</span>
-	                {log.length>0&&<button style={{...S.btn,...S.btnSm,...S.btnS,padding:"3px 6px",fontSize:9}} onClick={()=>{navigator.clipboard.writeText(log.map(e=>`${e.time} [${e.type}] ${e.msg}`).join("\n"));addLog("info","Log copied")}}>Copy</button>}
-	                {log.length>0&&<button style={{...S.btn,...S.btnSm,...S.btnS,padding:"3px 6px",fontSize:9}} onClick={()=>setLog([])}>Clear</button>}
-	              </div>
-	            </div>
-	            <LogPanel entries={log}/>
-	          </div>
+          <div className="panel-tight">
+            <FrameworkStudio.ActivityLog entries={log} onClear={()=>setLog([])} onCopied={()=>addLog("info","Log copied")}/>
+          </div>
         </section>
 
-        <section style={{minWidth:0}}>
-          <div style={S.panel}>
-            <div style={S.titleRow}>
+        <section style={{minWidth:0,display:"flex",flexDirection:"column",gap:10}}>
+          <div className="panel">
+            <div className="panel-title">
               <div>
-                <div style={S.title}>{isGen&&mode==="refine"?"Improve selected shot":"Plan product shot"}</div>
-                <div style={S.sub}>{isGen&&mode==="refine"?"Text edits and reality dials are enough for most revisions.":"Choose clean product or shelf in use, then tune the recipe."}</div>
+                <div className="title">{isGen&&mode==="refine"?"Improve selected shot":"Plan product shot"}</div>
+                <div className="sub">{isGen&&mode==="refine"?"Text edits and reality dials are enough for most revisions.":"Choose clean product or shelf in use, then tune the recipe."}</div>
               </div>
               {isGen&&(<div style={{display:"flex",borderRadius:7,overflow:"hidden",border:"1px solid #3a3830"}}>
                 <button onClick={()=>switchMode("refine")} style={{padding:"7px 12px",fontSize:11,fontWeight:800,border:"none",cursor:"pointer",fontFamily:"inherit",background:mode==="refine"?"#d88a26":"#24231e",color:mode==="refine"?"#14110a":"#bdb6a7"}}>Refine</button>
@@ -1734,9 +1704,9 @@ function App(){
                         </div>
                       </div>
                       <div style={{display:"flex",gap:5,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                        <button style={{...S.btn,...S.btnSm,...(selectedUpscale.mode==="only"?S.btnP:S.btnS)}} onClick={()=>setSelectedUpscaleMode("only")}>Upscale only</button>
-                        <button style={{...S.btn,...S.btnSm,...(selectedUpscale.mode==="with-refine"?S.btnP:S.btnS)}} onClick={()=>setSelectedUpscaleMode("with-refine")}>With edits</button>
-                        <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setSelectedUpscaleMode(null)}>Skip</button>
+                        <button className={`btn btn-small ${selectedUpscale.mode==="only"?"btn-primary":""}`} onClick={()=>setSelectedUpscaleMode("only")}>Upscale only</button>
+                        <button className={`btn btn-small ${selectedUpscale.mode==="with-refine"?"btn-primary":""}`} onClick={()=>setSelectedUpscaleMode("with-refine")}>With edits</button>
+                        <button className="btn btn-small" onClick={()=>setSelectedUpscaleMode(null)}>Skip</button>
                       </div>
                     </div>
                   </div>
@@ -1747,7 +1717,7 @@ function App(){
                     <div style={S.presetDesc}>{p.feedback.slice(0,95)}</div>
                   </button>)}
                 </div>
-                <textarea value={refineFB} onChange={e=>setRefineFB(e.target.value)} placeholder="What should change?" style={{...S.input,minHeight:86,resize:"vertical",marginTop:10}}/>
+                <textarea value={refineFB} onChange={e=>setRefineFB(e.target.value)} placeholder="What should change?" className="textarea" style={{minHeight:86,marginTop:10}}/>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(96px,1fr))",gap:7,marginTop:10}}>
                   {REFINE_CATS.map(cat=>(<div key={cat.id}>
                     <div style={{fontSize:9,color:"#8d887c",marginBottom:3}}>{cat.label}</div>
@@ -1762,7 +1732,7 @@ function App(){
               <div>
                 {params.shotType!=="clean"&&(
                   <div style={{marginBottom:10}}>
-                    <div style={{...S.label,marginBottom:6}}>Start from a Nairobi place</div>
+                    <div className="label">Start from a Nairobi place</div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:7}}>
                       {(CONFIG.archetypes||[]).map(a=>(
                         <button key={a.id} onClick={()=>applyArchetype(a)} style={{...S.preset,textAlign:"left",fontFamily:"inherit",border:`1px solid ${params.archetype===a.id?"#d88a26":"#2d2a23"}`,background:params.archetype===a.id?"#241c10":S.preset.background}}>
@@ -1778,8 +1748,8 @@ function App(){
                   </div>
                 )}
                 <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
-                  <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>setShowFine(v=>!v)}>{showFine?"Hide fine controls":"Fine controls…"}</button>
-                  <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>updateSingle("shotType",params.shotType==="clean"?"use":"clean")}>{params.shotType==="clean"?"← Back to scene shots":"Clean product shot instead"}</button>
+                  <button className="btn btn-small" onClick={()=>setShowFine(v=>!v)}>{showFine?"Hide fine controls":"Fine controls…"}</button>
+                  <button className="btn btn-small" onClick={()=>updateSingle("shotType",params.shotType==="clean"?"use":"clean")}>{params.shotType==="clean"?"← Back to scene shots":"Clean product shot instead"}</button>
                   {params.archetype&&<span style={{fontSize:10,color:"#8d887c"}}>Fine-control changes become explicit adjustments to the place.</span>}
                 </div>
                 {(showFine||params.shotType==="clean")&&(
@@ -1788,52 +1758,52 @@ function App(){
                   </div>
                 )}
                 <div style={{marginTop:10}}>
-                  <div style={S.label}>Brief note</div>
-                  <textarea value={params.customNotes||""} onChange={e=>setP("customNotes",e.target.value)} placeholder="Optional direction for this shot" style={{...S.input,minHeight:70,resize:"vertical"}}/>
+                  <div className="label">Brief note</div>
+                  <textarea value={params.customNotes||""} onChange={e=>setP("customNotes",e.target.value)} placeholder="Optional direction for this shot" className="textarea" style={{minHeight:70}}/>
                 </div>
               </div>
             )}
           </div>
 
-          <div style={{...S.panel,position:"relative",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+          <div className="panel" style={{position:"relative",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
             <div>
-              <div style={S.title}>Ready for content</div>
-              <div style={S.sub}>{providerCfg.label} / approx ${providerCfg.imageCost.toFixed(2)} per image</div>
+              <div className="title">Ready for content</div>
+              <div className="sub">{providerCfg.label} / approx ${providerCfg.imageCost.toFixed(2)} per image</div>
               {activeJob?.id&&<div style={{fontSize:10,color:"#f6bd64",marginTop:4}}>Unfinished Netlify job saved: {activeJob.id}</div>}
             </div>
             <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
               {isDirty&&<span style={{fontSize:11,color:"#f6bd64"}}>{dirtyLabels.join(" + ")}</span>}
               {!(isGen&&mode==="refine")&&(
                 <label style={{display:"flex",gap:5,alignItems:"center",fontSize:10,color:"#8d887c"}}>Takes
-                  <select value={variations} onChange={e=>setVariations(Number(e.target.value))} style={{...S.input,width:52,padding:"6px 6px"}}>
+                  <select value={variations} onChange={e=>setVariations(Number(e.target.value))} className="select select-small" style={{width:52,padding:"0 6px"}}>
                     {[1,2,3,4,6].map(n=><option key={n} value={n}>{n}</option>)}
                   </select>
                 </label>
               )}
-              {activeJob?.id&&<button style={{...S.btn,...S.btnS,padding:"11px 14px",fontSize:13}} disabled={processing} onClick={resumeActiveJob}>{processing?"Working":"Resume job"}</button>}
-              {activeJob?.id&&<button style={{...S.btn,...S.btnS,padding:"11px 10px",fontSize:12}} disabled={processing} onClick={clearActiveJob}>Forget</button>}
-              <button style={{...S.btn,...S.btnP,padding:"11px 18px",fontSize:13,opacity:runDisabled ? .5 : 1}} disabled={runDisabled} onClick={()=>handleRun()}>
+              {activeJob?.id&&<button className="btn btn-large" disabled={processing} onClick={resumeActiveJob}>{processing?"Working":"Resume job"}</button>}
+              {activeJob?.id&&<button className="btn btn-large" disabled={processing} onClick={clearActiveJob}>Forget</button>}
+              <button className="btn btn-large btn-primary" disabled={runDisabled} onClick={()=>handleRun()}>
                 {processing?procMsg:runLabel}
               </button>
-              <button style={{...S.btn,...S.btnS,opacity:runDisabled ? .5 : 1}} disabled={runDisabled} onClick={openPromptEditor}>{editRunLabel}</button>
+              <button className="btn btn-large" disabled={runDisabled} onClick={openPromptEditor}>{editRunLabel}</button>
             </div>
             {processing&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:"#25231d",borderRadius:"0 0 8px 8px",overflow:"hidden"}}><div style={{height:"100%",background:"#d88a26",animation:"pulse 1.5s ease-in-out infinite"}}/></div>}
           </div>
 
-          {promptEditorOpen&&<div style={S.panelTight}>
+          {promptEditorOpen&&<div className="panel-tight">
             <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:7}}>
               <div>
-                <div style={S.title}>Prompt editor</div>
-                <div style={S.sub}>{editablePrompt.length} chars</div>
+                <div className="title">Prompt editor</div>
+                <div className="sub">{editablePrompt.length} chars</div>
               </div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{navigator.clipboard.writeText(editablePrompt);addLog("info","Prompt copied")}}>Copy</button>
-                <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setEditablePrompt(editableRunPrompt);setPromptEditorContext(currentPromptContext())}}>Reset</button>
-                <button style={{...S.btn,...S.btnSm,...S.btnS}} onClick={()=>{setPromptEditorOpen(false);setPromptEditorContext(null)}}>Cancel</button>
-                <button style={{...S.btn,...S.btnSm,...S.btnP,opacity:(processing||!editablePrompt.trim()) ? .5 : 1}} disabled={processing||!editablePrompt.trim()} onClick={()=>handleRun(editablePrompt)}>{editedRunLabel}</button>
+                <button className="btn btn-small" onClick={()=>{navigator.clipboard.writeText(editablePrompt);addLog("info","Prompt copied")}}>Copy</button>
+                <button className="btn btn-small" onClick={()=>{setEditablePrompt(editableRunPrompt);setPromptEditorContext(currentPromptContext())}}>Reset</button>
+                <button className="btn btn-small" onClick={()=>{setPromptEditorOpen(false);setPromptEditorContext(null)}}>Cancel</button>
+                <button className="btn btn-small btn-primary" disabled={processing||!editablePrompt.trim()} onClick={()=>handleRun(editablePrompt)}>{editedRunLabel}</button>
               </div>
             </div>
-            <textarea value={editablePrompt} onChange={e=>setEditablePrompt(e.target.value)} style={{...S.input,minHeight:260,maxHeight:460,resize:"vertical",fontFamily:"ui-monospace, SFMono-Regular, Menlo, monospace",fontSize:10,lineHeight:1.45,whiteSpace:"pre-wrap"}}/>
+            <textarea value={editablePrompt} onChange={e=>setEditablePrompt(e.target.value)} className="textarea" style={{minHeight:260,maxHeight:460,fontFamily:"ui-monospace, SFMono-Regular, Menlo, monospace",fontSize:10,lineHeight:1.45,whiteSpace:"pre-wrap"}}/>
           </div>}
         </section>
       </div>
