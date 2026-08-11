@@ -572,12 +572,18 @@
         if (i < cov.siteFrom) return;
         stack(R[1], i, DEPTHS.map(function (s) { return { c:s.c, v:(d.depth && d.depth[s.k]) || 0 }; }), maxSess);
       });
-      // Row 3 — new chats split by where they came from, with sales marked above
-      // (status token: a sale is a state, not a series). The split is a true
-      // part-to-whole — every conversation lands in exactly one of the three.
+      // Row 3 — new chats split by where they came from, with payments marked
+      // above (status token: money arriving is a state, not a series). The split
+      // is a true part-to-whole — every conversation lands in exactly one of the
+      // three — and the dot is deliberately NOT part of it. Since 2026-08-11 a
+      // sale is dated by `Payment Received`, so the dot usually belongs to a
+      // conversation that started weeks to the left of it. It shares the axis
+      // only. Drawn outside the conversation-coverage gate as well: payments come
+      // from Airtable, which is current whether or not the scrape has run.
       ds.forEach(function (d, i) {
-        if (i > cov.convThru) return;
-        stack(R[2], i, SOURCES.map(function (t) { return { c:t.c, v:(d.source && d.source[t.k]) || 0 }; }), maxChat);
+        if (i <= cov.convThru) {
+          stack(R[2], i, SOURCES.map(function (t) { return { c:t.c, v:(d.source && d.source[t.k]) || 0 }; }), maxChat);
+        }
         if ((d.sales || 0) > 0) {
           svg.push('<circle cx="' + (xOf(i) + barW/2) + '" cy="' + (R[2].y + 8) + '" r="5" fill="var(--good)" stroke="var(--card)" stroke-width="2"/>');
         }
@@ -1185,8 +1191,13 @@
               .map(function (t) { return esc(t.l) + ' ' + num(d.source[t.k]); }).join(' · ');
             if (src) h += '<div class="sub">' + src + '</div>';
           }
-          if (convOk && (d.sales || d.revenue)) {
-            h += rowLine('<span style="color:var(--good)">Sales</span>', num(d.sales) + (d.revenue ? ' · ' + kes(d.revenue) : ''), '');
+          // Not gated on conversation coverage: this is payment data from
+          // Airtable, dated by when the money arrived rather than by when the
+          // conversation started, so it is current even on a day the scrape has
+          // not reached. Named "Paid" for the same reason — it is not a property
+          // of the chats above it.
+          if (d.sales || d.revenue) {
+            h += rowLine('<span style="color:var(--good)">Paid</span>', num(d.sales) + (d.revenue ? ' · ' + kes(d.revenue) : ''), '');
           }
 
           // Messages last: it is the only row about work inside existing threads
