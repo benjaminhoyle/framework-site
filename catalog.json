@@ -1,6 +1,6 @@
 {
   "schema": "framework-catalog@1",
-  "updatedAt": "2026-08-11T16:02:24.249Z",
+  "updatedAt": "2026-08-11T16:16:41.966Z",
   "products": [
     {
       "id": "starter",
@@ -376,7 +376,7 @@
         "images/shelving/configs/terraced-console-emptied.jpg",
         "images/shelving/configs/terraced-console-front.jpg"
       ],
-      "active": false,
+      "active": true,
       "designerUrl": "designer.html#"
     }
   ]
