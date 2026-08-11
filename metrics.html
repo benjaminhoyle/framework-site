@@ -74,6 +74,16 @@
     .alert.warn { border-color:var(--warning); background:rgba(250,178,25,.09); }
     .alert.info { border-color:var(--line); background:var(--card); }
 
+    /* Flags that are real checks but have a standing explanation — the unread
+       streak fires because the inbox is cleared by hand before a run, so a zero
+       is the intended state rather than a broken selector. Demoted to a corner
+       mark (full text on hover) instead of silenced: a check nobody can see is a
+       check nobody notices breaking, and the streak would still mean something
+       if the habit ever changed. */
+    .minor { font-size:11px; color:var(--muted); display:flex; gap:8px; align-items:baseline; }
+    .minor span { border:1px solid var(--line); border-radius:999px; padding:2px 8px;
+      cursor:help; white-space:nowrap; }
+
     /* Controls */
     .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
     .seg button { background:transparent; border:0; color:var(--dim); padding:6px 12px;
@@ -209,6 +219,7 @@
     <h1>Framework — Funnel Monitor</h1>
     <a class="nav" id="navCatalog" href="#">→ Catalog Manager</a>
     <div class="freshness" id="fresh"></div>
+    <div class="minor" id="minor"></div>
   </header>
   <main id="main"><div class="msg">Loading…</div></main>
   <div class="tip" id="tip"></div>
@@ -273,8 +284,22 @@
     }
 
     // ---------- alerts ----------
+    // Codes that keep firing for a reason we already know. They stay in
+    // dashboard.json and stay on the page, but as a corner mark rather than a
+    // banner: `unread_detection_suspect` counts scrapes that found nothing
+    // unread, and the inbox is deliberately cleared by hand before a run, so the
+    // zero streak is the expected outcome. Hover gives the full text.
+    var MINOR = { unread_detection_suspect: 'unread check' };
+
     function alerts() {
       var a = D.alerts || [];
+      var minor = a.filter(function (x) { return MINOR[x.code]; });
+      document.getElementById('minor').innerHTML = minor.map(function (x) {
+        var streak = (D.unread && D.unread.zeroStreak) || 0;
+        return '<span title="' + esc(String(x.code).replace(/_/g,' ') + x.message) + '">⚑ ' +
+          esc(MINOR[x.code]) + (streak ? ' · ' + num(streak) + ' clear' : '') + '</span>';
+      }).join('');
+      a = a.filter(function (x) { return !MINOR[x.code]; });
       if (!a.length) return '';
       return a.map(function (x) {
         var cls = x.level === 'critical' ? 'critical' : x.level === 'warn' ? 'warn' : 'info';
