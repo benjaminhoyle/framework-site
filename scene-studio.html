@@ -135,26 +135,37 @@ function sourceMetaFromFilename(filename){
     isBlenderRender:strict?.stage==="render"
   };
 }
+const AIRTABLE_IMAGE_TARGET_BYTES=4*1024*1024;
 function imageBlobForAirtable(img,filename){
   return new Promise((resolve,reject)=>{
     if(!img?.dataUrl)return reject(new Error("No image to upload."));
     const image=new Image();
     image.onload=async()=>{
-      let scale=Math.min(1,1900/Math.max(image.naturalWidth,image.naturalHeight));
-      let quality=.9;
-      for(let attempt=0;attempt<8;attempt++){
+      const render=async(scale,quality)=>{
         const w=Math.max(1,Math.round(image.naturalWidth*scale));
         const h=Math.max(1,Math.round(image.naturalHeight*scale));
         const canvas=document.createElement("canvas");
         canvas.width=w;canvas.height=h;
         canvas.getContext("2d").drawImage(image,0,0,w,h);
         const blob=await new Promise(res=>canvas.toBlob(res,"image/jpeg",quality));
-        if(blob&&blob.size<=AIRTABLE_IMAGE_MAX_BYTES){
-          resolve({blob,filename:jpegName(filename),width:w,height:h});
+        return blob?{blob,filename:jpegName(filename),width:w,height:h,quality,scale}:null;
+      };
+      const scales=[1,.96,.92,.88,.84,.8,.76,.72,.68,.64,.6,.55,.5,.45,.4];
+      for(const scale of scales){
+        const lowProbe=await render(scale,.82);
+        if(!lowProbe||lowProbe.blob.size>AIRTABLE_IMAGE_TARGET_BYTES)continue;
+        let best=lowProbe,lo=.82,hi=.98;
+        for(let step=0;step<8;step++){
+          const q=(lo+hi)/2;
+          const candidate=await render(scale,q);
+          if(candidate&&candidate.blob.size<=AIRTABLE_IMAGE_TARGET_BYTES){
+            best=candidate;lo=q;
+          }else hi=q;
+        }
+        if(best.blob.size<=AIRTABLE_IMAGE_TARGET_BYTES){
+          resolve(best);
           return;
         }
-        if(quality>.72)quality-=.08;
-        else scale*=.82;
       }
       reject(new Error("That image is still too large for Airtable after compression."));
     };
@@ -1245,7 +1256,8 @@ function App(){
       const outputUpload=await bestBlobForAirtable(croppedImg||selNode.img,outputFilename);
 
       setAirtablePost({submission,status:"uploading"});
-      addLog("info",`Airtable: source ${fmtBytes(sourceUpload.blob.size)} (${sourceUpload.blob.type||"image"}), output ${fmtBytes(outputUpload.blob.size)} (${outputUpload.blob.type||"image"}).`);
+      const compressionNote=item=>item.quality?`, q${Math.round(item.quality*100)}${item.scale<1?`, ${Math.round(item.scale*100)}%`:''}`:"";
+      addLog("info",`Airtable: source ${fmtBytes(sourceUpload.blob.size)} (${sourceUpload.blob.type||"image"}${compressionNote(sourceUpload)}), output ${fmtBytes(outputUpload.blob.size)} (${outputUpload.blob.type||"image"}${compressionNote(outputUpload)}).`);
       await uploadAirtableImage(submission,"source",sourceUpload);
       await uploadAirtableImage(submission,"output",outputUpload);
 
