@@ -162,6 +162,21 @@ function imageBlobForAirtable(img,filename){
     image.src=img.dataUrl;
   });
 }
+function dataUrlBlobForAirtable(img,filename){
+  const mime=img?.mimeType||dataUrlMime(img?.dataUrl)||"image/jpeg";
+  const base64=img?.base64||String(img?.dataUrl||"").split(",")[1]||"";
+  if(!base64)return null;
+  const blob=base64ToBlob(base64,mime);
+  return blob.size<=AIRTABLE_IMAGE_MAX_BYTES
+    ?{blob,filename:cleanDownloadName(filename),width:img?.width||0,height:img?.height||0}
+    :null;
+}
+async function bestBlobForAirtable(img,filename,originalFile=null){
+  if(originalFile?.size&&originalFile.size<=AIRTABLE_IMAGE_MAX_BYTES&&/^image\/(jpeg|jpg|png|webp)$/i.test(originalFile.type||"")){
+    return {blob:originalFile,filename:cleanDownloadName(originalFile.name||filename),width:img?.width||0,height:img?.height||0};
+  }
+  return dataUrlBlobForAirtable(img,filename)||await imageBlobForAirtable(img,filename);
+}
 function openAIImageSize(aspect,model){
   if(aspect==="1:1")return"1024x1024";
   if(aspect==="4:5"||aspect==="9:16")return"1024x1536";
@@ -663,6 +678,7 @@ function App(){
   // js/studio/handoff.js -- the chosen shot goes back to that row.
   const[handoff,setHandoff]=useState(null);
   const[sourceMeta,setSourceMeta]=useState(null); // {filename, designCode, isBlenderRender}
+  const[sourceOriginalFile,setSourceOriginalFile]=useState(null);
   const[scale,setScale]=useState(FrameworkScale.UNSET);
   const scaleOK=FrameworkScale.isSet(scale);
   const imgRef=useRef(null);
@@ -837,7 +853,7 @@ function App(){
     try{
       const img=await resize(f,Math.max(MAX_DIM,UPLOAD_MAX_DIM));
       const meta=sourceMetaFromFilename(f.name||"");
-      setPendingUpload({img,name:f.name||"uploaded image",meta,ts:Date.now()});
+      setPendingUpload({img,name:f.name||"uploaded image",meta,file:f,ts:Date.now()});
       setDesignCode(meta.designCode||null);
       clearReview();
       addLog("info",`Base image uploaded: ${img.width}×${img.height}`);
@@ -853,6 +869,7 @@ function App(){
     if(!pendingUpload?.img)return;
     const r=pendingUpload.img;
     setSourceMeta(pendingUpload.meta||null);
+    setSourceOriginalFile(pendingUpload.file||null);
     setRefImage(r);
     setScale(FrameworkScale.UNSET);setAugImg(null);
     const refNode={id:"ref",type:"ref",parentId:null,img:r,params:null,history:null,ts:Date.now()};
@@ -872,6 +889,7 @@ function App(){
     }else{
       setRefImage(r);
       setSourceMeta(pendingUpload.meta||null);
+      setSourceOriginalFile(pendingUpload.file||null);
       setScale(FrameworkScale.UNSET);setAugImg(null);
       const refNode={id:"ref",type:"ref",parentId:null,img:r,params:null,history:null,ts:Date.now()};
       setNodes([refNode,genNode]);
@@ -1223,11 +1241,11 @@ function App(){
     try{
       setAirtablePost({submission,status:"preparing"});
       addLog("info",`Airtable: preparing source and output images for ${designCode}.`);
-      const sourceUpload=await imageBlobForAirtable(refImage,sourceFilename);
-      const outputUpload=await imageBlobForAirtable(croppedImg||selNode.img,outputFilename);
+      const sourceUpload=await bestBlobForAirtable(refImage,sourceFilename,sourceOriginalFile);
+      const outputUpload=await bestBlobForAirtable(croppedImg||selNode.img,outputFilename);
 
       setAirtablePost({submission,status:"uploading"});
-      addLog("info",`Airtable: source ${fmtBytes(sourceUpload.blob.size)}, output ${fmtBytes(outputUpload.blob.size)}.`);
+      addLog("info",`Airtable: source ${fmtBytes(sourceUpload.blob.size)} (${sourceUpload.blob.type||"image"}), output ${fmtBytes(outputUpload.blob.size)} (${outputUpload.blob.type||"image"}).`);
       await uploadAirtableImage(submission,"source",sourceUpload);
       await uploadAirtableImage(submission,"output",outputUpload);
 
@@ -1374,6 +1392,7 @@ function App(){
         designCode:rec.configId||null,
         isBlenderRender:rec.kind==="render"
       });
+      setSourceOriginalFile(null);
       setAugImg(null);
       const refNode={id:"ref",type:"ref",parentId:null,img,params:null,history:null,ts:Date.now()};
       setNodes([refNode]);setSelId("ref");setBaseParams(null);setMode("refine");
@@ -1418,6 +1437,7 @@ function App(){
         designCode:record.designCode||null,
         isBlenderRender:!!record.sourceIsBlenderRender
       });
+      setSourceOriginalFile(null);
       setBaseParams(null);setMode("refine");setDamSource(null);
       setHandoff(record);
       addLog("success",`Scene shots for ${record.rowTitle||"a catalogue row"} — from its ${record.imageKind||"image"}.`);
