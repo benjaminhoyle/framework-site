@@ -196,7 +196,27 @@ existing job and multiply the spend.
 | `SITE_EXPORT_KEY` | the ops runner's key: those pages, plus the machine-only endpoints. Accepted everywhere on its own if `SITE_LOGIN_KEY` is unset |
 | `GEMINI_API_KEY` | image generation |
 | `OPENAI_API_KEY` | image generation, when the provider is switched to OpenAI |
+| `AIRTABLE_PAT` | Scene Studio's **Post to Airtable** button: writes the source image and generated output into the AT content pipeline |
 | `GITHUB_TOKEN`, `GITHUB_REPO` | publishing the catalogue (see catalog-architecture.md) |
+
+## Airtable scene handoff
+
+Scene Studio can post a selected generated shot to `Marketing - Content Pipeline`
+and the source/reference image to `Marketing - Source Images`. The source and
+content records both get the design code; content starts as **For Review**; and
+source records are flagged **Blender Render** when the uploaded source filename
+strictly parses as `fw-<CODE>-r-...`.
+
+Required extra fields:
+
+| Table | Field |
+|---|---|
+| `Marketing - Source Images` | `Config Code` |
+| `Marketing - Source Images` | `Blender Render` |
+| `Marketing - Source Images` | `Original Filename` |
+| `Marketing - Source Images` | `Scene Studio Submission ID` |
+| `Marketing - Content Pipeline` | `Config Code` |
+| `Marketing - Content Pipeline` | `Scene Studio Submission ID` |
 
 ## Working on them locally
 
