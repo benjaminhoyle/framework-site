@@ -194,6 +194,13 @@
     .tip .r small { font-size:10.5px; }
     .tip .sub { color:var(--muted); font-size:10.5px; margin:1px 0 4px; max-width:270px; }
     .tip .r span:last-child { font-variant-numeric:tabular-nums; }
+    /* The hovered order's own value. In a tooltip the number leads and the label
+       follows — the reader already knows which mark they are pointing at. */
+    .tip .lead { font-size:19px; font-variant-numeric:tabular-nums; margin:2px 0 1px; }
+    /* The hovered cell lifts rather than gaining a border: a stroke would add
+       data-weight ink around a mark whose whole job is to be one flat quantity. */
+    .ocell { transition:filter .08s ease; }
+    .ocell.on { filter:brightness(1.45); }
 
     details { border-top:1px solid var(--line); padding-top:14px; margin-top:8px; }
     details summary { cursor:pointer; font-size:13px; color:var(--dim); list-style:none; }
@@ -399,7 +406,11 @@
 
     // Row labels and legends live INSIDE the svg, so a row's title can never
     // drift out of register with the band it names.
-    var DGEO = { W:1000, L:4, H:420, rows:[{ y:20, h:84 }, { y:136, h:84 }, { y:252, h:56 }, { y:340, h:56 }] };
+    // Five bands, 32px of air above each for its header. The last one is money in,
+    // added 2026-08-11: it is the only row measured in KES rather than counts, so
+    // it gets its own baseline rather than being folded into the chats row above.
+    var DGEO = { W:1000, L:4, H:508,
+                 rows:[{ y:20, h:84 }, { y:136, h:84 }, { y:252, h:56 }, { y:340, h:56 }, { y:428, h:56 }] };
 
     // How many buckets each grain shows, and what one bucket is called.
     var GRAINS = {
@@ -439,7 +450,7 @@
                            depth:{ arrive:0, product:0, engage:0, handoff:0 },
                            newChats:0, source:{ site:0, whatsapp_ad:0, unknown:0 },
                            messages:{ in:0, out:0 }, msgDays:0,
-                           quoted:0, sales:0, revenue:0, dayCount:0 };
+                           quoted:0, sales:0, revenue:0, orderValues:[], dayCount:0 };
           order.push(b);
         }
         b.last = d.day; b.dayCount++;
@@ -447,6 +458,10 @@
         b.metaLanding += d.metaLanding || 0; b.metaConvos += d.metaConvos || 0;
         b.sessions += d.sessions || 0; b.newChats += d.newChats || 0;
         b.quoted += d.quoted || 0; b.sales += d.sales || 0; b.revenue += d.revenue || 0;
+        // Rolled up, a week's bar is still one cell per order — which is the point
+        // of the row: a 300k month made of two deals and one made of twenty are
+        // different businesses.
+        if (d.orderValues && d.orderValues.length) b.orderValues = b.orderValues.concat(d.orderValues);
         for (var pk in (d.placement || {})) b.placement[pk] = (b.placement[pk] || 0) + d.placement[pk];
         for (var dk in b.depth) b.depth[dk] += (d.depth && d.depth[dk]) || 0;
         for (var sk in b.source) b.source[sk] += (d.source && d.source[sk]) || 0;
@@ -460,6 +475,8 @@
       order.forEach(function (b) {
         b.spend = Math.round(b.spend * 100) / 100;
         b.revenue = Math.round(b.revenue * 100) / 100;
+        b.orderValues.sort(function (x, y) { return y - x; }); // largest anchors the stack
+
         for (var pk in b.placement) b.placement[pk] = Math.round(b.placement[pk] * 100) / 100;
       });
 
@@ -517,6 +534,7 @@
       var maxMsg   = niceMax(Math.max.apply(null, ds.map(function (d) {
         return ((d.messages && d.messages.in) || 0) + ((d.messages && d.messages.out) || 0);
       })));
+      var maxPaid  = niceMax(Math.max.apply(null, ds.map(function (d) { return d.revenue || 0; })));
       var svg = [];
 
       // "Not measured" is not zero. Hatch the span each row cannot speak for, so
@@ -547,6 +565,12 @@
                  '" y2="' + (b.y + b.h) + '" class="colsep"/>');
       });
 
+      // The gap goes ABOVE each segment, between it and the one stacked on top.
+      // Shortening a segment from its own top and drawing at the untouched yTop
+      // put the gap under the BOTTOM segment instead: every bar floated 2px off
+      // its baseline and the segments it was meant to separate touched each
+      // other. Take the gap off the top edge and the bottom segment sits on the
+      // axis, which is the one place a stacked bar must be exact.
       var stack = function (band, i, segs, max) {
         var acc = 0, parts = [];
         segs.forEach(function (s) { if (s.v > 0) { parts.push({ c:s.c, v:s.v, y0:acc }); acc += s.v; } });
@@ -554,8 +578,9 @@
           var full = (s.v / max) * band.h;
           var yTop = band.y + band.h - ((s.y0 + s.v) / max) * band.h;
           var isTop = si === parts.length - 1;
-          var h = Math.max(0, full - (isTop ? 0 : GAP));
-          svg.push('<path d="' + barPath(xOf(i), yTop, barW, h, isTop ? 4 : 0) + '" fill="' + s.c + '"/>');
+          var off = isTop ? 0 : GAP;
+          svg.push('<path d="' + barPath(xOf(i), yTop + off, barW, Math.max(0, full - off), isTop ? 4 : 0) +
+                   '" fill="' + s.c + '"/>');
         });
         return acc;
       };
@@ -602,6 +627,63 @@
       // Date axis — every other day, so ticks never collide. Today is named
       // rather than dated: its bars are a partial day and shouldn't be read as a
       // finished one.
+      // Row 5 — money in, one cell per ORDER rather than one bar per day.
+      //
+      // Height is the day's revenue, and the cells that make it up are the
+      // individual orders, largest at the baseline. One colour throughout: the
+      // cells carry magnitude, not identity, so a second hue would invent a
+      // distinction that isn't in the data. The 2px surface gap is what separates
+      // them — never a stroke, which would add ink that isn't data.
+      //
+      // Why its own row rather than a marker on the chats above: this is the only
+      // measure here denominated in money, and a day's payments usually belong to
+      // conversations that started weeks to the left. Sharing the chats row's
+      // baseline implied a relationship that does not exist.
+      ds.forEach(function (d, i) {
+        var vals = d.orderValues || [];
+        if (!vals.length) {
+          // An explicit "nothing arrived", so an empty day is visibly measured.
+          svg.push('<line x1="' + xOf(i) + '" y1="' + (R[4].y + R[4].h) + '" x2="' + (xOf(i) + barW) +
+                   '" y2="' + (R[4].y + R[4].h) + '" stroke="var(--line)" stroke-width="2"/>');
+          return;
+        }
+        // The gap adapts to the stack. A month can hold sixteen orders in a 56px
+        // band, where sixteen 2px gaps would eat more than half the bar — the
+        // stack stops summing to its own height and the whole row reads as
+        // venetian blinds. Shrink the gap until it costs at most a fifth of the
+        // bar, and hold it CONSTANT within that stack: one width per bar is what
+        // makes neighbouring segments read as separate rather than striped.
+        var totalPx = (d.revenue / maxPaid) * R[4].h;
+        var gap = GAP;
+        while (gap > 0 && (vals.length - 1) * gap > totalPx * 0.2) gap -= 1;
+
+        var acc = 0;
+        vals.forEach(function (v, j) {
+          var full = (v / maxPaid) * R[4].h;
+          var yTop = R[4].y + R[4].h - ((acc + v) / maxPaid) * R[4].h;
+          var isTop = j === vals.length - 1;
+          // No pixel floor. A floor looks kind and lies: sixteen sub-pixel cells
+          // each rounded up to 1px make the bar a quarter taller than the money
+          // it represents. Sub-pixel cells render faint, the total stays true, and
+          // their values are still in the tooltip and the table.
+          var off = isTop ? 0 : gap; // gap above the cell — see stack() above
+          svg.push('<path class="ocell" data-oc="' + i + '-' + j + '" d="' +
+                   barPath(xOf(i), yTop + off, barW, Math.max(0, full - off), isTop ? 4 : 0) +
+                   '" fill="var(--good)"/>');
+          // A per-order hit target only where the cell is thick enough to aim at.
+          // Below that, overlapping targets would report an order the pointer is
+          // nowhere near — worse than no per-cell hover, and the day tooltip
+          // already lists the values. The target is the cell's own slot, never
+          // padded into its neighbour's.
+          if (full >= 6) {
+            svg.push('<rect class="ohit" data-di="' + i + '" data-oi="' + j + '" data-oc="' + i + '-' + j +
+                     '" x="' + xOf(i) + '" y="' + yTop + '" width="' + barW + '" height="' + full +
+                     '" fill="transparent"/>');
+          }
+          acc += v;
+        });
+      });
+
       // Day labels would collide at 14 across; week and month bars are wide
       // enough to name every one.
       var step = grain === 'day' ? 2 : 1;
@@ -638,6 +720,9 @@
       rowHead(R[1], 'Visitors', maxSess, 'num', DEPTHS);
       rowHead(R[2], 'New chats', maxChat, 'num', SOURCES.concat([{ l:'Sale', c:'var(--good)' }]));
       rowHead(R[3], 'Messages', maxMsg, 'num', MSGDIRS);
+      // No legend: one series, so the row label already names what is plotted and
+      // a single-swatch box would just restate it.
+      rowHead(R[4], 'Paid', maxPaid, 'kes', []);
 
       // Notes only where a row genuinely cannot speak — not decoration.
       var notes = [];
@@ -1140,9 +1225,53 @@
                (d ? ' <small>' + d + '</small>' : '') + '</span></div>';
       };
 
+      // Per-order hover on the Paid row. The cells sit inside the day-wide hit
+      // rect, so they are wired first and stop the event reaching it — otherwise
+      // pointing at one order reports the whole day and the cell you aimed at is
+      // the one thing the tooltip never mentions.
+      var place = function (e) {
+        tip.style.opacity = 1;
+        var x = e.clientX + 16, y = e.clientY - 10;
+        if (x + 290 > window.innerWidth) x = e.clientX - 290;
+        if (y + 300 > window.innerHeight) y = window.innerHeight - 310;
+        tip.style.left = x + 'px'; tip.style.top = Math.max(8, y) + 'px';
+      };
+      var lit = null;
+      var unlight = function () { if (lit) { lit.classList.remove('on'); lit = null; } };
+      svg.querySelectorAll('.ohit').forEach(function (r) {
+        r.style.cursor = 'default';
+        r.addEventListener('mousemove', function (e) {
+          e.stopPropagation();
+          var i = Number(r.getAttribute('data-di')), j = Number(r.getAttribute('data-oi')), d = ds[i];
+          if (!d || !d.orderValues || !d.orderValues[j]) return;
+          unlight();
+          lit = svg.querySelector('.ocell[data-oc="' + r.getAttribute('data-oc') + '"]');
+          if (lit) lit.classList.add('on');
+          var vals = d.orderValues, v = vals[j];
+          var others = vals.filter(function (_, k) { return k !== j; });
+          var ttl = grain === 'day' ? DOW[new Date(d.day + 'T12:00:00Z').getUTCDay()] + ' ' + fmtDay(d.day)
+                  : grain === 'week' ? 'Week of ' + fmtDay(d.first)
+                  : MONFULL[new Date(d.first + 'T12:00:00Z').getUTCMonth()] + ' ' + d.first.slice(0, 4);
+          var h = '<div class="t">' + esc(ttl) + '</div>' +
+                  '<div class="lead" style="color:var(--good)">' + kes(v) + '</div>' +
+                  '<div class="sub">one order · ' + num(j + 1) + ' of ' + num(vals.length) +
+                  ' paid this ' + G.one + '</div>';
+          if (others.length) {
+            h += rowLine(others.length === 1 ? 'The other order' : 'The other ' + num(others.length) + ' orders',
+                         others.map(function (o) { return kes(o); }).join(' · '), '');
+          }
+          h += rowLine('<b>' + G.one.charAt(0).toUpperCase() + G.one.slice(1) + ' total</b>',
+                       '<b>' + kes(d.revenue) + '</b>', '');
+          tip.innerHTML = h;
+          place(e);
+        });
+        r.addEventListener('mouseleave', function () { unlight(); tip.style.opacity = 0; });
+      });
+
       svg.querySelectorAll('.hit').forEach(function (r) {
         r.style.cursor = 'default';
         r.addEventListener('mousemove', function (e) {
+          unlight();
           var i = Number(r.getAttribute('data-di')), d = ds[i];
           if (!d) return;
           var dt = new Date(d.day + 'T12:00:00Z');
@@ -1198,6 +1327,17 @@
           // of the chats above it.
           if (d.sales || d.revenue) {
             h += rowLine('<span style="color:var(--good)">Paid</span>', num(d.sales) + (d.revenue ? ' · ' + kes(d.revenue) : ''), '');
+            // The cells are individually hoverable; this is the at-a-glance
+            // version for someone reading the day as a whole.
+            // Capped: a month can hold sixteen orders, and sixteen amounts on one
+            // line is a wall nobody reads. Largest first, so the cap drops the
+            // ones that move the total least.
+            if (d.orderValues && d.orderValues.length > 1) {
+              var shown = d.orderValues.slice(0, 6);
+              var rest = d.orderValues.length - shown.length;
+              h += '<div class="sub">' + shown.map(function (o) { return kes(o); }).join(' · ') +
+                   (rest ? ' · +' + num(rest) + ' more' : '') + '</div>';
+            }
           }
 
           // Messages last: it is the only row about work inside existing threads
@@ -1220,7 +1360,7 @@
           tip.style.opacity = 1;
           var x = e.clientX + 16, y = e.clientY - 10;
           if (x + 290 > window.innerWidth) x = e.clientX - 290;
-          if (y + 260 > window.innerHeight) y = window.innerHeight - 270; // taller since the messages row
+          if (y + 300 > window.innerHeight) y = window.innerHeight - 310; // taller since the Paid row
           tip.style.left = x + 'px'; tip.style.top = Math.max(8, y) + 'px';
         });
         r.addEventListener('mouseleave', function () { tip.style.opacity = 0; });
