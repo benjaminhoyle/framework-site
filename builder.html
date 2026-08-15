@@ -220,7 +220,10 @@
     -->
     <script>
         window.addEventListener('load', function () {
+            var started = false;
             var start = function () {
+                if (started) return;
+                started = true;
                 window.dataLayer = window.dataLayer || [];
                 window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
                 gtag('js', new Date());
@@ -250,8 +253,20 @@
                     document.head.appendChild(script);
                 });
             };
-            if ('requestIdleCallback' in window) window.requestIdleCallback(start, { timeout: 3000 });
+            // Idle alone is not enough here. This page is the heaviest we serve
+            // and most of its paid traffic arrives in the Instagram in-app
+            // browser on a mid-range phone, where the main thread often never
+            // goes idle before the visitor leaves — so the pixel was firing on
+            // almost nobody (6 events in 14 days, none of them this page).
+            // Fire on whichever comes first: idle, a real interaction, or a
+            // hard timeout. Interaction is the one that matters — someone who
+            // touches the builder is exactly who we want to be able to retarget.
+            ['pointerdown', 'touchstart', 'keydown'].forEach(function (evt) {
+                window.addEventListener(evt, start, { once: true, passive: true });
+            });
+            if ('requestIdleCallback' in window) window.requestIdleCallback(start, { timeout: 2000 });
             else window.setTimeout(start, 1500);
+            window.setTimeout(start, 4000);
         });
     </script>
 </body>
