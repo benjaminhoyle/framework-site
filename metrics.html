@@ -285,7 +285,7 @@
         '<span style="color:' + col + '">● ' + lbl + '</span>' +
         '<span style="color:var(--muted)"> · ' + gen.toLocaleString() + '</span>';
 
-      var h = alerts() + dailyChart() + adTable() + funnels() + trend() + footerPanels();
+      var h = alerts() + dailyChart() + adTable() + audienceTable() + funnels() + trend() + footerPanels();
       show(h);
       wire();
     }
@@ -954,6 +954,49 @@
         return (x-y) * dir;
       });
       return rows;
+    }
+
+    // Audiences. Small on purpose: three things Ads Manager makes you click
+    // through for — how big, will it deliver, and is anything using it.
+    //
+    // Size is stated qualitatively whenever Meta refuses a real one. It floors
+    // `approximate_count_lower_bound` at 1000, so a 150-record customer list and
+    // a 900-record one report identically. Printing "1,000" for both would be a
+    // fabricated number in the one place someone is trying to judge whether a
+    // pool has grown, so the payload sends null and this prints the state.
+    //
+    // RETIRED rows are folded away rather than dropped: they still hold spend
+    // history and are still referenced by a paused ad set, so a list that
+    // silently omitted them would misrepresent the account.
+    function audienceTable() {
+      var A = D.audiences; if (!A || !A.length) return '';
+      var live = A.filter(function (a) { return !a.retired; });
+      var retired = A.filter(function (a) { return a.retired; });
+      var row = function (a) {
+        var use = [];
+        if (a.targetedBy.length) use.push('<span class="chip ok">targeted ×' + a.targetedBy.length + '</span>');
+        if (a.excludedBy.length) use.push('<span class="chip">excluded ×' + a.excludedBy.length + '</span>');
+        if (!use.length) use.push('<span class="chip" style="opacity:.55">unused</span>');
+        var size = a.size != null ? num(a.size)
+          : '<span style="color:var(--muted)">' + esc(a.sizeNote || 'unknown') + '</span>';
+        return '<tr' + (a.retired ? ' style="opacity:.5"' : '') + '>' +
+          '<td style="text-align:left">' + esc(a.name) + '</td>' +
+          '<td>' + size + '</td>' +
+          '<td style="text-align:left">' + use.join(' ') + '</td></tr>';
+      };
+      return '<section><div class="sec-head"><h2>Audiences</h2>' +
+        '<span class="sec-note">size, and whether anything is using it</span></div>' +
+        '<div class="card"><div class="tablewrap"><table>' +
+        '<thead><tr><th style="text-align:left">Audience</th><th>Size</th>' +
+        '<th style="text-align:left">Used by ad sets</th></tr></thead><tbody>' +
+        live.map(row).join('') +
+        (retired.length ? '<tr><td colspan="3" style="text-align:left;padding-top:14px">' +
+          '<span class="sec-note">' + retired.length + ' retired — superseded, do not attach</span></td></tr>' +
+          retired.map(row).join('') : '') +
+        '</tbody></table></div>' +
+        '<div class="sec-note" style="padding:10px 12px 12px">Meta will not report a size under 1,000, ' +
+        'so a small pool shows its state rather than a count. A lookalike needs roughly 1,000 before its ' +
+        'seed is worth modelling.</div></div></section>';
     }
 
     function adTable() {
