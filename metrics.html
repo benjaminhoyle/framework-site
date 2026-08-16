@@ -238,7 +238,7 @@
     var kes = function (n) { return 'KSh ' + Math.round(Number(n)||0).toLocaleString('en-US'); };
     var num = function (n) { return (Number(n)||0).toLocaleString('en-US'); };
     var show = function (h) { document.getElementById('main').innerHTML = h; };
-    var D = null, view = { filter:'spending', group:'ad', win:'30d', sort:'spend30', dir:-1, q:'', month:null, trendTable:false, grain:'day' };
+    var D = null, view = { filter:'spending', group:'ad', win:'30d', sort:'spend30', dir:-1, q:'', month:null, trendTable:false, grain:'day', spendCut:'placement' };
 
     document.getElementById('navCatalog').href = '/catalog.html';
 
@@ -378,6 +378,90 @@
       }
       return out;
     }
+    // Spend, re-sliced. Placement, ad and audience are three cuts of the SAME
+    // money, so they share one row rather than earning three of identical height
+    // — the bar never changes, only what it is made of.
+    //
+    // "Audience" means ad set. Meta publishes no audience breakdown, and in this
+    // account an ad set IS an audience (A3 is the corridor, A8 the self-server).
+    // Saying "Audience" while grouping by ad set is the honest label for that,
+    // and it is what the ad table's own grouping already means.
+    //
+    // Placement keeps its fixed hues because those four slots are permanent and
+    // Audience Network wearing --warning is a fault state, not a category. Ads
+    // and ad sets are open sets, so they get ranked instead: the top three by
+    // spend across the visible window keep a hue, everything else folds into
+    // Other. Same rule the placement row already follows, and for the same
+    // reason — a generated 4th+ categorical hue is indistinguishable under CVD.
+    var CUTS = { placement:'Placement', byAd:'Ad', byAdset:'Audience' };
+    var CUT_HUES = ['var(--p-ig)', 'var(--p-fb)', '#12a594'];
+    function spendSeries(ds, cut) {
+      if (cut === 'placement') return { items:PLACEMENTS, pick:foldPlacement };
+      var totals = {};
+      ds.forEach(function (d) {
+        var m = d[cut] || {};
+        for (var k in m) totals[k] = (totals[k] || 0) + m[k];
+      });
+      // Ranking by window total alone buried the thing this chart exists to
+      // watch: on 2026-08-16 the newly launched A3 folded into grey "Other"
+      // because two paused website ads outspent it over the previous fortnight.
+      // What is running now always earns a hue first, then the remaining slots
+      // go to the biggest spenders — so the live ad is never the anonymous one.
+      var latest = ds.length ? (ds[ds.length - 1][cut] || {}) : {};
+      var byTotal = Object.keys(totals).filter(function (k) { return k !== 'other'; })
+        .sort(function (a, b) { return totals[b] - totals[a]; });
+      var live = byTotal.filter(function (k) { return (latest[k] || 0) > 0; });
+      var keys = live.concat(byTotal.filter(function (k) { return live.indexOf(k) < 0; }));
+      var top = keys.slice(0, CUT_HUES.length);
+      var labels = uniqueLabels(top);
+      var items = top.map(function (k, i) { return { k:k, l:labels[i], c:CUT_HUES[i] }; });
+      // Only offer an "Other" slot when something actually lands in it, so a
+      // single-ad account doesn't carry a permanent empty legend entry.
+      var rest = keys.slice(CUT_HUES.length);
+      if (rest.length || Object.keys(totals).indexOf('other') >= 0) {
+        items.push({ k:'other', l:'Other', c:'var(--p-other)' });
+      }
+      var inTop = {};
+      top.forEach(function (k) { inTop[k] = 1; });
+      return {
+        items: items,
+        pick: function (m) {
+          var out = {};
+          items.forEach(function (s) { out[s.k] = 0; });
+          for (var k in (m || {})) {
+            if (inTop[k]) out[k] += m[k];
+            else if ('other' in out) out.other += m[k];
+          }
+          return out;
+        }
+      };
+    }
+    // Ad and ad-set names are pipe-delimited by convention, but which segment
+    // carries the identity varies: in "A3 | Corridor x Home Interest" it is the
+    // head, while "Website | Kuzi Coral Shelf" and "Website | Manual Catalog
+    // Photos" share theirs completely. Shortening to the head alone drew two
+    // different series both labelled "Website" — a legend that cannot tell two
+    // bars apart is worse than a long one.
+    //
+    // So: prefer the head, and fall back to the full name for ALL of them the
+    // moment any two collide. Uniform within a legend, because mixing short and
+    // long labels reads as a hierarchy that isn't there.
+    function uniqueLabels(keys) {
+      var heads = keys.map(function (k) { return String(k).split('|')[0].trim() || String(k); });
+      var seen = {}, collides = false;
+      heads.forEach(function (h) { if (seen[h]) collides = true; seen[h] = 1; });
+      return (collides ? keys.map(String) : heads).map(function (l) {
+        return l.length > 24 ? l.slice(0, 23) + '…' : l;
+      });
+    }
+    // Both the chart and its tooltip resolve the cut through here. They compute
+    // their series separately (dailyHover re-derives everything from `view`), and
+    // a tooltip explaining a different slice from the bar under the cursor is the
+    // kind of bug nobody reports and everybody mistrusts.
+    function activeCut() { return CUTS[view.spendCut] ? view.spendCut : 'placement'; }
+    function cutbtn(v, l) {
+      return '<button data-spendcut="' + v + '" class="' + (view.spendCut === v ? 'on' : '') + '">' + esc(l) + '</button>';
+    }
     function niceMax(v) {
       if (!(v > 0)) return 1;
       var mag = Math.pow(10, Math.floor(Math.log10(v)));
@@ -445,7 +529,7 @@
         var k = grain === 'week' ? mondayOf(d.day) : d.day.slice(0, 7);
         var b = byKey[k];
         if (!b) {
-          b = byKey[k] = { key:k, day:d.day, first:d.day, last:d.day, spend:0, placement:{},
+          b = byKey[k] = { key:k, day:d.day, first:d.day, last:d.day, spend:0, placement:{}, byAd:{}, byAdset:{},
                            metaClicks:0, metaLanding:0, metaConvos:0, sessions:0,
                            depth:{ arrive:0, product:0, engage:0, handoff:0 },
                            newChats:0, source:{ site:0, whatsapp_ad:0, unknown:0 },
@@ -463,6 +547,8 @@
         // different businesses.
         if (d.orderValues && d.orderValues.length) b.orderValues = b.orderValues.concat(d.orderValues);
         for (var pk in (d.placement || {})) b.placement[pk] = (b.placement[pk] || 0) + d.placement[pk];
+        for (var ak in (d.byAd || {})) b.byAd[ak] = (b.byAd[ak] || 0) + d.byAd[ak];
+        for (var qk in (d.byAdset || {})) b.byAdset[qk] = (b.byAdset[qk] || 0) + d.byAdset[qk];
         for (var dk in b.depth) b.depth[dk] += (d.depth && d.depth[dk]) || 0;
         for (var sk in b.source) b.source[sk] += (d.source && d.source[sk]) || 0;
         b.messages.in += (d.messages && d.messages.in) || 0;
@@ -478,6 +564,8 @@
         b.orderValues.sort(function (x, y) { return y - x; }); // largest anchors the stack
 
         for (var pk in b.placement) b.placement[pk] = Math.round(b.placement[pk] * 100) / 100;
+        for (var ak in b.byAd) b.byAd[ak] = Math.round(b.byAd[ak] * 100) / 100;
+        for (var qk in b.byAdset) b.byAdset[qk] = Math.round(b.byAdset[qk] * 100) / 100;
       });
 
       // The oldest bucket is short whenever the spine starts mid-period — it
@@ -585,10 +673,13 @@
         return acc;
       };
 
-      // Row 1 — spend by placement.
+      // Row 1 — spend, sliced by whichever cut is selected. Same bar height in
+      // every cut: it is one number, and switching must not look like the money
+      // changed.
+      var cut = activeCut(), SPEND = spendSeries(ds, cut);
       ds.forEach(function (d, i) {
-        var p = foldPlacement(d.placement);
-        var total = stack(R[0], i, PLACEMENTS.map(function (s) { return { c:s.c, v:p[s.k] || 0 }; }), maxSpend);
+        var p = SPEND.pick(d[cut]);
+        var total = stack(R[0], i, SPEND.items.map(function (s) { return { c:s.c, v:p[s.k] || 0 }; }), maxSpend);
         if (total === 0) svg.push('<line x1="' + xOf(i) + '" y1="' + (R[0].y + R[0].h) + '" x2="' + (xOf(i)+barW) +
           '" y2="' + (R[0].y + R[0].h) + '" stroke="var(--line)" stroke-width="2"/>');
       });
@@ -716,7 +807,7 @@
         });
         svg.push('<g class="hdr">' + out.join('') + '</g>');
       };
-      rowHead(R[0], 'Spend', maxSpend, 'kes', PLACEMENTS);
+      rowHead(R[0], 'Spend', maxSpend, 'kes', SPEND.items);
       rowHead(R[1], 'Visitors', maxSess, 'num', DEPTHS);
       rowHead(R[2], 'New chats', maxChat, 'num', SOURCES.concat([{ l:'Sale', c:'var(--good)' }]));
       rowHead(R[3], 'Messages', maxMsg, 'num', MSGDIRS);
@@ -764,9 +855,10 @@
       return '<section><div class="sec-head"><h2>' + esc(G.one.charAt(0).toUpperCase() + G.one.slice(1)) +
         ' by ' + esc(G.one) + '</h2>' +
         '<span class="sec-note">last ' + n + ' ' + G.unit + ' · hover any ' + G.one + '</span>' +
-        '<span class="right"><span class="seg">' +
-          grainbtn('day','Day') + grainbtn('week','Week') + grainbtn('month','Month') +
-        '</span></span></div>' +
+        '<span class="right">' +
+          '<span class="seg">' + cutbtn('placement','Placement') + cutbtn('byAd','Ad') + cutbtn('byAdset','Audience') + '</span>' +
+          '<span class="seg">' + grainbtn('day','Day') + grainbtn('week','Week') + grainbtn('month','Month') + '</span>' +
+        '</span></div>' +
         '<div class="card pad">' +
           '<div class="chartwrap"><svg id="dailysvg" viewBox="0 0 ' + W + ' ' + H +
           '" width="100%" preserveAspectRatio="xMinYMin meet">' + svg.join('') + '</svg></div>' +
@@ -1178,6 +1270,9 @@
       document.querySelectorAll('[data-grain]').forEach(function (b) {
         b.onclick = function () { view.grain = b.getAttribute('data-grain'); render(); };
       });
+      document.querySelectorAll('[data-spendcut]').forEach(function (b) {
+        b.onclick = function () { view.spendCut = b.getAttribute('data-spendcut'); render(); };
+      });
       document.querySelectorAll('[data-copy]').forEach(function (b) {
         b.onclick = function () {
           var el = document.getElementById('cp_' + b.getAttribute('data-copy'));
@@ -1199,6 +1294,7 @@
       var svg = document.getElementById('dailysvg'); if (!svg) return;
       var D2 = D.daily, series = dailySeries(); if (!series) return;
       var ds = series.ds, n = ds.length, grain = series.grain, G = GRAINS[grain];
+      var cut = activeCut(), SPEND = spendSeries(ds, cut);
       var tip = document.getElementById('tip');
       var cov = dailyCoverage(D2, ds, n);
 
@@ -1289,11 +1385,19 @@
           if (grain !== 'day') h += '<div class="sub">' + fmtDay(d.first) + ' – ' + fmtDay(d.last) + '</div>';
           h += rowLine('Spend', kes(d.spend), delta(i, function (x) { return x.spend || 0; }, function () { return true; }));
           if (d.spend > 0) {
-            // Round before filtering, so a 0.4 shilling sliver never prints as
-            // a segment reading "KSh 0".
-            var seg = PLACEMENTS.filter(function (s) { return Math.round(p[s.k] || 0) > 0; })
-              .map(function (s) { return esc(s.l) + ' ' + kes(p[s.k]); }).join(' · ');
+            // Follows the selected cut, so the tooltip always explains the bar
+            // being pointed at. Round before filtering, so a 0.4 shilling sliver
+            // never prints as a segment reading "KSh 0".
+            var cp = SPEND.pick(d[cut]);
+            var seg = SPEND.items.filter(function (s) { return Math.round(cp[s.k] || 0) > 0; })
+              .map(function (s) { return esc(s.l) + ' ' + kes(cp[s.k]); }).join(' · ');
             if (seg) h += '<div class="sub">' + seg + '</div>';
+            // Audience Network is a fault state, not a category, so its warning
+            // must survive a reader switching to the ad or audience cut — where
+            // the placement split is not on screen to be noticed.
+            if (cut !== 'placement' && anPct >= 15) {
+              h += '<div class="sub" style="color:var(--warning)">⚠ ' + anPct + '% went to Audience Network</div>';
+            }
           }
           if (anPct >= 15) h += '<div class="sub" style="color:var(--warning)">⚠ ' + anPct + '% went to Audience Network</div>';
 

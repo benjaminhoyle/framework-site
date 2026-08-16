@@ -52,7 +52,7 @@
     "wide_spacer": "wide_spacer",
     "wide_top_bar": "wide_top_bar"
   },
-  "contentHash": "4f3df86e2b1ad14ffe13b7828d1210212911d4bc338669e8d5b8d4bdd1a3f9c3",
+  "contentHash": "b313d37bcc60a51bee31037c1af3d4eaf234ff4215001ea12fedae063a24f7e3",
   "finishes": [
     {
       "displayName": "Marine",
@@ -95,7 +95,7 @@
       "steelLabel": "Coral steel"
     }
   ],
-  "generatedAt": "2026-08-01T08:05:50Z",
+  "generatedAt": "2026-08-16T00:17:34Z",
   "modules": {
     "booster_adapter": {
       "bboxMm": [
@@ -14253,7 +14253,7 @@
   },
   "vocabulary": {
     "dimsNote": "dims are raw Rhino bbox extents in mm [width, depth]; height_mm subtracts stack_overlap_mm for non-base roles (vertical only). bbox_height_mm is the untrimmed extent.",
-    "generatedAt": "2026-07-05",
+    "generatedAt": "2026-08-16",
     "generatedFrom": "generated/manifests/rhino-module-manifest.json",
     "hardwareExcluded": [
       "end_flat",
@@ -14379,7 +14379,7 @@
           "stack_overlap_mm": 31,
           "width_mm": 772.856
         },
-        "displayName": "Broad Hanger Extension",
+        "displayName": "Broad Hanger",
         "family": "broad",
         "rhinoBlockId": "broad_hanger",
         "role": "hanger",
@@ -14491,7 +14491,7 @@
           "stack_overlap_mm": 31,
           "width_mm": 510
         },
-        "displayName": "Compact Hanger Extension",
+        "displayName": "Compact Hanger",
         "family": "compact",
         "rhinoBlockId": "compact_hanger",
         "role": "hanger",
@@ -14715,7 +14715,7 @@
           "stack_overlap_mm": 31,
           "width_mm": 1212.856
         },
-        "displayName": "Deep Hanger Extension",
+        "displayName": "Deep Hanger",
         "family": "deep",
         "rhinoBlockId": "deep_hanger",
         "role": "hanger",
