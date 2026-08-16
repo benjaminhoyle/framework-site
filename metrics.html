@@ -179,7 +179,16 @@
     .chartwrap { overflow-x:auto; }
     .chartwrap svg { display:block; min-width:720px; }
     .daily-note { font-size:11.5px; color:var(--muted); margin-top:10px; line-height:1.6; }
-    svg .hit:hover { fill:rgba(255,255,255,.05); }
+    svg .rhit:hover { fill:rgba(255,255,255,.04); }
+    /* The hovered segment brightens; everything else in that bar dims, so the
+       cell being described is unmistakable without adding a stroke (ink that
+       isn't data). */
+    /* `fill-opacity` as well as `opacity`: it is the SVG-native property and is
+       the one guaranteed to apply to a <path>, so the dim state never depends on
+       filter support. Brightening the hovered cell is the secondary cue. */
+    .sg { transition:fill-opacity .08s ease, filter .08s ease; }
+    .sg.on { filter:brightness(1.45); }
+    .sg.off { fill-opacity:.3; opacity:.3; }
     svg .colsep { stroke:var(--line-soft); stroke-width:1; }
 
     /* Trend chart */
@@ -459,6 +468,9 @@
     // a tooltip explaining a different slice from the bar under the cursor is the
     // kind of bug nobody reports and everybody mistrusts.
     function activeCut() { return CUTS[view.spendCut] ? view.spendCut : 'placement'; }
+    // Segment geometry from the last daily draw, keyed row → bucket → parts.
+    // Written by dailyChart, read by dailyHover.
+    var DAILY_SEGS = {};
     function cutbtn(v, l) {
       return '<button data-spendcut="' + v + '" class="' + (view.spendCut === v ? 'on' : '') + '">' + esc(l) + '</button>';
     }
@@ -659,15 +671,29 @@
       // its baseline and the segments it was meant to separate touched each
       // other. Take the gap off the top edge and the bottom segment sits on the
       // axis, which is the one place a stacked bar must be exact.
-      var stack = function (band, i, segs, max) {
+      // Every segment is indexed as it is drawn: its label, value and the pixel
+      // band it occupies. Hover then names the exact cell under the pointer
+      // instead of reporting the whole day, which is what made the old tooltip
+      // long enough to be ignored.
+      // Module-scoped, not local: `dailyHover` runs after `dailyChart` and needs
+      // the geometry it produced. Reset on every draw so a stale grain or cut can
+      // never leave segments from the previous render behind.
+      DAILY_SEGS = {};
+      var SEGS = DAILY_SEGS;
+      var stack = function (band, i, segs, max, ri) {
         var acc = 0, parts = [];
-        segs.forEach(function (s) { if (s.v > 0) { parts.push({ c:s.c, v:s.v, y0:acc }); acc += s.v; } });
+        segs.forEach(function (s) { if (s.v > 0) { parts.push({ c:s.c, v:s.v, l:s.l, y0:acc }); acc += s.v; } });
         parts.forEach(function (s, si) {
           var full = (s.v / max) * band.h;
           var yTop = band.y + band.h - ((s.y0 + s.v) / max) * band.h;
           var isTop = si === parts.length - 1;
           var off = isTop ? 0 : GAP;
-          svg.push('<path d="' + barPath(xOf(i), yTop + off, barW, Math.max(0, full - off), isTop ? 4 : 0) +
+          if (ri != null) {
+            (SEGS[ri] = SEGS[ri] || {});
+            (SEGS[ri][i] = SEGS[ri][i] || []).push({ l:s.l, v:s.v, c:s.c, top:yTop + off, bot:yTop + full });
+          }
+          svg.push('<path' + (ri != null ? ' class="sg" data-sg="' + ri + '-' + i + '-' + si + '"' : '') +
+                   ' d="' + barPath(xOf(i), yTop + off, barW, Math.max(0, full - off), isTop ? 4 : 0) +
                    '" fill="' + s.c + '"/>');
         });
         return acc;
@@ -677,16 +703,21 @@
       // every cut: it is one number, and switching must not look like the money
       // changed.
       var cut = activeCut(), SPEND = spendSeries(ds, cut);
+      // A payload synced before the per-ad series existed has no byAd/byAdset at
+      // all, and the row would draw blank with an empty legend and no hint why.
+      // Fall back to the cut that is always present and say what happened.
+      var cutEmpty = !SPEND.items.length;
+      if (cutEmpty) { cut = 'placement'; SPEND = spendSeries(ds, cut); }
       ds.forEach(function (d, i) {
         var p = SPEND.pick(d[cut]);
-        var total = stack(R[0], i, SPEND.items.map(function (s) { return { c:s.c, v:p[s.k] || 0 }; }), maxSpend);
+        var total = stack(R[0], i, SPEND.items.map(function (s) { return { c:s.c, l:s.l, v:p[s.k] || 0 }; }), maxSpend, 0);
         if (total === 0) svg.push('<line x1="' + xOf(i) + '" y1="' + (R[0].y + R[0].h) + '" x2="' + (xOf(i)+barW) +
           '" y2="' + (R[0].y + R[0].h) + '" stroke="var(--line)" stroke-width="2"/>');
       });
       // Row 2 — visitors by deepest stage reached.
       ds.forEach(function (d, i) {
         if (i < cov.siteFrom) return;
-        stack(R[1], i, DEPTHS.map(function (s) { return { c:s.c, v:(d.depth && d.depth[s.k]) || 0 }; }), maxSess);
+        stack(R[1], i, DEPTHS.map(function (s) { return { c:s.c, l:s.l, v:(d.depth && d.depth[s.k]) || 0 }; }), maxSess, 1);
       });
       // Row 3 — new chats split by where they came from, with payments marked
       // above (status token: money arriving is a state, not a series). The split
@@ -698,7 +729,7 @@
       // from Airtable, which is current whether or not the scrape has run.
       ds.forEach(function (d, i) {
         if (i <= cov.convThru) {
-          stack(R[2], i, SOURCES.map(function (t) { return { c:t.c, v:(d.source && d.source[t.k]) || 0 }; }), maxChat);
+          stack(R[2], i, SOURCES.map(function (t) { return { c:t.c, l:t.l, v:(d.source && d.source[t.k]) || 0 }; }), maxChat, 2);
         }
         if ((d.sales || 0) > 0) {
           svg.push('<circle cx="' + (xOf(i) + barW/2) + '" cy="' + (R[2].y + 8) + '" r="5" fill="var(--good)" stroke="var(--card)" stroke-width="2"/>');
@@ -710,7 +741,7 @@
       // buyers is identical to a dead one on every other row.
       ds.forEach(function (d, i) {
         if (!d.msgDays) return; // hatched above — no run covered this bucket
-        var total = stack(R[3], i, MSGDIRS.map(function (t) { return { c:t.c, v:(d.messages && d.messages[t.k]) || 0 }; }), maxMsg);
+        var total = stack(R[3], i, MSGDIRS.map(function (t) { return { c:t.c, l:t.l, v:(d.messages && d.messages[t.k]) || 0 }; }), maxMsg, 3);
         if (total === 0) svg.push('<line x1="' + xOf(i) + '" y1="' + (R[3].y + R[3].h) + '" x2="' + (xOf(i)+barW) +
           '" y2="' + (R[3].y + R[3].h) + '" stroke="var(--line)" stroke-width="2"/>');
       });
@@ -784,11 +815,18 @@
         svg.push('<text x="' + (xOf(i) + barW/2) + '" y="' + (H - 6) + '" text-anchor="middle"' +
                  (last ? ' fill="var(--dim)"' : '') + '>' + esc(fmtBucket(d, grain, last)) + '</text>');
       });
-      // One hit target per day spanning all four rows — they are read together,
-      // so they highlight and report together.
-      ds.forEach(function (d, i) {
-        svg.push('<rect class="hit" data-di="' + i + '" x="' + (L + col*i) + '" y="0" width="' + col +
-                 '" height="' + (H - 20) + '" fill="transparent"/>');
+      // One hit target per ROW per bucket, not one per day across all rows.
+      //
+      // The day-wide version reported every measure at once, which made the
+      // tooltip long enough that nobody read to the bottom of it — and it could
+      // not say which segment the pointer was actually over. These are scoped to
+      // the row, and the handler resolves the exact cell from the pointer's y.
+      // The Paid row keeps its own per-order hit rects and is skipped here.
+      [0, 1, 2, 3].forEach(function (ri) {
+        ds.forEach(function (d, i) {
+          svg.push('<rect class="rhit" data-ri="' + ri + '" data-di="' + i + '" x="' + (L + col*i) +
+                   '" y="' + R[ri].y + '" width="' + col + '" height="' + R[ri].h + '" fill="transparent"/>');
+        });
       });
 
       // Row header: name, peak, then the legend. A legend is present for every
@@ -848,6 +886,10 @@
         notes.push('This ' + G.one + ' is still in progress (' + ds[n-1].dayCount + ' of its days so far) — it is not a drop.');
       }
       // A part-covered bucket at the boundary reports only the days it can see.
+      if (cutEmpty) {
+        notes.push('No ' + (CUTS[view.spendCut] || '').toLowerCase() + ' breakdown in this snapshot — showing placement. ' +
+                   'Run the sync to collect it.');
+      }
       if (grain !== 'day' && cov.siteFrom < n && D2.siteEventsFrom && (ds[cov.siteFrom].first || '') < D2.siteEventsFrom) {
         notes.push('The ' + G.one + ' beginning ' + fmtDay(ds[cov.siteFrom].first) + ' is only part-tracked — visitors are counted from ' + fmtDay(D2.siteEventsFrom) + '.');
       }
@@ -1407,110 +1449,112 @@
         r.addEventListener('mouseleave', function () { unlight(); tip.style.opacity = 0; });
       });
 
-      svg.querySelectorAll('.hit').forEach(function (r) {
+      // Row-scoped hover, replacing the day-wide panel.
+      //
+      // Reporting every measure at once made the tooltip long enough that nobody
+      // read to the bottom, and it could never say which segment the pointer was
+      // actually over. These resolve the exact cell, brighten it, dim the rest of
+      // that bar, and report that one number with the bucket total for context.
+      var ROWMETA = [
+        { l:'Spend', unit:'kes', get:function (d) { return d.spend || 0; },
+          ok:function () { return true; } },
+        { l:'Visitors', unit:'num', get:function (d) { return d.sessions || 0; },
+          ok:function (i) { return i >= cov.siteFrom; }, absent:'not tracked yet' },
+        { l:'New chats', unit:'num', get:function (d) { return d.newChats || 0; },
+          ok:function (i) { return i <= cov.convThru; }, absent:'not counted yet' },
+        { l:'Messages', unit:'num',
+          get:function (d) { return d.messages ? (d.messages.in || 0) + (d.messages.out || 0) : 0; },
+          ok:function (i) { return ds[i].msgDays > 0 || !!ds[i].messagesCovered; },
+          absent:'no run covered this' }
+      ];
+      var SEGS = DAILY_SEGS;
+      var fmtv = function (unit, v) { return unit === 'kes' ? kes(v) : num(v); };
+      var dimAll = function () {
+        svg.querySelectorAll('.sg.on,.sg.off').forEach(function (e) { e.classList.remove('on'); e.classList.remove('off'); });
+      };
+      // Client pixels to viewBox units. The SVG scales with its container, so a
+      // raw event offset is in the wrong space and picks the wrong segment at
+      // every width but one.
+      var toSvgY = function (evt) {
+        var m = svg.getScreenCTM(); if (!m) return null;
+        var pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+        return pt.matrixTransform(m.inverse()).y;
+      };
+      svg.querySelectorAll('.rhit').forEach(function (r) {
         r.style.cursor = 'default';
         r.addEventListener('mousemove', function (e) {
-          unlight();
-          var i = Number(r.getAttribute('data-di')), d = ds[i];
-          if (!d) return;
-          var dt = new Date(d.day + 'T12:00:00Z');
-          var p = foldPlacement(d.placement);
-          var anPct = d.spend ? Math.round(100 * (p.audience_network || 0) / d.spend) : 0;
-          var siteOk = i >= cov.siteFrom, convOk = i <= cov.convThru;
+          var ri = Number(r.getAttribute('data-ri')), i = Number(r.getAttribute('data-di'));
+          var d = ds[i], meta = ROWMETA[ri]; if (!d || !meta) return;
+          unlight(); dimAll();
 
-          var isToday = i === n - 1;
-          var title;
-          if (grain === 'day') title = DOW[dt.getUTCDay()] + ' ' + fmtDay(d.day);
-          else if (grain === 'week') title = 'Week of ' + fmtDay(d.first);
-          else title = MONFULL[new Date(d.first + 'T12:00:00Z').getUTCMonth()] + ' ' + d.first.slice(0, 4);
+          var title = grain === 'day' ? DOW[new Date(d.day + 'T12:00:00Z').getUTCDay()] + ' ' + fmtDay(d.day)
+                    : grain === 'week' ? 'Week of ' + fmtDay(d.first)
+                    : MONFULL[new Date(d.first + 'T12:00:00Z').getUTCMonth()] + ' ' + d.first.slice(0, 4);
           var h = '<div class="t">' + esc(title) +
-                  (isToday ? ' <span style="color:var(--dim)">· so far this ' + G.one + '</span>' : '') + '</div>';
-          if (grain !== 'day') h += '<div class="sub">' + fmtDay(d.first) + ' – ' + fmtDay(d.last) + '</div>';
-          h += rowLine('Spend', kes(d.spend), delta(i, function (x) { return x.spend || 0; }, function () { return true; }));
-          if (d.spend > 0) {
-            // Follows the selected cut, so the tooltip always explains the bar
-            // being pointed at. Round before filtering, so a 0.4 shilling sliver
-            // never prints as a segment reading "KSh 0".
-            var cp = SPEND.pick(d[cut]);
-            var seg = SPEND.items.filter(function (s) { return Math.round(cp[s.k] || 0) > 0; })
-              .map(function (s) { return esc(s.l) + ' ' + kes(cp[s.k]); }).join(' · ');
-            if (seg) h += '<div class="sub">' + seg + '</div>';
-            // Audience Network is a fault state, not a category, so its warning
-            // must survive a reader switching to the ad or audience cut — where
-            // the placement split is not on screen to be noticed.
-            if (cut !== 'placement' && anPct >= 15) {
-              h += '<div class="sub" style="color:var(--warning)">⚠ ' + anPct + '% went to Audience Network</div>';
+                  (i === n - 1 ? ' <span style="color:var(--dim)">· so far</span>' : '') + '</div>';
+
+          if (!meta.ok(i)) {
+            h += '<div class="sub">' + esc(meta.l) + ' — ' + esc(meta.absent || 'not available') + '</div>';
+            tip.innerHTML = h; place(e); return;
+          }
+
+          // Nearest cell wins, so a two-pixel sliver stays reachable rather than
+          // being technically present and impossible to point at.
+          var parts = (SEGS[ri] && SEGS[ri][i]) || [];
+          var y = toSvgY(e), hit = null;
+          if (y != null && parts.length) {
+            for (var k = 0; k < parts.length; k++) {
+              if (y >= parts[k].top - 1 && y <= parts[k].bot + 1) { hit = parts[k]; break; }
+            }
+            if (!hit) {
+              var best = Infinity;
+              parts.forEach(function (pp) {
+                var dist = y < pp.top ? pp.top - y : (y > pp.bot ? y - pp.bot : 0);
+                if (dist < best) { best = dist; hit = pp; }
+              });
             }
           }
-          if (anPct >= 15) h += '<div class="sub" style="color:var(--warning)">⚠ ' + anPct + '% went to Audience Network</div>';
-
-          h += siteOk
-            ? rowLine('Visitors', num(d.sessions), delta(i, function (x) { return x.sessions || 0; }, function (j) { return j >= cov.siteFrom; }))
-            : rowLine('Visitors', '<span style="color:var(--muted)">not tracked yet</span>', '');
-          if (siteOk && d.sessions > 0) {
-            h += '<div class="sub">' + DEPTHS.slice(1).filter(function (s) { return (d.depth[s.k] || 0) > 0; })
-              .map(function (s) { return esc(s.l) + ' ' + num(d.depth[s.k]); }).join(' · ') + '</div>';
-          }
-          // Meta's own click count lives here rather than as a fourth row: it is
-          // a cross-check on whether the traffic was real, not a daily target.
-          if (d.metaClicks) {
-            var reached = d.metaClicks ? Math.round(100 * (siteOk ? d.sessions : 0) / d.metaClicks) : 0;
-            h += '<div class="sub">Meta counted ' + num(d.metaClicks) + ' clicks' +
-                 (siteOk ? ' · ' + reached + '% reached the site' : '') + '</div>';
-          }
-
-          h += convOk
-            ? rowLine('New chats', num(d.newChats), delta(i, function (x) { return x.newChats || 0; }, function (j) { return j <= cov.convThru; }))
-            : rowLine('New chats', '<span style="color:var(--muted)">not pulled yet</span>', '');
-          if (convOk && d.newChats > 0 && d.source) {
-            var src = SOURCES.filter(function (t) { return (d.source[t.k] || 0) > 0; })
-              .map(function (t) { return esc(t.l) + ' ' + num(d.source[t.k]); }).join(' · ');
-            if (src) h += '<div class="sub">' + src + '</div>';
-          }
-          // Not gated on conversation coverage: this is payment data from
-          // Airtable, dated by when the money arrived rather than by when the
-          // conversation started, so it is current even on a day the scrape has
-          // not reached. Named "Paid" for the same reason — it is not a property
-          // of the chats above it.
-          if (d.sales || d.revenue) {
-            h += rowLine('<span style="color:var(--good)">Paid</span>', num(d.sales) + (d.revenue ? ' · ' + kes(d.revenue) : ''), '');
-            // The cells are individually hoverable; this is the at-a-glance
-            // version for someone reading the day as a whole.
-            // Capped: a month can hold sixteen orders, and sixteen amounts on one
-            // line is a wall nobody reads. Largest first, so the cap drops the
-            // ones that move the total least.
-            if (d.orderValues && d.orderValues.length > 1) {
-              var shown = d.orderValues.slice(0, 6);
-              var rest = d.orderValues.length - shown.length;
-              h += '<div class="sub">' + shown.map(function (o) { return kes(o); }).join(' · ') +
-                   (rest ? ' · +' + num(rest) + ' more' : '') + '</div>';
+          var total = meta.get(d);
+          if (hit) {
+            var idx = parts.indexOf(hit);
+            svg.querySelectorAll('.sg[data-sg^="' + ri + '-' + i + '-"]').forEach(function (e2) {
+              e2.classList.add(Number(e2.getAttribute('data-sg').split('-')[2]) === idx ? 'on' : 'off');
+            });
+            h += '<div class="sub" style="color:' + hit.c + '">' + esc(meta.l) + ' · ' + esc(hit.l || '') + '</div>' +
+                 '<div class="lead">' + fmtv(meta.unit, hit.v) + '</div>';
+            if (parts.length > 1 && total) {
+              h += '<div class="sub">' + Math.round(100 * hit.v / total) + '% of ' + fmtv(meta.unit, total) + '</div>';
             }
-          }
-
-          // Messages last: it is the only row about work inside existing threads
-          // rather than new arrivals, and it is the one whose blanks mean "not
-          // collected" rather than "nothing happened".
-          var mIn = (d.messages && d.messages.in) || 0, mOut = (d.messages && d.messages.out) || 0;
-          if (!d.msgDays) {
-            h += rowLine('Messages', '<span style="color:var(--muted)">no run covered this ' + G.one + '</span>', '');
           } else {
-            h += rowLine('Messages', num(mIn + mOut),
-              delta(i, function (x) { return ((x.messages && x.messages.in) || 0) + ((x.messages && x.messages.out) || 0); },
-                    function (j) { return ds[j].msgDays > 0; }));
-            h += '<div class="sub">From clients ' + num(mIn) + ' · from us ' + num(mOut) + '</div>';
-            if (d.msgDays < d.dayCount) {
-              h += '<div class="sub" style="color:var(--muted)">covers ' + d.msgDays + ' of ' + d.dayCount + ' days</div>';
-            }
+            h += '<div class="sub">' + esc(meta.l) + '</div><div class="lead">' + fmtv(meta.unit, total) + '</div>';
           }
-
-          tip.innerHTML = h;
-          tip.style.opacity = 1;
-          var x = e.clientX + 16, y = e.clientY - 10;
-          if (x + 290 > window.innerWidth) x = e.clientX - 290;
-          if (y + 300 > window.innerHeight) y = window.innerHeight - 310; // taller since the Paid row
-          tip.style.left = x + 'px'; tip.style.top = Math.max(8, y) + 'px';
+          var dl = delta(i, meta.get, meta.ok);
+          if (dl) h += '<div class="sub">' + dl + ' vs the prior 7</div>';
+          if (ri === 3 && d.msgDays != null && d.dayCount && d.msgDays < d.dayCount) {
+            h += '<div class="sub" style="color:var(--muted)">covers ' + d.msgDays + ' of ' + d.dayCount + ' days</div>';
+          }
+          // Audience Network is a fault state, not a category, so its warning
+          // follows the reader into the Ad and Audience cuts, where the placement
+          // split is not on screen to be noticed.
+          if (ri === 0 && d.spend > 0) {
+            // What the spend bought, in the terms this account actually sells in.
+            // This used to read "Meta counted N clicks · X% reached the site",
+            // which was meaningless twice over: the numerator counted sessions
+            // from every source including organic, the denominator counted every
+            // click including profile taps, and since the only live ad is
+            // click-to-WhatsApp its clicks are not supposed to reach the site at
+            // all. Clicks against conversations started is the funnel that exists.
+            if (d.metaClicks) {
+              h += '<div class="sub">' + num(d.metaClicks) + ' clicks · ' +
+                   num(d.metaConvos || 0) + ' conversation' + ((d.metaConvos || 0) === 1 ? '' : 's') +
+                   (d.metaConvos ? ' · ' + kes(Math.round(d.spend / d.metaConvos)) + ' each' : '') + '</div>';
+            }
+            var anp = Math.round(100 * ((foldPlacement(d.placement).audience_network) || 0) / d.spend);
+            if (anp >= 15) h += '<div class="sub" style="color:var(--warning)">⚠ ' + anp + '% went to Audience Network</div>';
+          }
+          tip.innerHTML = h; place(e);
         });
-        r.addEventListener('mouseleave', function () { tip.style.opacity = 0; });
+        r.addEventListener('mouseleave', function () { dimAll(); tip.style.opacity = 0; });
       });
     }
 
