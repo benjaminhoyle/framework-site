@@ -85,6 +85,14 @@
       cursor:help; white-space:nowrap; }
 
     /* Controls */
+    /* A quiet "i" for a definition that would otherwise cost a paragraph.
+       <abbr title> so it works on keyboard focus and screen readers too, rather
+       than a div that only reacts to a mouse. */
+    abbr.ihelp { display:inline-flex; align-items:center; justify-content:center;
+      width:14px; height:14px; border:1px solid var(--line); border-radius:50%;
+      font-size:9.5px; font-style:normal; color:var(--muted); cursor:help;
+      text-decoration:none; vertical-align:1px; margin-left:2px; }
+    abbr.ihelp:hover { color:var(--ink); border-color:var(--muted); }
     .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
     .seg button { background:transparent; border:0; color:var(--dim); padding:6px 12px;
       font-size:12.5px; cursor:pointer; font-family:inherit; }
@@ -608,10 +616,30 @@
 
     // Axis label. The newest bucket is named rather than dated — it is a partial
     // period and must not be read as a finished one.
+    // The current business day in Africa/Nairobi — the zone the ad account and
+    // every date in this payload are anchored to. NOT the viewer's zone: Ben
+    // travels, and a browser in another timezone would otherwise disagree with
+    // the data about which day it is.
+    function nairobiToday() {
+      try {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi',
+          year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+      } catch (e) { return null; }
+    }
+
+    // "today" is a claim about when you are READING, and the last bucket is only
+    // as fresh as the last sync. Calling a two-day-old bar "today" is how a chart
+    // quietly lies about whether anything has happened since. So the word is used
+    // only when the bucket really is the current Nairobi day; otherwise the bar
+    // is dated like any other and the staleness is visible.
     function fmtBucket(b, grain, isLast) {
-      if (grain === 'day') return isLast ? 'today' : fmtDay(b.day);
-      if (grain === 'week') return isLast ? 'this week' : fmtDay(b.first);
-      if (isLast) return 'this month';
+      var now = nairobiToday();
+      var current = !now || (grain === 'day' ? b.day === now
+                  : grain === 'week' ? (b.first <= now && now <= b.last)
+                  : b.first.slice(0, 7) === now.slice(0, 7));
+      if (grain === 'day') return isLast && current ? 'today' : fmtDay(b.day);
+      if (grain === 'week') return isLast && current ? 'this week' : fmtDay(b.first);
+      if (isLast && current) return 'this month';
       var d = new Date(b.first + 'T12:00:00Z');
       return MON[d.getUTCMonth()] + (d.getUTCMonth() === 0 ? " '" + String(d.getUTCFullYear()).slice(2) : '');
     }
@@ -719,20 +747,15 @@
         if (i < cov.siteFrom) return;
         stack(R[1], i, DEPTHS.map(function (s) { return { c:s.c, l:s.l, v:(d.depth && d.depth[s.k]) || 0 }; }), maxSess, 1);
       });
-      // Row 3 — new chats split by where they came from, with payments marked
-      // above (status token: money arriving is a state, not a series). The split
-      // is a true part-to-whole — every conversation lands in exactly one of the
-      // three — and the dot is deliberately NOT part of it. Since 2026-08-11 a
-      // sale is dated by `Payment Received`, so the dot usually belongs to a
-      // conversation that started weeks to the left of it. It shares the axis
-      // only. Drawn outside the conversation-coverage gate as well: payments come
-      // from Airtable, which is current whether or not the scrape has run.
+      // Row 3 — new chats split by where they came from. A green dot used to sit
+      // above this row marking a day with a sale; removed 2026-08-16, because the
+      // Paid row below already carries every sale at its true size, and the dot
+      // was misleading twice over: it was binary where the money is not, and
+      // since a sale is dated by `Payment Received` it sat above a day whose
+      // conversation usually started weeks to the left.
       ds.forEach(function (d, i) {
         if (i <= cov.convThru) {
           stack(R[2], i, SOURCES.map(function (t) { return { c:t.c, l:t.l, v:(d.source && d.source[t.k]) || 0 }; }), maxChat, 2);
-        }
-        if ((d.sales || 0) > 0) {
-          svg.push('<circle cx="' + (xOf(i) + barW/2) + '" cy="' + (R[2].y + 8) + '" r="5" fill="var(--good)" stroke="var(--card)" stroke-width="2"/>');
         }
       });
       // Row 4 — messages exchanged, in threads of any age. The first three rows
@@ -847,7 +870,7 @@
       };
       rowHead(R[0], 'Spend', maxSpend, 'kes', SPEND.items);
       rowHead(R[1], 'Visitors', maxSess, 'num', DEPTHS);
-      rowHead(R[2], 'New chats', maxChat, 'num', SOURCES.concat([{ l:'Sale', c:'var(--good)' }]));
+      rowHead(R[2], 'New chats', maxChat, 'num', SOURCES);
       rowHead(R[3], 'Messages', maxMsg, 'num', MSGDIRS);
       // No legend: one series, so the row label already names what is plotted and
       // a single-swatch box would just restate it.
@@ -880,10 +903,22 @@
           ' not reviewed because unread</b> — left unread for your team' +
           (D.unread.observedOn ? ', as of ' + fmtDay(D.unread.observedOn) : '') + '.');
       }
-      // The newest bar is a period still running. At day grain that is obvious;
-      // across a month it reads as a collapse unless it is said.
-      if (grain !== 'day' && n) {
+      // The newest bar is a period still running — but only if the sync is
+      // current. Once it is a day or more behind, that bar is a finished period
+      // and calling it "in progress" would excuse a real gap.
+      var nowD = nairobiToday();
+      var lastIsCurrent = n && (!nowD || (grain === 'day' ? ds[n-1].day === nowD
+                        : grain === 'week' ? (ds[n-1].first <= nowD && nowD <= ds[n-1].last)
+                        : ds[n-1].first.slice(0, 7) === nowD.slice(0, 7)));
+      if (grain !== 'day' && n && lastIsCurrent) {
         notes.push('This ' + G.one + ' is still in progress (' + ds[n-1].dayCount + ' of its days so far) — it is not a drop.');
+      }
+      // The whole chart stops at the last sync. Saying so beats letting someone
+      // read a flat tail as "nothing happened".
+      if (n && !lastIsCurrent && grain === 'day' && nowD) {
+        var gapDays = Math.round((Date.parse(nowD + 'T12:00:00Z') - Date.parse(ds[n-1].day + 'T12:00:00Z')) / 86400000);
+        notes.push('Last synced ' + fmtDay(ds[n-1].day) + ' — ' + gapDays + ' day' + (gapDays === 1 ? '' : 's') +
+                   ' of data may be missing. Run the sync to catch up.');
       }
       // A part-covered bucket at the boundary reports only the days it can see.
       if (cutEmpty) {
@@ -1019,15 +1054,22 @@
         if (a.targetedBy.length) use.push('<span class="chip ok">targeted ×' + a.targetedBy.length + '</span>');
         if (a.excludedBy.length) use.push('<span class="chip">excluded ×' + a.excludedBy.length + '</span>');
         if (!use.length) use.push('<span class="chip" style="opacity:.55">unused</span>');
-        var size = a.size != null ? num(a.size)
-          : '<span style="color:var(--muted)">' + esc(a.sizeNote || 'unknown') + '</span>';
+        var size = a.size != null
+          ? num(a.size) + (a.sizeUpper ? '<span style="color:var(--muted)">–' + num(a.sizeUpper) + '</span>' : '')
+          : '<span style="color:' + (a.stale ? 'var(--warning)' : 'var(--muted)') + '">' +
+            (a.stale ? '⚠ ' : '') + esc(a.sizeNote || 'unknown') + '</span>';
         return '<tr' + (a.retired ? ' style="opacity:.5"' : '') + '>' +
           '<td style="text-align:left">' + esc(a.name) + '</td>' +
           '<td>' + size + '</td>' +
           '<td style="text-align:left">' + use.join(' ') + '</td></tr>';
       };
+      var KEY = 'CA — Custom Audience: real people, target it or exclude it.\n' +
+                'LAL — Lookalike: modelled strangers, only ever targeted.\n' +
+                'RETIRED — superseded, do not attach to anything.\n' +
+                'The trailing part is the window or scope, e.g. 180d, KE.';
       return '<section><div class="sec-head"><h2>Audiences</h2>' +
-        '<span class="sec-note">size, and whether anything is using it</span></div>' +
+        '<span class="sec-note">size, and whether anything is using it ' +
+        '<abbr class="ihelp" title="' + esc(KEY) + '">i</abbr></span></div>' +
         '<div class="card"><div class="tablewrap"><table>' +
         '<thead><tr><th style="text-align:left">Audience</th><th>Size</th>' +
         '<th style="text-align:left">Used by ad sets</th></tr></thead><tbody>' +
@@ -1038,7 +1080,8 @@
         '</tbody></table></div>' +
         '<div class="sec-note" style="padding:10px 12px 12px">Meta will not report a size under 1,000, ' +
         'so a small pool shows its state rather than a count. A lookalike needs roughly 1,000 before its ' +
-        'seed is worth modelling.</div></div></section>';
+        'seed is worth modelling. <b>Not refreshing</b> means Meta has stopped recomputing that audience ' +
+        'because no ad has used it in 30 days — its size is frozen, not small.</div></div></section>';
     }
 
     function adTable() {
@@ -1086,7 +1129,13 @@
           if (c.k === 'name') {
             return '<td title="' + esc(p.name || '') + '"><div class="adname">' +
               '<span class="nm">' + esc(p.name || '—') + '</span>' +
-              '<span class="pill ' + esc(p.status) + '">' + esc(p.status) + '</span>' +
+              // Raw effective_status reads ADSET_PAUSED / CAMPAIGN_PAUSED /
+              // PENDING_REVIEW and so on. Only one distinction matters when
+              // scanning this table — is it spending money right now — so the
+              // rest collapse to "Paused" and keep the precise reason on hover.
+              '<span class="pill ' + esc(p.status) + '" title="' + esc(p.status) + '">' +
+              (p.status === 'ACTIVE' ? 'Live' : p.status === 'PENDING_REVIEW' ? 'In review' : 'Paused') +
+              '</span>' +
               (grouped ? '<span class="gcount">' + num(p.n) + ' ad' + (p.n===1?'':'s') + '</span>' : '') +
               '</div></td>';
           }
@@ -1158,38 +1207,6 @@
         { k:'sale',         l:'Sale',         c:'var(--o3)' }
       ];
 
-      // The seam between the two panels above: tapping WhatsApp is the last thing
-      // the site can see, and the first message is the first thing we can. Three
-      // numbers, not a chart — at this volume a chart would dress up an n of 19.
-      function handoffSeam() {
-        var H = D.handoffSeam; if (!H || !H.handoffs) return '';
-        var missing = H.handoffs - H.codesArrived;
-        var pct = H.handoffs ? Math.round(100 * H.codesArrived / H.handoffs) : 0;
-        var cell = function (v, l, dim) {
-          return '<div style="flex:1 1 0;min-width:120px">' +
-            '<div style="font-size:22px;font-variant-numeric:tabular-nums' + (dim ? ';color:var(--muted)' : '') + '">' + v + '</div>' +
-            '<div class="fn-sub" style="margin:2px 0 0">' + l + '</div></div>';
-        };
-        // Which explanation the gap supports is computable, so compute it rather
-        // than leave the reader to guess between two very different problems.
-        var verdict = H.conversations < H.handoffs
-          ? 'Only <b>' + num(H.conversations) + '</b> conversation' + (H.conversations === 1 ? '' : 's') +
-            ' started at all in this period, from every source — so most of that gap is people not sending, ' +
-            'not codes being cleared.'
-          : 'Conversations started outnumber handoffs here, so the missing codes are mostly cleared prefills ' +
-            'rather than people dropping out.';
-        return '<div class="card pad" style="margin-top:12px">' +
-          '<div class="fn-title">Site → WhatsApp</div>' +
-          '<div class="fn-sub">The handoff seam, since ' + fmtDay(H.since) + '. Tapping WhatsApp is the last thing the site sees.</div>' +
-          '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:12px">' +
-            cell(num(H.handoffs), 'tapped through to WhatsApp') +
-            cell(num(H.codesArrived), 'arrived with their code · ' + pct + '%') +
-            cell(num(missing), 'no code reached us', true) +
-          '</div>' +
-          '<div class="sec-note" style="margin-top:10px">A code goes missing either because the person never sent the ' +
-            'prefilled message, or because they cleared it — indistinguishable from here. ' + verdict + '</div>' +
-        '</div>';
-      }
 
       return '<section><div class="sec-head"><h2>Funnel</h2>' +
         '<span class="sec-note">how far people get</span>' +
@@ -1208,7 +1225,6 @@
               '<div class="row1"><span class="nm">Revenue</span><span class="val"><b>' + kes(c.revenue) + '</b></span></div></div>' : '') +
           '</div>' +
         '</div>' +
-        handoffSeam() +
         '<div class="sec-note" style="margin-top:9px">Percentages are a share of the base, not of the stage above — ' +
           'these milestones are not nested (someone can tap WhatsApp straight from arrival). ' +
           'The two panels are separate populations until ref codes join them: the left is only sessions we tracked, ' +
@@ -1490,8 +1506,15 @@
           var title = grain === 'day' ? DOW[new Date(d.day + 'T12:00:00Z').getUTCDay()] + ' ' + fmtDay(d.day)
                     : grain === 'week' ? 'Week of ' + fmtDay(d.first)
                     : MONFULL[new Date(d.first + 'T12:00:00Z').getUTCMonth()] + ' ' + d.first.slice(0, 4);
+          // Same rule as the axis label: a bucket is only "so far" while it is
+          // still running. Once the sync is a day behind, the last bar is a
+          // finished day and saying otherwise excuses a gap that is real.
+          var nt = nairobiToday();
+          var running = !nt || (grain === 'day' ? d.day === nt
+                     : grain === 'week' ? (d.first <= nt && nt <= d.last)
+                     : d.first.slice(0, 7) === nt.slice(0, 7));
           var h = '<div class="t">' + esc(title) +
-                  (i === n - 1 ? ' <span style="color:var(--dim)">· so far</span>' : '') + '</div>';
+                  (i === n - 1 && running ? ' <span style="color:var(--dim)">· so far</span>' : '') + '</div>';
 
           if (!meta.ok(i)) {
             h += '<div class="sub">' + esc(meta.l) + ' — ' + esc(meta.absent || 'not available') + '</div>';
