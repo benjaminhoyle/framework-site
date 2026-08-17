@@ -283,6 +283,14 @@
       missing_url_tags:        { s:'warning', t:'no url_tags', d:'No url_tags, so conversations cannot be traced back to this ad.' },
       no_catalog_anchor:       { s:'warning', t:'stale product', d:'Deep-links to a product no longer in the live catalog.' },
       frequency_fatigue:       { s:'warning', t:'fatigue', d:'Frequency above 3.5 — the same people keep seeing it.' },
+      missing_ad_copy:         { s:'serious', t:'no copy', d:'No primary text at all — the ad runs with no words.' },
+      placeholder_ad_copy:     { s:'serious', t:'placeholder copy', d:'Primary text is scratch ("test", "tbd") and it is live.' },
+      // A dynamic ad rotates through every text slot it has, so one blank among
+      // several means it periodically renders with no words — while the
+      // "no copy" check above, which needs them ALL blank, stays quiet.
+      empty_copy_rotation:     { s:'warning', t:'blank rotation', d:'One of the rotating text slots is empty, so the ad sometimes shows no words.' },
+      copy_has_em_dash:        { s:'info',    t:'off-voice copy', d:'Ad copy contains an em dash. VOICE.md measured zero across 8,655 house messages — it is the clearest tell that a line was not written here.' },
+      undocumented_ad:         { s:'warning', t:'no reason recorded', d:'Live and spending with an empty Ad Notes — no recorded reason it is running. See AD-DECISIONS.md.' },
       destination_not_deeplink:{ s:'info',    t:'no deep-link', d:'Lands on the bare catalog instead of a specific product.' }
     };
 
@@ -302,7 +310,7 @@
         '<span style="color:' + col + '">● ' + lbl + '</span>' +
         '<span style="color:var(--muted)"> · ' + gen.toLocaleString() + '</span>';
 
-      var h = alerts() + dailyChart() + adTable() + audienceTable() + funnels() + trend() + footerPanels();
+      var h = alerts() + dailyChart() + adTable() + openerTable() + audienceTable() + funnels() + trend() + footerPanels();
       show(h);
       wire();
     }
@@ -947,7 +955,10 @@
     // Campaign / ad set / ad are columns, and any of the three can be the row
     // identity. Every metric column names its own window in the header, because
     // 30d spend and lifetime revenue in one row is otherwise a trap.
-    var MEASURES = ['spend30','spendLife','convosMeta30','ourConversations','sales','sales30','revenue','revenue30'];
+    var MEASURES = ['spend30','spendLife','convosMeta30','ourConversations','sales','sales30','revenue','revenue30',
+      // Qualified counts sum; the RATE is recomputed from them in aggregate(),
+      // never averaged across ads.
+      'qualified','qualified30','ourConversations30'];
 
     // One window at a time, chosen explicitly — rather than 30-day spend sitting
     // next to lifetime revenue in the same row, which reads as a ratio and isn't
@@ -956,14 +967,18 @@
     var WIN = {
       '30d':  { spend:'spend30',   convos:'convosMeta30',     cpc:'costPerConvo30',
                 sales:'sales30',   revenue:'revenue30',
-                l:{ spend:'Spend 30d', convos:'Convos 30d', cpc:'Cost/convo', sales:'Sales 30d', revenue:'Revenue 30d' },
+                qual:'qualifiedRate30',
+                l:{ spend:'Spend 30d', convos:'Convos 30d', cpc:'Cost/convo', qual:'Qualified', sales:'Sales 30d', revenue:'Revenue 30d' },
                 hint:{ convos:'Conversations started in the last 30 days, as counted by Meta.',
-                       cpc:'30-day spend ÷ 30-day conversations. Same window both sides.' } },
+                       cpc:'30-day spend ÷ 30-day conversations. Same window both sides.',
+                       qual:'Share of OUR conversations from this ad that reached Qualified or better. The decision log says to judge a click-to-WhatsApp ad on this rather than on cost per conversation — cheap conversations are the failure mode. Target is 25%.' } },
       'life': { spend:'spendLife', convos:'ourConversations', cpc:'costPerConvoLife',
                 sales:'sales',     revenue:'revenue',
-                l:{ spend:'Spend life', convos:'Attributed', cpc:'Cost/convo', sales:'Sales', revenue:'Revenue' },
+                qual:'qualifiedRateLife',
+                l:{ spend:'Spend life', convos:'Attributed', cpc:'Cost/convo', qual:'Qualified', sales:'Sales', revenue:'Revenue' },
                 hint:{ convos:'Every conversation in Airtable carrying this Meta Ad ID, all time — Meta has no lifetime messaging data for boosted posts, our attribution does.',
-                       cpc:'Lifetime spend ÷ lifetime attributed conversations.' } }
+                       cpc:'Lifetime spend ÷ lifetime attributed conversations.',
+                       qual:'Share of all conversations attributed to this ad that reached Qualified or better.' } }
     };
     function cols() {
       var g = view.group, w = WIN[view.win];
@@ -974,6 +989,7 @@
         { k:w.spend,   l:w.l.spend,   m:1 },
         { k:w.convos,  l:w.l.convos },
         { k:w.cpc,     l:w.l.cpc,     m:1, lead:1 },
+        { k:w.qual,    l:w.l.qual,    p:1 },
         { k:w.sales,   l:w.l.sales },
         { k:w.revenue, l:w.l.revenue, m:1 },
         { k:'flags',   l:'Flags',     t:1 }
@@ -1002,6 +1018,8 @@
         // both of its sides inside one window.
         g.costPerConvo30   = g.convosMeta30     ? Math.round(g.spend30/g.convosMeta30*100)/100     : null;
         g.costPerConvoLife = g.ourConversations ? Math.round(g.spendLife/g.ourConversations*100)/100 : null;
+        g.qualifiedRate30   = g.ourConversations30 ? Math.round(g.qualified30/g.ourConversations30*1000)/10 : null;
+        g.qualifiedRateLife = g.ourConversations   ? Math.round(g.qualified/g.ourConversations*1000)/10     : null;
       });
       return order;
     }
@@ -1053,7 +1071,15 @@
         var use = [];
         if (a.targetedBy.length) use.push('<span class="chip ok">targeted ×' + a.targetedBy.length + '</span>');
         if (a.excludedBy.length) use.push('<span class="chip">excluded ×' + a.excludedBy.length + '</span>');
-        if (!use.length) use.push('<span class="chip" style="opacity:.55">unused</span>');
+        // "Unused" is not a neutral state: Meta stops refreshing an audience
+        // nothing references, and it then freezes at whatever size it last held.
+        // That is how `CA | IG engagers | 60d` died. Being EXCLUDED counts as
+        // use, which is why the 7-day pool stayed healthy.
+        if (!use.length) {
+          use.push(a.orphan
+            ? '<span class="chip warning" title="Meta stops refreshing an audience no ad targets or excludes. Attach it to an ad set — an exclusion counts — or it will freeze at its current size.">nothing uses this</span>'
+            : '<span class="chip" style="opacity:.55">unused</span>');
+        }
         var size = a.size != null
           ? num(a.size) + (a.sizeUpper ? '<span style="color:var(--muted)">–' + num(a.sizeUpper) + '</span>' : '')
           : '<span style="color:' + (a.stale ? 'var(--warning)' : 'var(--muted)') + '">' +
@@ -1082,6 +1108,83 @@
         'so a small pool shows its state rather than a count. A lookalike needs roughly 1,000 before its ' +
         'seed is worth modelling. <b>Not refreshing</b> means Meta has stopped recomputing that audience ' +
         'because no ad has used it in 30 days — its size is frozen, not small.</div></div></section>';
+    }
+
+    // What the customer's FIRST message was.
+    //
+    // The strongest predictor of revenue in the corpus, and for a long time the
+    // one thing nothing on this page showed. §1 of the segment analysis ranks
+    // openers from 77% conversion (arrived with a design already made) down to
+    // 3% (sent the ad's prefilled template — 130 conversations, zero revenue,
+    // ever). Three separate attempts to fix the ad's opener were signed off
+    // against the Graph API without anyone reading a conversation; this is the
+    // surface that makes that impossible to repeat.
+    //
+    // Organic sits beside paid deliberately. It is the control group — same
+    // business, same product, same team, differing only in how the conversation
+    // started — so the paid column is read as a gap, not as a bare number.
+    function openerTable() {
+      var O = D.openers; if (!O || !O.fromAds || !O.fromAds.n) return '';
+      var ROWS = [
+        ['template',       'Sent the ad’s prefilled message unchanged', 'bad'],
+        ['ice_breaker',    'Tapped one of the ad’s buttons',            'bad'],
+        ['greeting_only',  'A bare greeting, nothing else',             'bad'],
+        ['price_only',     '“How much?” and nothing else',              'mid'],
+        ['self_written',   'Wrote something of their own',              'good'],
+        ['describes_space','Described their space or need',             'good'],
+        ['configurator',   'Arrived with a configurator link or design','good']
+      ];
+      var COLOUR = { bad:'var(--serious)', mid:'var(--warning)', good:'var(--good)' };
+      var cell = function (s, k) {
+        if (!s.n) return '<td style="color:var(--muted)">—</td>';
+        var v = s.mix[k] || 0, p = Math.round((100 * v) / s.n);
+        return '<td><b>' + p + '%</b> <span style="color:var(--muted)">' + v + '</span></td>';
+      };
+      var body = ROWS.filter(function (r) {
+        return (O.fromAds.mix[r[0]] || 0) || (O.organic.mix[r[0]] || 0);
+      }).map(function (r) {
+        return '<tr><td style="text-align:left"><span style="color:' + COLOUR[r[2]] +
+          '">●</span> ' + r[1] + '</td>' + cell(O.fromAds, r[0]) + cell(O.organic, r[0]) + '</tr>';
+      }).join('');
+
+      // The one number every opener change since 2026-08-14 has been trying to
+      // move, stated on its own rather than left to be inferred from the table.
+      var headline = function (label, a, b, hint) {
+        return '<tr style="border-top:1px solid var(--line)">' +
+          '<td style="text-align:left"><b>' + label + '</b>' +
+          (hint ? ' <abbr class="ihelp" title="' + esc(hint) + '">i</abbr>' : '') + '</td>' +
+          '<td><b>' + (a == null ? '—' : a + '%') + '</b></td>' +
+          '<td>' + (b == null ? '—' : b + '%') + '</td></tr>';
+      };
+
+      var tpl = (O.templates || []).slice(0, 3).map(function (t) {
+        return '“' + esc(t.text.slice(0, 60)) + '” ×' + t.count;
+      }).join(' · ');
+
+      return '<section><div class="sec-head"><h2>What they said first</h2>' +
+        '<span class="sec-note">the opener predicts the sale better than anything else we measure ' +
+        '<abbr class="ihelp" title="' + esc(
+          'Segment analysis §1, over 464 transcripts: arrived with a configurator design 77% converted, ' +
+          'described their space 50%, short but self-written 43%, "how much?" 15%, the ad\'s prefilled ' +
+          'template 3%. That last row is 130 conversations and zero revenue, all time.') + '">i</abbr></span></div>' +
+        '<div class="card"><div class="tablewrap"><table>' +
+        '<thead><tr><th style="text-align:left">First message</th>' +
+        '<th>From ads<br><span style="font-weight:400;color:var(--muted)">n=' + O.fromAds.n + '</span></th>' +
+        '<th>Organic<br><span style="font-weight:400;color:var(--muted)">n=' + O.organic.n + '</span></th>' +
+        '</tr></thead><tbody>' + body +
+        headline('Wrote anything at all', O.fromAds.wroteSomethingPct, O.organic.wroteSomethingPct,
+          'The share who put words of their own in, ignoring any prefill they were handed. ' +
+          'This is the number to watch after any change to the ad’s opener.') +
+        headline('Said anything about the space', O.fromAds.mentionsSpacePct, O.organic.mentionsSpacePct) +
+        headline('Gave a size', O.fromAds.mentionsSizePct, O.organic.mentionsSizePct,
+          'A width, a rough measurement, or one of the plain-language anchors (“about a doorway”). ' +
+          'The stated read-out for the 2026-08-15 greeting change.') +
+        '</tbody></table></div>' +
+        (tpl ? '<div class="sec-note" style="padding:10px 12px 12px"><b>Prefills in play:</b> ' + tpl +
+          '. Detected by repetition, not from a list — a first message that opens three or more different ' +
+          'conversations is a prefill, since no two strangers type the same sentence. That is what caught ' +
+          'Meta substituting its own default on 15 Aug.</div>' : '') +
+        '</div></section>';
     }
 
     function adTable() {
@@ -1116,6 +1219,7 @@
       };
       HINTS[w.convos] = w.hint.convos;
       HINTS[w.cpc] = w.hint.cpc;
+      HINTS[w.qual] = w.hint.qual;
       var th = C.map(function (c) {
         var on = view.sort === c.k;
         return '<th data-k="' + c.k + '"' + (c.x ? ' class="text"' : '') +
@@ -1143,7 +1247,8 @@
           if (c.k === 'flags') return '<td>' + flagCell(p.flags || []) + '</td>';
           var v = p[c.k];
           var cls = 'num' + (c.lead ? ' lead' : '') + ((v == null || v === 0) ? ' zero' : '');
-          return '<td class="' + cls + '">' + (v == null ? '—' : (c.m ? kes(v) : num(v))) + '</td>';
+          return '<td class="' + cls + '">' +
+            (v == null ? '—' : c.m ? kes(v) : c.p ? v + '%' : num(v)) + '</td>';
         }).join('') + '</tr>';
       }).join('');
 
