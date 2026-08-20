@@ -11,11 +11,14 @@
 // created it first. It follows track.js's shape and its no-PII rule -- the site
 // has no name or phone number to leak, and none is accepted here.
 //
-// Storage: store "design", key `<CODE>` (one blob per design).
+// Storage: store "design", key `<CODE>` (one blob per design). Each write is
+// mirrored to "design-backup", and reads fall back there if the primary record
+// is ever deleted by mistake.
 
 import { getStore } from '@netlify/blobs';
 
-// Seven characters of uppercase base36 -- what designCode() produces.
+// Seven uppercase alphanumerics. New designCode() values avoid ambiguous
+// characters, but old saved Base36 links must keep resolving.
 const CODE_RE = /^[0-9A-Z]{7}$/;
 // A design is a list of pieces with an origin each; 47 modules over a very large
 // run is still only a few tens of KB, and anything past this is not a shelf.
@@ -27,6 +30,32 @@ const json = (obj, status = 200) =>
     headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
   });
 
+const readDesign = async (code) => {
+  const primary = await getStore('design').get(code, { type: 'json' });
+  if (primary) return { stored: primary, source: 'primary' };
+  const backup = await getStore('design-backup').get(code, { type: 'json' });
+  return backup ? { stored: backup, source: 'backup' } : { stored: null, source: null };
+};
+
+const mirrorDesign = async (code, record) => {
+  const backup = getStore('design-backup');
+  const existing = await backup.get(code, { type: 'text' });
+  if (!existing) await backup.setJSON(code, record);
+};
+
+const responseBody = (code, stored, source) => ({
+  ok: true,
+  code,
+  hash: stored.hash || null,
+  design: stored.design || null,
+  mode: stored.mode || null,
+  finish: stored.finish || null,
+  pieces: stored.pieces ?? null,
+  total_ksh: stored.total_ksh ?? null,
+  created_at: stored.created_at || null,
+  source
+});
+
 export default async (req, context) => {
   const url = new URL(req.url);
 
@@ -34,23 +63,13 @@ export default async (req, context) => {
     const code = String(url.searchParams.get('code') || '').toUpperCase();
     if (!CODE_RE.test(code)) return json({ ok: false, error: 'bad_code' }, 400);
     try {
-      const stored = await getStore('design').get(code, { type: 'json' });
+      const { stored, source } = await readDesign(code);
       if (!stored) return json({ ok: false, error: 'not_found' }, 404);
       // What the shelf is, and what it was quoted at. The arrival details --
       // session, referrer, ad, country -- stay ours. The price is here because
       // the catalogue studio builds a product row from a code, and re-deriving
       // the total would be a second opinion about what a customer was told.
-      return json({
-        ok: true,
-        code,
-        hash: stored.hash || null,
-        design: stored.design || null,
-        mode: stored.mode || null,
-        finish: stored.finish || null,
-        pieces: stored.pieces ?? null,
-        total_ksh: stored.total_ksh ?? null,
-        created_at: stored.created_at || null
-      });
+      return json(responseBody(code, stored, source));
     } catch (err) {
       return json({ ok: false, error: 'store_error', detail: String(err && err.message) }, 500);
     }
@@ -72,9 +91,12 @@ export default async (req, context) => {
   try {
     const store = getStore('design');
     const existing = await store.get(code, { type: 'text' });
-    if (existing) return json({ ok: true, code, deduped: true });
+    if (existing) {
+      await mirrorDesign(code, JSON.parse(existing));
+      return json({ ok: true, code, deduped: true });
+    }
 
-    await store.setJSON(code, {
+    const record = {
       code,
       created_at: new Date().toISOString(),
       // Both representations on purpose. The hash is what the page itself reads
@@ -93,7 +115,9 @@ export default async (req, context) => {
       language: str(body.language, 40),
       viewport: str(body.viewport, 40),
       country: (context && context.geo && context.geo.country && context.geo.country.code) || null
-    });
+    };
+    await store.setJSON(code, record);
+    await mirrorDesign(code, record);
     return json({ ok: true, code });
   } catch (err) {
     return json({ ok: false, error: 'store_error', detail: String(err && err.message) }, 500);

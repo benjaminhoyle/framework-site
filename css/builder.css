@@ -510,6 +510,20 @@ button { cursor: pointer; }
 }
 .nd-toggle input { width: 20px; height: 20px; accent-color: var(--nd-accent); flex: 0 0 auto; }
 .nd-toggle span { font-size: .92rem; }
+.nd-option-stack { display: flex; flex-direction: column; gap: 2px; }
+.nd-toggle-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+}
+.nd-inline-note {
+  color: var(--nd-muted);
+  font-size: .72rem;
+  line-height: 1.25;
+  text-align: right;
+  max-width: 190px;
+}
 
 .nd-note {
   font-size: .78rem;

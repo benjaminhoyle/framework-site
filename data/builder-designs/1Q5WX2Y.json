@@ -1,0 +1,113 @@
+{
+  "ok": true,
+  "code": "1Q5WX2Y",
+  "hash": "WzEsImFkdmFuY2VkIiwiY29yYWwiLDAsWyJ3aWRlX2Jhc2UiLCJ3aWRlX2FkYXB0ZXIiLCJzdGFuZGFyZF9leHRlbnNpb24iXSxbWzAsMCwwLDAsMCxbXV0sWzEsMCwwLDAsMSxbMF1dLFsyLDAsMCwwLDEsWzFdLDFdLFsyLDAsMCwwLDEsWzJdLDFdLFsyLDAsMCwwLDEsWzNdXSxbMiwwLDAsMCwxLFs0XV1dLFsibWFyaW5lIl1d",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "coral",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "wide_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor"
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "wide_adapter",
+        "originWorldMm": [
+          0,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_001"
+          ]
+        }
+      },
+      {
+        "id": "item_003",
+        "type": "standard_extension",
+        "originWorldMm": [
+          0,
+          0,
+          724
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_002"
+          ]
+        },
+        "finish": "marine"
+      },
+      {
+        "id": "item_004",
+        "type": "standard_extension",
+        "originWorldMm": [
+          0,
+          0,
+          1026
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_003"
+          ]
+        },
+        "finish": "marine"
+      },
+      {
+        "id": "item_005",
+        "type": "standard_extension",
+        "originWorldMm": [
+          0,
+          0,
+          1328
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_004"
+          ]
+        }
+      },
+      {
+        "id": "item_006",
+        "type": "standard_extension",
+        "originWorldMm": [
+          0,
+          0,
+          1630
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_005"
+          ]
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "coral",
+  "pieces": 6,
+  "total_ksh": 37000,
+  "created_at": "catalog-builder-links",
+  "source_product_id": "offset-shelf"
+}

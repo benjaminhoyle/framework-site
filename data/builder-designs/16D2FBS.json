@@ -1,0 +1,110 @@
+{
+  "ok": true,
+  "code": "16D2FBS",
+  "hash": "WzEsImFkdmFuY2VkIiwibWFyaW5lIiwwLFsic3RhbmRhcmRfYmFzZSIsInN0YW5kYXJkX2V4dGVuc2lvbiIsImNvcm5lcl9iYXNlIiwiY29ybmVyX2V4dGVuc2lvbiJdLFtbMCwwLDAsMCwwLFtdXSxbMSwwLDAsMCwxLFswXV0sWzEsMCwwLDAsMSxbMV1dLFsxLDAsMCwwLDEsWzJdXSxbMiwzNjIsLTYxOCwyNzAsMCxbXV0sWzMsMzYyLC02MTgsMjcwLDEsWzRdXV1d",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "marine",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "standard_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor"
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "standard_extension",
+        "originWorldMm": [
+          0,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_001"
+          ]
+        }
+      },
+      {
+        "id": "item_003",
+        "type": "standard_extension",
+        "originWorldMm": [
+          0,
+          0,
+          724
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_002"
+          ]
+        }
+      },
+      {
+        "id": "item_004",
+        "type": "standard_extension",
+        "originWorldMm": [
+          0,
+          0,
+          1026
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_003"
+          ]
+        }
+      },
+      {
+        "id": "item_005",
+        "type": "corner_base",
+        "originWorldMm": [
+          361.5,
+          -618.5,
+          0
+        ],
+        "rotationDeg": 270,
+        "placement": {
+          "method": "floor",
+          "basePlacementKind": "corner_right",
+          "nextTo": "item_001"
+        }
+      },
+      {
+        "id": "item_006",
+        "type": "corner_extension",
+        "originWorldMm": [
+          361.5,
+          -618.5,
+          422
+        ],
+        "rotationDeg": 270,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_005"
+          ]
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "marine",
+  "pieces": 6,
+  "total_ksh": 36000,
+  "created_at": "catalog-builder-links",
+  "source_product_id": "dynamic-corner"
+}

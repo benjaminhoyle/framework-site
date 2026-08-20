@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "code": "11W402W",
+  "hash": "WzEsImFkdmFuY2VkIiwiY2hhcmNvYWwiLDAsWyJjb21wYWN0X2Jhc2VfdHJpbW1lZCJdLFtbMCwwLDAsMCwwLFtdXV1d",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "charcoal",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "compact_base_trimmed",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor"
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "charcoal",
+  "pieces": 1,
+  "total_ksh": 9500,
+  "created_at": "catalog-builder-links",
+  "source_product_id": "end-table"
+}

@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "code": "3N7GCG1",
+  "hash": "WzEsImFkdmFuY2VkIiwibWFyaW5lIiwwLFsic3RhbmRhcmRfYmFzZSJdLFtbMCwwLDAsMCwwLFtdXV1d",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "marine",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "standard_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor"
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "marine",
+  "pieces": 1,
+  "total_ksh": 6500,
+  "created_at": "catalog-builder-links",
+  "source_product_id": "starter"
+}

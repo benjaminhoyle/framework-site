@@ -1,0 +1,110 @@
+{
+  "ok": true,
+  "code": "13NXM8P",
+  "hash": "WzEsImFkdmFuY2VkIiwic2FnZSIsMCxbImRlZXBfYmFzZSIsImNvbXBhY3RfYmFzZV90cmltbWVkIiwiY29tcGFjdF9zcGFjZXIiLCJjb21wYWN0X2V4dGVuc2lvbl90cmltbWVkIl0sW1swLDAsMCwwLDAsW11dLFsxLDEzNTIsMCwwLDAsW11dLFsyLDEzNTIsMCwwLDEsWzFdXSxbMywxMzUyLDAsMCwxLFsyXV0sWzIsMTM1MiwwLDAsMSxbM11dLFszLDEzNTIsMCwwLDEsWzRdXV1d",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "sage",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "deep_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor"
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "compact_base_trimmed",
+        "originWorldMm": [
+          1351.5,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor",
+          "basePlacementKind": "adjacent_right",
+          "nextTo": "item_001"
+        }
+      },
+      {
+        "id": "item_003",
+        "type": "compact_spacer",
+        "originWorldMm": [
+          1351.5,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_002"
+          ]
+        }
+      },
+      {
+        "id": "item_004",
+        "type": "compact_extension_trimmed",
+        "originWorldMm": [
+          1351.5,
+          0,
+          724
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_003"
+          ]
+        }
+      },
+      {
+        "id": "item_005",
+        "type": "compact_spacer",
+        "originWorldMm": [
+          1351.5,
+          0,
+          1026
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_004"
+          ]
+        }
+      },
+      {
+        "id": "item_006",
+        "type": "compact_extension_trimmed",
+        "originWorldMm": [
+          1351.5,
+          0,
+          1328
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_005"
+          ]
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "sage",
+  "pieces": 6,
+  "total_ksh": 51000,
+  "created_at": "catalog-builder-links",
+  "source_product_id": "high-low"
+}

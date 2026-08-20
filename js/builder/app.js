@@ -42,6 +42,11 @@
   const DESIGN_API = "/api/design";
 
   const MODES = ["simple", "standard", "advanced"];
+  const MODE_LABELS = {
+    simple: "Simple",
+    standard: "Flexible",
+    advanced: "Advanced"
+  };
 
   // Which pieces each interface offers. Simple never shows a piece list at all
   // -- it only ever generates bases, extensions and a lamp -- but the same
@@ -63,6 +68,7 @@
     broad: "Broad"
   };
   const FAMILY_ORDER = ["standard", "compact", "wide", "deep", "slim", "broad", "corner"];
+  const TRACKING_CODE_ALPHABET = "123456789ABCDEFGHJKMNPQRSTUVWXYZ";
   // Simple builds a plain run from one family, and a run of corner units is not
   // a thing anyone wants: the corner is where a run turns, so it belongs to
   // Standard and Advanced, where a design can have two runs in it.
@@ -177,6 +183,33 @@
     }
   }
 
+  function mintTrackingCode(length) {
+    let out = "";
+    try {
+      const bytes = new Uint8Array(length);
+      window.crypto.getRandomValues(bytes);
+      for (let i = 0; i < bytes.length; i += 1) out += TRACKING_CODE_ALPHABET[bytes[i] % TRACKING_CODE_ALPHABET.length];
+    } catch (error) {
+      for (let i = 0; i < length; i += 1) {
+        out += TRACKING_CODE_ALPHABET[Math.floor(Math.random() * TRACKING_CODE_ALPHABET.length)];
+      }
+    }
+    return out;
+  }
+
+  function builderSessionId() {
+    try {
+      let id = sessionStorage.getItem("fwk_sid") || sessionStorage.getItem("nd_session");
+      if (!id || !/^[0-9A-Z]{6,36}$/i.test(id)) id = mintTrackingCode(12);
+      id = String(id).toUpperCase();
+      sessionStorage.setItem("fwk_sid", id);
+      sessionStorage.setItem("nd_session", id);
+      return id;
+    } catch (error) {
+      return mintTrackingCode(12);
+    }
+  }
+
   // ------------------------------------------------------------------- boot --
 
   const dom = {
@@ -231,7 +264,7 @@
     candidateContext: null,
     candidateCache: new Map(),
     pendingModules: new Set(),
-    simple: { family: "standard", width: 1, levels: 2, lamp: false },
+    simple: { family: "standard", width: 1, levels: 2, lamp: false, trimmed: false },
     search: "",
     actionMenu: null,
     savedCode: null, // the last design given a link, so the panel can show it again
@@ -410,6 +443,25 @@
     return SIMPLE_FAMILIES.filter((family) => siteVariant(family, "base") && siteVariant(family, "extension"));
   }
 
+  function defaultSimpleTrimmed(family) {
+    return family === "compact" || family === "slim";
+  }
+
+  function simpleVariant(family, role, trimmed) {
+    const modules = Object.values(ui.catalog.modules)
+      .filter((module) =>
+        module.family === family &&
+        module.role === role &&
+        Boolean(module.trimmed) === Boolean(trimmed) &&
+        module.priceKsh != null)
+      .sort((a, b) => a.id.localeCompare(b.id));
+    return modules[0] ? modules[0].id : siteVariant(family, role);
+  }
+
+  function hasSimpleTrimmedVariant(family) {
+    return Boolean(simpleVariant(family, "base", true) && simpleVariant(family, "extension", true));
+  }
+
   /**
    * Build a plain run from a Simple-mode spec: `width` units side by side, each
    * carrying `levels - 1` shelves, optionally one lamp on top.
@@ -418,9 +470,10 @@
    * same shelf and Simple's steppers stay predictable.
    */
   function buildSimpleDesign(spec, finish, bookends) {
-    let state = engine.createState(ui.catalog, { finish, bookends });
-    const baseId = siteVariant(spec.family, "base");
-    const extensionId = siteVariant(spec.family, "extension");
+    const trimmed = Boolean(spec.trimmed);
+    let state = engine.createState(ui.catalog, { finish, bookends: trimmed ? 0 : bookends });
+    const baseId = simpleVariant(spec.family, "base", trimmed);
+    const extensionId = simpleVariant(spec.family, "extension", trimmed);
     if (!baseId || !extensionId) return state;
 
     for (let unit = 0; unit < spec.width; unit += 1) {
@@ -496,19 +549,22 @@
       family: availableFamilies().indexOf(family) >= 0 ? family : "standard",
       width: Math.min(SIMPLE_LIMITS.width[1], Math.max(SIMPLE_LIMITS.width[0], bases.length)),
       levels: Math.min(SIMPLE_LIMITS.levels[1], Math.max(SIMPLE_LIMITS.levels[0], levels)),
-      lamp: design.instances.some((instance) => instance.moduleId === "lamp")
+      lamp: design.instances.some((instance) => instance.moduleId === "lamp"),
+      trimmed: bases.some((instance) => ui.catalog.modules[instance.moduleId].trimmed)
     };
   }
 
   function rebuildSimple(changes) {
     Object.assign(ui.simple, changes || {});
-    const next = buildSimpleDesign(ui.simple, ui.design.finish, ui.design.bookends);
+    const bookends = ui.simple.trimmed ? 0 : ui.design.bookends;
+    const next = buildSimpleDesign(ui.simple, ui.design.finish, bookends);
     const actual = deriveSimpleSpec(next);
     if (actual) {
       // If the engine could not fit everything asked for, show what it did fit
       // rather than leaving the steppers lying.
       ui.simple.width = actual.width;
       ui.simple.levels = actual.levels;
+      ui.simple.trimmed = actual.trimmed;
     }
     commit(next, { fit: true });
   }
@@ -1520,7 +1576,16 @@
     const current = ui.catalog.modules[instance.moduleId];
     const group = swapGroup(current.role);
     if (!group) return [];
-    const peers = tierModules(ui.mode).filter((module) =>
+    let modules = tierModules(ui.mode);
+    if (group === "shelf" && ui.mode === "standard") {
+      const seen = new Set(modules.map((module) => module.id));
+      Object.values(ui.catalog.modules)
+        .filter((module) => module.role === "adapter")
+        .forEach((module) => {
+          if (!seen.has(module.id)) modules.push(module);
+        });
+    }
+    const peers = modules.filter((module) =>
       module.id !== instance.moduleId && swapGroup(module.role) === group);
 
     const byModule = new Map();
@@ -1600,8 +1665,7 @@
 
   function swapGroup(role) {
     if (role === "base") return "base";
-    if (["extension", "spacer", "hanger"].indexOf(role) >= 0) return "shelf";
-    if (role === "adapter") return "adapter";
+    if (["extension", "spacer", "hanger", "adapter"].indexOf(role) >= 0) return "shelf";
     if (role === "top_bar") return "top_bar";
     if (role === "booster") return "booster";
     return null;
@@ -1796,16 +1860,21 @@
     const empty = ui.design.instances.length === 0;
     dom.present.disabled = empty;
     dom.order.setAttribute("aria-disabled", empty ? "true" : "false");
-    dom.order.href = empty ? "#" : whatsappUrl(total);
+    dom.order.href = empty ? "#" : whatsappUrl(total, { code: designCode(), sessionId: builderSessionId() });
   }
 
-  function whatsappUrl(total) {
+  function whatsappUrl(total, options) {
+    const code = options && options.code;
+    const sessionId = options && options.sessionId;
     const { lines } = priceBreakdown();
     const parts = lines.map((line) => `${line.quantity} x ${line.label}`);
     const size = sizeLabel();
     const message = [
       "Hi Framework! I designed a shelf and would like to order it.",
       "",
+      `Builder: ${MODE_LABELS[ui.mode] || ui.mode}`,
+      code ? `Design code: ${code}` : null,
+      sessionId ? `Session: ${sessionId}` : null,
       `Pieces: ${parts.join(", ")}`,
       `Colour: ${currentFinish().displayName}`,
       // An order that quietly dropped the pieces painted differently would be
@@ -1814,7 +1883,7 @@
       size ? `Size: ${size} (width x depth x height)` : null,
       `Total: ${formatKsh(total)}`,
       "",
-      `My design: ${shareUrl()}`
+      `My design: ${code ? designLink(code) : shareUrl()}`
       // Only drop the size and colour-exception lines when there is nothing to
       // say; the empty strings above are deliberate blank lines in the message.
     ].filter((line) => line !== null).join("\n");
@@ -2113,7 +2182,7 @@
 
   /*
    * A design saved server-side under its own code, so that
-   * framework.co.ke/builder/1Y3MK7P -- the address printed on every share
+   * framework.co.ke/builder/7J3MKXP -- the address printed on every share
    * image -- opens the shelf it names. The full URL hash still carries a design
    * on its own and needs nothing stored; this is for the short form, which is
    * the one that survives being read off a picture.
@@ -2140,18 +2209,7 @@
       const value = params.get(key);
       if (value) ad[key] = value;
     }
-    let sessionId = null;
-    try {
-      sessionId = sessionStorage.getItem("nd_session");
-      if (!sessionId) {
-        sessionId = (window.crypto && window.crypto.randomUUID)
-          ? window.crypto.randomUUID()
-          : `s_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
-        sessionStorage.setItem("nd_session", sessionId);
-      }
-    } catch (error) {
-      /* private browsing can refuse storage; the record is still worth writing */
-    }
+    const sessionId = builderSessionId();
     return {
       session_id: sessionId,
       referrer: document.referrer || null,
@@ -2188,6 +2246,11 @@
         if (!response.ok || !body.ok) throw new Error(body.error || `HTTP ${response.status}`);
         return body;
       }))
+      .catch(() => fetch(`/data/builder-designs/${encodeURIComponent(code)}.json`)
+        .then((response) => response.json().then((body) => {
+          if (!response.ok || !body.ok) throw new Error(body.error || `HTTP ${response.status}`);
+          return body;
+        })))
       .then((body) => {
         // The hash is the form the page reads natively; the serialised design is
         // the fallback for a record written before the hash was stored.
@@ -2265,14 +2328,16 @@
     return field;
   }
 
-  function bookendField() {
+  function bookendField(options) {
+    const disabled = Boolean(options && options.disabled);
     const field = make("div", "nd-field nd-field-tight");
     field.appendChild(stepper(
       "Bookends",
       { n: ui.design.bookends || 0, text: String(ui.design.bookends || 0) },
       0,
-      12,
+      disabled ? 0 : 12,
       (next) => {
+        if (disabled) return;
         pushHistory();
         ui.design = Object.assign({}, ui.design, { bookends: Math.max(0, next) });
         refresh({});
@@ -2316,7 +2381,10 @@
       if (family === ui.simple.family) option.selected = true;
       select.appendChild(option);
     }
-    select.addEventListener("change", () => rebuildSimple({ family: select.value }));
+    select.addEventListener("change", () => rebuildSimple({
+      family: select.value,
+      trimmed: defaultSimpleTrimmed(select.value)
+    }));
     typeField.appendChild(select);
     body.appendChild(typeField);
 
@@ -2350,6 +2418,7 @@
 
     body.appendChild(finishField());
 
+    const options = make("div", "nd-option-stack");
     if (ui.catalog.modules.lamp) {
       const label = make("label", "nd-toggle");
       const input = make("input");
@@ -2358,15 +2427,29 @@
       input.addEventListener("change", () => rebuildSimple({ lamp: input.checked }));
       label.appendChild(input);
       label.appendChild(make("span", null, "Add a lamp (excludes shade and bulb)"));
-      body.appendChild(label);
+      options.appendChild(label);
     }
+    if (hasSimpleTrimmedVariant(ui.simple.family)) {
+      const row = make("div", "nd-toggle-row");
+      const label = make("label", "nd-toggle");
+      const input = make("input");
+      input.type = "checkbox";
+      input.checked = Boolean(ui.simple.trimmed);
+      input.addEventListener("change", () => rebuildSimple({ trimmed: input.checked }));
+      label.appendChild(input);
+      label.appendChild(make("span", null, "Use trimmed units"));
+      row.appendChild(label);
+      if (ui.simple.trimmed) row.appendChild(make("small", "nd-inline-note", "not compatible with bookends or display bars"));
+      options.appendChild(row);
+    }
+    if (options.children.length) body.appendChild(options);
 
-    body.appendChild(bookendField());
+    if (!ui.simple.trimmed) body.appendChild(bookendField());
     body.appendChild(breakdownSection());
     body.appendChild(make(
       "p",
       "nd-note",
-      "Want to mix unit sizes, add hanging rails or leave gaps? Switch to Standard or Advanced above — your shelf comes with you."
+      "Want to mix unit sizes, add hanging rails or leave gaps? Switch to Flexible or Advanced above — your shelf comes with you."
     ));
   }
 
@@ -2586,7 +2669,7 @@
     const previous = ui.mode;
     ui.mode = next;
     dom.app.dataset.mode = next;
-    dom.panelTitle.textContent = next === "simple" ? "Build" : next === "standard" ? "Shelf" : "Pieces";
+    dom.panelTitle.textContent = next === "simple" ? "Build" : next === "standard" ? "Flexible" : "Pieces";
     Array.prototype.forEach.call(dom.modes.querySelectorAll("button"), (button) => {
       button.setAttribute("aria-selected", String(button.dataset.mode === next));
     });
@@ -2629,7 +2712,7 @@
       title: "Simple view only shows plain runs",
       body: `This design uses ${pieces}. Switching rebuilds it as ${spec.width} unit${spec.width === 1 ? "" : "s"} wide and ${spec.levels} high, and ${losing === 1 ? "that piece" : "those pieces"} will be removed.`,
       confirmLabel: "Rebuild it",
-      cancelLabel: "Stay in " + (previousMode === "advanced" ? "Advanced" : "Standard"),
+      cancelLabel: "Stay in " + (MODE_LABELS[previousMode] || previousMode),
       onConfirm: () => {
         ui.simple = spec;
         pushHistory();
@@ -2653,7 +2736,7 @@
     ensureGeometry(needed);
     syncScene();
 
-    dom.panelTitle.textContent = ui.mode === "simple" ? "Build" : ui.mode === "standard" ? "Shelf" : "Pieces";
+    dom.panelTitle.textContent = ui.mode === "simple" ? "Build" : ui.mode === "standard" ? "Flexible" : "Pieces";
     const body = dom.controls;
     // The panel is rebuilt wholesale on every change, which resets its scroll.
     // Nudging the bookend stepper near the bottom of the list would jump you
@@ -2735,10 +2818,29 @@
     dom.modal.addEventListener("click", (event) => {
       if (event.target === dom.modal) closePicker();
     });
-    dom.order.addEventListener("click", () => {
+    dom.order.addEventListener("click", (event) => {
       if (dom.order.getAttribute("aria-disabled") === "true") return;
+      event.preventDefault();
       const { total } = priceBreakdown();
-      track("order_click", { value: total, currency: "KES", mode: ui.mode });
+      const originalText = dom.order.textContent;
+      dom.order.textContent = "Preparing order...";
+      dom.order.setAttribute("aria-disabled", "true");
+      saveDesign()
+        .then((code) => {
+          const sessionId = builderSessionId();
+          const href = whatsappUrl(total, { code, sessionId });
+          dom.order.href = href;
+          track("order_click", { value: total, currency: "KES", mode: ui.mode, design_code: code, session_id: sessionId });
+          window.location.href = href;
+        })
+        .catch((error) => {
+          console.warn("could not save design before order:", error.message);
+          setHint("Could not create the order link. Check your connection and try again.", true);
+        })
+        .then(() => {
+          dom.order.textContent = originalText;
+          dom.order.setAttribute("aria-disabled", ui.design.instances.length === 0 ? "true" : "false");
+        });
     });
 
     window.addEventListener("keydown", (event) => {

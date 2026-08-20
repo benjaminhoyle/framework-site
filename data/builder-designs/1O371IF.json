@@ -1,0 +1,79 @@
+{
+  "ok": true,
+  "code": "1O371IF",
+  "hash": "WzEsImFkdmFuY2VkIiwiY29yYWwiLDAsWyJ3aWRlX2Jhc2UiLCJ3aWRlX2FkYXB0ZXIiLCJzbGltX2V4dGVuc2lvbiIsImxhbXAiXSxbWzAsMCwwLDAsMCxbXV0sWzEsMCwwLDAsMSxbMF1dLFsyLDcwMywwLDAsMSxbMV1dLFszLDcwMywwLDAsMSxbMl1dXV0",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "coral",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "wide_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor"
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "wide_adapter",
+        "originWorldMm": [
+          0,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_001"
+          ]
+        }
+      },
+      {
+        "id": "item_003",
+        "type": "slim_extension",
+        "originWorldMm": [
+          703,
+          0,
+          724
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_002"
+          ]
+        }
+      },
+      {
+        "id": "item_004",
+        "type": "lamp",
+        "originWorldMm": [
+          703,
+          0,
+          1026
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_003"
+          ]
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "coral",
+  "pieces": 4,
+  "total_ksh": 24500,
+  "created_at": "catalog-builder-links",
+  "source_product_id": "lantern-shelf"
+}

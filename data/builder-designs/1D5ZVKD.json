@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "code": "1D5ZVKD",
+  "hash": "WzEsImFkdmFuY2VkIiwiY2hhcmNvYWwiLDAsWyJzdGFuZGFyZF9iYXNlIiwic3RhbmRhcmRfZXh0ZW5zaW9uIl0sW1swLDAsMCwwLDAsW11dLFsxLDAsMCwwLDEsWzBdXV1d",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "charcoal",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "standard_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor"
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "standard_extension",
+        "originWorldMm": [
+          0,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_001"
+          ]
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "charcoal",
+  "pieces": 2,
+  "total_ksh": 12000,
+  "created_at": "catalog-builder-links",
+  "source_product_id": "low-console"
+}

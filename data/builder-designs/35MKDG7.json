@@ -1,0 +1,63 @@
+{
+  "ok": true,
+  "code": "35MKDG7",
+  "hash": "WzEsImFkdmFuY2VkIiwibWFyaW5lIiwwLFsid2lkZV9iYXNlIiwid2lkZV9leHRlbnNpb24iLCJsYW1wIl0sW1swLDAsMCwwLDAsW11dLFsxLDAsMCwwLDEsWzBdXSxbMiwwLDAsMCwxLFsxXV1dXQ",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "marine",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "wide_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor"
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "wide_extension",
+        "originWorldMm": [
+          0,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_001"
+          ]
+        }
+      },
+      {
+        "id": "item_003",
+        "type": "lamp",
+        "originWorldMm": [
+          0,
+          0,
+          724
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_002"
+          ]
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "marine",
+  "pieces": 3,
+  "total_ksh": 19500,
+  "created_at": "catalog-builder-links",
+  "source_product_id": "lighted-console"
+}

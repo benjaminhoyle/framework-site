@@ -189,9 +189,9 @@ test("serialise/deserialise round-trips every golden config", () => {
  */
 test("the design code is stable, and derived only from the design", () => {
   const frozen = {
-    "broad-base-extension": "0NKCEDE",
-    "compact-base-extension": "0B8W8UY",
-    "broad-hanger-stack": "1VCQ67C"
+    "broad-base-extension": "2BFW9Y3",
+    "compact-base-extension": "1N9K37U",
+    "broad-hanger-stack": "4TCY7G9"
   };
   let checked = 0;
   for (const config of fixtures()) {
@@ -199,15 +199,40 @@ test("the design code is stable, and derived only from the design", () => {
     checked += 1;
     const state = engine.fromPipelineConfig(catalog, config);
     assert.equal(engine.designCode(state), frozen[config.id], `${config.id} changed code`);
-    // Seven of uppercase base36, which is what the site's CODE_RE accepts and
-    // what the filename convention hunts for.
-    assert.match(engine.designCode(state), /^[0-9A-Z]{7}$/);
+    // Seven characters from the customer-typed alphabet: no 0/O/I ambiguity.
+    assert.match(engine.designCode(state), /^[1-9A-HJKMNP-Z]{7}$/);
     // Round-tripping the design must not move the code, or a render loaded from
     // a saved design would file itself under a different one than the builder.
     const roundTrip = engine.deserializeState(catalog, JSON.parse(JSON.stringify(engine.serializeState(state))));
     assert.equal(engine.designCode(roundTrip), frozen[config.id], `${config.id} moved on a round trip`);
   }
   assert.ok(checked > 0, "none of the frozen fixtures are in the contract any more");
+});
+
+test("extension-to-adapter swaps validate for every adapter family", () => {
+  const families = Object.values(catalog.modules)
+    .filter((module) => module.role === "adapter" && module.id !== "booster_adapter")
+    .map((module) => module.family);
+  assert.ok(families.includes("wide"), "wide adapter family is present");
+  assert.ok(families.includes("deep"), "deep adapter family is present");
+
+  for (const family of families) {
+    const baseId = `${family}_base`;
+    const extensionId = `${family}_extension`;
+    const adapterId = `${family}_adapter`;
+    if (!catalog.modules[baseId] || !catalog.modules[extensionId] || !catalog.modules[adapterId]) continue;
+
+    let state = engine.createState(catalog);
+    state = engine.addInstance(catalog, state, baseId, 0, 0, { id: "base", placement: { method: "floor" } });
+    const [candidate] = engine.generateCandidates(catalog, state, extensionId);
+    assert.ok(candidate, `${family} extension has a legal placement on its base`);
+    state = engine.applyCandidate(catalog, state, candidate, { id: "shelf" });
+
+    const replaced = engine.replaceInstance(catalog, state, "shelf", adapterId);
+    assert.ok(replaced, `${adapterId} should validate in ${extensionId}'s place`);
+    assert.equal(replaced.instances.find((instance) => instance.id === "shelf").moduleId, adapterId);
+    assert.equal(engine.validateState(catalog, replaced).isValid, true);
+  }
 });
 
 /**
@@ -265,6 +290,26 @@ test("adjacentBasesOnly drops gapped placements but keeps butted ones", () => {
   const placed = engine.applyCandidate(catalog, state, right);
   const [first, second] = placed.instances.map((instance) => engine.instanceBounds(catalog, instance));
   assert.ok(Math.abs(second[0] - first[3] - engine.ADJACENT_BASE_GAP_MM) < 1.5, "neighbour is not butted up");
+});
+
+test("gapped standard bases can be bridged by standard spans", () => {
+  let state = engine.fromPipelineConfig(catalog, {
+    modules: [{ id: "left", type: "standard_base", x: 0, y: 0, placement: "floor" }]
+  });
+  const gap = engine.generateCandidates(catalog, state, "standard_base")
+    .find((candidate) => candidate.placement.basePlacementKind === "interval_right_703");
+  assert.ok(gap, "the medium interval should be offered in Advanced mode");
+  state = engine.applyCandidate(catalog, state, gap, { id: "right" });
+
+  for (const moduleId of ["standard_extension", "standard_spacer"]) {
+    const bridge = engine.generateCandidates(catalog, state, moduleId)
+      .find((candidate) =>
+        candidate.placement.on.includes("left") && candidate.placement.on.includes("right"));
+    assert.ok(bridge, `${moduleId} should bridge the medium gap between standard bases`);
+    assert.equal(bridge.originWorldMm[0], 703);
+    const placed = engine.applyCandidate(catalog, state, bridge);
+    assert.equal(engine.validateState(catalog, placed).isValid, true);
+  }
 });
 
 test("units of different depths line up on their backs", () => {
@@ -538,18 +583,24 @@ async function designHandler() {
     // `export default` cannot be re-exported from a wrapper, so name it.
     .replace("export default async (req, context) =>", "const handler = async (req, context) =>");
 
-  const blobs = new Map();
-  const getStore = () => ({
+  const stores = new Map();
+  const storeFor = (name) => {
+    if (!stores.has(name)) stores.set(name, new Map());
+    return stores.get(name);
+  };
+  const getStore = (name = "default") => ({
     get: async (key, options) => {
+      const blobs = storeFor(name);
       if (!blobs.has(key)) return null;
       return options && options.type === "json" ? JSON.parse(blobs.get(key)) : blobs.get(key);
     },
-    setJSON: async (key, value) => { blobs.set(key, JSON.stringify(value)); }
+    setJSON: async (key, value) => { storeFor(name).set(key, JSON.stringify(value)); },
+    delete: async (key) => { storeFor(name).delete(key); }
   });
 
   const wrapper = `export const make = (getStore) => {${source}\nreturn handler;};`;
   const built = await import(`data:text/javascript;base64,${Buffer.from(wrapper).toString("base64")}`);
-  return { handler: built.make(getStore), blobs };
+  return { handler: built.make(getStore), stores };
 }
 
 const DESIGN = { schemaVersion: 1, finish: "sage", bookends: 0, instances: [] };
@@ -562,13 +613,14 @@ await asyncTest("/api/design rejects anything that is not a design code", async 
 });
 
 await asyncTest("/api/design stores a design and resolves its code again", async () => {
-  const { handler } = await designHandler();
+  const { handler, stores } = await designHandler();
   const post = await handler(new Request("https://x/api/design", {
     method: "POST",
     body: JSON.stringify({ code: "1Y3MK7P", hash: "WzEs", design: DESIGN, mode: "advanced", pieces: 3 })
   }), {});
   assert.equal(post.status, 200);
   assert.equal((await post.json()).code, "1Y3MK7P");
+  assert.ok(stores.get("design-backup").has("1Y3MK7P"), "saved designs are mirrored to backup");
 
   const get = await handler(new Request("https://x/api/design?code=1y3mk7p"));
   assert.equal(get.status, 200);
@@ -579,7 +631,7 @@ await asyncTest("/api/design stores a design and resolves its code again", async
 });
 
 await asyncTest("/api/design never overwrites a code that already exists", async () => {
-  const { handler, blobs } = await designHandler();
+  const { handler, stores } = await designHandler();
   const write = (referrer) => handler(new Request("https://x/api/design", {
     method: "POST",
     body: JSON.stringify({ code: "AAAAAAA", hash: "h", design: DESIGN, referrer })
@@ -589,7 +641,23 @@ await asyncTest("/api/design never overwrites a code that already exists", async
   assert.equal((await second.json()).deduped, true);
   // The code is a hash of the design, so a repeat POST is the same shelf; the
   // arrival details of whoever saved it first are the ones worth keeping.
-  assert.equal(JSON.parse(blobs.get("AAAAAAA")).referrer, "https://first.example");
+  assert.equal(JSON.parse(stores.get("design").get("AAAAAAA")).referrer, "https://first.example");
+  assert.equal(JSON.parse(stores.get("design-backup").get("AAAAAAA")).referrer, "https://first.example");
+});
+
+await asyncTest("/api/design falls back to the backup store", async () => {
+  const { handler, stores } = await designHandler();
+  await handler(new Request("https://x/api/design", {
+    method: "POST",
+    body: JSON.stringify({ code: "3BKUPQ7", hash: "backup", design: DESIGN, mode: "simple" })
+  }), {});
+  stores.get("design").delete("3BKUPQ7");
+
+  const get = await handler(new Request("https://x/api/design?code=3bkupq7"));
+  assert.equal(get.status, 200);
+  const body = await get.json();
+  assert.equal(body.hash, "backup");
+  assert.equal(body.source, "backup");
 });
 
 await asyncTest("/api/design says not found rather than inventing a design", async () => {

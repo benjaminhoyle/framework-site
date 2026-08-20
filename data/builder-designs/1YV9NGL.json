@@ -1,0 +1,158 @@
+{
+  "ok": true,
+  "code": "1YV9NGL",
+  "hash": "WzEsImFkdmFuY2VkIiwic2FnZSIsMCxbIndpZGVfYmFzZSIsIndpZGVfZXh0ZW5zaW9uIiwic3RhbmRhcmRfYmFzZSIsInN0YW5kYXJkX2V4dGVuc2lvbiIsInN0YW5kYXJkX3NwYWNlciJdLFtbMCwwLDAsMCwwLFtdXSxbMSwwLDAsMCwxLFswXV0sWzIsMTQ1MCwwLDAsMCxbXV0sWzMsMTQ1MCwwLDAsMSxbMl1dLFs0LDE0NTAsMCwwLDEsWzNdXSxbMywxNDUwLDAsMCwxLFs0XV0sWzMsMTQ1MCwwLDAsMSxbNV1dLFszLDE0NTAsMCwwLDEsWzZdXSxbMywxNDUwLDAsMCwxLFs3XV1dXQ",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "sage",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "wide_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor"
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "wide_extension",
+        "originWorldMm": [
+          0,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_001"
+          ]
+        }
+      },
+      {
+        "id": "item_003",
+        "type": "standard_base",
+        "originWorldMm": [
+          1450,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor",
+          "basePlacementKind": "adjacent_right",
+          "nextTo": "item_001"
+        }
+      },
+      {
+        "id": "item_004",
+        "type": "standard_extension",
+        "originWorldMm": [
+          1450,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_003"
+          ]
+        }
+      },
+      {
+        "id": "item_005",
+        "type": "standard_spacer",
+        "originWorldMm": [
+          1450,
+          0,
+          724
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_004"
+          ]
+        }
+      },
+      {
+        "id": "item_006",
+        "type": "standard_extension",
+        "originWorldMm": [
+          1450,
+          0,
+          1026
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_005"
+          ]
+        }
+      },
+      {
+        "id": "item_007",
+        "type": "standard_extension",
+        "originWorldMm": [
+          1450,
+          0,
+          1328
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_006"
+          ]
+        }
+      },
+      {
+        "id": "item_008",
+        "type": "standard_extension",
+        "originWorldMm": [
+          1450,
+          0,
+          1630
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_007"
+          ]
+        }
+      },
+      {
+        "id": "item_009",
+        "type": "standard_extension",
+        "originWorldMm": [
+          1450,
+          0,
+          1932
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_008"
+          ]
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "sage",
+  "pieces": 9,
+  "total_ksh": 53000,
+  "created_at": "catalog-builder-links",
+  "source_product_id": "stepped-duo"
+}

@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="/css/builder.css?v=61">
+    <link rel="stylesheet" href="/css/builder.css?v=68">
 
     <!--
       Nothing can render until the catalogue arrives, and the app's own scripts
@@ -35,7 +35,7 @@
         // with a stale catalogue silently loses whatever the catalogue gained,
         // which is exactly what a CDN or a browser cache will hand you a few
         // minutes after a deploy. Bump this whenever any of them changes.
-        window.frameworkDesignerVersion = '61';
+        window.frameworkDesignerVersion = '68';
         window.frameworkDesignerCatalog =
             fetch('/assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
                 .then(function (response) {
@@ -58,7 +58,7 @@
 
             <div class="nd-modes" role="tablist" aria-label="Interface level" id="nd-modes">
                 <button type="button" role="tab" data-mode="simple" aria-selected="true">Simple</button>
-                <button type="button" role="tab" data-mode="standard" aria-selected="false">Standard</button>
+                <button type="button" role="tab" data-mode="standard" aria-selected="false">Flexible</button>
                 <button type="button" role="tab" data-mode="advanced" aria-selected="false">Advanced</button>
             </div>
 
@@ -207,11 +207,11 @@
         </div>
     </div>
 
-    <script src="/js/builder/engine.js?v=61" defer></script>
-    <script src="/js/builder/geometry.js?v=61" defer></script>
-    <script src="/js/builder/renderer.js?v=61" defer></script>
-    <script src="/js/builder/present.js?v=61" defer></script>
-    <script src="/js/builder/app.js?v=61" defer></script>
+    <script src="/js/builder/engine.js?v=68" defer></script>
+    <script src="/js/builder/geometry.js?v=68" defer></script>
+    <script src="/js/builder/renderer.js?v=68" defer></script>
+    <script src="/js/builder/present.js?v=68" defer></script>
+    <script src="/js/builder/app.js?v=68" defer></script>
 
     <!--
       Analytics loads after the designer is interactive. On a mid-range phone

@@ -1,0 +1,95 @@
+{
+  "ok": true,
+  "code": "459233J",
+  "hash": "WzEsImFkdmFuY2VkIiwic2FnZSIsMCxbImNvbXBhY3RfYmFzZV90cmltbWVkIiwiY29tcGFjdF9leHRlbnNpb25fdHJpbW1lZCJdLFtbMCwwLDAsMCwwLFtdXSxbMSwwLDAsMCwxLFswXV0sWzEsMCwwLDAsMSxbMV1dLFsxLDAsMCwwLDEsWzJdXSxbMSwwLDAsMCwxLFszXV1dXQ",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "sage",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "compact_base_trimmed",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor"
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "compact_extension_trimmed",
+        "originWorldMm": [
+          0,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_001"
+          ]
+        }
+      },
+      {
+        "id": "item_003",
+        "type": "compact_extension_trimmed",
+        "originWorldMm": [
+          0,
+          0,
+          724
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_002"
+          ]
+        }
+      },
+      {
+        "id": "item_004",
+        "type": "compact_extension_trimmed",
+        "originWorldMm": [
+          0,
+          0,
+          1026
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_003"
+          ]
+        }
+      },
+      {
+        "id": "item_005",
+        "type": "compact_extension_trimmed",
+        "originWorldMm": [
+          0,
+          0,
+          1328
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_004"
+          ]
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "sage",
+  "pieces": 5,
+  "total_ksh": 43500,
+  "created_at": "catalog-builder-links",
+  "source_product_id": "deep-stack"
+}

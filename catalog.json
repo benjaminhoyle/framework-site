@@ -15,7 +15,8 @@
         "images/shelving/configs/starter-front.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bstandard-base-NE%7D);THEME_1"
+      "designerUrl": "https://framework.co.ke/builder/46QCM27",
+      "designCode": "46QCM27"
     },
     {
       "id": "end-table",
@@ -30,7 +31,8 @@
         "images/shelving/configs/end-table-front.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bcompact-base-NE%7D);THEME_3"
+      "designerUrl": "https://framework.co.ke/builder/35A2CC9",
+      "designCode": "35A2CC9"
     },
     {
       "id": "low-console",
@@ -46,7 +48,8 @@
         "images/shelving/configs/low-console-under-mdf.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_3"
+      "designerUrl": "https://framework.co.ke/builder/1F6HMTB",
+      "designCode": "1F6HMTB"
     },
     {
       "id": "triple",
@@ -77,7 +80,8 @@
         "images/shelving/configs/quadruple-angle.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1"
+      "designerUrl": "https://framework.co.ke/builder/39SFPH4",
+      "designCode": "39SFPH4"
     },
     {
       "id": "lighted-console",
@@ -91,7 +95,8 @@
         "images/shelving/configs/lighted-console-emptied.jpg"
       ],
       "active": true,
-      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782663675664%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782663680628%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-extension-NE%22%2C%22x%22%3A1047.95466%2C%22y%22%3A430.15294000000006%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782663687033%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22lamp-NE%22%2C%22x%22%3A1056.5887200000002%2C%22y%22%3A378.80572000000006%2C%22zIndex%22%3A3%7D%5D;THEME_1"
+      "designerUrl": "https://framework.co.ke/builder/35MKDG7",
+      "designCode": "35MKDG7"
     },
     {
       "id": "wide-four-tier",
@@ -105,7 +110,8 @@
         "images/shelving/configs/wide-four-tier-emptied.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-extension-NE%7DHWNE-FWNE%7Bwide-extension-NE%7D);THEME_4"
+      "designerUrl": "https://framework.co.ke/builder/15N82SB",
+      "designCode": "15N82SB"
     },
     {
       "id": "multicolor-stack",
@@ -121,7 +127,8 @@
         "images/shelving/configs/multicolor-stack-joint.jpg"
       ],
       "active": true,
-      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782673131930%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-base-NE%22%2C%22x%22%3A567.5%2C%22y%22%3A256.5%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782673133664%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A578.639%2C%22y%22%3A222.38529999999997%2C%22zIndex%22%3A2%2C%22customTheme%22%3A%22THEME_1%22%7D%2C%7B%22id%22%3A%221782673140688%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A578.6392%2C%22y%22%3A193.04997999999995%2C%22zIndex%22%3A3%2C%22customTheme%22%3A%22THEME_4%22%7D%2C%7B%22id%22%3A%221782673143608%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A578.8768799999999%2C%22y%22%3A167.22783999999996%2C%22zIndex%22%3A4%2C%22customTheme%22%3A%22THEME_3%22%7D%5D;THEME_2"
+      "designerUrl": "https://framework.co.ke/builder/2FGHKQ1",
+      "designCode": "2FGHKQ1"
     },
     {
       "id": "lantern-shelf",
@@ -136,7 +143,8 @@
         "images/shelving/configs/lantern-shelf-foot.jpg"
       ],
       "active": true,
-      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782663675664%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782663680628%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-adapter-NE%22%2C%22x%22%3A1042.596292373114%2C%22y%22%3A426.4690622565158%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782663916086%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22slim-extension-NE%22%2C%22x%22%3A1018.184552373114%2C%22y%22%3A420.1884222565159%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221782663921565%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22lamp-NE%22%2C%22x%22%3A1056.4593523731141%2C%22y%22%3A379.0690622565158%2C%22zIndex%22%3A4%7D%5D;THEME_4"
+      "designerUrl": "https://framework.co.ke/builder/4DA1PM8",
+      "designCode": "4DA1PM8"
     },
     {
       "id": "two-tone-stack",
@@ -152,7 +160,8 @@
         "images/shelving/configs/two-tone-stack-under-mdf.jpg"
       ],
       "active": true,
-      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782661764710%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782661768336%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.639%2C%22y%22%3A431.8853%2C%22zIndex%22%3A2%2C%22customTheme%22%3A%22THEME_4%22%7D%2C%7B%22id%22%3A%221782661774056%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.6391999999998%2C%22y%22%3A402.54997999999995%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221782661776252%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.6393999999998%2C%22y%22%3A373.2146599999999%2C%22zIndex%22%3A4%2C%22customTheme%22%3A%22THEME_4%22%7D%2C%7B%22id%22%3A%221782661779409%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1054.6395999999997%2C%22y%22%3A343.8793399999999%2C%22zIndex%22%3A5%7D%5D;THEME_1"
+      "designerUrl": "https://framework.co.ke/builder/4D28XVW",
+      "designCode": "4D28XVW"
     },
     {
       "id": "versatile-stack",
@@ -168,7 +177,8 @@
         "images/shelving/configs/versatile-stack-under-mdf.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2"
+      "designerUrl": "https://framework.co.ke/builder/3VGRKGF",
+      "designCode": "3VGRKGF"
     },
     {
       "id": "stepped-stack",
@@ -184,7 +194,8 @@
         "images/shelving/configs/stepped-stack-under-mdf.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-adapter-SW%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2"
+      "designerUrl": "https://framework.co.ke/builder/4KJB1S9",
+      "designCode": "4KJB1S9"
     },
     {
       "id": "dynamic-corner",
@@ -198,7 +209,8 @@
         "images/shelving/configs/dynamic-corner-emptied.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bcorner-base-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7D);THEME_1"
+      "designerUrl": "https://framework.co.ke/builder/16D2FBS",
+      "designCode": "16D2FBS"
     },
     {
       "id": "asymmetric-display",
@@ -215,7 +227,8 @@
         "images/shelving/configs/asymmetric-display-joint.jpg"
       ],
       "active": true,
-      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221771565766838%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A567.5%2C%22y%22%3A256.5%2C%22zIndex%22%3A1%2C%22customTheme%22%3Anull%7D%2C%7B%22id%22%3A%221771565778488%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-adapter-NE%22%2C%22x%22%3A566.8348979766804%2C%22y%22%3A216.50469393004116%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221771565793486%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22slim-extension-NE%22%2C%22x%22%3A542.4231579766804%2C%22y%22%3A210.22405393004112%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221771565801397%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-booster-full-NW%22%2C%22x%22%3A624.1642013237312%2C%22y%22%3A163.07206116598078%2C%22zIndex%22%3A4%7D%2C%7B%22id%22%3A%221771565815796%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A600.5606213237312%2C%22y%22%3A147.03002116598077%2C%22zIndex%22%3A5%7D%2C%7B%22id%22%3A%221771565821775%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-booster-full-NW%22%2C%22x%22%3A527.9076641152263%2C%22y%22%3A188.7183874691358%2C%22zIndex%22%3A6%7D%2C%7B%22id%22%3A%221771565835168%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-extension-NE%22%2C%22x%22%3A572.2838213237311%2C%22y%22%3A132.56620116598077%2C%22zIndex%22%3A7%7D%5D;THEME_4"
+      "designerUrl": "https://framework.co.ke/builder/0GI7A94",
+      "designCode": "0GI7A94"
     },
     {
       "id": "offset-shelf",
@@ -230,7 +243,8 @@
         "images/shelving/configs/offset-shelf-angle.jpg"
       ],
       "active": true,
-      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782661506964%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-base-NE%22%2C%22x%22%3A1043.5%2C%22y%22%3A466%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782661519510%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22wide-adapter-SW%22%2C%22x%22%3A1043.6813271604938%2C%22y%22%3A420.3672839506173%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782661540291%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.3133671604937%2C%22y%22%3A406.7274239506174%2C%22zIndex%22%3A3%2C%22customTheme%22%3A%22THEME_1%22%7D%2C%7B%22id%22%3A%221782661543465%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.3135671604937%2C%22y%22%3A377.39210395061735%2C%22zIndex%22%3A4%2C%22customTheme%22%3A%22THEME_1%22%7D%2C%7B%22id%22%3A%221782661546213%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.3137671604936%2C%22y%22%3A348.05678395061733%2C%22zIndex%22%3A5%7D%2C%7B%22id%22%3A%221782661548536%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22standard-extension-NE%22%2C%22x%22%3A1039.5516471604938%2C%22y%22%3A318.3090839506174%2C%22zIndex%22%3A6%7D%5D;THEME_4"
+      "designerUrl": "https://framework.co.ke/builder/4H1QM4U",
+      "designCode": "4H1QM4U"
     },
     {
       "id": "wardrobe-shelf",
@@ -245,7 +259,8 @@
         "images/shelving/configs/wardrobe-shelf-front.jpg"
       ],
       "active": true,
-      "designerUrl": "sandbox.html#SBX:%5B%7B%22id%22%3A%221782658906240%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-base-NW%22%2C%22x%22%3A761.5%2C%22y%22%3A294.5%2C%22zIndex%22%3A1%7D%2C%7B%22id%22%3A%221782658913839%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-spacer-NW%22%2C%22x%22%3A764.9365354938271%2C%22y%22%3A258.75347222222223%2C%22zIndex%22%3A2%7D%2C%7B%22id%22%3A%221782658923753%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-spacer-NW%22%2C%22x%22%3A765.130615569273%2C%22y%22%3A229.14163237311385%2C%22zIndex%22%3A3%7D%2C%7B%22id%22%3A%221782658940667%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22hanger-extension-NW%22%2C%22x%22%3A757.5802111911294%2C%22y%22%3A209.31163551668953%2C%22zIndex%22%3A4%7D%2C%7B%22id%22%3A%221782658953678%22%2C%22type%22%3A%22module%22%2C%22pieceId%22%3A%22deep-extension-NW%22%2C%22x%22%3A765.0535801040237%2C%22y%22%3A170.65280814186102%2C%22zIndex%22%3A5%7D%5D;THEME_2"
+      "designerUrl": "https://framework.co.ke/builder/1NNVQE9",
+      "designCode": "1NNVQE9"
     },
     {
       "id": "deep-stack",
@@ -259,7 +274,8 @@
         "images/shelving/configs/deep-stack-emptied.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bcompact-base-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7D);THEME_2"
+      "designerUrl": "https://framework.co.ke/builder/459233J",
+      "designCode": "459233J"
     },
     {
       "id": "double-bay",
@@ -275,7 +291,8 @@
         "images/shelving/configs/double-bay-under-mdf.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1"
+      "designerUrl": "https://framework.co.ke/builder/3T2Y3RE",
+      "designCode": "3T2Y3RE"
     },
     {
       "id": "stepped-display",
@@ -290,7 +307,8 @@
         "images/shelving/configs/stepped-display-angle.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1"
+      "designerUrl": "https://framework.co.ke/builder/2QR5QNX",
+      "designCode": "2QR5QNX"
     },
     {
       "id": "high-low",
@@ -304,7 +322,8 @@
         "images/shelving/configs/high-low-emptied.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bdeep-base-NE%7D)NE-SW(%7Bcompact-base-NE%7DHCNE-FCNE%7Bcompact-spacer-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7DHCNE-FCNE%7Bcompact-spacer-NE%7DHCNE-FCNE%7Bcompact-extension-NE%7D);THEME_2"
+      "designerUrl": "https://framework.co.ke/builder/13NXM8P",
+      "designCode": "13NXM8P"
     },
     {
       "id": "stepped-duo",
@@ -319,7 +338,8 @@
         "images/shelving/configs/stepped-duo-angle.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bwide-base-NE%7DHWNE-FWNE%7Bwide-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-spacer-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_2"
+      "designerUrl": "https://framework.co.ke/builder/265YPZU",
+      "designCode": "265YPZU"
     },
     {
       "id": "triple-bay",
@@ -335,7 +355,8 @@
         "images/shelving/configs/triple-bay-joint.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D);THEME_1"
+      "designerUrl": "https://framework.co.ke/builder/3F62GFU",
+      "designCode": "3F62GFU"
     },
     {
       "id": "grand-corner",
@@ -350,7 +371,8 @@
         "images/shelving/configs/grand-corner-foot.jpg"
       ],
       "active": true,
-      "designerUrl": "designer.html#(%7Bstandard-base-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7DHSNE-FSNE%7Bstandard-extension-NE%7D)NE-SW(%7Bcorner-base-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7DHSNW-FSNW%7Bcorner-extension-NW%7D);THEME_1"
+      "designerUrl": "https://framework.co.ke/builder/38STZJV",
+      "designCode": "38STZJV"
     },
     {
       "id": "bookend",

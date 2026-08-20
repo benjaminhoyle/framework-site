@@ -32,6 +32,9 @@
   const BASE_INTERVALS_MM = [440, 703, 1143];
   const ADJACENT_BASE_GAP_MM = 30;
   const OVERLAP_TOLERANCE_MM = 2;
+  // Typed by customers from share images: digits 1-9 plus letters that do not
+  // look like digits. We also omit L because it reads like I/1 in some fonts.
+  const DESIGN_CODE_ALPHABET = "123456789ABCDEFGHJKMNPQRSTUVWXYZ";
 
   function rounded(value, places = ROUND_PLACES) {
     if (Math.abs(value) < Math.pow(10, -places)) return 0;
@@ -853,7 +856,7 @@
                 {
                   axis: frame.runAxis,
                   sign: -sign,
-                  sockets: true,
+                  measure: "sockets",
                   value: rounded(ownSockets[edgeIndex(frame.runAxis, sign)] + sign * span)
                 },
                 backTarget
@@ -1020,8 +1023,8 @@
   }
 
   /**
-   * A short, stable reference for a design: seven characters of uppercase
-   * base36, e.g. 1Y3MK7P.
+   * A short, stable reference for a design: seven characters from a
+   * customer-typed alphabet, e.g. 7J3MKXP.
    *
    * Derived from the design itself, so the same shelf always gets the same code
    * and two shares of one design are recognisably the same. That also makes
@@ -1029,18 +1032,24 @@
    *
    * It lives here rather than in app.js because it is a pure function of what
    * serializeState returns, and because the render console needs the identical
-   * answer without shipping the builder's UI. **Changing it renames every
-   * design that has ever been saved**, so it does not change.
+   * answer without shipping the builder's UI. The alphabet is intentionally
+   * narrow: avoiding 0/O/I keeps share-image codes easier to read.
    */
   function designCode(state) {
     const source = JSON.stringify(serializeState(state));
-    // FNV-1a, 32-bit: short, well spread, and four lines of code.
+    // FNV-1a, 32-bit: short and well spread.
     let hash = 0x811c9dc5;
     for (let i = 0; i < source.length; i += 1) {
       hash ^= source.charCodeAt(i);
       hash = Math.imul(hash, 0x01000193) >>> 0;
     }
-    return hash.toString(36).toUpperCase().padStart(7, "0").slice(-7);
+    let code = "";
+    const base = DESIGN_CODE_ALPHABET.length;
+    do {
+      code = DESIGN_CODE_ALPHABET[hash % base] + code;
+      hash = Math.floor(hash / base);
+    } while (hash > 0);
+    return code.padStart(7, DESIGN_CODE_ALPHABET[0]).slice(-7);
   }
 
   function deserializeState(catalog, payload) {
