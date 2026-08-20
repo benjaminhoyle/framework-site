@@ -336,11 +336,11 @@ test("units of different depths line up on their backs", () => {
 test("a run turns a corner, and the corner unit carries the turn", () => {
   let state = engine.createState(catalog);
   state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, "corner_base")[0]);
-  // The right-hand turn specifically, so the flush edges below are the max ones.
+  // One of the two long-side faces specifically.
   const turn = engine.generateCandidates(catalog, state, "standard_base", { adjacentBasesOnly: true })
-    .find((candidate) => candidate.placement.basePlacementKind === "corner_right");
+    .find((candidate) => candidate.placement.basePlacementKind === "corner_long_back");
   assert.ok(turn, "a base should be offered turned into a perpendicular run");
-  assert.ok(turn.rotationDeg === 90 || turn.rotationDeg === 270, `unexpected turn of ${turn.rotationDeg} degrees`);
+  assert.equal(turn.rotationDeg, 90, "the long-side face must turn the new run through 90 degrees");
 
   const turned = engine.applyCandidate(catalog, state, turn);
   assert.equal(engine.validateState(catalog, turned).isValid, true);
@@ -394,11 +394,171 @@ test("a run turns a corner, and the corner unit carries the turn", () => {
   assert.ok(extra > 200, `a corner unit should be a shelf board longer than a standard one (${extra.toFixed(0)}mm)`);
 });
 
+test("ordinary bases cannot turn a corner without a corner unit", () => {
+  let state = engine.createState(catalog);
+  state = engine.addInstance(catalog, state, "standard_base", 0, 0, {
+    id: "base",
+    placement: { method: "floor" }
+  });
+
+  for (const moduleId of ["standard_base", "wide_base", "deep_base"]) {
+    const candidates = engine.generateCandidates(catalog, state, moduleId, { adjacentBasesOnly: true });
+    assert.equal(
+      candidates.some((candidate) => /^corner_/.test(candidate.placement.basePlacementKind || "")),
+      false,
+      `${moduleId} must not start a perpendicular run from an ordinary base`
+    );
+    assert.ok(
+      candidates.every((candidate) => candidate.rotationDeg === 0),
+      `${moduleId} should stay parallel to the existing run`
+    );
+  }
+});
+
+test("corner turns use the post-free long end in every rotation and source order", () => {
+  const frames = {
+    0: { runAxis: 0, runSign: 1 },
+    90: { runAxis: 1, runSign: 1 },
+    180: { runAxis: 0, runSign: -1 },
+    270: { runAxis: 1, runSign: -1 }
+  };
+
+  for (const rotationDeg of [0, 90, 180, 270]) {
+    let fromStandard = engine.createState(catalog);
+    fromStandard = engine.addInstance(catalog, fromStandard, "standard_base", 0, 0, {
+      id: "standard",
+      placement: { method: "floor" },
+      rotationDeg
+    });
+    const cornerTurns = engine.generateCandidates(catalog, fromStandard, "corner_base", { adjacentBasesOnly: true })
+      .filter((candidate) => candidate.placement.cornerFace !== "normal");
+    assert.equal(cornerTurns.length, 4, `${rotationDeg}: both long-side faces should fit at both run ends`);
+
+    for (const turn of cornerTurns) {
+      const valid = engine.applyCandidate(catalog, fromStandard, turn, { id: "corner" });
+      assert.equal(engine.validateState(catalog, valid).isValid, true, `${rotationDeg}/${turn.placement.basePlacementKind}`);
+
+      const corner = valid.instances.find((instance) => instance.id === "corner");
+      const shelf = engine.shelfBounds(catalog, corner);
+      const frame = frames[corner.rotationDeg];
+      const longEdge = shelf[frame.runSign > 0 ? frame.runAxis + 3 : frame.runAxis];
+      const shortEdge = shelf[frame.runSign > 0 ? frame.runAxis : frame.runAxis + 3];
+      const badOrigin = corner.originWorldMm.slice();
+      badOrigin[frame.runAxis] += longEdge - shortEdge;
+
+      let shortEnd = engine.createState(catalog);
+      shortEnd = engine.addInstance(catalog, shortEnd, "standard_base", 0, 0, {
+        id: "standard",
+        placement: { method: "floor" },
+        rotationDeg
+      });
+      shortEnd = engine.addInstance(catalog, shortEnd, "corner_base", badOrigin[0], badOrigin[1], {
+        id: "corner",
+        placement: { method: "floor" },
+        rotationDeg: corner.rotationDeg
+      });
+      assert.ok(
+        engine.validateState(catalog, shortEnd).reasons.includes("invalid_base_connections"),
+        `${rotationDeg}/${turn.placement.basePlacementKind}: moving the join to the short end must put a post between MDF surfaces`
+      );
+    }
+
+    let fromCorner = engine.createState(catalog);
+    fromCorner = engine.addInstance(catalog, fromCorner, "corner_base", 0, 0, {
+      id: "corner",
+      placement: { method: "floor" },
+      rotationDeg
+    });
+    for (const moduleId of ["standard_base", "wide_base"]) {
+      const turns = engine.generateCandidates(catalog, fromCorner, moduleId, { adjacentBasesOnly: true })
+        .filter((candidate) => /^corner_long_/.test(candidate.placement.basePlacementKind || ""));
+      assert.equal(turns.length, 2, `${rotationDeg}/${moduleId}: both post-free long-side faces should be available`);
+      turns.forEach((turn) => assert.equal(
+        engine.validateState(catalog, engine.applyCandidate(catalog, fromCorner, turn)).isValid,
+        true
+      ));
+    }
+    const cornerFaces = engine.generateCandidates(catalog, fromCorner, "corner_base", { adjacentBasesOnly: true });
+    assert.equal(cornerFaces.length, 9, `${rotationDeg}: three corner faces should fit at each of three ports`);
+    cornerFaces.forEach((candidate) => assert.equal(
+      engine.validateState(catalog, engine.applyCandidate(catalog, fromCorner, candidate)).isValid,
+      true
+    ));
+    assert.equal(
+      engine.generateCandidates(catalog, fromCorner, "deep_base", { adjacentBasesOnly: true })
+        .some((candidate) => /^corner_long_/.test(candidate.placement.basePlacementKind || "")),
+      false,
+      `${rotationDeg}: a deep MDF surface must not span across the corner upright`
+    );
+  }
+
+  let advanced = engine.createState(catalog);
+  advanced = engine.addInstance(catalog, advanced, "corner_base", 0, 0, { placement: { method: "floor" } });
+  const kinds = engine.generateCandidates(catalog, advanced, "standard_base")
+    .map((candidate) => candidate.placement.basePlacementKind || "");
+  assert.ok(kinds.includes("interval_normal_440"), "the normal end may still use an Advanced gap");
+  assert.equal(kinds.some((kind) => /^interval_(left|right)_/.test(kind)), false, "right-angle joins have no gaps");
+});
+
+test("the reported short-end and upright-in-join corner chains are rejected", () => {
+  const buildChain = (lastCorner) => {
+    let state = engine.createState(catalog);
+    [
+      ["standard_base", 0, 0, 0],
+      ["corner_base", 1010, 0, 0],
+      ["standard_base", 1606, 619, 270],
+      ["corner_base", ...lastCorner]
+    ].forEach(([moduleId, x, y, rotationDeg], index) => {
+      state = engine.addInstance(catalog, state, moduleId, x, y, {
+        id: `reported_${index}`,
+        placement: { method: "floor" },
+        rotationDeg
+      });
+    });
+    return state;
+  };
+
+  assert.ok(engine.validateState(catalog, buildChain([2225, 980, 0])).reasons.includes("invalid_base_connections"));
+  assert.ok(engine.validateState(catalog, buildChain([2459, 981, 180])).reasons.includes("invalid_base_connections"));
+  assert.equal(engine.validateState(catalog, buildChain([2202, 1238, 180])).isValid, true);
+});
+
+test("corner normal ends face each other and long tips can never form a straight chain", () => {
+  let state = engine.createState(catalog);
+  state = engine.addInstance(catalog, state, "corner_base", 0, 0, {
+    id: "first",
+    placement: { method: "floor" },
+    rotationDeg: 180
+  });
+  const normalPort = engine.generateCandidates(catalog, state, "corner_base", { adjacentBasesOnly: true })
+    .filter((candidate) => candidate.placement.cornerPort === "normal");
+  assert.deepEqual(new Set(normalPort.map((candidate) => candidate.placement.cornerFace)), new Set([
+    "normal", "long_positive", "long_negative"
+  ]));
+  const normalFace = normalPort.find((candidate) => candidate.placement.cornerFace === "normal");
+  assert.equal(normalFace.rotationDeg, 0, "the next corner's normal end must face the existing normal end");
+  assert.equal(engine.validateState(catalog, engine.applyCandidate(catalog, state, normalFace)).isValid, true);
+
+  let reported = engine.createState(catalog);
+  [
+    [2202, 1238],
+    [3447, 1238],
+    [4691, 1238]
+  ].forEach(([x, y], index) => {
+    reported = engine.addInstance(catalog, reported, "corner_base", x, y, {
+      id: `corner_${index}`,
+      placement: { method: "floor" },
+      rotationDeg: 180
+    });
+  });
+  assert.ok(engine.validateState(catalog, reported).reasons.includes("invalid_base_connections"));
+});
+
 test("an extension follows its base around the corner", () => {
   let state = engine.createState(catalog);
   state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, "corner_base")[0]);
   const turn = engine.generateCandidates(catalog, state, "standard_base", { adjacentBasesOnly: true })
-    .find((candidate) => candidate.placement.basePlacementKind === "corner_right");
+    .find((candidate) => candidate.placement.basePlacementKind === "corner_long_back");
   state = engine.applyCandidate(catalog, state, turn);
 
   const onTurned = engine.generateCandidates(catalog, state, "standard_extension")

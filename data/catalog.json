@@ -1,6 +1,6 @@
 {
   "schema": "framework-catalog-public@1",
-  "updatedAt": "2026-08-20T10:44:38.124Z",
+  "updatedAt": "2026-08-20T18:24:13.274Z",
   "products": [
     {
       "id": "starter",
@@ -169,7 +169,8 @@
       ],
       "price": "Ksh 36,000",
       "priceValue": 36000,
-      "description": "Turn that forgotten corner into the most interesting part of your space."
+      "description": "Turn that forgotten corner into the most interesting part of your space.",
+      "designerUrl": "https://framework.co.ke/builder/3U9F2PJ"
     },
     {
       "id": "asymmetric-display",
@@ -310,7 +311,8 @@
       ],
       "price": "Ksh 71,000",
       "priceValue": 71000,
-      "description": "A generous seven-tier configuration designed to turn any corner into a beautiful focal point. Built in our Nairobi workshop to hold a massive collection of books and more."
+      "description": "A generous seven-tier configuration designed to turn any corner into a beautiful focal point. Built in our Nairobi workshop to hold a massive collection of books and more.",
+      "designerUrl": "https://framework.co.ke/builder/3S9BG51"
     },
     {
       "id": "bookend",

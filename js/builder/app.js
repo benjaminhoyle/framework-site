@@ -1040,10 +1040,11 @@
   }
 
   function candidateBounds(candidate) {
+    const module = ui.catalog.modules[candidate.moduleId];
     return engine.instanceBounds(ui.catalog, {
       moduleId: candidate.moduleId,
       translation: [candidate.transform.x, candidate.transform.y, candidate.transform.z],
-      rotationDeg: 0
+      rotationDeg: candidateRotation(module, candidate)
     });
   }
 
@@ -1110,6 +1111,7 @@
     // Turns get their own buttons, one per corner the design offers, because a
     // turn is not "further along this run" -- it is a second run starting.
     const groupedCorner = new Map();
+    const groupedNormal = new Map();
     const { rootOf, groups } = engine.stacksOf(ui.design);
 
     const baseXs = ui.design.instances
@@ -1129,14 +1131,24 @@
           if (/^corner/.test(candidate.placement.basePlacementKind || "")) {
             // One button per corner, not per piece: every piece that could turn
             // this corner is worked out from the same unit and the same side.
-            const key = `${candidate.placement.nextTo}:${candidate.placement.basePlacementKind}`;
+            const key = `${candidate.placement.nextTo}:${candidate.placement.cornerPort || candidate.placement.basePlacementKind}`;
             if (!groupedCorner.has(key)) groupedCorner.set(key, []);
             const turns = groupedCorner.get(key);
-            if (!turns.some((entry) => entry.module.id === id)) turns.push({ module, candidate });
+            const existing = turns.findIndex((entry) => entry.module.id === id);
+            if (existing < 0) turns.push({ module, candidate });
+            else if (candidate.placement.cornerFace === "normal") turns[existing] = { module, candidate };
             continue;
           }
           const side = candidate.originWorldMm[0] > maxX ? "right" : candidate.originWorldMm[0] < minX ? "left" : null;
-          if (!side) continue;
+          if (!side) {
+            if (/^adjacent(_stack)?_normal$/.test(candidate.placement.basePlacementKind || "")) {
+              const key = `normal:${candidate.placement.nextTo || candidate.id}`;
+              if (!groupedNormal.has(key)) groupedNormal.set(key, []);
+              const options = groupedNormal.get(key);
+              if (!options.some((entry) => entry.module.id === id)) options.push({ module, candidate });
+            }
+            continue;
+          }
           const gap = sideGapMm(candidate, side);
           let entry = groupedSide[side].find((option) => option.module.id === id);
           if (!entry) {
@@ -1190,6 +1202,16 @@
       const spot = centreOf(candidateBounds(options[0].candidate));
       if (designBounds) spot[2] = (designBounds[2] + designBounds[5]) / 2;
       addOverlay(plusButton("Turn a corner here", options.map((entry) => ({
+        module: entry.module,
+        onPick: () => placeCandidate(entry.candidate)
+      }))), spot);
+    });
+
+    groupedNormal.forEach((options) => {
+      if (!options.length) return;
+      const spot = centreOf(candidateBounds(options[0].candidate));
+      if (designBounds) spot[2] = (designBounds[2] + designBounds[5]) / 2;
+      addOverlay(plusButton("Add a unit here", options.map((entry) => ({
         module: entry.module,
         onPick: () => placeCandidate(entry.candidate)
       }))), spot);
@@ -1255,7 +1277,7 @@
         // A candidate that turned a corner brings its own quarter turn; the
         // facing rules (a top bar reaching back over the shelf, say) are
         // relative to that, not instead of it.
-        rotationDeg: ((candidate.rotationDeg || 0) + defaultRotationFor(module, candidate)) % 360
+        rotationDeg: candidateRotation(module, candidate)
       });
     } catch (error) {
       console.error(error);
@@ -1368,7 +1390,7 @@
     ui.renderer.setGhost({
       moduleId: candidate.moduleId,
       translation,
-      rotationDeg: defaultRotationFor(module, candidate),
+      rotationDeg: candidateRotation(module, candidate),
       pivotMm: [translation[0] + pivot[0], translation[1] + pivot[1]]
     });
     ensureGeometry([candidate.moduleId]);
@@ -1516,6 +1538,10 @@
     return 0;
   }
 
+  function candidateRotation(module, candidate) {
+    return ((candidate.rotationDeg || 0) + defaultRotationFor(module, candidate)) % 360;
+  }
+
   /** Is this candidate resting on the front row of its supporting stack? */
   function onFrontRow(candidate) {
     const supports = candidate.consumedSockets || [];
@@ -1552,7 +1578,7 @@
     const target = options[0];
     try {
       return engine.applyCandidate(ui.catalog, vacated, target, {
-        rotationDeg: defaultRotationFor(module, target)
+        rotationDeg: candidateRotation(module, target)
       });
     } catch (error) {
       return null;
@@ -1561,12 +1587,45 @@
 
   function rotateInstance(instance) {
     const module = ui.catalog.modules[instance.moduleId];
+    if (module.family === "corner" && module.role === "base") {
+      const rotated = cornerAtNextFace(instance);
+      if (rotated) return commit(rotated, { keepSelection: true });
+      setHint("That corner cannot use another face without colliding with the shelf.", true);
+      return false;
+    }
     if (facesIntoShelf(module) && module.role !== "lamp") {
       const flipped = flippedToOppositeRow(instance);
       if (flipped) return commit(flipped, {});
     }
     const step = rotationStepFor(instance);
     return commit(step ? engine.rotateInstance(ui.catalog, ui.design, instance.id, step) : null, {});
+  }
+
+  function cornerAtNextFace(instance) {
+    const vacated = engine.removeInstance(ui.catalog, ui.design, instance.id);
+    if (!vacated) return null;
+    const candidates = engine.generateCandidates(ui.catalog, vacated, instance.moduleId, { adjacentBasesOnly: true });
+    const placed = candidates.find((candidate) =>
+      candidate.rotationDeg === instance.rotationDeg
+      && Math.abs(candidate.originWorldMm[0] - instance.originWorldMm[0]) < 3
+      && Math.abs(candidate.originWorldMm[1] - instance.originWorldMm[1]) < 3);
+    const nextTo = instance.placement.nextTo || (placed && placed.placement.nextTo);
+    const port = instance.placement.cornerPort || (placed && placed.placement.cornerPort);
+    const face = instance.placement.cornerFace || (placed && placed.placement.cornerFace);
+    if (!nextTo || !port || !face) return null;
+
+    const faceOrder = ["normal", "long_positive", "long_negative"];
+    const options = candidates.filter((candidate) =>
+      candidate.placement.nextTo === nextTo && candidate.placement.cornerPort === port);
+    for (let offset = 1; offset <= faceOrder.length; offset += 1) {
+      const wanted = faceOrder[(faceOrder.indexOf(face) + offset) % faceOrder.length];
+      const target = options.find((candidate) => candidate.placement.cornerFace === wanted);
+      if (!target) continue;
+      let next = engine.applyCandidate(ui.catalog, vacated, target, { id: instance.id });
+      if (instance.finish) next = engine.setInstanceFinish(ui.catalog, next, instance.id, instance.finish);
+      return next;
+    }
+    return null;
   }
 
   /**
@@ -1619,7 +1678,9 @@
             onPick: () => {
               let next = null;
               try {
-                next = engine.applyCandidate(ui.catalog, vacated, nearest);
+                next = engine.applyCandidate(ui.catalog, vacated, nearest, {
+                  rotationDeg: candidateRotation(module, nearest)
+                });
               } catch (error) {
                 console.error(error);
               }
@@ -2150,9 +2211,14 @@
         : { method: "floor" },
       finish: row[6] ? (tints[row[6] - 1] || null) : null
     }));
+    const design = engine.deserializeState(ui.catalog, { schemaVersion: 1, finish, bookends, instances });
+    const validation = engine.validateState(ui.catalog, design);
+    if (validation.reasons.includes("invalid_base_connections")) {
+      throw new Error("design contains an invalid corner connection");
+    }
     return {
       mode: MODES.indexOf(mode) >= 0 ? mode : "simple",
-      design: engine.deserializeState(ui.catalog, { schemaVersion: 1, finish, bookends, instances })
+      design
     };
   }
 

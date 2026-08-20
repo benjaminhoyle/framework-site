@@ -459,10 +459,11 @@
    * rests on. Callers get that guarantee from rotationKeepsSockets().
    */
   function applyCandidate(catalog, state, candidate, fields) {
+    const hasRotation = fields && Object.prototype.hasOwnProperty.call(fields, "rotationDeg");
     return addInstance(catalog, state, candidate.moduleId, candidate.originWorldMm[0], candidate.originWorldMm[1], {
       id: fields && fields.id,
       placement: candidate.placement,
-      rotationDeg: (fields && fields.rotationDeg) || candidate.rotationDeg || 0
+      rotationDeg: hasRotation ? fields.rotationDeg : candidate.rotationDeg || 0
     });
   }
 
@@ -573,6 +574,112 @@
     return bounds;
   }
 
+  function intervalsTouch(first, second) {
+    return first[0] <= second[1] + TOLERANCE_MM && second[0] <= first[1] + TOLERANCE_MM;
+  }
+
+  function cornerUsesViableFace(catalog, corner, joins) {
+    const frame = frameOf(corner.rotationDeg);
+    const shelf = shelfBounds(catalog, corner);
+    const longEdge = shelf[edgeIndex(frame.runAxis, frame.runSign)];
+    const normalEdge = shelf[edgeIndex(frame.runAxis, -frame.runSign)];
+    return joins.some((join) => {
+      if (join.axis === frame.runAxis) return Math.abs(join.value - normalEdge) <= TOLERANCE_MM;
+      return join.axis === frame.backAxis
+        && longEdge >= join.start - TOLERANCE_MM
+        && longEdge <= join.end + TOLERANCE_MM;
+    });
+  }
+
+  function shelfEdgeJoins(first, second) {
+    const joins = [];
+    for (const [axis, along] of [[0, 1], [1, 0]]) {
+      for (const [firstEdge, secondEdge] of [[axis + 3, axis], [axis, axis + 3]]) {
+        if (Math.abs(first[firstEdge] - second[secondEdge]) > TOLERANCE_MM) continue;
+        const start = Math.max(first[along], second[along]);
+        const end = Math.min(first[along + 3], second[along + 3]);
+        if (end - start > TOLERANCE_MM) {
+          joins.push({ axis, along, value: (first[firstEdge] + second[secondEdge]) / 2, start, end });
+        }
+      }
+    }
+    return joins;
+  }
+
+  function socketPoints(instance, module) {
+    return rotationSockets(module).map((socket) => {
+      const [x, y] = rotatedOffset(module, socket, instance.rotationDeg || 0);
+      return [instance.originWorldMm[0] + x, instance.originWorldMm[1] + y];
+    });
+  }
+
+  function joinHasUpright(catalog, first, second, joins) {
+    const posts = socketPoints(first, moduleFor(catalog, first.moduleId))
+      .concat(socketPoints(second, moduleFor(catalog, second.moduleId)));
+    return joins.some((join) => posts.some((post) =>
+      Math.abs(post[join.axis] - join.value) <= TOLERANCE_MM
+      && post[join.along] >= join.start - TOLERANCE_MM
+      && post[join.along] <= join.end + TOLERANCE_MM));
+  }
+
+  function straightCornerJoinIsClear(catalog, first, second, firstShelf, secondShelf) {
+    const firstFrame = frameOf(first.rotationDeg);
+    const along = firstFrame.runAxis;
+    const across = firstFrame.backAxis;
+    const overlap = Math.min(firstShelf[across + 3], secondShelf[across + 3])
+      - Math.max(firstShelf[across], secondShelf[across]);
+    if (overlap <= TOLERANCE_MM) return null;
+
+    const firstCentre = (firstShelf[along] + firstShelf[along + 3]) / 2;
+    const secondCentre = (secondShelf[along] + secondShelf[along + 3]) / 2;
+    const direction = secondCentre > firstCentre ? 1 : -1;
+    const gap = direction > 0
+      ? secondShelf[along] - firstShelf[along + 3]
+      : firstShelf[along] - secondShelf[along + 3];
+    if (gap < -TOLERANCE_MM || gap > ADJACENT_BASE_GAP_MM + TOLERANCE_MM) return null;
+
+    return [
+      [first, direction],
+      [second, -direction]
+    ].every(([instance, face]) => {
+      const module = moduleFor(catalog, instance.moduleId);
+      return module.family !== "corner" || face === -frameOf(instance.rotationDeg).runSign;
+    });
+  }
+
+  function invalidCornerConnections(catalog, bases) {
+    const invalid = [];
+    for (let firstIndex = 0; firstIndex < bases.length; firstIndex += 1) {
+      for (let secondIndex = firstIndex + 1; secondIndex < bases.length; secondIndex += 1) {
+        const first = bases[firstIndex];
+        const second = bases[secondIndex];
+        const firstModule = moduleFor(catalog, first.moduleId);
+        const secondModule = moduleFor(catalog, second.moduleId);
+        const rotationDifference = Math.abs(normaliseQuarterTurn(first.rotationDeg) - normaliseQuarterTurn(second.rotationDeg)) % 180;
+        if (firstModule.family !== "corner" && secondModule.family !== "corner") continue;
+
+        const firstShelf = shelfBounds(catalog, first);
+        const secondShelf = shelfBounds(catalog, second);
+        if (rotationDifference === 0) {
+          const clear = straightCornerJoinIsClear(catalog, first, second, firstShelf, secondShelf);
+          if (clear === false) invalid.push({ a: first.id, b: second.id });
+          continue;
+        }
+        if (rotationDifference !== 90) continue;
+        if (!intervalsTouch([firstShelf[0], firstShelf[3]], [secondShelf[0], secondShelf[3]])
+          || !intervalsTouch([firstShelf[1], firstShelf[4]], [secondShelf[1], secondShelf[4]])) continue;
+        const joins = shelfEdgeJoins(firstShelf, secondShelf);
+
+        const clear = joins.length
+          && (firstModule.family !== "corner" || cornerUsesViableFace(catalog, first, joins))
+          && (secondModule.family !== "corner" || cornerUsesViableFace(catalog, second, joins))
+          && !joinHasUpright(catalog, first, second, joins);
+        if (!clear) invalid.push({ a: first.id, b: second.id });
+      }
+    }
+    return invalid;
+  }
+
   // ---- Validation ----------------------------------------------------------
 
   function validateState(catalog, state) {
@@ -647,6 +754,10 @@
     }
     if (horizontalOverlaps.length) reasons.push("horizontal_overlaps");
 
+    const bases = state.instances.filter((instance) => moduleFor(catalog, instance.moduleId).role === "base");
+    const invalidBaseConnections = invalidCornerConnections(catalog, bases);
+    if (invalidBaseConnections.length) reasons.push("invalid_base_connections");
+
     return {
       isValid: reasons.length === 0,
       reasons,
@@ -654,6 +765,7 @@
       nonCoplanarSupports: coplanar,
       duplicatePlacements,
       horizontalOverlaps,
+      invalidBaseConnections,
       duplicateSupportConsumption,
       supportSocketMatches: supportMatches.length
     };
@@ -685,6 +797,7 @@
       providers,
       claimedSupports,
       boxes: collectHorizontalBoxes(catalog, state.instances),
+      bases: state.instances.filter((instance) => moduleFor(catalog, instance.moduleId).role === "base"),
       origins: new Set(state.instances.map((instance) => instance.originWorldMm.map((value) => rounded(value, 1)).join(",")))
     };
   }
@@ -723,6 +836,9 @@
         if (boxesOverlap(box.bbox, existing.bbox)) return false; // horizontal_overlaps
       }
     }
+    if (module.role === "base" && invalidCornerConnections(catalog, context.bases.concat(instance)).length) {
+      return false;
+    }
     return true;
   }
 
@@ -754,6 +870,57 @@
    * own front-to-back socket span, so this is the offset that makes the two
    * back rows coincide.
    */
+  function cornerOriginsAtPort(catalog, module, port, nextTo) {
+    const origins = [];
+    const rotations = [0, 90, 180, 270];
+    const normalRotation = rotations.find((rotationDeg) => {
+      const frame = frameOf(rotationDeg);
+      return frame.runAxis === port.axis && frame.runSign === port.outSign;
+    });
+    origins.push(Object.assign(
+      baseOriginForFaces(catalog, module, normalRotation, [
+        {
+          axis: port.axis,
+          sign: -port.outSign,
+          measure: "shelf",
+          value: port.value + port.outSign * port.normalGap
+        },
+        { axis: port.along, sign: -1, measure: "shelf", value: port.start }
+      ]),
+      {
+        kind: `corner_port_${port.id}_normal`,
+        rotationDeg: normalRotation,
+        nextTo,
+        cornerPort: port.id,
+        cornerFace: "normal"
+      }
+    ));
+
+    for (const rotationDeg of rotations.filter((rotation) => frameOf(rotation).backAxis === port.axis)) {
+      const frame = frameOf(rotationDeg);
+      const face = frame.runSign > 0 ? "long_positive" : "long_negative";
+      origins.push(Object.assign(
+        baseOriginForFaces(catalog, module, rotationDeg, [
+          { axis: port.axis, sign: -port.outSign, measure: "shelf", value: port.value },
+          {
+            axis: port.along,
+            sign: frame.runSign,
+            measure: "shelf",
+            value: frame.runSign > 0 ? port.end : port.start
+          }
+        ]),
+        {
+          kind: `corner_port_${port.id}_${face}`,
+          rotationDeg,
+          nextTo,
+          cornerPort: port.id,
+          cornerFace: face
+        }
+      ));
+    }
+    return origins;
+  }
+
   function baseOrigins(catalog, state, module, options) {
     const origins = [];
     const baseInstances = state.instances.filter((instance) => moduleFor(catalog, instance.moduleId).role === "base");
@@ -769,6 +936,128 @@
       const stackBox = stackBounds(catalog, state, base);
       const ownSockets = socketBounds(base, baseModule) || ownBox;
       const ownShelf = shelfBounds(catalog, base);
+
+      if (module.family === "corner") {
+        const ports = [];
+        if (baseModule.family === "corner") {
+          const normalSign = -frame.runSign;
+          ports.push({
+            id: "normal",
+            axis: frame.runAxis,
+            along: frame.backAxis,
+            value: ownShelf[edgeIndex(frame.runAxis, normalSign)],
+            start: ownShelf[frame.backAxis],
+            end: ownShelf[frame.backAxis + 3],
+            outSign: normalSign,
+            normalGap: ADJACENT_BASE_GAP_MM
+          });
+          const longEdge = ownShelf[edgeIndex(frame.runAxis, frame.runSign)];
+          const contactSpan = Number(module.depthSpanMm) || 0;
+          for (const sideSign of [-1, 1]) {
+            ports.push({
+              id: `long_${sideSign < 0 ? "negative" : "positive"}`,
+              axis: frame.backAxis,
+              along: frame.runAxis,
+              value: ownShelf[edgeIndex(frame.backAxis, sideSign)],
+              start: frame.runSign > 0 ? longEdge - contactSpan : longEdge,
+              end: frame.runSign > 0 ? longEdge : longEdge + contactSpan,
+              outSign: sideSign,
+              normalGap: 0
+            });
+          }
+        } else {
+          for (const endSign of [-frame.runSign, frame.runSign]) {
+            ports.push({
+              id: `end_${endSign < 0 ? "negative" : "positive"}`,
+              axis: frame.runAxis,
+              along: frame.backAxis,
+              value: ownShelf[edgeIndex(frame.runAxis, endSign)],
+              start: ownShelf[frame.backAxis],
+              end: ownShelf[frame.backAxis + 3],
+              outSign: endSign,
+              normalGap: ADJACENT_BASE_GAP_MM
+            });
+          }
+        }
+        for (const port of ports) origins.push(...cornerOriginsAtPort(catalog, module, port, base.id));
+        continue;
+      }
+
+      if (baseModule.family === "corner") {
+        const normalSign = -frame.runSign;
+        const normalBackTarget = {
+          axis: frame.backAxis,
+          sign: frame.backSign,
+          measure: "sockets",
+          value: ownSockets[edgeIndex(frame.backAxis, frame.backSign)]
+        };
+
+        for (const [name, box] of [["adjacent", ownBox], ["adjacent_stack", stackBox]]) {
+          origins.push(Object.assign(
+            baseOriginForFaces(catalog, module, rotationDeg, [
+              {
+                axis: frame.runAxis,
+                sign: -normalSign,
+                value: rounded(box[edgeIndex(frame.runAxis, normalSign)] + normalSign * ADJACENT_BASE_GAP_MM)
+              },
+              normalBackTarget
+            ]),
+            { kind: `${name}_normal`, rotationDeg, nextTo: base.id }
+          ));
+        }
+
+        const longEnd = ownShelf[edgeIndex(frame.runAxis, frame.runSign)];
+        [
+          {
+            kind: "corner_long_back",
+            rotationDeg: normaliseQuarterTurn(rotationDeg + 90),
+            sideSign: frame.backSign,
+            valueSign: -frame.backSign
+          },
+          {
+            kind: "corner_long_front",
+            rotationDeg: normaliseQuarterTurn(rotationDeg + 270),
+            sideSign: -frame.backSign,
+            valueSign: frame.backSign
+          }
+        ].forEach((turn) => {
+          origins.push(Object.assign(
+            baseOriginForFaces(catalog, module, turn.rotationDeg, [
+              {
+                axis: frame.runAxis,
+                sign: frame.runSign,
+                measure: "shelf",
+                value: longEnd
+              },
+              {
+                axis: frame.backAxis,
+                sign: turn.sideSign,
+                measure: "shelf",
+                value: ownShelf[edgeIndex(frame.backAxis, turn.valueSign)]
+              }
+            ]),
+            { kind: turn.kind, rotationDeg: turn.rotationDeg, nextTo: base.id }
+          ));
+        });
+
+        if (!options.adjacentBasesOnly) {
+          for (const span of BASE_INTERVALS_MM) {
+            origins.push(Object.assign(
+              baseOriginForFaces(catalog, module, rotationDeg, [
+                {
+                  axis: frame.runAxis,
+                  sign: -normalSign,
+                  measure: "sockets",
+                  value: rounded(ownSockets[edgeIndex(frame.runAxis, normalSign)] + normalSign * span)
+                },
+                normalBackTarget
+              ]),
+              { kind: `interval_normal_${span}`, rotationDeg, nextTo: base.id }
+            ));
+          }
+        }
+        continue;
+      }
 
       /*
        * Along the run: butt the new unit against this one, both ways.
@@ -802,44 +1091,6 @@
           ));
         }
 
-        /*
-         * The turn into a perpendicular run: the corner.
-         *
-         * Two walls meet; this run stands against one of them and the new one
-         * against the other. The square where they meet is covered by *this*
-         * run's last shelf, which is why a corner unit is longer than a
-         * standard one by exactly the depth of a run -- the extra length is
-         * the corner. So the new unit is placed to sit against that:
-         *
-         *   - its back plane flush with this run's far shelf edge, which is
-         *     where the second wall is,
-         *   - its near end meeting this run's front shelf edge, so the two
-         *     surfaces read as one turning through the corner.
-         *
-         * Measured on the shelves rather than the footprints: the boards are
-         * what the eye follows around the corner, and a bounding box carries
-         * feet and stubs that would push the second run out by 50mm and leave
-         * the notch this is here to avoid. Matches /designer, which models the
-         * same join as four rotations of one corner unit.
-         */
-        const turned = normaliseQuarterTurn(rotationDeg + (direction > 0 ? 270 : 90));
-        origins.push(Object.assign(
-          baseOriginForFaces(catalog, module, turned, [
-            {
-              axis: frame.runAxis,
-              sign,
-              measure: "shelf",
-              value: ownShelf[edgeIndex(frame.runAxis, sign)]
-            },
-            {
-              axis: frame.backAxis,
-              sign: frame.backSign,
-              measure: "shelf",
-              value: ownShelf[edgeIndex(frame.backAxis, -frame.backSign)]
-            }
-          ]),
-          { kind: `corner_${side}`, rotationDeg: turned, nextTo: base.id }
-        ));
       }
 
       // Gapped placements exist so a later bridging span has two owned columns
@@ -887,6 +1138,8 @@
         // behind a single "+" instead of one per piece.
         placement: { method: "floor", basePlacementKind: origin.kind, nextTo: origin.nextTo || null }
       };
+      if (origin.cornerPort) instance.placement.cornerPort = origin.cornerPort;
+      if (origin.cornerFace) instance.placement.cornerFace = origin.cornerFace;
       if (!validateAddition(catalog, context, instance)) continue;
       uniqueCandidate(candidates, seen, {
         moduleId: module.id,

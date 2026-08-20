@@ -19,12 +19,13 @@ const CONFIG_DIR = path.join(ROOT, 'configs');
 const DESIGN_DIR = path.join(ROOT, 'data/builder-designs');
 const DESIGN_HOME = 'https://framework.co.ke/builder';
 const THEME_ROTATION = { NE: 0, NW: 270, SE: 90, SW: 180 };
+const CORNER_ROTATION = { NE: 0, NW: 90, SW: 180, SE: 270 };
 const MANUAL_BUILDER_CODES = {
   'asymmetric-display': '0GI7A94',
   'lantern-shelf': '3WU3UN2',
   'terraced-console': '4R4TE7U'
 };
-const PENDING_BUILDER_PRODUCTS = new Set(['dynamic-corner', 'grand-corner']);
+const PENDING_BUILDER_PRODUCTS = new Set();
 const ROTATION_OFFSET_BY_PRODUCT = {
   'wardrobe-shelf': 180
 };
@@ -45,7 +46,9 @@ function pieceSuffix(pieceId) {
 
 function desiredRotation(spec, productId) {
   const suffix = pieceSuffix(spec && spec._designer && spec._designer.pieceId);
-  const base = suffix ? THEME_ROTATION[suffix] : 0;
+  const pieceId = String(spec && spec._designer && spec._designer.pieceId || '');
+  const rotationMap = /^corner-/.test(pieceId) ? CORNER_ROTATION : THEME_ROTATION;
+  const base = suffix ? rotationMap[suffix] : 0;
   return (base + (ROTATION_OFFSET_BY_PRODUCT[productId] || 0)) % 360;
 }
 
@@ -59,8 +62,8 @@ function candidateScore(candidate, spec, refInstance, productId) {
   if (spec.lateralOn) {
     if (placement.nextTo === spec.lateralOn.ref) score -= 1000;
     if (/corner/i.test(spec.type)) {
-      if (kind === 'corner_right') score -= 200;
-      if (candidate.rotationDeg === 270) score -= 100;
+      if (kind === 'corner_right' || kind.includes('corner_port_end_positive')) score -= 200;
+      if (candidate.rotationDeg === rotation) score -= 100;
     } else if (kind === 'adjacent_right') {
       score -= 200;
     }
@@ -70,7 +73,7 @@ function candidateScore(candidate, spec, refInstance, productId) {
     const dx = Number(spec._designer.x) - Number(refInstance._designer.x);
     const dy = Number(spec._designer.y) - Number(refInstance._designer.y);
     if (dx > 20 && dy < 20 && kind === 'adjacent_right') score -= 30;
-    if (dx > 20 && dy < 20 && kind === 'corner_right') score -= 25;
+    if (dx > 20 && dy < 20 && (kind === 'corner_right' || kind.includes('corner_port_end_positive'))) score -= 25;
     if (dx < -20 && kind.includes('left')) score -= 30;
   }
 

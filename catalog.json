@@ -208,7 +208,9 @@
         "images/shelving/configs/dynamic-corner-populated.jpg",
         "images/shelving/configs/dynamic-corner-emptied.jpg"
       ],
-      "active": true
+      "active": true,
+      "designCode": "3U9F2PJ",
+      "designerUrl": "https://framework.co.ke/builder/3U9F2PJ"
     },
     {
       "id": "asymmetric-display",
@@ -368,7 +370,9 @@
         "images/shelving/configs/grand-corner-emptied.jpg",
         "images/shelving/configs/grand-corner-foot.jpg"
       ],
-      "active": true
+      "active": true,
+      "designCode": "3S9BG51",
+      "designerUrl": "https://framework.co.ke/builder/3S9BG51"
     },
     {
       "id": "bookend",
