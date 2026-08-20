@@ -1,6 +1,6 @@
 {
   "schema": "framework-catalog-public@1",
-  "updatedAt": "2026-08-20T09:57:06.889Z",
+  "updatedAt": "2026-08-20T10:33:02.413Z",
   "products": [
     {
       "id": "starter",
@@ -337,7 +337,7 @@
       "price": "Ksh 30,500",
       "priceValue": 30500,
       "description": "A low, staggered shelving unit featuring an integrated lamp stem to cast a warm glow over your books and decor. Perfect for creating a cozy, well-lit nook in living rooms or nurseries. (Lamp shade not included.",
-      "designerUrl": "designer.html#"
+      "designerUrl": "https://framework.co.ke/builder/4R4TE7U"
     }
   ]
 }
