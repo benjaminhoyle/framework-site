@@ -268,6 +268,9 @@ button { cursor: pointer; }
   position: absolute;
   top: 10px;
   left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   transform: translateX(-50%);
   background: rgba(32, 36, 36, .85);
   color: #fff;
@@ -276,7 +279,20 @@ button { cursor: pointer; }
   font-size: .78rem;
   pointer-events: none;
 }
+.nd-busy::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, .45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: nd-spin .8s linear infinite;
+}
 .nd-busy[hidden] { display: none; }
+
+@keyframes nd-spin {
+  to { transform: rotate(360deg); }
+}
 
 /* Drafting-style dimensions, drawn under the interactive overlay. */
 .nd-dim-layer {

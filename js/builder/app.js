@@ -296,6 +296,10 @@
     dom.busy.hidden = !busy;
   }
 
+  function setBusyMessage(text) {
+    dom.busy.textContent = text || "Loading...";
+  }
+
   function boot() {
     if (!engine || !geometryLoader || !rendererFactory) {
       showFallback("Could not start the designer", "Some files did not load. Please refresh the page.");
@@ -364,21 +368,21 @@
     };
 
     const restored = readHash();
+    const savedCode = savedCodeInPath();
     if (restored) {
       ui.mode = restored.mode;
       ui.design = restored.design;
       if (restored.simple) ui.simple = restored.simple;
+    } else if (savedCode) {
+      setBusyMessage(`Opening design ${savedCode}...`);
+      setBusy(true);
+      loadSavedDesign(savedCode, { fallbackToDefault: true });
+      return;
     } else {
       ui.design = buildSimpleDesign(ui.simple, "sage", 0);
     }
     applyMode(ui.mode, { silent: true });
     refresh({ fit: true });
-
-    // A hash in the URL is the live state and always wins; a code in the path is
-    // only consulted when there is no hash, which is the case for the link off a
-    // share image. Resolving it is a round trip, so the shelf above is already
-    // on screen by the time this lands.
-    if (!restored && savedCodeInPath()) loadSavedDesign(savedCodeInPath());
   }
 
   // ------------------------------------------------------------ design state --
@@ -2239,7 +2243,9 @@
     }));
   }
 
-  function loadSavedDesign(code) {
+  function loadSavedDesign(code, options) {
+    const settings = options || {};
+    setBusyMessage(`Opening design ${code}...`);
     setBusy(true);
     fetch(`${DESIGN_API}?code=${encodeURIComponent(code)}`)
       .then((response) => response.json().then((body) => {
@@ -2268,10 +2274,19 @@
       })
       .catch((error) => {
         console.warn("could not open the saved design:", error.message);
+        if (settings.fallbackToDefault) {
+          ui.mode = "simple";
+          ui.design = buildSimpleDesign(ui.simple, "sage", 0);
+          applyMode(ui.mode, { silent: true });
+          refresh({ fit: true });
+        }
         setHint(`Design ${code} could not be opened, so we started a new shelf.`, true);
       })
       // Not plain false: refresh() may have geometry still in flight behind this.
-      .then(() => setBusy(ui.pendingModules.size > 0));
+      .then(() => {
+        setBusyMessage("Loading...");
+        setBusy(ui.pendingModules.size > 0);
+      });
   }
 
   // ----------------------------------------------------------------- panels --
