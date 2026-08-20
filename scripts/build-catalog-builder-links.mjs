@@ -19,6 +19,15 @@ const CONFIG_DIR = path.join(ROOT, 'configs');
 const DESIGN_DIR = path.join(ROOT, 'data/builder-designs');
 const DESIGN_HOME = 'https://framework.co.ke/builder';
 const THEME_ROTATION = { NE: 0, NW: 270, SE: 90, SW: 180 };
+const MANUAL_BUILDER_CODES = {
+  'asymmetric-display': '0GI7A94',
+  'lantern-shelf': '3WU3UN2',
+  'terraced-console': '4R4TE7U'
+};
+const PENDING_BUILDER_PRODUCTS = new Set(['dynamic-corner', 'grand-corner']);
+const ROTATION_OFFSET_BY_PRODUCT = {
+  'wardrobe-shelf': 180
+};
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -34,14 +43,15 @@ function pieceSuffix(pieceId) {
   return match ? match[1] : null;
 }
 
-function desiredRotation(spec) {
+function desiredRotation(spec, productId) {
   const suffix = pieceSuffix(spec && spec._designer && spec._designer.pieceId);
-  return suffix ? THEME_ROTATION[suffix] : 0;
+  const base = suffix ? THEME_ROTATION[suffix] : 0;
+  return (base + (ROTATION_OFFSET_BY_PRODUCT[productId] || 0)) % 360;
 }
 
-function candidateScore(candidate, spec, refInstance) {
+function candidateScore(candidate, spec, refInstance, productId) {
   let score = 0;
-  const rotation = desiredRotation(spec);
+  const rotation = desiredRotation(spec, productId);
   const placement = candidate.placement || {};
   const kind = placement.basePlacementKind || '';
 
@@ -74,9 +84,9 @@ function applyFinish(catalog, state, spec, defaultFinish) {
   return next;
 }
 
-function addConfiguredModule(catalog, state, spec, built, defaultFinish) {
+function addConfiguredModule(catalog, state, spec, built, defaultFinish, productId) {
   const module = engine.moduleFor(catalog, spec.type);
-  const rotation = desiredRotation(spec);
+  const rotation = desiredRotation(spec, productId);
   let next;
 
   if (module.role === 'base' && (spec.placement === 'floor' || !spec.on)) {
@@ -90,7 +100,7 @@ function addConfiguredModule(catalog, state, spec, built, defaultFinish) {
       const ref = spec.lateralOn && spec.lateralOn.ref;
       const refInstance = ref ? built.get(ref) : null;
       const candidates = engine.generateCandidates(catalog, state, module.id, { adjacentBasesOnly: true })
-        .sort((a, b) => candidateScore(a, spec, refInstance) - candidateScore(b, spec, refInstance));
+        .sort((a, b) => candidateScore(a, spec, refInstance, productId) - candidateScore(b, spec, refInstance, productId));
       const candidate = candidates[0];
       if (!candidate) throw new Error(`${spec.id}: no legal base placement for ${module.id}`);
       next = engine.applyCandidate(catalog, state, candidate, { id: spec.id });
@@ -129,7 +139,7 @@ function stateFromConfig(catalog, config) {
   let state = engine.createState(catalog, { finish: defaultFinish, bookends: 0 });
   const built = new Map();
   for (const spec of [...(config.modules || [])].sort((a, b) => a.id.localeCompare(b.id))) {
-    state = addConfiguredModule(catalog, state, spec, built, defaultFinish);
+    state = addConfiguredModule(catalog, state, spec, built, defaultFinish, config.id);
   }
   const valid = engine.validateState(catalog, state);
   if (!valid.isValid) throw new Error(valid.reasons.join('; ') || 'invalid builder state');
@@ -195,6 +205,19 @@ function main() {
 
   for (const product of catalog.products) {
     if (product.active === false) continue;
+    if (PENDING_BUILDER_PRODUCTS.has(product.id)) {
+      delete product.designCode;
+      delete product.designerUrl;
+      report.skipped.push({ id: product.id, reason: 'builder link pending corner-module resolution' });
+      continue;
+    }
+    if (MANUAL_BUILDER_CODES[product.id]) {
+      const code = MANUAL_BUILDER_CODES[product.id];
+      product.designCode = code;
+      product.designerUrl = `${DESIGN_HOME}/${code}`;
+      report.generated.push({ id: product.id, code, pieces: null, manual: true });
+      continue;
+    }
     const configPath = path.join(CONFIG_DIR, `${product.id}.json`);
     if (!fs.existsSync(configPath)) {
       report.skipped.push({ id: product.id, reason: 'no configs/<id>.json' });

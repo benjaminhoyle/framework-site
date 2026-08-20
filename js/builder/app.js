@@ -374,6 +374,7 @@
       ui.design = restored.design;
       if (restored.simple) ui.simple = restored.simple;
     } else if (savedCode) {
+      dom.app.dataset.loading = "saved";
       setBusyMessage(`Opening design ${savedCode}...`);
       setBusy(true);
       loadSavedDesign(savedCode, { fallbackToDefault: true });
@@ -2284,6 +2285,7 @@
       })
       // Not plain false: refresh() may have geometry still in flight behind this.
       .then(() => {
+        delete dom.app.dataset.loading;
         setBusyMessage("Loading...");
         setBusy(ui.pendingModules.size > 0);
       });

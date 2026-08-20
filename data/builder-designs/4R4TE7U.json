@@ -1,0 +1,113 @@
+{
+  "ok": true,
+  "code": "4R4TE7U",
+  "hash": "WzEsImFkdmFuY2VkIiwic2FnZSIsMCxbInN0YW5kYXJkX2Jhc2UiLCJzdGFuZGFyZF9ib29zdGVyIiwic3RhbmRhcmRfZXh0ZW5zaW9uIiwibGFtcCJdLFtbMCwwLDAsMCwwLFtdXSxbMSw3MDMsMCwwLDEsWzBdXSxbMCwxNDA2LDAsMCwwLFtdXSxbMiwxNDA2LDAsMCwxLFsyXV0sWzIsNzAzLDAsMCwxLFsxLDNdXSxbMywwLDI1NywyNzAsMSxbMF1dXV0",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "sage",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "standard_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor",
+          "basePlacementKind": "first_base",
+          "nextTo": null
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "standard_booster",
+        "originWorldMm": [
+          703,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_001"
+          ]
+        }
+      },
+      {
+        "id": "item_003",
+        "type": "standard_base",
+        "originWorldMm": [
+          1406,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor",
+          "basePlacementKind": "interval_right_703",
+          "nextTo": "item_001"
+        }
+      },
+      {
+        "id": "item_004",
+        "type": "standard_extension",
+        "originWorldMm": [
+          1406,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_003"
+          ]
+        }
+      },
+      {
+        "id": "item_005",
+        "type": "standard_extension",
+        "originWorldMm": [
+          703,
+          0,
+          724
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_002",
+            "item_004"
+          ]
+        }
+      },
+      {
+        "id": "item_006",
+        "type": "lamp",
+        "originWorldMm": [
+          0,
+          257,
+          422
+        ],
+        "rotationDeg": 270,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_001"
+          ]
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "sage",
+  "pieces": 6,
+  "total_ksh": 30500,
+  "created_at": "2026-08-20T10:31:24.581Z",
+  "source_product_id": "terraced-console"
+}

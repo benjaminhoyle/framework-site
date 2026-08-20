@@ -1,6 +1,6 @@
 {
   "schema": "framework-catalog-public@1",
-  "updatedAt": "2026-08-20T10:33:02.413Z",
+  "updatedAt": "2026-08-20T10:44:38.124Z",
   "products": [
     {
       "id": "starter",
@@ -112,7 +112,7 @@
       "price": "Ksh 24,500",
       "priceValue": 24500,
       "description": "Combines spacious multi-tier storage with an integrated overhead lamp arm. Perfect for casting a warm, cozy glow over your favorite books and curated displays. Note: lamp shade not included.",
-      "designerUrl": "https://framework.co.ke/builder/4DA1PM8"
+      "designerUrl": "https://framework.co.ke/builder/3WU3UN2"
     },
     {
       "id": "two-tone-stack",
@@ -169,8 +169,7 @@
       ],
       "price": "Ksh 36,000",
       "priceValue": 36000,
-      "description": "Turn that forgotten corner into the most interesting part of your space.",
-      "designerUrl": "https://framework.co.ke/builder/16D2FBS"
+      "description": "Turn that forgotten corner into the most interesting part of your space."
     },
     {
       "id": "asymmetric-display",
@@ -214,7 +213,7 @@
       "price": "Ksh 43,000",
       "priceValue": 43000,
       "description": "Combines an integrated hanging rail with two spacious lower shelves for baskets, books, or folded clothes. Built from steel in our Nairobi workshop to keep your space organized and airy.",
-      "designerUrl": "https://framework.co.ke/builder/1NNVQE9"
+      "designerUrl": "https://framework.co.ke/builder/1F69EEH"
     },
     {
       "id": "deep-stack",
@@ -311,8 +310,7 @@
       ],
       "price": "Ksh 71,000",
       "priceValue": 71000,
-      "description": "A generous seven-tier configuration designed to turn any corner into a beautiful focal point. Built in our Nairobi workshop to hold a massive collection of books and more.",
-      "designerUrl": "https://framework.co.ke/builder/38STZJV"
+      "description": "A generous seven-tier configuration designed to turn any corner into a beautiful focal point. Built in our Nairobi workshop to hold a massive collection of books and more."
     },
     {
       "id": "bookend",

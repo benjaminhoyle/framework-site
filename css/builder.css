@@ -294,6 +294,19 @@ button { cursor: pointer; }
   to { transform: rotate(360deg); }
 }
 
+.nd-app[data-loading="saved"] .nd-stage canvas { visibility: hidden; }
+.nd-app[data-loading="saved"] .nd-busy {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, .96);
+  color: var(--nd-ink);
+  box-shadow: var(--nd-shadow);
+}
+.nd-app[data-loading="saved"] .nd-busy::before {
+  border-color: rgba(36, 93, 95, .22);
+  border-top-color: var(--nd-accent);
+}
+
 /* Drafting-style dimensions, drawn under the interactive overlay. */
 .nd-dim-layer {
   position: absolute;

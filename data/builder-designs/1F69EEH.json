@@ -1,0 +1,95 @@
+{
+  "ok": true,
+  "code": "1F69EEH",
+  "hash": "WzEsImFkdmFuY2VkIiwic2FnZSIsMCxbImRlZXBfYmFzZSIsImRlZXBfc3BhY2VyIiwiZGVlcF9oYW5nZXIiLCJkZWVwX2V4dGVuc2lvbiJdLFtbMCwwLDAsOTAsMCxbXV0sWzEsMCwwLDkwLDEsWzBdXSxbMSwwLDAsOTAsMSxbMV1dLFsyLDAsMCw5MCwxLFsyXV0sWzMsMCwwLDkwLDEsWzNdXV1d",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "sage",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "deep_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 90,
+        "placement": {
+          "method": "floor"
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "deep_spacer",
+        "originWorldMm": [
+          0,
+          0,
+          422
+        ],
+        "rotationDeg": 90,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_001"
+          ]
+        }
+      },
+      {
+        "id": "item_003",
+        "type": "deep_spacer",
+        "originWorldMm": [
+          0,
+          0,
+          724
+        ],
+        "rotationDeg": 90,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_002"
+          ]
+        }
+      },
+      {
+        "id": "item_004",
+        "type": "deep_hanger",
+        "originWorldMm": [
+          0,
+          0,
+          1026
+        ],
+        "rotationDeg": 90,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_003"
+          ]
+        }
+      },
+      {
+        "id": "item_005",
+        "type": "deep_extension",
+        "originWorldMm": [
+          0,
+          0,
+          1328
+        ],
+        "rotationDeg": 90,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_004"
+          ]
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "sage",
+  "pieces": 5,
+  "total_ksh": 43000,
+  "created_at": "catalog-builder-links",
+  "source_product_id": "wardrobe-shelf"
+}

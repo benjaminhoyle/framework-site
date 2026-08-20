@@ -143,8 +143,8 @@
         "images/shelving/configs/lantern-shelf-foot.jpg"
       ],
       "active": true,
-      "designerUrl": "https://framework.co.ke/builder/4DA1PM8",
-      "designCode": "4DA1PM8"
+      "designerUrl": "https://framework.co.ke/builder/3WU3UN2",
+      "designCode": "3WU3UN2"
     },
     {
       "id": "two-tone-stack",
@@ -208,9 +208,7 @@
         "images/shelving/configs/dynamic-corner-populated.jpg",
         "images/shelving/configs/dynamic-corner-emptied.jpg"
       ],
-      "active": true,
-      "designerUrl": "https://framework.co.ke/builder/16D2FBS",
-      "designCode": "16D2FBS"
+      "active": true
     },
     {
       "id": "asymmetric-display",
@@ -259,8 +257,8 @@
         "images/shelving/configs/wardrobe-shelf-front.jpg"
       ],
       "active": true,
-      "designerUrl": "https://framework.co.ke/builder/1NNVQE9",
-      "designCode": "1NNVQE9"
+      "designerUrl": "https://framework.co.ke/builder/1F69EEH",
+      "designCode": "1F69EEH"
     },
     {
       "id": "deep-stack",
@@ -370,9 +368,7 @@
         "images/shelving/configs/grand-corner-emptied.jpg",
         "images/shelving/configs/grand-corner-foot.jpg"
       ],
-      "active": true,
-      "designerUrl": "https://framework.co.ke/builder/38STZJV",
-      "designCode": "38STZJV"
+      "active": true
     },
     {
       "id": "bookend",
