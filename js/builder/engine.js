@@ -273,6 +273,19 @@
     return bounds.map(rounded);
   }
 
+  /** The MDF board envelope, excluding narrow rails and steel support plates. */
+  function boardBounds(catalog, instance) {
+    const module = moduleFor(catalog, instance.moduleId);
+    const board = (module.horizontalBoxes || [])
+      .filter((box) => box.kind === "horizontal" && box.bbox)
+      .sort((first, second) => {
+        const firstArea = (first.bbox[3] - first.bbox[0]) * (first.bbox[4] - first.bbox[1]);
+        const secondArea = (second.bbox[3] - second.bbox[0]) * (second.bbox[4] - second.bbox[1]);
+        return secondArea - firstArea;
+      })[0];
+    return board ? transformBox(instance, module, board.bbox) : shelfBounds(catalog, instance);
+  }
+
   /**
    * Where a unit has to stand for the named faces to land where we want them.
    *
@@ -290,7 +303,8 @@
     const probes = {
       box: probeBox,
       sockets: socketBounds(probe, module) || probeBox,
-      shelf: shelfBounds(catalog, probe)
+      shelf: shelfBounds(catalog, probe),
+      board: boardBounds(catalog, probe)
     };
     const origin = [0, 0];
     for (const target of targets) {
@@ -574,32 +588,38 @@
     return bounds;
   }
 
-  function intervalsTouch(first, second) {
-    return first[0] <= second[1] + TOLERANCE_MM && second[0] <= first[1] + TOLERANCE_MM;
+  function intervalGap(first, second) {
+    return Math.max(0, first[0] - second[1], second[0] - first[1]);
   }
 
   function cornerUsesViableFace(catalog, corner, joins) {
     const frame = frameOf(corner.rotationDeg);
-    const shelf = shelfBounds(catalog, corner);
-    const longEdge = shelf[edgeIndex(frame.runAxis, frame.runSign)];
-    const normalEdge = shelf[edgeIndex(frame.runAxis, -frame.runSign)];
-    return joins.some((join) => {
-      if (join.axis === frame.runAxis) return Math.abs(join.value - normalEdge) <= TOLERANCE_MM;
-      return join.axis === frame.backAxis
-        && longEdge >= join.start - TOLERANCE_MM
-        && longEdge <= join.end + TOLERANCE_MM;
-    });
+    const board = boardBounds(catalog, corner);
+    const longEdge = board[edgeIndex(frame.runAxis, frame.runSign)];
+    return joins.some((join) => join.axis === frame.backAxis
+      && longEdge >= join.start - TOLERANCE_MM
+      && longEdge <= join.end + TOLERANCE_MM);
   }
 
-  function shelfEdgeJoins(first, second) {
+  function boardEdgeJoins(first, second) {
     const joins = [];
     for (const [axis, along] of [[0, 1], [1, 0]]) {
       for (const [firstEdge, secondEdge] of [[axis + 3, axis], [axis, axis + 3]]) {
-        if (Math.abs(first[firstEdge] - second[secondEdge]) > TOLERANCE_MM) continue;
+        const gap = firstEdge === axis + 3
+          ? second[secondEdge] - first[firstEdge]
+          : first[firstEdge] - second[secondEdge];
+        if (gap < -TOLERANCE_MM || gap > ADJACENT_BASE_GAP_MM + TOLERANCE_MM) continue;
         const start = Math.max(first[along], second[along]);
         const end = Math.min(first[along + 3], second[along + 3]);
         if (end - start > TOLERANCE_MM) {
-          joins.push({ axis, along, value: (first[firstEdge] + second[secondEdge]) / 2, start, end });
+          joins.push({
+            axis,
+            along,
+            firstValue: first[firstEdge],
+            secondValue: second[secondEdge],
+            start,
+            end
+          });
         }
       }
     }
@@ -617,7 +637,8 @@
     const posts = socketPoints(first, moduleFor(catalog, first.moduleId))
       .concat(socketPoints(second, moduleFor(catalog, second.moduleId)));
     return joins.some((join) => posts.some((post) =>
-      Math.abs(post[join.axis] - join.value) <= TOLERANCE_MM
+      post[join.axis] >= Math.min(join.firstValue, join.secondValue) - TOLERANCE_MM
+      && post[join.axis] <= Math.max(join.firstValue, join.secondValue) + TOLERANCE_MM
       && post[join.along] >= join.start - TOLERANCE_MM
       && post[join.along] <= join.end + TOLERANCE_MM));
   }
@@ -658,17 +679,17 @@
         const rotationDifference = Math.abs(normaliseQuarterTurn(first.rotationDeg) - normaliseQuarterTurn(second.rotationDeg)) % 180;
         if (firstModule.family !== "corner" && secondModule.family !== "corner") continue;
 
-        const firstShelf = shelfBounds(catalog, first);
-        const secondShelf = shelfBounds(catalog, second);
+        const firstShelf = boardBounds(catalog, first);
+        const secondShelf = boardBounds(catalog, second);
         if (rotationDifference === 0) {
           const clear = straightCornerJoinIsClear(catalog, first, second, firstShelf, secondShelf);
           if (clear === false) invalid.push({ a: first.id, b: second.id });
           continue;
         }
         if (rotationDifference !== 90) continue;
-        if (!intervalsTouch([firstShelf[0], firstShelf[3]], [secondShelf[0], secondShelf[3]])
-          || !intervalsTouch([firstShelf[1], firstShelf[4]], [secondShelf[1], secondShelf[4]])) continue;
-        const joins = shelfEdgeJoins(firstShelf, secondShelf);
+        if (intervalGap([firstShelf[0], firstShelf[3]], [secondShelf[0], secondShelf[3]]) > ADJACENT_BASE_GAP_MM + TOLERANCE_MM
+          || intervalGap([firstShelf[1], firstShelf[4]], [secondShelf[1], secondShelf[4]]) > ADJACENT_BASE_GAP_MM + TOLERANCE_MM) continue;
+        const joins = boardEdgeJoins(firstShelf, secondShelf);
 
         const clear = joins.length
           && (firstModule.family !== "corner" || cornerUsesViableFace(catalog, first, joins))
@@ -882,10 +903,10 @@
         {
           axis: port.axis,
           sign: -port.outSign,
-          measure: "shelf",
+          measure: "board",
           value: port.value + port.outSign * port.normalGap
         },
-        { axis: port.along, sign: -1, measure: "shelf", value: port.start }
+        { axis: port.along, sign: -1, measure: "board", value: port.start }
       ]),
       {
         kind: `corner_port_${port.id}_normal`,
@@ -901,11 +922,16 @@
       const face = frame.runSign > 0 ? "long_positive" : "long_negative";
       origins.push(Object.assign(
         baseOriginForFaces(catalog, module, rotationDeg, [
-          { axis: port.axis, sign: -port.outSign, measure: "shelf", value: port.value },
+          {
+            axis: port.axis,
+            sign: -port.outSign,
+            measure: "board",
+            value: port.value + port.outSign * port.normalGap
+          },
           {
             axis: port.along,
             sign: frame.runSign,
-            measure: "shelf",
+            measure: "board",
             value: frame.runSign > 0 ? port.end : port.start
           }
         ]),
@@ -935,7 +961,7 @@
       const ownBox = instanceBounds(catalog, base);
       const stackBox = stackBounds(catalog, state, base);
       const ownSockets = socketBounds(base, baseModule) || ownBox;
-      const ownShelf = shelfBounds(catalog, base);
+      const ownBoard = boardBounds(catalog, base);
 
       if (module.family === "corner") {
         const ports = [];
@@ -945,24 +971,24 @@
             id: "normal",
             axis: frame.runAxis,
             along: frame.backAxis,
-            value: ownShelf[edgeIndex(frame.runAxis, normalSign)],
-            start: ownShelf[frame.backAxis],
-            end: ownShelf[frame.backAxis + 3],
+            value: ownBoard[edgeIndex(frame.runAxis, normalSign)],
+            start: ownBoard[frame.backAxis],
+            end: ownBoard[frame.backAxis + 3],
             outSign: normalSign,
             normalGap: ADJACENT_BASE_GAP_MM
           });
-          const longEdge = ownShelf[edgeIndex(frame.runAxis, frame.runSign)];
+          const longEdge = ownBoard[edgeIndex(frame.runAxis, frame.runSign)];
           const contactSpan = Number(module.depthSpanMm) || 0;
           for (const sideSign of [-1, 1]) {
             ports.push({
               id: `long_${sideSign < 0 ? "negative" : "positive"}`,
               axis: frame.backAxis,
               along: frame.runAxis,
-              value: ownShelf[edgeIndex(frame.backAxis, sideSign)],
+              value: ownBoard[edgeIndex(frame.backAxis, sideSign)],
               start: frame.runSign > 0 ? longEdge - contactSpan : longEdge,
               end: frame.runSign > 0 ? longEdge : longEdge + contactSpan,
               outSign: sideSign,
-              normalGap: 0
+              normalGap: ADJACENT_BASE_GAP_MM
             });
           }
         } else {
@@ -971,9 +997,9 @@
               id: `end_${endSign < 0 ? "negative" : "positive"}`,
               axis: frame.runAxis,
               along: frame.backAxis,
-              value: ownShelf[edgeIndex(frame.runAxis, endSign)],
-              start: ownShelf[frame.backAxis],
-              end: ownShelf[frame.backAxis + 3],
+              value: ownBoard[edgeIndex(frame.runAxis, endSign)],
+              start: ownBoard[frame.backAxis],
+              end: ownBoard[frame.backAxis + 3],
               outSign: endSign,
               normalGap: ADJACENT_BASE_GAP_MM
             });
@@ -998,7 +1024,8 @@
               {
                 axis: frame.runAxis,
                 sign: -normalSign,
-                value: rounded(box[edgeIndex(frame.runAxis, normalSign)] + normalSign * ADJACENT_BASE_GAP_MM)
+                measure: "board",
+                value: rounded(ownBoard[edgeIndex(frame.runAxis, normalSign)] + normalSign * ADJACENT_BASE_GAP_MM)
               },
               normalBackTarget
             ]),
@@ -1006,7 +1033,7 @@
           ));
         }
 
-        const longEnd = ownShelf[edgeIndex(frame.runAxis, frame.runSign)];
+        const longEnd = ownBoard[edgeIndex(frame.runAxis, frame.runSign)];
         [
           {
             kind: "corner_long_back",
@@ -1026,14 +1053,15 @@
               {
                 axis: frame.runAxis,
                 sign: frame.runSign,
-                measure: "shelf",
+                measure: "board",
                 value: longEnd
               },
               {
                 axis: frame.backAxis,
                 sign: turn.sideSign,
-                measure: "shelf",
-                value: ownShelf[edgeIndex(frame.backAxis, turn.valueSign)]
+                measure: "board",
+                value: ownBoard[edgeIndex(frame.backAxis, turn.valueSign)]
+                  + turn.valueSign * ADJACENT_BASE_GAP_MM
               }
             ]),
             { kind: turn.kind, rotationDeg: turn.rotationDeg, nextTo: base.id }
@@ -1325,6 +1353,75 @@
     return state;
   }
 
+  /** Snap legacy corner coordinates to the nearest placement generated today. */
+  function repairCornerGeometry(catalog, state) {
+    const validation = validateState(catalog, state);
+    if (!validation.reasons.includes("invalid_base_connections")
+      || !state.instances.some((instance) => moduleFor(catalog, instance.moduleId).family === "corner")) return state;
+
+    let repaired = createState(catalog, {
+      finish: state.finish,
+      bookends: state.bookends
+    });
+    try {
+      for (const original of state.instances) {
+        const module = moduleFor(catalog, original.moduleId);
+        const desiredSupports = new Set([].concat((original.placement && original.placement.on) || []));
+        const candidate = generateCandidates(catalog, repaired, original.moduleId)
+          .filter((option) => module.family === "corner"
+            || normaliseQuarterTurn(option.rotationDeg) === normaliseQuarterTurn(original.rotationDeg))
+          .filter((option) => {
+            if (!desiredSupports.size) return true;
+            const offered = new Set([].concat((option.placement && option.placement.on) || []));
+            return offered.size === desiredSupports.size
+              && Array.from(desiredSupports).every((id) => offered.has(id));
+          })
+          .map((option) => ({
+            option,
+            distance: Math.hypot(
+              option.originWorldMm[0] - original.originWorldMm[0],
+              option.originWorldMm[1] - original.originWorldMm[1]
+            )
+          }))
+          .filter((entry) => entry.distance <= (module.family === "corner" ? 450 : 50))
+          .sort((first, second) => first.distance - second.distance)[0];
+
+        if (candidate) {
+          repaired = addInstance(
+            catalog,
+            repaired,
+            original.moduleId,
+            candidate.option.originWorldMm[0],
+            candidate.option.originWorldMm[1],
+            {
+              id: original.id,
+              placement: candidate.option.placement,
+              rotationDeg: candidate.option.rotationDeg,
+              finish: original.finish || null
+            }
+          );
+        } else {
+          repaired = addInstance(
+            catalog,
+            repaired,
+            original.moduleId,
+            original.originWorldMm[0],
+            original.originWorldMm[1],
+            {
+              id: original.id,
+              placement: original.placement,
+              rotationDeg: original.rotationDeg,
+              finish: original.finish || null
+            }
+          );
+        }
+      }
+    } catch (error) {
+      return state;
+    }
+    return validateState(catalog, repaired).isValid ? repaired : state;
+  }
+
   function removeInstance(catalog, state, instanceId) {
     const specs = serializeState(state).instances.filter((spec) => spec.id !== instanceId);
     return rebuild(catalog, state, specs);
@@ -1419,6 +1516,7 @@
     addInstance,
     additionContext,
     applyCandidate,
+    boardBounds,
     createState,
     designBounds,
     designCode,
@@ -1432,6 +1530,7 @@
     moduleHasDistinctRotation,
     normalizeCatalog,
     removeInstance,
+    repairCornerGeometry,
     replaceInstance,
     rotateInstance,
     rotationKeepsSockets,

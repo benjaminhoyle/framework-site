@@ -350,6 +350,39 @@ test("shelf levels share one floor-to-top height across every family", () => {
   }
 });
 
+function assertCornerMdfSeam(state, cornerId, neighbourId, label) {
+  const corner = state.instances.find((instance) => instance.id === cornerId);
+  const neighbour = state.instances.find((instance) => instance.id === neighbourId);
+  const cornerBoard = engine.boardBounds(catalog, corner);
+  const neighbourBoard = engine.boardBounds(catalog, neighbour);
+  const intervalGap = (first, second) => Math.max(0, first[0] - second[1], second[0] - first[1]);
+  const gaps = [
+    intervalGap([cornerBoard[0], cornerBoard[3]], [neighbourBoard[0], neighbourBoard[3]]),
+    intervalGap([cornerBoard[1], cornerBoard[4]], [neighbourBoard[1], neighbourBoard[4]])
+  ].sort((first, second) => first - second);
+  assert.ok(gaps[0] < 1, `${label}: the boards should overlap along the joining face`);
+  assert.ok(
+    Math.abs(gaps[1] - engine.ADJACENT_BASE_GAP_MM) < 1,
+    `${label}: corner seam should be ${engine.ADJACENT_BASE_GAP_MM}mm, got ${gaps[1]}mm`
+  );
+
+  const frames = {
+    0: { runAxis: 0, runSign: 1 },
+    90: { runAxis: 1, runSign: 1 },
+    180: { runAxis: 0, runSign: -1 },
+    270: { runAxis: 1, runSign: -1 }
+  };
+  const frame = frames[corner.rotationDeg];
+  const longEdge = cornerBoard[frame.runSign > 0 ? frame.runAxis + 3 : frame.runAxis];
+  assert.ok(
+    Math.min(
+      Math.abs(longEdge - neighbourBoard[frame.runAxis]),
+      Math.abs(longEdge - neighbourBoard[frame.runAxis + 3])
+    ) < 1,
+    `${label}: the neighbour should finish flush with the corner's long edge`
+  );
+}
+
 /**
  * The corner: a run turns, and the second run stands against the other wall.
  *
@@ -375,23 +408,19 @@ test("a run turns a corner, and the corner unit carries the turn", () => {
   // the turned one deeper than it is wide.
   assert.ok(corner[3] - corner[0] > corner[4] - corner[1], "the first run goes across");
   assert.ok(second[4] - second[1] > second[3] - second[0], "the second run goes back");
-  // And no two surfaces are in the same place. Measured on the shelves: the
-  // bounding boxes carry foot pads that hang 10mm past the frame and would read
-  // as a collision where there is nothing but air.
-  const [cornerBoards, secondBoards] = turned.instances.map((instance) => engine.shelfBounds(catalog, instance));
+  // And no two MDF boards are in the same place.
+  const [cornerBoards, secondBoards] = turned.instances.map((instance) => engine.boardBounds(catalog, instance));
   const overlap = Math.min(cornerBoards[3], secondBoards[3]) - Math.max(cornerBoards[0], secondBoards[0]) > 2
     && Math.min(cornerBoards[4], secondBoards[4]) - Math.max(cornerBoards[1], secondBoards[1]) > 2;
   assert.ok(!overlap, "the two runs must not sit on top of each other");
 
   /*
-   * And the join is continuous, which is the whole reason a corner unit is
-   * longer than a standard one: its shelf has to cover the square where the
-   * two runs meet. Measured on the shelves, both ways:
+   * The join uses the same 30mm visual seam as every other adjacent unit. The
+   * corner's long edge still covers the square where the two runs meet:
    *
    *   - the second run's shelf ends exactly where the corner unit's does, so
    *     the corner unit reaches the second wall,
-   *   - and starts exactly where the corner unit's shelf front is, so there is
-   *     no notch between them.
+   *   - and its side sits exactly one standard seam from the corner board.
    */
   const [cornerShelf, secondShelf] = [cornerBoards, secondBoards];
   assert.ok(
@@ -399,8 +428,8 @@ test("a run turns a corner, and the corner unit carries the turn", () => {
     `the second run should end flush with the corner unit's shelf (${secondShelf[3]} vs ${cornerShelf[3]})`
   );
   assert.ok(
-    Math.abs(secondShelf[4] - cornerShelf[1]) < 1,
-    `the second run should meet the corner unit's shelf front (${secondShelf[4]} vs ${cornerShelf[1]})`
+    Math.abs(cornerShelf[1] - secondShelf[4] - engine.ADJACENT_BASE_GAP_MM) < 1,
+    `the corner seam should be ${engine.ADJACENT_BASE_GAP_MM}mm (${cornerShelf[1] - secondShelf[4]}mm)`
   );
   // The corner square itself: the first run's shelf has to cover the whole
   // depth of the second one, or the surface has a notch in it where they meet.
@@ -414,7 +443,7 @@ test("a run turns a corner, and the corner unit carries the turn", () => {
   // standard unit, so the board reaches across the join.
   let probe = engine.createState(catalog);
   probe = engine.applyCandidate(catalog, probe, engine.generateCandidates(catalog, probe, "standard_base")[0]);
-  const standardShelf = engine.shelfBounds(catalog, probe.instances[0]);
+  const standardShelf = engine.boardBounds(catalog, probe.instances[0]);
   const extra = (cornerShelf[3] - cornerShelf[0]) - (standardShelf[3] - standardShelf[0]);
   assert.ok(extra > 200, `a corner unit should be a shelf board longer than a standard one (${extra.toFixed(0)}mm)`);
 });
@@ -462,9 +491,10 @@ test("corner turns use the post-free long end in every rotation and source order
     for (const turn of cornerTurns) {
       const valid = engine.applyCandidate(catalog, fromStandard, turn, { id: "corner" });
       assert.equal(engine.validateState(catalog, valid).isValid, true, `${rotationDeg}/${turn.placement.basePlacementKind}`);
+      assertCornerMdfSeam(valid, "corner", "standard", `${rotationDeg}/${turn.placement.basePlacementKind}`);
 
       const corner = valid.instances.find((instance) => instance.id === "corner");
-      const shelf = engine.shelfBounds(catalog, corner);
+      const shelf = engine.boardBounds(catalog, corner);
       const frame = frames[corner.rotationDeg];
       const longEdge = shelf[frame.runSign > 0 ? frame.runAxis + 3 : frame.runAxis];
       const shortEdge = shelf[frame.runSign > 0 ? frame.runAxis : frame.runAxis + 3];
@@ -498,13 +528,14 @@ test("corner turns use the post-free long end in every rotation and source order
       const turns = engine.generateCandidates(catalog, fromCorner, moduleId, { adjacentBasesOnly: true })
         .filter((candidate) => /^corner_long_/.test(candidate.placement.basePlacementKind || ""));
       assert.equal(turns.length, 2, `${rotationDeg}/${moduleId}: both post-free long-side faces should be available`);
-      turns.forEach((turn) => assert.equal(
-        engine.validateState(catalog, engine.applyCandidate(catalog, fromCorner, turn)).isValid,
-        true
-      ));
+      turns.forEach((turn) => {
+        const placed = engine.applyCandidate(catalog, fromCorner, turn, { id: "next" });
+        assert.equal(engine.validateState(catalog, placed).isValid, true);
+        assertCornerMdfSeam(placed, "corner", "next", `${rotationDeg}/${moduleId}/${turn.placement.basePlacementKind}`);
+      });
     }
     const cornerFaces = engine.generateCandidates(catalog, fromCorner, "corner_base", { adjacentBasesOnly: true });
-    assert.equal(cornerFaces.length, 9, `${rotationDeg}: three corner faces should fit at each of three ports`);
+    assert.equal(cornerFaces.length, 5, `${rotationDeg}: normal faces stay straight and long faces carry turns`);
     cornerFaces.forEach((candidate) => assert.equal(
       engine.validateState(catalog, engine.applyCandidate(catalog, fromCorner, candidate)).isValid,
       true
@@ -522,10 +553,10 @@ test("corner turns use the post-free long end in every rotation and source order
   const kinds = engine.generateCandidates(catalog, advanced, "standard_base")
     .map((candidate) => candidate.placement.basePlacementKind || "");
   assert.ok(kinds.includes("interval_normal_440"), "the normal end may still use an Advanced gap");
-  assert.equal(kinds.some((kind) => /^interval_(left|right)_/.test(kind)), false, "right-angle joins have no gaps");
+  assert.equal(kinds.some((kind) => /^interval_(left|right)_/.test(kind)), false, "right-angle joins have no configurable intervals");
 });
 
-test("the reported short-end and upright-in-join corner chains are rejected", () => {
+test("legacy corner chains reject bad seams and snap to current geometry", () => {
   const buildChain = (lastCorner) => {
     let state = engine.createState(catalog);
     [
@@ -543,9 +574,11 @@ test("the reported short-end and upright-in-join corner chains are rejected", ()
     return state;
   };
 
-  assert.ok(engine.validateState(catalog, buildChain([2225, 980, 0])).reasons.includes("invalid_base_connections"));
-  assert.ok(engine.validateState(catalog, buildChain([2459, 981, 180])).reasons.includes("invalid_base_connections"));
-  assert.equal(engine.validateState(catalog, buildChain([2202, 1238, 180])).isValid, true);
+  for (const lastCorner of [[2225, 980, 0], [2459, 981, 180], [2202, 1238, 180]]) {
+    const legacy = buildChain(lastCorner);
+    assert.ok(engine.validateState(catalog, legacy).reasons.includes("invalid_base_connections"));
+    assert.equal(engine.validateState(catalog, engine.repairCornerGeometry(catalog, legacy)).isValid, true);
+  }
 });
 
 test("corner normal ends face each other and long tips can never form a straight chain", () => {
@@ -557,9 +590,7 @@ test("corner normal ends face each other and long tips can never form a straight
   });
   const normalPort = engine.generateCandidates(catalog, state, "corner_base", { adjacentBasesOnly: true })
     .filter((candidate) => candidate.placement.cornerPort === "normal");
-  assert.deepEqual(new Set(normalPort.map((candidate) => candidate.placement.cornerFace)), new Set([
-    "normal", "long_positive", "long_negative"
-  ]));
+  assert.deepEqual(new Set(normalPort.map((candidate) => candidate.placement.cornerFace)), new Set(["normal"]));
   const normalFace = normalPort.find((candidate) => candidate.placement.cornerFace === "normal");
   assert.equal(normalFace.rotationDeg, 0, "the next corner's normal end must face the existing normal end");
   assert.equal(engine.validateState(catalog, engine.applyCandidate(catalog, state, normalFace)).isValid, true);

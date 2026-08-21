@@ -566,6 +566,7 @@
     Object.assign(ui.simple, changes || {});
     const bookends = ui.simple.trimmed ? 0 : ui.design.bookends;
     const next = buildSimpleDesign(ui.simple, ui.design.finish, bookends);
+    const addsPieces = next.instances.length > ui.design.instances.length;
     const actual = deriveSimpleSpec(next);
     if (actual) {
       // If the engine could not fit everything asked for, show what it did fit
@@ -574,7 +575,7 @@
       ui.simple.levels = actual.levels;
       ui.simple.trimmed = actual.trimmed;
     }
-    commit(next, { fit: true });
+    commit(next, { fit: addsPieces });
   }
 
   // -------------------------------------------------------------- catalogue --
@@ -1281,7 +1282,7 @@
     } catch (error) {
       console.error(error);
     }
-    if (commit(next, {})) track("designer_place", { module: candidate.moduleId, mode: ui.mode });
+    if (commit(next, { fit: true })) track("designer_place", { module: candidate.moduleId, mode: ui.mode });
   }
 
   /**
@@ -2210,7 +2211,10 @@
         : { method: "floor" },
       finish: row[6] ? (tints[row[6] - 1] || null) : null
     }));
-    const design = engine.deserializeState(ui.catalog, { schemaVersion: 1, finish, bookends, instances });
+    const design = engine.repairCornerGeometry(
+      ui.catalog,
+      engine.deserializeState(ui.catalog, { schemaVersion: 1, finish, bookends, instances })
+    );
     const validation = engine.validateState(ui.catalog, design);
     if (validation.reasons.includes("invalid_base_connections")) {
       throw new Error("design contains an invalid corner connection");
@@ -2328,7 +2332,13 @@
         // the fallback for a record written before the hash was stored.
         const restored = body.hash
           ? Object.assign(decodeDesign(body.hash), {})
-          : { mode: body.mode || "simple", design: engine.deserializeState(ui.catalog, body.design) };
+          : {
+            mode: body.mode || "simple",
+            design: engine.repairCornerGeometry(
+              ui.catalog,
+              engine.deserializeState(ui.catalog, body.design)
+            )
+          };
         ui.mode = MODES.indexOf(restored.mode) >= 0 ? restored.mode : ui.mode;
         ui.design = restored.design;
         ui.simple = deriveSimpleSpec(ui.design);
@@ -2834,9 +2844,9 @@
 
     // Frame before laying out the overlay: the "+" anchors are projected with
     // the camera, so re-framing afterwards would place them for the old view.
-    // Re-frame on an explicit request (mode change, load, Simple rebuild), or
-    // when the edit just made pushed part of the shelf out of view.
-    if (settings.fit || !ui.renderer.containsBounds(engine.designBounds(ui.catalog, ui.design))) {
+    // Only explicit framing actions and additions resize the view. Rotating,
+    // removing, swapping and recolouring preserve the user's camera exactly.
+    if (settings.fit) {
       ui.renderer.fit(null, ui.dimensionsOn ? DIMENSION_FIT_PADDING : null);
     } else {
       ui.renderer.invalidate();
