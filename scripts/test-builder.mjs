@@ -325,6 +325,31 @@ test("units of different depths line up on their backs", () => {
   assert.ok(deeper[1] < shallow[1] - 50, "the deeper unit should extend further forward");
 });
 
+test("shelf levels share one floor-to-top height across every family", () => {
+  const families = ["standard", "compact", "wide", "deep", "slim", "broad", "corner"];
+  for (const family of families) {
+    const base = Object.values(catalog.modules).find((module) =>
+      module.family === family && module.role === "base" && !module.trimmed && module.priceKsh != null)
+      || Object.values(catalog.modules).find((module) =>
+        module.family === family && module.role === "base" && module.priceKsh != null);
+    const extension = Object.values(catalog.modules).find((module) =>
+      module.family === family && module.role === "extension" && !module.trimmed && module.priceKsh != null)
+      || Object.values(catalog.modules).find((module) =>
+        module.family === family && module.role === "extension" && module.priceKsh != null);
+    assert.ok(base && extension, `${family}: priced base and extension required`);
+
+    let state = engine.createState(catalog);
+    state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, base.id)[0]);
+    const next = engine.generateCandidates(catalog, state, extension.id)[0];
+    assert.ok(next, `${family}: extension should fit its base`);
+    state = engine.applyCandidate(catalog, state, next);
+    const bounds = engine.designBounds(catalog, state);
+
+    assert.equal(Math.round(bounds[5]), 724, `${family}: two levels should finish 724mm above the floor`);
+    assert.ok(bounds[2] >= -13.1, `${family}: geometry should not extend materially below the floor`);
+  }
+});
+
 /**
  * The corner: a run turns, and the second run stands against the other wall.
  *

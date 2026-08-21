@@ -320,6 +320,11 @@ button { cursor: pointer; }
   stroke-width: 1;
   shape-rendering: crispEdges;
 }
+.nd-dim-arrow {
+  stroke: var(--nd-muted);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
 .nd-dim-witness {
   stroke: var(--nd-line-strong);
   stroke-width: 1;

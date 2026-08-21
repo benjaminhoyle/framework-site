@@ -6,21 +6,34 @@
   publish = "."
   # (no build command — nothing to compile)
 
-# --- Preserve existing clean URLs (served extensionless on GitHub Pages) ---
-# status = 200 is a rewrite: the URL stays clean, the .html file is served.
+# --- Legacy shelf-builder entry points -------------------------------------
+# A URL fragment is never sent to Netlify, so these must remain rewrites. Each
+# page redirects itself only when there is no legacy design code in its hash.
 [[redirects]]
   from = "/designer"
   to = "/designer.html"
   status = 200
 
 [[redirects]]
-  from = "/shelving"
-  to = "/shelving.html"
+  from = "/simplified-designer"
+  to = "/simplified-designer.html"
   status = 200
 
 [[redirects]]
-  from = "/simplified-designer"
-  to = "/simplified-designer.html"
+  from = "/diy"
+  to = "/diy.html"
+  status = 200
+
+[[redirects]]
+  from = "/sandbox"
+  to = "/sandbox.html"
+  status = 200
+
+# --- Preserve current clean URLs -------------------------------------------
+# status = 200 is a rewrite: the URL stays clean, the .html file is served.
+[[redirects]]
+  from = "/shelving"
+  to = "/shelving.html"
   status = 200
 
 [[redirects]]

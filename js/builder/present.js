@@ -99,6 +99,7 @@ window.FrameworkDesignerPresent = (function () {
     context.save();
     context.lineCap = "butt";
     for (const line of dimensions.lines) {
+      context.lineCap = line.arrow ? "round" : "butt";
       context.strokeStyle = line.witness ? WITNESS : MUTED;
       context.lineWidth = line.witness ? 2 : 2.4;
       context.beginPath();

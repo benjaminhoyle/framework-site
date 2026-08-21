@@ -317,7 +317,7 @@ function defaultRowMeta(source){
     title:titleFromId(id),
     priceValue:"",
     description:"",
-    designerUrl:"/designer#",
+    designerUrl:"/builder.html?mode=advanced",
     // Which shelf this product is, when the source image came from the render
     // console and still had its name. The package images keep their product-id
     // names -- starter-front.jpg is more use to a person than a hash -- so the
@@ -372,7 +372,7 @@ function rowJsonObject(source){
     price:formatKshPrice(priceValue,meta.price),
     priceValue,
     description:meta.description||"",
-    designerUrl:meta.designerUrl||"/designer#"
+    designerUrl:meta.designerUrl||"/builder.html?mode=advanced"
   };
   // Only when there is one, so a package without a code does not claim an empty
   // string as an answer.
@@ -1455,7 +1455,7 @@ async function sourceFromRowZip(file){
       title:product.title||titleFromId(product.id||folder),
       priceValue:String(parsePriceValue(product.priceValue||product.price)),
       description:product.description||"",
-      designerUrl:product.designerUrl||"/designer#"
+      designerUrl:product.designerUrl||"/builder.html?mode=advanced"
     },
     filled:loadedImage(filledImage),
     empty:loadedImage(emptyImage),
@@ -1532,7 +1532,7 @@ function normalizeImportedSession(session){
         title:session.title||titleFromId(session.id||"imported config"),
         priceValue:String(parsePriceValue(session.priceValue||session.price)),
         description:session.description||"",
-        designerUrl:session.designerUrl||"/designer#"
+        designerUrl:session.designerUrl||"/builder.html?mode=advanced"
       },
       status:"metadata imported"
     })];

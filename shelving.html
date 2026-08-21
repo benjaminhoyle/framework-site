@@ -1359,9 +1359,9 @@
             <div class="p-6 flex flex-col justify-center bg-gray-50 md:bg-white customize-copy">
               <h2 class="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Simple Shelf?</h2>
               <div class="bg-white p-4 rounded-lg shadow-sm md:shadow-none">
-                <p class="text-gray-700 mb-6">If you want a great shelf without needing to overthink it, our simplified ordering tool will help you get exactly what you need.</p>
+                <p class="text-gray-700 mb-6">If you want a great shelf without needing to overthink it, our Simple Builder will help you get exactly what you need.</p>
                 <div>
-                  <a href="simplified-designer.html"
+                  <a href="/builder.html?mode=simple"
                      class="btn-blue"
                      onclick="gtag('event','customize_product',{content_name:'Simple Designer',content_category:'shelving_page_body',link_target:'simple_shelf_designer'}); if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Simple Designer',content_category:'shelving_page_body'});}">
                     Start Here
@@ -1388,7 +1388,7 @@
             </div>
             <div class="p-6 flex flex-col justify-center customize-copy">
               <h2 class="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Unique Shelf?</h2>
-              <p class="text-gray-600 mb-6">If you want to leverage the full potential of our shelving system, we can chat on WhatsApp to find a perfect setup for your space, or you can try out our full shelf designer app.</p>
+              <p class="text-gray-600 mb-6">If you want more control over your shelving system, we can help on WhatsApp or you can arrange it yourself in our Flexible Builder.</p>
 
               <div class="space-y-4">
                 <div class="bg-gray-50 p-4 rounded-lg">
@@ -1405,10 +1405,10 @@
 
                 <div class="bg-gray-50 p-4 rounded-lg">
                   <h3 class="font-bold text-lg mb-2">Customize a shelf on your own</h3>
-                  <a href="/designer"
+                  <a href="/builder.html?mode=flexible"
                      class="btn-blue"
-                     onclick="gtag('event','customize_product',{content_name:'Advanced Designer',content_category:'shelving_page',link_target:'full_designer'}); if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Advanced Designer',content_category:'shelving_page'});}">
-                    Go to Advanced Designer
+                     onclick="gtag('event','customize_product',{content_name:'Flexible Builder',content_category:'shelving_page',link_target:'flexible_builder'}); if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Flexible Builder',content_category:'shelving_page'});}">
+                    Open Flexible Builder
                   </a>
                 </div>
               </div>
@@ -1512,7 +1512,7 @@
               </svg>
               <span>Customise</span>
             </a>
-            <a id="lb-designer-link" href="designer.html" class="shelf-designer-link">
+            <a id="lb-designer-link" href="/builder.html?mode=flexible" class="shelf-designer-link">
               Open in shelf designer &rarr;
             </a>
           </div>
@@ -2285,7 +2285,7 @@
       var hash = window.location.hash.replace('#', '');
       if (hash) {
         var config = configurations.find(function(c) { return c.id === hash; });
-        if (config && config.designerUrl && config.designerUrl !== '/designer') {
+        if (config && config.designerUrl) {
           window.location.replace(new URL(config.designerUrl, 'https://www.framework.co.ke/shelving.html').href);
           return;
         }

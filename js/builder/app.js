@@ -42,6 +42,7 @@
   const DESIGN_API = "/api/design";
 
   const MODES = ["simple", "standard", "advanced"];
+  const ENTRY_MODES = { simple: "simple", flexible: "standard", standard: "standard", advanced: "advanced" };
   const MODE_LABELS = {
     simple: "Simple",
     standard: "Flexible",
@@ -380,6 +381,8 @@
       loadSavedDesign(savedCode, { fallbackToDefault: true });
       return;
     } else {
+      const requestedMode = new URLSearchParams(location.search).get("mode");
+      ui.mode = ENTRY_MODES[String(requestedMode || "").toLowerCase()] || ui.mode;
       ui.design = buildSimpleDesign(ui.simple, "sage", 0);
     }
     applyMode(ui.mode, { silent: true });
@@ -770,9 +773,10 @@
   const SVG_NS = "http://www.w3.org/2000/svg";
   const DIM_GAP_PX = 10; // model edge -> start of the witness line
   const DIM_OFFSET_PX = 34; // model edge -> the dimension line
-  const DIM_OVERSHOOT_PX = 7; // witness line past the dimension line
+  const DIM_OVERSHOOT_PX = 3; // witness line past the dimension line
   const DIM_LABEL_PX = 13; // dimension line -> the number
-  const DIM_TICK_PX = 5;
+  const DIM_ARROW_LENGTH_PX = 8;
+  const DIM_ARROW_WIDTH_PX = 3.5;
   // Matches .nd-dim-text in the stylesheet, which is where the live overlay gets
   // it. Needed here too because the share image draws the same numbers onto a
   // canvas, where there is no CSS -- and because everything in the overlay has
@@ -781,7 +785,7 @@
 
   // Width and depth run along an edge of the envelope. Height does not: a run of
   // units of different heights has no single height, so heights are called out
-  // per stack instead (see drawHeightCallouts), which is how /designer does it.
+  // per stack instead (see addHeightCallouts).
   // [measured axis, offset axis, sign, which corner of the box to run along]
   const DIMENSION_SPECS = [
     { axis: 0, offsetAxis: 2, sign: -1, at: { 1: "min", 2: "min" } },
@@ -834,7 +838,8 @@
     const offsetPx = DIM_OFFSET_PX * size;
     const overshootPx = DIM_OVERSHOOT_PX * size;
     const labelPx = DIM_LABEL_PX * size;
-    const tickPx = DIM_TICK_PX * size;
+    const arrowLengthPx = DIM_ARROW_LENGTH_PX * size;
+    const arrowWidthPx = DIM_ARROW_WIDTH_PX * size;
 
     for (const spec of DIMENSION_SPECS) {
       const from = [0, 0, 0];
@@ -871,15 +876,23 @@
         });
       }
       lines.push({ x1: lineFrom.x, y1: lineFrom.y, x2: lineTo.x, y2: lineTo.y });
-      // Slanted ticks at each end, the drafting convention, instead of arrows:
-      // they stay legible at one pixel wide on a phone.
-      for (const [end, direction] of [[lineFrom, 1], [lineTo, -1]]) {
-        lines.push({
-          x1: end.x - (along.x * direction - dir.x) * tickPx,
-          y1: end.y - (along.y * direction - dir.y) * tickPx,
-          x2: end.x + (along.x * direction - dir.x) * tickPx,
-          y2: end.y + (along.y * direction - dir.y) * tickPx
-        });
+      // Open arrowheads point into the measured span. Unlike drafting ticks,
+      // they do not cross the witness lines and stay readable on small screens.
+      const side = { x: -along.y, y: along.x };
+      for (const [end, inward] of [[lineFrom, 1], [lineTo, -1]]) {
+        const back = {
+          x: end.x + along.x * inward * arrowLengthPx,
+          y: end.y + along.y * inward * arrowLengthPx
+        };
+        for (const sign of [1, -1]) {
+          lines.push({
+            arrow: true,
+            x1: end.x,
+            y1: end.y,
+            x2: back.x + side.x * arrowWidthPx * sign,
+            y2: back.y + side.y * arrowWidthPx * sign
+          });
+        }
       }
 
       const mid = { x: (lineFrom.x + lineTo.x) / 2, y: (lineFrom.y + lineTo.y) / 2 };
@@ -909,7 +922,7 @@
     const { lines, labels } = dimensionGeometry(ui.renderer.project);
     for (const line of lines) {
       svg.appendChild(svgNode("line", {
-        class: line.witness ? "nd-dim-witness" : "nd-dim-line",
+        class: line.witness ? "nd-dim-witness" : line.arrow ? "nd-dim-arrow" : "nd-dim-line",
         x1: line.x1, y1: line.y1, x2: line.x2, y2: line.y2
       }));
     }
@@ -931,23 +944,17 @@
    * that would run down through the shelf. Stacks of equal height share a single
    * callout, so a symmetric run reads as one number rather than four.
    *
-   * A lamp counts towards the height, because it genuinely is how tall the thing
-   * is -- and when one is what makes a stack tall, the arrow moves onto the lamp
-   * so that it touches the thing the number is measuring. Over the unit's centre
-   * it did not: the centre column runs up through the shade, which hangs a long
-   * way below the arm, so the arrow stopped in mid-air short of the top.
-   *
-   * Without a lamp nothing rises above the unit and the arrow stays where it
-   * was, centred over the stack and pointing down at its top surface.
+   * Height is the usable shelf assembly from the floor to its top. Accessories
+   * such as lamps do not turn a 72cm shelf into a 149cm shelf, and small mesh
+   * details below the floor plane are never counted.
    */
   function addHeightCallouts(lines, labels, project, scale) {
     const { groups } = engine.stacksOf(ui.design);
     const byHeight = new Map();
     groups.forEach((ids) => {
       const unit = stackBounds(ids, { excludeLamps: true });
-      const full = stackBounds(ids);
-      if (!unit || !full) return;
-      const valueMm = Math.round(full[5] - Math.min(0, full[2]));
+      if (!unit) return;
+      const valueMm = Math.round(heightAboveFloor(unit));
       if (valueMm < 50) return;
       const centreX = (unit[0] + unit[3]) / 2;
       const key = mmToCm(valueMm);
@@ -955,15 +962,10 @@
       if (!existing || centreX < existing.centreX) {
         byHeight.set(key, {
           valueMm,
-          // Only the pieces standing above the unit -- a lamp -- and only when
-          // there are any. They are what the arrow has to reach.
-          aboveIds: full[5] > unit[5] + 1
-            ? ids.filter((id) => ui.catalog.modules[ui.design.instances
-              .find((instance) => instance.id === id).moduleId].role === "lamp")
-            : [],
           centreX,
+          anchorX: unit[0] + Math.min(140, (unit[3] - unit[0]) * 0.22),
           centreY: (unit[1] + unit[4]) / 2,
-          topZ: full[5]
+          topZ: unit[5]
         });
       }
     });
@@ -974,10 +976,7 @@
     const arrowPx = CALLOUT_ARROW_PX * size;
     const up = axisScreenDirection(2, project);
     for (const stack of byHeight.values()) {
-      const centre = [stack.centreX, stack.centreY, stack.topZ];
-      const top = project(
-        (stack.aboveIds.length && ui.renderer.highestOnScreen(stack.aboveIds)) || centre
-      );
+      const top = project([stack.anchorX, stack.centreY, stack.topZ]);
       // Shorten the tail rather than let the number ride up out of the view.
       // The number is what has to stay inside, so the room it needs is measured
       // to the top of the type, not to the end of the arrow -- reserving only
@@ -1886,17 +1885,17 @@
   }
 
   /**
-   * Width x depth x height, in cm.
-   *
-   * Width and depth come from the shelf's own footprint: a lamp pivoted out over
-   * the front is not something the furniture takes up floor space for. Height
-   * includes it, because that is genuinely how tall the assembly stands.
+   * Width x depth x height, in cm, for the shelf itself. Accessories do not
+   * change the furniture envelope quoted to a customer.
    */
   function sizeLabel() {
     const footprint = shelfBounds();
     if (!footprint) return null;
-    const full = engine.designBounds(ui.catalog, ui.design) || footprint;
-    return `${mmToCm(footprint[3] - footprint[0])} × ${mmToCm(footprint[4] - footprint[1])} × ${mmToCm(full[5] - Math.min(0, full[2]))} cm`;
+    return `${mmToCm(footprint[3] - footprint[0])} × ${mmToCm(footprint[4] - footprint[1])} × ${mmToCm(heightAboveFloor(footprint))} cm`;
+  }
+
+  function heightAboveFloor(bounds) {
+    return Math.max(0, bounds[5]);
   }
 
   /**
@@ -2486,7 +2485,7 @@
       "Height",
       {
         n: ui.simple.levels,
-        text: bounds ? `${mmToCm(bounds[5] - Math.min(0, bounds[2]))} cm` : `${ui.simple.levels} levels`
+        text: bounds ? `${mmToCm(heightAboveFloor(bounds))} cm` : `${ui.simple.levels} levels`
       },
       SIMPLE_LIMITS.levels[0],
       SIMPLE_LIMITS.levels[1],
