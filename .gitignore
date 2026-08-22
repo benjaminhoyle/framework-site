@@ -2,3 +2,7 @@ images/designer/.DS_Store
 .DS_Store
 .claude/
 node_modules/
+
+# Local secrets — never commit.
+.env
+.env.*
