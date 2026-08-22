@@ -357,6 +357,37 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
   }
 
   // ---- apply the writes the sync owns ----------------------------------
+  // ---- Sync Status: the flag where the work actually happens -------------
+  // The log answers "what is wrong across the board". This answers "can I trust
+  // this order", on the order itself, where the workshop and the office are
+  // already looking. Nobody opens a log table to find out whether one record is
+  // sound.
+  //
+  // Only written in write mode, and only when it changes: read-only leaves the
+  // pipeline untouched by definition, and re-stamping 230 unchanged orders every
+  // five minutes would be a lot of writes to say nothing.
+  const worst = new Map();
+  const rank = { Error: 3, Warning: 2, Info: 1 };
+  for (const f of findings) {
+    for (const rid of (f.orderRecIds || [])) {
+      const held = f.check === 'line-changed-in-production';
+      const label = held ? 'Held - in production' : (f.severity === ERROR ? 'Error' : f.severity === WARN ? 'Warning' : null);
+      if (!label) continue;
+      const score = held ? 4 : rank[f.severity];
+      const prev = worst.get(rid);
+      if (!prev || score > prev.score) worst.set(rid, { score, label });
+    }
+  }
+  for (const o of orders) {
+    const want = worst.get(o.id)?.label || 'OK';
+    if ((o.fields['Sync Status'] || 'OK') === want) continue;
+    writes.orders.push({
+      id: o.id, orderId: o.fields['Order ID'],
+      was: o.fields['Sync Status'] ?? null, now: want,
+      fields: { 'Sync Status': want }
+    });
+  }
+
   // The write records carry preview metadata (what it was, what it becomes) that
   // Airtable must never see; only id and fields go over the wire.
   const bare = (w) => ({ id: w.id, fields: w.fields });

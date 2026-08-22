@@ -279,4 +279,46 @@ await test('one order needing two changes is patched once, not twice', async () 
   assert.equal(ids.size, 1, 'both target the same order');
 });
 
+// ---- Sync Status -------------------------------------------------------
+await test('an order with an error is flagged on the order itself', async () => {
+  // The log says what is wrong across the board; this says whether THIS order
+  // can be trusted, where people are already looking.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' }), order('2_B', { 'Zoho Invoice': 'INV1' })]
+  });
+  const flags = r.pending.orders.filter((w) => w.fields['Sync Status']);
+  assert.equal(flags.length, 2);
+  assert.ok(flags.every((f) => f.now === 'Error'));
+});
+
+await test('a held order says so, rather than just Error', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Order Status': 'Production Launched' })],
+    products: [product('p1', 'Standard Base', 6500)],
+    lines: [line('l1', '1_A', 'p1', { Quantity: 2, 'Zoho Line Total': 13000 })],
+    invoices: [invoice('INV1', [zline('Standard Base', 2, 5000)])]
+  });
+  const flag = r.pending.orders.find((w) => w.fields['Sync Status']);
+  assert.equal(flag.now, 'Held - in production');
+});
+
+await test('a clean order already marked OK is not rewritten', async () => {
+  // Re-stamping 230 unchanged orders every five minutes would be a lot of
+  // writes to say nothing.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Sync Status': 'OK' })],
+    invoices: [invoice('INV1', [])]
+  });
+  assert.equal(r.pending.orders.filter((w) => w.fields['Sync Status']).length, 0);
+});
+
+await test('an order that has recovered is cleared back to OK', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Sync Status': 'Error' })],
+    invoices: [invoice('INV1', [])]
+  });
+  const flag = r.pending.orders.find((w) => w.fields['Sync Status']);
+  assert.equal(flag.now, 'OK', 'a flag nobody clears is a flag nobody trusts');
+});
+
 console.log(`test-reconcile: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);

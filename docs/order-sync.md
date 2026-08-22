@@ -53,8 +53,15 @@ hears. Do not "fix" this by syncing it back.
   running, and did it find anything?"
 - **`Sync - Log`** (`tblWXSMuTUny856S3`) — findings only. **A clean pass writes
   zero rows here.** Recurring drift updates `Last Seen` rather than adding a row.
-- **`Sync Status`** on Orders - Pipeline — so a flagged order is visible where
-  the work happens, not only in a log.
+- **`Sync Status`** on Orders - Pipeline — `OK` / `Warning` / `Error` /
+  `Held - in production`. The log answers "what is wrong across the board"; this
+  answers "can I trust this order", on the order itself, where the workshop and
+  the office already look. Nobody opens a log table to check one record.
+
+  Written in write mode only, and only when it changes: read-only leaves the
+  pipeline untouched by definition, and re-stamping 230 unchanged orders every
+  five minutes would be a lot of writes to say nothing. A recovered order is
+  cleared back to `OK` — a flag nobody clears is a flag nobody trusts.
 
 ---
 
