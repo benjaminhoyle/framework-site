@@ -41,7 +41,11 @@ hears. Do not "fix" this by syncing it back.
 | `netlify/functions/sync-orders-background.mjs` | Entry point. Background function — a full pass takes minutes. |
 | `netlify/functions/sync-health.mjs` | `/api/sync-health` — is the environment wired up? Synchronous, so it can report what the background function cannot. |
 | `scripts/test-sync.mjs` | Unit tests over the pure helpers. No network. |
+| `netlify/functions/_push.mjs` | Design → invoice lines. Pure, so it is tested without spending Zoho calls. |
+| `netlify/functions/zoho-push.mjs` | `/api/zoho-push` — customer search and draft creation, behind `ZOHO_PUSH_KEY`. |
+| `netlify/functions/sync-cron.mjs` | The clock. Inert until `SYNC_SCHEDULE_ENABLED=1`. |
 | `scripts/test-reconcile.mjs` | Every check, against fixtures. No network — the Zoho budget makes live testing of the checks impractical, and they are the part most worth testing. |
+| `scripts/test-push.mjs` | Design → lines, including the cases that would invoice the wrong thing quietly. |
 
 ### Airtable tables it writes
 
@@ -77,10 +81,73 @@ never start writing on its own.
 paste into Netlify. Plus **`AIRTABLE_TOKEN`** — `data.records:read` and `data.records:write` on the
 Framework Designs base, nothing else.
 
+And **`ZOHO_PUSH_KEY`** — the password reps type into the builder. Two switches
+stay off until the write pass has been checked by hand: `SYNC_ALLOW_WRITES` and
+`SYNC_SCHEDULE_ENABLED`.
+
 Do **not** set `AIRTABLE_BASE` in Netlify. The base id is hardcoded in
 `_airtable.mjs` because it is an identifier rather than a credential, and it
 already appears in `scene-airtable.mjs` and two docs — setting it as a variable
 makes Netlify's secrets scanner find it in our own source and refuse the deploy.
+
+---
+
+## Three keys, and why
+
+| Key | Opens | Held by |
+|---|---|---|
+| `SITE_LOGIN_KEY` | the gated pages | anyone who needs to *see* something |
+| `SITE_EXPORT_KEY` | everything, plus the machine endpoints | the ops runner |
+| `ZOHO_PUSH_KEY` | raising a draft invoice | reps, typed into the builder |
+
+`SITE_LOGIN_KEY` deliberately does **not** open the push. It is chosen to be
+typed and remembered — short, and therefore guessable — on the understanding
+that it only opens what a person needs to see. Raising an invoice is doing.
+
+`ZOHO_PUSH_KEY` fails **closed**: unset, only the machine key gets in. The login
+key's unset-fallback exists so a lost variable never locks anyone out of a page;
+the opposite instinct applies to something that writes.
+
+What makes a shared typed password proportionate is the endpoint's own limit: it
+creates a **draft** and can do nothing else — no send, no payment, no void, no
+delete. The worst a leaked password buys is junk drafts. Adding a `send` action
+would change that calculation, and the key with it.
+
+---
+
+## Raising an invoice from a design
+
+The builder's Advanced panel, next to Download and Upload — already the staff
+corner. Customers use Advanced, so the section is visible to everyone and simply
+does nothing without the password. Password first; the rep's name only means
+something once staff has been established.
+
+```
+POST /api/zoho-push  { action: "search", query }  -> [{ contact_id, name }]
+POST /api/zoho-push  { action: "push", code, contact_id, rep }
+```
+
+Search runs against Airtable's 189 clients rather than Zoho's 374 contacts
+(which include vendors and duplicates), and returns **names and ids only** — a
+leaked password should not also hand over a customer database. The Airtable
+record already carries its `Zoho Contact ID`, so the push resolves rather than
+guesses and cannot mint a second contact for someone who has one.
+
+Three rules in `_push.mjs`, each of which would otherwise fail silently:
+
+1. **Group by `(moduleId, finish)`.** Both systems carry colour per line, and the
+   builder's `priceBreakdown()` discards it — it exists to show a customer a
+   total, not to describe an order.
+2. **Join on `moduleId`, never the label.** `moduleLabel()` strips "(Trimmed)" in
+   Simple mode, so a trimmed unit would be invoiced — and built — as the
+   untrimmed one. Same price, so never visible as a money error; very visible
+   when it arrives.
+3. **Price from Zoho, never the contract.** The catalogue is what someone was
+   quoted; the invoice is what they are charged.
+
+A price difference from the quote is **surfaced, not blocked**. Reps zero-rate
+deliberately, and a quote from before a price change is a normal thing to
+invoice at today's rate.
 
 ---
 
@@ -203,6 +270,27 @@ Each of these cost a wrong answer while building this.
 - [ ] Schedule: `*/5 * * * *` incremental, nightly full
 - [ ] Build `/api/zoho-push` + the Advanced-panel menu entry
 - [ ] `cf_created_by_rep` custom field in Zoho, for rep attribution
+
+### Tomorrow's runbook
+
+Zoho allows 2,000 calls a day and a full pass costs ~350, so this fits several
+times over — but do it in this order.
+
+1. `curl -s "https://framework.co.ke/api/sync-health?key=$SITE_EXPORT_KEY"` —
+   every check `ok`, `push_configured: true`.
+2. Run the preview (`reconcile` read-only) and read **the acceptance test**: for
+   each order, would the written figures reconcile to its invoice? Expect two
+   known shortfalls — `71_Kerstin-Karlstrom` is missing 2 × Steel Decoration and
+   `19_Bernard-Clouteau` a Bookend and an Extension. Anything else is new and
+   worth understanding before writing.
+3. `SYNC_ALLOW_WRITES=1`, then one `&write=1&mode=full` pass **by hand**.
+4. Check `Sync - Runs`: `Lines Updated` ≈ 521, `Errors` 0.
+5. Re-measure the revenue baseline (5,786,000 across 230 orders beforehand) and
+   record the move in `framework-ops/INTEGRITY-SPEC.md`.
+6. One real push through the builder. The single thing untestable offline is
+   whether Zoho accepts `item_custom_fields` on create — if it rejects the
+   colour, that is a one-line fix in `_push.mjs`.
+7. Last: `SYNC_SCHEDULE_ENABLED=1`.
 
 ### Open decisions
 - [ ] eTIMS field in Airtable — Zoho-owned, one-way, nothing blocks on it

@@ -21,7 +21,11 @@ import { TABLES, all } from './_airtable.mjs';
 const REQUIRED = [
   'ZOHO_CLIENT_ID', 'ZOHO_CLIENT_SECRET', 'ZOHO_REFRESH_TOKEN',
   'ZOHO_ORG_ID', 'ZOHO_ACCOUNTS_HOST', 'ZOHO_API_HOST',
-  'AIRTABLE_TOKEN'
+  'AIRTABLE_TOKEN',
+  // Not needed by the reconciler, but this is the page anyone checks when
+  // something is not working, and "the rep password does nothing" is exactly
+  // the sort of thing that turns out to be an unset variable.
+  'ZOHO_PUSH_KEY'
 ];
 
 const shape = (v) => (v ? `set (${v.length} chars)` : 'MISSING');
@@ -73,7 +77,9 @@ export default async (req) => {
     ok,
     env,
     checks,
-    writes_enabled: process.env.SYNC_ALLOW_WRITES === '1'
+    writes_enabled: process.env.SYNC_ALLOW_WRITES === '1',
+    schedule_enabled: process.env.SYNC_SCHEDULE_ENABLED === '1',
+    push_configured: Boolean(process.env.ZOHO_PUSH_KEY)
   }, null, 2), {
     status: ok ? 200 : 500,
     headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
