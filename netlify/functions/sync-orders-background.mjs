@@ -39,7 +39,9 @@ export default async (req) => {
 
   const opts = {
     mode: wantWrite && allowed ? 'write' : 'read-only',
-    trigger: full ? 'Nightly full' : (q.get('trigger') || 'Manual'),
+    // An explicit trigger wins, so a full pass run by hand is not filed as the
+    // nightly one — otherwise the runs table cannot tell you who started it.
+    trigger: q.get('trigger') || (full ? 'Nightly full' : 'Schedule'),
     since: full ? null : (q.get('since') || nairobi(new Date(Date.now() - 2 * 3600 * 1000)))
   };
 

@@ -39,6 +39,7 @@ hears. Do not "fix" this by syncing it back.
 | `netlify/functions/_airtable.mjs` | The slice of Airtable the sync needs. Table ids live here. |
 | `netlify/functions/_sync.mjs` | The reconciler: all checks, and the report writer. |
 | `netlify/functions/sync-orders-background.mjs` | Entry point. Background function — a full pass takes minutes. |
+| `netlify/functions/sync-health.mjs` | `/api/sync-health` — is the environment wired up? Synchronous, so it can report what the background function cannot. |
 | `scripts/test-sync.mjs` | Unit tests over the pure helpers. No network. |
 
 ### Airtable tables it writes
@@ -157,11 +158,17 @@ Each of these cost a wrong answer while building this.
 - [x] `Zoho Unit Rate` + `Zoho Line Total` on Line Items; `Subtotal` falls back correctly
 - [x] `Sync - Log`, `Sync - Runs`, `Sync Status`
 - [x] Reconciler, read-only, verified against live data
+- [x] Deployed. Cloud full pass matches local exactly: **310 scanned, 0 errors,
+      25 warnings, 49 log rows** in 49s (2026-08-22)
+- [x] Log dedupe proven: a second pass left 49 rows, not 98, and advanced
+      `Last Seen` on all of them
+- [x] `/api/sync-health` — synchronous, read-only, answers in the HTTP response,
+      because a background function cannot report a broken Airtable
 
 ### Next
-- [ ] **Add `AIRTABLE_TOKEN` to Netlify env** (blocks everything below). Not `AIRTABLE_BASE` — see above.
-- [ ] Add the six `ZOHO_*` vars from `.env.zoho` to Netlify env
-- [ ] Deploy and run one **full read-only pass**; confirm `Sync - Runs` shows a row and the findings are the expected ones
+- [x] `AIRTABLE_TOKEN` in Netlify env. Not `AIRTABLE_BASE` — see above.
+- [x] The six `ZOHO_*` vars in Netlify env
+- [x] Full read-only pass confirmed in `Sync - Runs`
 - [ ] Only then set `SYNC_ALLOW_WRITES=1` and run `write=1` once by hand
 - [ ] Re-measure the revenue baseline in `framework-ops/INTEGRITY-SPEC.md`
       (5,786,000 across 230 orders before invoiced prices land) and record why it moved
