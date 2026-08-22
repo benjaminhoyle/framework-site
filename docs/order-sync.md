@@ -72,8 +72,13 @@ never start writing on its own.
 
 `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_ORG_ID`,
 `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST` — all in `.env.zoho` (gitignored), ready to
-paste into Netlify. Plus `AIRTABLE_TOKEN` and `AIRTABLE_BASE`, which are
-currently only on Ben's machine and **must be added to Netlify**.
+paste into Netlify. Plus **`AIRTABLE_TOKEN`** — `data.records:read` and `data.records:write` on the
+Framework Designs base, nothing else.
+
+Do **not** set `AIRTABLE_BASE` in Netlify. The base id is hardcoded in
+`_airtable.mjs` because it is an identifier rather than a credential, and it
+already appears in `scene-airtable.mjs` and two docs — setting it as a variable
+makes Netlify's secrets scanner find it in our own source and refuse the deploy.
 
 ---
 
@@ -154,7 +159,7 @@ Each of these cost a wrong answer while building this.
 - [x] Reconciler, read-only, verified against live data
 
 ### Next
-- [ ] **Add `AIRTABLE_TOKEN` and `AIRTABLE_BASE` to Netlify env** (blocks everything below)
+- [ ] **Add `AIRTABLE_TOKEN` to Netlify env** (blocks everything below). Not `AIRTABLE_BASE` — see above.
 - [ ] Add the six `ZOHO_*` vars from `.env.zoho` to Netlify env
 - [ ] Deploy and run one **full read-only pass**; confirm `Sync - Runs` shows a row and the findings are the expected ones
 - [ ] Only then set `SYNC_ALLOW_WRITES=1` and run `write=1` once by hand

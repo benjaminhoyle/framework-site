@@ -6,6 +6,13 @@
 // Airtable is how you get a fiscalised invoice with no order, or two orders for
 // one invoice.
 
+// The base id is an identifier, not a credential — it is useless without the
+// token, and it already sits in this repo in scene-airtable.mjs and two docs.
+// It is hardcoded rather than read from the environment on purpose: setting it
+// as a Netlify variable makes the secrets scanner find "a secret" in our own
+// committed source and refuse to deploy. The token is the secret; this is not.
+const BASE_ID = 'appOTj9wLzFwbQUZj';
+
 export const TABLES = {
   clients: 'tblXu0CYFzDsJSOAt',
   products: 'tblyL6ldOJm94uSGa',
@@ -15,11 +22,7 @@ export const TABLES = {
   syncRuns: 'tbluXBJ67iGn6JPHa'
 };
 
-function base() {
-  const b = process.env.AIRTABLE_BASE;
-  if (!b) throw new Error('AIRTABLE_BASE is not set');
-  return b;
-}
+const base = () => BASE_ID;
 
 /**
  * One request.
