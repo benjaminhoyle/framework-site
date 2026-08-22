@@ -57,7 +57,7 @@ export async function accessToken() {
  */
 export const calls = { n: 0 };
 
-async function call(path, params = {}, tries = 3) {
+async function call(path, params = {}, tries = 3, post = null) {
   calls.n += 1;
   const token = await accessToken();
   const url = new URL(`${need('ZOHO_API_HOST')}/books/v3${path}`);
@@ -65,7 +65,14 @@ async function call(path, params = {}, tries = 3) {
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
   }
-  const res = await fetch(url, { headers: { Authorization: `Zoho-oauthtoken ${token}` } });
+  const res = await fetch(url, {
+    method: post ? 'POST' : 'GET',
+    headers: {
+      Authorization: `Zoho-oauthtoken ${token}`,
+      ...(post ? { 'Content-Type': 'application/json' } : {})
+    },
+    ...(post ? { body: JSON.stringify(post) } : {})
+  });
   // Two different 429s wear the same status code. The per-minute one is worth
   // waiting out; the DAILY quota will never succeed on retry — retrying it just
   // burns the next day's allowance too. Only back off for the per-minute case.
@@ -76,11 +83,14 @@ async function call(path, params = {}, tries = 3) {
     }
     if (tries > 0) {
       await new Promise((r) => setTimeout(r, 1500));
-      return call(path, params, tries - 1);
+      return call(path, params, tries - 1, post);
     }
     throw new Error(`Zoho 429 on ${path}: ${body.slice(0, 160)}`);
   }
-  if (res.status >= 500 && tries > 0) {
+  // Only a read is safe to retry blindly. Re-POSTing a create could raise the
+  // same invoice twice, and a duplicate in the books is worse than a failure a
+  // person can see and repeat deliberately.
+  if (res.status >= 500 && tries > 0 && !post) {
     await new Promise((r) => setTimeout(r, 1500));
     return call(path, params, tries - 1);
   }
@@ -136,6 +146,20 @@ export async function invoice(id) {
 export async function payments(id) {
   const list = (await call(`/invoices/${id}/payments`)).payments || [];
   return list.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
+
+/**
+ * Raise a DRAFT invoice. Never a sent one.
+ *
+ * Zoho creates invoices as drafts unless told otherwise, and nothing here tells
+ * it otherwise — deliberately. A draft is reversible: a rep reviews it, adds
+ * delivery, and sends it themselves. That is what keeps this endpoint safe
+ * behind a typed password, and why there is no `send` here to reach for.
+ */
+export async function createDraftInvoice(payload) {
+  const d = await call('/invoices', {}, 1, payload);
+  if (!d.invoice) throw new Error(`Zoho create returned no invoice: ${JSON.stringify(d).slice(0, 200)}`);
+  return d.invoice;
 }
 
 export function items() {

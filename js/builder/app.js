@@ -2605,8 +2605,147 @@
     actions.appendChild(load);
     actions.appendChild(reset);
     body.appendChild(actions);
+    body.appendChild(zohoPushField());
 
     renderModuleList();
+  }
+
+  /**
+   * "Send to Zoho": raise a draft invoice for this design.
+   *
+   * It sits in Advanced next to Download and Upload, which are already the
+   * staff-facing corner of the panel. Customers do use Advanced, so the section
+   * is visible to everyone and simply does nothing without the password -- which
+   * is honest, and cheaper than a second gated page nobody would remember to
+   * open. The password is asked for FIRST, because the rep's name only means
+   * something once staff has been established.
+   *
+   * The endpoint it calls creates a DRAFT and can do nothing else -- it cannot
+   * send, take payment, void or delete. That is what makes a shared typed
+   * password proportionate here: the worst a leaked one buys is junk drafts.
+   */
+  function zohoPushField() {
+    const field = make("div", "nd-field nd-staff");
+    const toggle = make("button", "nd-button is-small", "Send to Zoho");
+    toggle.type = "button";
+    field.appendChild(toggle);
+
+    const panel = make("div", "nd-staff-panel");
+    panel.hidden = true;
+    field.appendChild(panel);
+    toggle.addEventListener("click", () => { panel.hidden = !panel.hidden; });
+
+    const status = make("p", "nd-note");
+    const say = (text, bad) => {
+      status.textContent = text;
+      status.classList.toggle("is-error", Boolean(bad));
+    };
+
+    const password = make("input", "nd-search");
+    password.type = "password";
+    password.placeholder = "Staff password";
+    password.autocomplete = "off";
+
+    const rep = make("select", "nd-search");
+    for (const name of ["", "Ben", "Elvis"]) {
+      const o = make("option", null, name || "Who is raising this?");
+      o.value = name;
+      rep.appendChild(o);
+    }
+
+    const customer = make("input", "nd-search");
+    customer.type = "search";
+    customer.placeholder = "Customer name";
+    customer.autocomplete = "off";
+    const results = make("div", "nd-list");
+    let chosen = null;
+
+    // Search runs server-side: the browser cannot hold a Zoho or Airtable
+    // credential, and the endpoint returns names and ids only -- never a phone
+    // number or an address.
+    let searchTimer = null;
+    customer.addEventListener("input", () => {
+      chosen = null;
+      window.clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(async () => {
+        clear(results);
+        if (customer.value.trim().length < 2) return;
+        const found = await callPush({ action: "search", query: customer.value });
+        if (!found || !found.ok) { say("Could not search customers.", true); return; }
+        if (!found.results.length) {
+          results.appendChild(make("p", "nd-list-empty", "No matching client with a Zoho contact."));
+          return;
+        }
+        for (const r of found.results) {
+          const b = make("button", "nd-button is-small", r.name);
+          b.type = "button";
+          b.addEventListener("click", () => {
+            chosen = r;
+            customer.value = r.name;
+            clear(results);
+            say(`Selected ${r.name}.`);
+          });
+          results.appendChild(b);
+        }
+      }, 250);
+    });
+
+    const send = make("button", "nd-button is-primary", "Create draft invoice");
+    send.type = "button";
+    send.addEventListener("click", async () => {
+      if (!ui.design.instances.length) return say("Add some pieces first.", true);
+      if (!rep.value) return say("Say who is raising this.", true);
+      if (!chosen) return say("Choose a customer from the list.", true);
+      send.disabled = true;
+      say("Saving the design, then raising the draft…");
+      try {
+        // The invoice references the design by code, so the design has to exist
+        // under that code before the invoice mentions it.
+        const code = await saveDesign();
+        const out = await callPush({
+          action: "push", code, contact_id: chosen.contact_id, rep: rep.value
+        });
+        if (!out || !out.ok) {
+          say(out && out.error === "nothing_priceable"
+            ? "None of these pieces are sellable in Zoho yet."
+            : `Could not raise the invoice${out && out.detail ? ": " + out.detail : "."}`, true);
+          return;
+        }
+        clear(panel);
+        const done = make("p", "nd-note", `Draft ${out.invoice_number} raised for ${chosen.name}.`);
+        panel.appendChild(done);
+        if (out.drift) {
+          panel.appendChild(make("p", "nd-note is-error",
+            `Priced at ${formatKsh(out.drift.now)} today; the design was quoted at ${formatKsh(out.drift.quoted)}.`));
+        }
+        if (out.unknown && out.unknown.length) {
+          panel.appendChild(make("p", "nd-note is-error",
+            `${out.unknown.length} piece${out.unknown.length === 1 ? "" : "s"} could not be priced and need a manual line: ${out.unknown.map((u) => u.expected).join(", ")}.`));
+        }
+        const open = make("a", "nd-button is-small", "Open in Zoho");
+        open.href = out.url;
+        open.target = "_blank";
+        open.rel = "noopener";
+        panel.appendChild(open);
+      } catch (error) {
+        say(`Could not raise the invoice: ${error.message}`, true);
+      } finally {
+        send.disabled = false;
+      }
+    });
+
+    async function callPush(body) {
+      const response = await fetch("/api/zoho-push", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-framework-key": password.value },
+        body: JSON.stringify(body)
+      });
+      if (response.status === 401) { say("That password was not accepted.", true); return null; }
+      return response.json().catch(() => null);
+    }
+
+    for (const el of [password, rep, customer, results, send, status]) panel.appendChild(el);
+    return field;
   }
 
   /**

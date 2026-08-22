@@ -919,3 +919,12 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* The staff corner of Advanced: raising a draft invoice from a design.
+   Visible to everyone, because customers do use Advanced and hiding it would
+   only mean a second page nobody remembers. It does nothing without the
+   password, which is honest about what it is. */
+.nd-staff { border-top: 1px solid var(--nd-line); padding-top: 12px; margin-top: 4px; }
+.nd-staff-panel { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.nd-staff-panel .nd-list { max-height: 180px; }
+.nd-note.is-error { color: var(--nd-danger); }

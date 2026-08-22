@@ -265,4 +265,18 @@ await test('an unreadable payments lookup is reported, never swallowed', async (
   assert.match(f[0].detail, /did not run/);
 });
 
+await test('one order needing two changes is patched once, not twice', async () => {
+  // Airtable refuses the same record id twice in a batch, and the second entry
+  // would otherwise displace the first rather than merging with it.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    invoices: [invoice('INV1', [
+      { name: 'Delivery Fees', quantity: 1, rate: 2000, item_total: 1724.14, item_custom_fields: [] }
+    ], { custom_field_hash: { cf_etims_invoice_number: '12345' } })]
+  });
+  assert.equal(r.pending.orders.length, 2, 'two separate reasons to write');
+  const ids = new Set(r.pending.orders.map((w) => w.id));
+  assert.equal(ids.size, 1, 'both target the same order');
+});
+
 console.log(`test-reconcile: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);

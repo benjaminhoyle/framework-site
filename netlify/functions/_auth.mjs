@@ -79,3 +79,26 @@ export function refuse(req) {
 export function refuseMachine(req) {
   return authorised(req, { machineOnly: true }) ? null : unauthorised();
 }
+
+/**
+ * A third key, for the one endpoint that creates something in the accounting
+ * system rather than showing something.
+ *
+ * SITE_LOGIN_KEY deliberately does not open this. That key is chosen to be typed
+ * and remembered — short, and therefore guessable — on the understanding that it
+ * only opens what a person needs to *see*. Raising a draft invoice is doing, and
+ * a key that opens the dashboards should not also reach the books.
+ *
+ * It fails CLOSED: with ZOHO_PUSH_KEY unset, only the machine key gets in. The
+ * login key's unset-fallback exists so a lost variable never locks anyone out of
+ * a page; the opposite instinct applies to something that writes.
+ */
+export function refusePush(req) {
+  const supplied = keyFrom(req);
+  if (!supplied) return unauthorised();
+  const machine = process.env.SITE_EXPORT_KEY;
+  const push = process.env.ZOHO_PUSH_KEY;
+  if (machine && supplied === machine) return null;
+  if (push && supplied === push) return null;
+  return unauthorised();
+}

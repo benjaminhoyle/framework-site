@@ -239,6 +239,18 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       }
     }
 
+    // -- eTIMS: added to the invoice after the sale, so it arrives late and
+    //    always from Zoho. Nothing downstream waits on it.
+    const etims = full.custom_field_hash?.cf_etims_invoice_number
+      ?? full.cf_etims_invoice_number ?? null;
+    if (etims && String(order.fields['eTIMS Invoice Number'] || '') !== String(etims)) {
+      writes.orders.push({
+        id: order.id, orderId: order.fields['Order ID'],
+        was: order.fields['eTIMS Invoice Number'] ?? null, now: String(etims),
+        fields: { 'eTIMS Invoice Number': String(etims) }
+      });
+    }
+
     // -- invoiced line prices: match Zoho lines to Airtable lines by product
     const zByName = new Map();
     for (const li of m.lines) {
@@ -348,9 +360,21 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
   // The write records carry preview metadata (what it was, what it becomes) that
   // Airtable must never see; only id and fields go over the wire.
   const bare = (w) => ({ id: w.id, fields: w.fields });
+  // One order can need two things at once — a delivery charge and an eTIMS
+  // number — and Airtable will not take the same record id twice in a batch.
+  // Merge by id so the second change cannot displace the first.
+  const merged = (ws) => {
+    const byId = new Map();
+    for (const w of ws) {
+      const prev = byId.get(w.id);
+      byId.set(w.id, prev ? { ...prev, fields: { ...prev.fields, ...w.fields } } : w);
+    }
+    return [...byId.values()];
+  };
   let orderWrites = 0, lineWrites = 0;
   if (mode === 'write') {
-    if (writes.orders.length) { await patch(TABLES.orders, writes.orders.map(bare)); orderWrites = writes.orders.length; }
+    const orderPatches = merged(writes.orders);
+    if (orderPatches.length) { await patch(TABLES.orders, orderPatches.map(bare)); orderWrites = orderPatches.length; }
     if (writes.lines.length) { await patch(TABLES.lines, writes.lines.map(bare)); lineWrites = writes.lines.length; }
   }
 
