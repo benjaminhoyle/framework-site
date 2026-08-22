@@ -101,6 +101,30 @@ stale price must not stop unrelated sales.
 
 ---
 
+## The budget that shapes everything
+
+**Zoho allows 2,000 API calls per organization per DAY** — not per minute. This
+was discovered by exhausting it during testing, and it is the constraint the
+schedule has to be designed around.
+
+| Pass | Cost |
+|---|---|
+| Incremental, nothing changed | ~2 calls |
+| Incremental, a few invoices changed | ~2 + 1 per changed invoice |
+| Full | ~350 calls |
+
+Three deliberate economies keep it there: an incremental pass skips the
+catalogue check (prices do not move every five minutes), payments are only
+fetched when Airtable's stored date disagrees with the invoice's own
+`last_payment_date`, and a daily-quota 429 fails immediately rather than
+retrying — retrying a daily limit only burns tomorrow's allowance too.
+
+Every run records its own call count in `Sync - Runs.Notes`, so the budget is
+visible rather than guessed at.
+
+At `*/5` that is roughly 600 calls a day for polling plus one nightly full pass,
+leaving comfortable headroom. **A 1-minute schedule would not fit.**
+
 ## Why polling, not webhooks
 
 `last_modified_time` makes an incremental read cheap: one call, ~1.2s, empty most

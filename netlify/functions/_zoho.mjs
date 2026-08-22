@@ -47,7 +47,18 @@ export async function accessToken() {
   return cached.token;
 }
 
+/**
+ * Every call is counted.
+ *
+ * Zoho allows 2,000 calls per organization per DAY, not per minute — a limit
+ * that is easy to walk into, because a full pass costs several hundred. Testing
+ * this module exhausted a day's quota. The counter makes the cost visible in
+ * every run row, so nobody has to guess how close to the wall a schedule sits.
+ */
+export const calls = { n: 0 };
+
 async function call(path, params = {}, tries = 3) {
+  calls.n += 1;
   const token = await accessToken();
   const url = new URL(`${need('ZOHO_API_HOST')}/books/v3${path}`);
   url.searchParams.set('organization_id', ORG());
@@ -57,7 +68,20 @@ async function call(path, params = {}, tries = 3) {
   const res = await fetch(url, { headers: { Authorization: `Zoho-oauthtoken ${token}` } });
   // Zoho rate-limits per minute; a pass that trips it should wait rather than
   // report a false failure and leave the reconciliation half done.
-  if ((res.status === 429 || res.status >= 500) && tries > 0) {
+  // A 429 for the DAILY quota will never succeed on retry — retrying it just
+  // burns the next day's allowance too. Only back off for the per-minute case.
+  if (res.status === 429) {
+    const body = await res.text();
+    if (/maximum call rate limit/i.test(body)) {
+      throw new Error(`Zoho daily API quota exhausted (2,000/org/day) on ${path}`);
+    }
+    if (tries > 0) {
+      await new Promise((r) => setTimeout(r, 1500));
+      return call(path, params, tries - 1);
+    }
+    throw new Error(`Zoho 429 on ${path}: ${body.slice(0, 160)}`);
+  }
+  if (res.status >= 500 && tries > 0) {
     await new Promise((r) => setTimeout(r, 1500));
     return call(path, params, tries - 1);
   }

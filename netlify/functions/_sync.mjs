@@ -22,6 +22,9 @@ import { TABLES, all, patch, create } from './_airtable.mjs';
 const ERROR = 'Error', WARN = 'Warning', INFO = 'Info';
 const now = () => new Date().toISOString();
 
+/** A lookup field arrives as an array even when it holds one value. */
+const num1 = (v) => (Array.isArray(v) ? v[0] : v);
+
 /**
  * Zoho renamed items over the years; old invoice lines keep the old name.
  *
@@ -56,14 +59,20 @@ async function pool(list, size, fn) {
 
 export async function reconcile({ mode = 'read-only', trigger = 'Manual', since = null } = {}) {
   const started = now();
+  const callsAtStart = zoho.calls.n;
   const findings = [];
   const add = (severity, check, event, extra = {}) =>
     findings.push({ severity, check, event, ...extra });
 
   // ---- read both sides -------------------------------------------------
+  // The catalogue check costs a paged Zoho read and prices do not move every
+  // five minutes, so an incremental pass skips it. Zoho allows 2,000 calls a
+  // DAY; anything on the fast path has to justify its cost.
+  const isFull = !since;
   const [orders, lines, products, zItems, zInvoices] = await Promise.all([
     all(TABLES.orders), all(TABLES.lines), all(TABLES.products),
-    zoho.items(), zoho.invoices(since ? { since } : {})
+    isFull ? zoho.items() : Promise.resolve(null),
+    zoho.invoices(since ? { since } : {})
   ]);
 
   // The day the pipeline starts caring. Derived from the data rather than
@@ -111,7 +120,8 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     });
   }
 
-  // ---- check: live catalogue prices agree ------------------------------
+  // ---- check: live catalogue prices agree (full passes only) -----------
+  if (zItems) {
   const liveZ = new Map(zItems.filter((i) => i.status === 'active').map((i) => [i.name, i]));
   const liveA = products.filter((p) => p.fields.Status === 'Active');
   for (const p of liveA) {
@@ -137,6 +147,8 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     }
   }
 
+  }
+
   // ---- check: every line item belongs to an order ----------------------
   for (const l of lines) {
     if (!(l.fields.Order || []).length) {
@@ -157,6 +169,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
 
   let scanned = 0;
   const writes = { orders: [], lines: [] };
+  const projection = [];
 
   for (const { list, full, error } of details) {
     if (error) {
@@ -182,16 +195,24 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     }
 
     const m = zoho.money(full);
-    const held = ['Production Launched', 'Pending Delivery', 'Pending Client Collect', 'Delivered']
+    // Only an order the workshop is actively building is protected. `Delivered`
+    // is finished — 225 of 230 orders sit there, and treating it as protected
+    // would silently exclude almost the entire pipeline from the backfill.
+    const inProduction = ['Production Launched', 'Pending Delivery', 'Pending Client Collect']
       .includes(order.fields['Order Status']);
 
     // -- delivery charge: the sync owns this field outright
     if (m.hasDeliveryLine) {
       const cur = order.fields['Delivery - Charged Client (ex VAT)'];
       if (cur == null || Math.abs(cur - m.deliveryExVat) > 0.02) {
-        if (mode === 'write') {
-          writes.orders.push({ id: order.id, fields: { 'Delivery - Charged Client (ex VAT)': m.deliveryExVat } });
-        } else {
+        // Always computed, applied only in write mode. That way a read-only pass
+        // can show exactly what it *would* do — a write you cannot preview is a
+        // write you have to trust.
+        writes.orders.push({
+          id: order.id, orderId: order.fields['Order ID'], was: cur, now: m.deliveryExVat,
+          fields: { 'Delivery - Charged Client (ex VAT)': m.deliveryExVat }
+        });
+        if (mode !== 'write') {
           add(INFO, 'metadata-drift', `${order.fields['Order ID']} delivery ${cur} -> ${m.deliveryExVat}`, {
             invoice: num, orderRecIds: [order.id],
             detail: 'Delivery charge differs from the invoice. This field is ex-VAT deliberately, so it can be compared against the driver rate.'
@@ -220,19 +241,51 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       if (!z) continue;
       const want = zoho.round2(z.total * factor * ((al.fields.Quantity || 0) / (z.qty || 1)));
       const have = al.fields['Zoho Line Total'];
-      if (have == null || Math.abs(have - want) > 0.02) {
-        if (mode === 'write' && !held) {
-          writes.lines.push({ id: al.id, fields: { 'Zoho Line Total': want, 'Zoho Unit Rate': zoho.round2(z.rate * factor) } });
-        } else if (held && have != null) {
-          add(ERROR, 'line-changed-in-production', `${order.fields['Order ID']} line changed after production`, {
+      const pending = {
+        id: al.id, orderId: order.fields['Order ID'], product: pname,
+        was: have, now: want,
+        // What Subtotal reads TODAY — the formula's own output, not
+        // quantity x catalogue price. Lines already carry a Discount percent
+        // (that is how zero-rated freebies were recorded before this existed),
+        // so deriving the "before" from the catalogue overstates the change.
+        wasSubtotal: zoho.round2(num1(al.fields.Subtotal) || 0),
+        fields: { 'Zoho Line Total': want, 'Zoho Unit Rate': zoho.round2(z.rate * factor) }
+      };
+      if (have == null) {
+        // Backfill. Filling a field that has never held a value changes nothing
+        // that existed, so it is safe whatever state the order is in.
+        writes.lines.push(pending);
+      } else if (Math.abs(have - want) > 0.02) {
+        // A real change: the invoice moved after we had already recorded it.
+        if (inProduction) {
+          add(ERROR, 'line-changed-in-production', `${order.fields['Order ID']} line changed mid-build`, {
             invoice: num, orderRecIds: [order.id],
             detail: `${pname}: stored ${have}, invoice now ${want}. NOT applied — the workshop is building from this record.`
+          });
+        } else {
+          writes.lines.push(pending);
+          add(WARN, 'metadata-drift', `${order.fields['Order ID']} ${pname} ${have} -> ${want}`, {
+            invoice: num, orderRecIds: [order.id],
+            detail: 'The invoice line changed after it was last recorded. Zoho is the source of truth on money, so the new figure is applied.'
           });
         }
       }
     }
 
     // -- revenue must reconcile once the lines carry invoiced totals
+    // What this order's revenue WOULD be once the pending writes land, against
+    // what the invoice says it should be. This is the acceptance test for a
+    // write pass: agreement means the line set is complete on both sides.
+    const pendingHere = writes.lines.filter((w) => w.orderId === order.fields['Order ID']);
+    const projected = zoho.round2(aLines.reduce((n, l) => {
+      const w = pendingHere.find((x) => x.id === l.id);
+      return n + (w ? w.now : (l.fields['Zoho Line Total'] || 0));
+    }, 0));
+    projection.push({
+      orderId: order.fields['Order ID'], invoice: num,
+      target: zoho.round2(m.goods - m.discount), projected
+    });
+
     const stored = aLines.reduce((n, l) => n + (l.fields['Zoho Line Total'] || 0), 0);
     const anyStored = aLines.some((l) => l.fields['Zoho Line Total'] != null);
     if (anyStored) {
@@ -246,7 +299,11 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     }
 
     // -- first payment date, which is not last_payment_date
-    if (full.status === 'paid') {
+    // Only when there is something to explain. If Airtable already holds the
+    // invoice's last_payment_date there is nothing a payments lookup can add,
+    // and asking anyway costs ~250 calls a pass out of a 2,000/day budget.
+    const stamped = order.fields['Payment Received'];
+    if (full.status === 'paid' && stamped && stamped !== full.last_payment_date) {
       try {
         const ps = await zoho.payments(full.invoice_id);
         const first = ps[0]?.date;
@@ -257,22 +314,36 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
             detail: `Airtable records ${have}; the first payment on the invoice is ${first}${ps.length > 1 ? ` (of ${ps.length} payments)` : ''}.`
           });
         }
-      } catch { /* payments are a nicety; a failure here must not fail the pass */ }
+      } catch (e) {
+        // Never silent. Swallowing this made the warning count vary between
+        // identical runs, which is worse than the check not existing: you
+        // cannot tell a clean pass from one that quietly skipped work.
+        add(WARN, 'run-failure', `payments unreadable for ${num}`, {
+          invoice: num, orderRecIds: [order.id],
+          detail: `${String(e.message).slice(0, 160)} — the first-payment-date check did not run for this invoice.`
+        });
+      }
     }
   }
 
   // ---- apply the writes the sync owns ----------------------------------
+  // The write records carry preview metadata (what it was, what it becomes) that
+  // Airtable must never see; only id and fields go over the wire.
+  const bare = (w) => ({ id: w.id, fields: w.fields });
   let orderWrites = 0, lineWrites = 0;
   if (mode === 'write') {
-    if (writes.orders.length) { await patch(TABLES.orders, writes.orders); orderWrites = writes.orders.length; }
-    if (writes.lines.length) { await patch(TABLES.lines, writes.lines); lineWrites = writes.lines.length; }
+    if (writes.orders.length) { await patch(TABLES.orders, writes.orders.map(bare)); orderWrites = writes.orders.length; }
+    if (writes.lines.length) { await patch(TABLES.lines, writes.lines.map(bare)); lineWrites = writes.lines.length; }
   }
 
   const errors = findings.filter((f) => f.severity === ERROR).length;
   const warnings = findings.filter((f) => f.severity === WARN).length;
   return {
     started, finished: now(), mode, trigger, scanned,
-    orderWrites, lineWrites, errors, warnings, findings
+    orderWrites, lineWrites, errors, warnings, findings,
+    zohoCalls: zoho.calls.n - callsAtStart,
+    // What a write pass would do, whether or not this one did it.
+    pending: writes, projection
   };
 }
 
@@ -297,7 +368,10 @@ export async function record(report) {
       'Lines Updated': report.lineWrites,
       Errors: report.errors,
       Warnings: report.warnings,
-      Outcome: report.errors ? 'Findings' : (report.warnings ? 'Findings' : 'Clean')
+      Outcome: report.errors ? 'Findings' : (report.warnings ? 'Findings' : 'Clean'),
+      // Zoho allows 2,000 calls per org per DAY. Recording the cost of each pass
+      // is what stops a schedule quietly eating the whole budget unnoticed.
+      Notes: `${report.zohoCalls} Zoho API calls (2,000/day org limit)`
     }
   }]);
   const runId = runs[0].id;
