@@ -66,9 +66,8 @@ async function call(path, params = {}, tries = 3) {
     if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
   }
   const res = await fetch(url, { headers: { Authorization: `Zoho-oauthtoken ${token}` } });
-  // Zoho rate-limits per minute; a pass that trips it should wait rather than
-  // report a false failure and leave the reconciliation half done.
-  // A 429 for the DAILY quota will never succeed on retry — retrying it just
+  // Two different 429s wear the same status code. The per-minute one is worth
+  // waiting out; the DAILY quota will never succeed on retry — retrying it just
   // burns the next day's allowance too. Only back off for the per-minute case.
   if (res.status === 429) {
     const body = await res.text();

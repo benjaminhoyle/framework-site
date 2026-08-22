@@ -4,7 +4,7 @@
   "private": true,
   "description": "Framework Designs static site + Netlify Functions (WS1 event lake collector).",
   "scripts": {
-    "test": "node scripts/test-whatsapp-links.js && node scripts/test-track-emitter.js && node scripts/test-builder.mjs && node scripts/test-builder-entry-links.mjs && node scripts/test-catalog-build.mjs && node scripts/test-auth.mjs && node scripts/test-sync.mjs",
+    "test": "node scripts/test-whatsapp-links.js && node scripts/test-track-emitter.js && node scripts/test-builder.mjs && node scripts/test-builder-entry-links.mjs && node scripts/test-catalog-build.mjs && node scripts/test-auth.mjs && node scripts/test-sync.mjs && node scripts/test-reconcile.mjs",
     "dev": "node scripts/dev-builder.mjs"
   },
   "dependencies": {

@@ -41,6 +41,7 @@ hears. Do not "fix" this by syncing it back.
 | `netlify/functions/sync-orders-background.mjs` | Entry point. Background function — a full pass takes minutes. |
 | `netlify/functions/sync-health.mjs` | `/api/sync-health` — is the environment wired up? Synchronous, so it can report what the background function cannot. |
 | `scripts/test-sync.mjs` | Unit tests over the pure helpers. No network. |
+| `scripts/test-reconcile.mjs` | Every check, against fixtures. No network — the Zoho budget makes live testing of the checks impractical, and they are the part most worth testing. |
 
 ### Airtable tables it writes
 
@@ -188,6 +189,9 @@ Each of these cost a wrong answer while building this.
       `Last Seen` on all of them
 - [x] `/api/sync-health` — synchronous, read-only, answers in the HTTP response,
       because a background function cannot report a broken Airtable
+- [x] 32 tests, none touching the network. `reconcile()` takes an injectable
+      `io`, so every check is exercised against fixtures. Mutation-checked: both
+      the `Delivered`-is-protected bug and the delivery VAT bug are caught.
 
 ### Next
 - [x] `AIRTABLE_TOKEN` in Netlify env. Not `AIRTABLE_BASE` — see above.

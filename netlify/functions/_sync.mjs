@@ -57,7 +57,25 @@ async function pool(list, size, fn) {
   return out;
 }
 
-export async function reconcile({ mode = 'read-only', trigger = 'Manual', since = null } = {}) {
+/**
+ * Everything the reconciler reads, in one place so a test can supply it.
+ *
+ * Zoho allows 2,000 calls a day, so exercising the checks against the live API
+ * is not something you can do freely — and the checks are the part most worth
+ * testing. Injecting the reads makes every one of them testable at zero cost,
+ * offline, against data shaped like the awkward cases we actually hit.
+ */
+export const liveIO = {
+  orders: () => all(TABLES.orders),
+  lines: () => all(TABLES.lines),
+  products: () => all(TABLES.products),
+  items: () => zoho.items(),
+  invoices: (since) => zoho.invoices(since ? { since } : {}),
+  detail: (id) => zoho.invoice(id),
+  payments: (id) => zoho.payments(id)
+};
+
+export async function reconcile({ mode = 'read-only', trigger = 'Manual', since = null, io = liveIO } = {}) {
   const started = now();
   const callsAtStart = zoho.calls.n;
   const findings = [];
@@ -70,9 +88,9 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
   // DAY; anything on the fast path has to justify its cost.
   const isFull = !since;
   const [orders, lines, products, zItems, zInvoices] = await Promise.all([
-    all(TABLES.orders), all(TABLES.lines), all(TABLES.products),
-    isFull ? zoho.items() : Promise.resolve(null),
-    zoho.invoices(since ? { since } : {})
+    io.orders(), io.lines(), io.products(),
+    isFull ? io.items() : Promise.resolve(null),
+    io.invoices(since)
   ]);
 
   // The day the pipeline starts caring. Derived from the data rather than
@@ -122,30 +140,30 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
 
   // ---- check: live catalogue prices agree (full passes only) -----------
   if (zItems) {
-  const liveZ = new Map(zItems.filter((i) => i.status === 'active').map((i) => [i.name, i]));
-  const liveA = products.filter((p) => p.fields.Status === 'Active');
-  for (const p of liveA) {
-    const z = liveZ.get(p.fields.Name);
-    if (!z) {
-      add(WARN, 'catalogue-prices-agree', `${p.fields.Name} has no active Zoho item`, {
-        detail: 'Active in Airtable with no matching active Zoho item. Expected only for catch-alls like Custom Item.'
-      });
-      continue;
+    const liveZ = new Map(zItems.filter((i) => i.status === 'active').map((i) => [i.name, i]));
+    const liveA = products.filter((p) => p.fields.Status === 'Active');
+    for (const p of liveA) {
+      const z = liveZ.get(p.fields.Name);
+      if (!z) {
+        add(WARN, 'catalogue-prices-agree', `${p.fields.Name} has no active Zoho item`, {
+          detail: 'Active in Airtable with no matching active Zoho item. Expected only for catch-alls like Custom Item.'
+        });
+        continue;
+      }
+      const ap = p.fields.Price;
+      if (ap != null && Math.abs(ap - z.rate) > 0.01) {
+        add(ERROR, 'catalogue-prices-agree', `${p.fields.Name}: ${ap} vs Zoho ${z.rate}`, {
+          detail: `Airtable ${ap}, Zoho ${z.rate}. Pushes containing this item are blocked until they agree — one stale price must not stop unrelated sales.`
+        });
+      }
     }
-    const ap = p.fields.Price;
-    if (ap != null && Math.abs(ap - z.rate) > 0.01) {
-      add(ERROR, 'catalogue-prices-agree', `${p.fields.Name}: ${ap} vs Zoho ${z.rate}`, {
-        detail: `Airtable ${ap}, Zoho ${z.rate}. Pushes containing this item are blocked until they agree — one stale price must not stop unrelated sales.`
-      });
+    for (const [name] of liveZ) {
+      if (!liveA.some((p) => p.fields.Name === name)) {
+        add(WARN, 'catalogue-prices-agree', `${name} has no active Airtable product`, {
+          detail: 'Sellable in Zoho with nowhere to land in Airtable. A sale of it would have no product to attach to.'
+        });
+      }
     }
-  }
-  for (const [name] of liveZ) {
-    if (!liveA.some((p) => p.fields.Name === name)) {
-      add(WARN, 'catalogue-prices-agree', `${name} has no active Airtable product`, {
-        detail: 'Sellable in Zoho with nowhere to land in Airtable. A sale of it would have no product to attach to.'
-      });
-    }
-  }
 
   }
 
@@ -163,7 +181,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
   // detail response returns.
   const interesting = zInvoices.filter((i) => i.status !== 'draft');
   const details = await pool(interesting, 5, async (i) => {
-    try { return { list: i, full: await zoho.invoice(i.invoice_id) }; }
+    try { return { list: i, full: await io.detail(i.invoice_id) }; }
     catch (e) { return { list: i, error: String(e.message).slice(0, 160) }; }
   });
 
@@ -305,7 +323,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     const stamped = order.fields['Payment Received'];
     if (full.status === 'paid' && stamped && stamped !== full.last_payment_date) {
       try {
-        const ps = await zoho.payments(full.invoice_id);
+        const ps = await io.payments(full.invoice_id);
         const first = ps[0]?.date;
         const have = order.fields['Payment Received'];
         if (first && have && have !== first) {
