@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="/css/builder.css?v=79">
+    <link rel="stylesheet" href="/css/builder.css?v=83">
 
     <!--
       Nothing can render until the catalogue arrives, and the app's own scripts
@@ -32,7 +32,7 @@
         // with a stale catalogue silently loses whatever the catalogue gained,
         // which is exactly what a CDN or a browser cache will hand you a few
         // minutes after a deploy. Bump this whenever any of them changes.
-        window.frameworkDesignerVersion = '70';
+        window.frameworkDesignerVersion = '83';
         window.frameworkDesignerCatalog =
             fetch('/assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
                 .then(function (response) {
@@ -124,6 +124,33 @@
                 <p class="nd-hint" id="nd-hint" hidden></p>
                 <div class="nd-busy" id="nd-busy" hidden>Loading…</div>
 
+                <!--
+                  The two things you do TO a design, at the bottom corners of
+                  the view it applies to. In Advanced there are no "+" markers
+                  on the model until a piece has been chosen here, so the model
+                  is a model until you ask it to be a workbench; the gear holds
+                  what the panel holds in Simple, for the modes that have no
+                  panel.
+                -->
+                <button type="button" class="nd-fab nd-fab-add" id="nd-add" aria-haspopup="dialog"
+                    aria-label="Add a piece" title="Add a piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" aria-hidden="true">
+                        <path class="nd-fab-plus" d="M12 5v14M5 12h14" />
+                        <path class="nd-fab-cross" d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                    <span class="nd-fab-label" id="nd-add-label">Add a piece</span>
+                </button>
+
+                <button type="button" class="nd-fab nd-fab-gear" id="nd-customise" aria-haspopup="dialog"
+                    aria-label="Colour and options" title="Colour and options">
+                    <!-- Feather's sliders: options, rather than machine settings. -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
+                    </svg>
+                </button>
+
                 <div class="nd-fallback" id="nd-fallback" hidden>
                     <strong id="nd-fallback-title">Loading the designer…</strong>
                     <p class="nd-note" id="nd-fallback-body">One moment.</p>
@@ -143,32 +170,47 @@
                 </div>
 
                 <div class="nd-panel-body" id="nd-controls"></div>
-
-                <div class="nd-summary">
-                    <div class="nd-total">
-                        <strong class="nd-total-amount" id="nd-total">KSh 0</strong>
-                        <span class="nd-total-note" id="nd-total-note">VAT inclusive</span>
-                    </div>
-                    <button type="button" class="nd-present" id="nd-present" title="Create a shareable image">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                            <circle cx="8.5" cy="8.5" r="1.5" />
-                            <path d="M21 15l-5-5L5 21" />
-                        </svg>
-                        Present
-                    </button>
-                    <a class="nd-order" id="nd-order" href="#" target="_blank" rel="noopener noreferrer"
-                        aria-disabled="true">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path
-                                d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.3-1.4A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.34-2 1.38-.51.04-1.16.06-1.87-.12a15.6 15.6 0 0 1-6.8-5.9c-.5-.83-.83-1.8-.83-2.74 0-.94.5-1.4.67-1.6.18-.2.4-.25.53-.25h.38c.12 0 .29-.05.45.34l.62 1.5c.05.12.09.26 0 .41l-.24.36-.35.38c-.11.12-.23.25-.1.48.13.24.58 1 1.25 1.6.86.77 1.58 1.01 1.8 1.13.23.12.36.1.5-.06l.7-.82c.16-.2.3-.15.5-.08l1.42.67c.2.1.35.15.4.23.05.09.05.5-.2 1.2Z" />
-                        </svg>
-                        Order on WhatsApp
-                    </a>
-                </div>
             </aside>
         </main>
+
+        <!--
+          One line at the foot of the page, in every interface: what it costs,
+          how big it is, and the two things worth doing with it. The caret opens
+          the piece list in place -- it belongs next to the price it explains,
+          not in a control column that only one of the three interfaces has.
+        -->
+        <div class="nd-breakdown" id="nd-breakdown" hidden></div>
+
+        <div class="nd-summary">
+            <button type="button" class="nd-summary-toggle" id="nd-breakdown-toggle" aria-expanded="false"
+                aria-controls="nd-breakdown" aria-label="What is in it">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                </svg>
+            </button>
+            <div class="nd-total">
+                <strong class="nd-total-amount" id="nd-total">KSh 0</strong>
+                <span class="nd-total-note" id="nd-total-note">VAT inclusive</span>
+            </div>
+            <button type="button" class="nd-present" id="nd-present" title="Create a shareable image">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <path d="M21 15l-5-5L5 21" />
+                </svg>
+                <span class="nd-button-text">Present</span>
+            </button>
+            <a class="nd-order" id="nd-order" href="#" target="_blank" rel="noopener noreferrer"
+                aria-disabled="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                        d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.3-1.4A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.34-2 1.38-.51.04-1.16.06-1.87-.12a15.6 15.6 0 0 1-6.8-5.9c-.5-.83-.83-1.8-.83-2.74 0-.94.5-1.4.67-1.6.18-.2.4-.25.53-.25h.38c.12 0 .29-.05.45.34l.62 1.5c.05.12.09.26 0 .41l-.24.36-.35.38c-.11.12-.23.25-.1.48.13.24.58 1 1.25 1.6.86.77 1.58 1.01 1.8 1.13.23.12.36.1.5-.06l.7-.82c.16-.2.3-.15.5-.08l1.42.67c.2.1.35.15.4.23.05.09.05.5-.2 1.2Z" />
+                </svg>
+                <span class="nd-button-text">Order on WhatsApp</span>
+            </a>
+        </div>
 
         <div class="nd-modal nd-modal-image" id="nd-present-modal" hidden role="dialog" aria-modal="true"
             aria-labelledby="nd-present-title">
@@ -203,11 +245,14 @@
             </div>
         </div>
 
-        <!-- Staff only: raise a draft invoice in Zoho from this design. Kept out
-             of the panel and behind a password because customers use Advanced
-             too, and an order form sitting open in the sidebar invites the
-             question "what is that?" from everyone who does not need it. -->
-        <div class="nd-modal" id="nd-staff-modal" hidden role="dialog" aria-modal="true" aria-labelledby="nd-staff-title">
+        <!-- Staff only: raise a draft invoice in Zoho from this design. Reached
+             from the last row of the Advanced options sheet, behind a password,
+             because customers use Advanced too and an order form anyone can see
+             invites "what is that?" from everyone who does not need it. It takes
+             the whole screen once it opens: it is a form to work through, and
+             the model above it was only ever something to scroll past. -->
+        <div class="nd-modal nd-modal-full" id="nd-staff-modal" hidden role="dialog" aria-modal="true"
+            aria-labelledby="nd-staff-title">
             <div class="nd-modal-panel">
                 <div class="nd-modal-head">
                     <strong id="nd-staff-title">Staff login</strong>
@@ -218,11 +263,11 @@
         </div>
     </div>
 
-    <script src="/js/builder/engine.js?v=80" defer></script>
-    <script src="/js/builder/geometry.js?v=75" defer></script>
-    <script src="/js/builder/renderer.js?v=75" defer></script>
-    <script src="/js/builder/present.js?v=79" defer></script>
-    <script src="/js/builder/app.js?v=81" defer></script>
+    <script src="/js/builder/engine.js?v=83" defer></script>
+    <script src="/js/builder/geometry.js?v=83" defer></script>
+    <script src="/js/builder/renderer.js?v=83" defer></script>
+    <script src="/js/builder/present.js?v=83" defer></script>
+    <script src="/js/builder/app.js?v=83" defer></script>
 
     <!--
       Analytics loads after the designer is interactive. On a mid-range phone

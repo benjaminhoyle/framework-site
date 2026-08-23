@@ -1,13 +1,19 @@
 /*
- * Shelf designer — Simple / Standard / Advanced.
+ * Shelf designer — Simple / Flexible / Advanced.
  *
- * One layout for all three interfaces: the same viewport, the same control
- * column, the same summary bar. Switching interface changes what is inside the
- * control column, never where things live, so someone who starts in Simple and
- * moves up does not have to relearn the page.
+ * One layout for all three interfaces: the same viewport, the same bottom bar,
+ * the same sheets. Switching interface never moves a control to a new home, so
+ * someone who starts in Simple and moves up does not have to relearn the page.
  *
- * Mobile-first. The one structural difference on a wide screen is that the
- * control column moves from under the viewport to beside it.
+ * Every interface has exactly ONE place for the options that finish a design —
+ * colour, bookends, starting again. In Simple that is the control column, which
+ * is Simple's whole interface. Flexible and Advanced have no column: their
+ * design is made on the model, so those same fields live in a sheet behind the
+ * button at the bottom right of the model, and are built by the same functions.
+ * A screen shows one job at a time, which is what a phone has room for.
+ *
+ * Mobile-first. On a wide screen the control column moves from under the
+ * viewport to beside it; the bottom bar spans both, in all three interfaces.
  */
 
 :root {
@@ -84,6 +90,7 @@ button { cursor: pointer; }
   .nd-brand span { display: none; }
 }
 
+
 /* Interface switch — the one control that is identical in all three modes. */
 .nd-modes {
   display: flex;
@@ -130,6 +137,21 @@ button { cursor: pointer; }
 }
 .nd-iconbutton:disabled { opacity: .35; cursor: default; }
 .nd-iconbutton svg { width: 18px; height: 18px; }
+
+/*
+ * On a 320px phone the mark, the three interface names and undo/redo came to
+ * 386px and the row overflowed, putting redo off the edge of a page that
+ * cannot scroll sideways. Everything gives up a little, and the mark gives up
+ * the most: the interface switch and the history are the tool, and the logo is
+ * a link to a homepage that the back button also reaches.
+ */
+@media (max-width: 380px) {
+  .nd-top { gap: 6px; padding-left: 8px; padding-right: 8px; }
+  .nd-brand { display: none; }
+  .nd-modes button { padding: 7px 8px; font-size: .76rem; }
+  .nd-iconbutton { width: 34px; height: 34px; }
+  .nd-iconbutton svg { width: 16px; height: 16px; }
+}
 
 .nd-main {
   flex: 1 1 auto;
@@ -249,11 +271,16 @@ button { cursor: pointer; }
 }
 .nd-stage-tools svg { width: 17px; height: 17px; }
 
+/* Above the floating buttons, centred, so it never sits under either of them. */
 .nd-hint {
   position: absolute;
-  left: 10px;
-  bottom: 10px;
-  right: 60px;
+  left: 50%;
+  bottom: 66px;
+  transform: translateX(-50%);
+  /* Capped by measure as well as by the frame: over a wide model a hint set
+     the width of the screen is a sentence nobody's eye tracks. */
+  max-width: min(calc(100% - 24px), 46ch);
+  text-align: center;
   font-size: .8rem;
   color: var(--nd-muted);
   background: rgba(255, 255, 255, .92);
@@ -356,6 +383,67 @@ button { cursor: pointer; }
   color: #fff;
 }
 
+/* ------------------------------------------------------- floating buttons -- */
+
+/*
+ * Two buttons at the bottom corners of the model, and nothing else on it.
+ *
+ * Add is on the left because that is the reading start of the row, and it is
+ * the one that changes what the model is for: in Advanced it opens the piece
+ * list, and while a piece is waiting to be placed it turns into the cancel for
+ * that same decision — the button you pressed is the button you press to undo
+ * pressing it. Options sits opposite, quiet, because it is finishing rather
+ * than building.
+ */
+.nd-fab {
+  position: absolute;
+  bottom: 12px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--nd-tap);
+  padding: 0 16px 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--nd-accent);
+  color: #fff;
+  font-size: .88rem;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(32, 36, 36, .28);
+  transition: transform .12s ease, background-color .12s ease;
+}
+.nd-fab svg { width: 20px; height: 20px; flex: 0 0 auto; }
+.nd-fab:active { transform: scale(.96); }
+.nd-fab[hidden] { display: none; }
+.nd-fab:disabled { opacity: .45; cursor: default; box-shadow: none; }
+
+.nd-fab-add { left: 12px; }
+
+/* One icon, two states: the cross is only drawn while a piece is waiting for a
+   home, so the control never changes size or place as it changes meaning. */
+.nd-fab .nd-fab-cross { display: none; }
+.nd-fab-add.is-cancel { background: var(--nd-ink); }
+.nd-fab-add.is-cancel .nd-fab-plus { display: none; }
+.nd-fab-add.is-cancel .nd-fab-cross { display: inline; }
+
+/* Round and unlabelled: it holds settings, and its icon says so on its own. */
+.nd-fab-gear {
+  right: 12px;
+  width: var(--nd-tap);
+  padding: 0;
+  justify-content: center;
+  background: rgba(255, 255, 255, .95);
+  color: var(--nd-muted);
+  border: 1px solid var(--nd-line);
+  box-shadow: 0 1px 6px rgba(32, 36, 36, .16);
+}
+.nd-fab-gear:hover { color: var(--nd-ink); }
+
+/* The label is the affordance on a phone — "+" alone does not say what it adds
+   — but it costs nothing on a wide screen either, so it always shows. */
+.nd-fab-label { white-space: nowrap; }
+
 .nd-fallback {
   position: absolute;
   inset: 0;
@@ -374,6 +462,15 @@ button { cursor: pointer; }
 
 /* ---------------------------------------------------------------- panel -- */
 
+/*
+ * The control column, which only Simple has.
+ *
+ * Simple's design is generated from a spec, so its interface IS a form and a
+ * column is the right shape for it. Flexible and Advanced build on the model
+ * itself; a column beside them held a colour picker, a piece list and a price
+ * breakdown competing with the thing being designed, which on a phone left the
+ * model about a third of the screen.
+ */
 .nd-panel {
   flex: 0 0 auto;
   display: flex;
@@ -383,6 +480,7 @@ button { cursor: pointer; }
   max-height: var(--nd-panel-h);
   min-height: 0;
 }
+.nd-app:not([data-mode="simple"]) .nd-panel { display: none; }
 
 .nd-panel-head {
   display: flex;
@@ -576,6 +674,14 @@ button { cursor: pointer; }
   font-weight: 500;
 }
 .nd-button:disabled { opacity: .4; cursor: default; }
+/* "Open it in Zoho" is a link wearing a button. Without this it renders as
+   underlined, left-aligned text in a box the width of the sheet. */
+a.nd-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
 .nd-button-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .nd-confirm-row { margin-top: 6px; }
 .nd-button.is-primary {
@@ -643,6 +749,8 @@ button { cursor: pointer; }
   letter-spacing: .12em;
 }
 .nd-present-code .nd-button { flex: 0 0 auto; }
+/* `display: flex` beats the hidden attribute, so it needs saying. */
+.nd-present-code[hidden] { display: none; }
 
 /* Module list (Advanced). */
 .nd-search {
@@ -702,31 +810,81 @@ button { cursor: pointer; }
 
 /* --------------------------------------------------------------- summary -- */
 
+/*
+ * One line, at the foot of every interface: what is in it, what it costs, how
+ * big it is, and the two things worth doing with it.
+ *
+ * It stays a single row at every width. The two actions are deliberately small
+ * — the price and the size are what someone is reading, and Present and Order
+ * are what they reach for once they have read it. Below 560px they drop their
+ * labels rather than wrapping to a second line: a bar that changes height as
+ * the design changes makes the model jump.
+ */
 .nd-summary {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 10px;
+  padding: 8px 12px;
   border-top: 1px solid var(--nd-line);
   background: var(--nd-panel);
-  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
 }
 
-.nd-total { flex: 1 1 auto; min-width: 8rem; }
+/* The disclosure for "what is in it", left of the figures it explains. */
+.nd-summary-toggle {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--nd-line);
+  border-radius: 8px;
+  background: var(--nd-panel);
+  color: var(--nd-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.nd-summary-toggle svg { width: 16px; height: 16px; transition: transform .18s ease; }
+.nd-summary-toggle[aria-expanded="true"] {
+  background: var(--nd-soft);
+  color: var(--nd-ink);
+}
+.nd-summary-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.nd-summary-toggle:disabled { opacity: .35; cursor: default; }
 
-/* Narrow phones: the price gets its own line and the two actions share the
-   next. Three items on one row crushed .nd-total to a few pixels, and it wrapped
-   one character per line, which pushed the whole summary bar taller than the
-   panel. */
-@media (max-width: 620px) {
-  .nd-summary { flex-wrap: wrap; }
-  .nd-total { flex: 1 1 100%; min-width: 0; }
-  .nd-order { flex: 1 1 auto; justify-content: center; }
+.nd-total { flex: 1 1 auto; min-width: 0; }
+
+/* --------------------------------------------------------------- what is in it -- */
+
+/*
+ * The piece list, opened from the bar and sitting directly on top of it.
+ *
+ * Capped rather than free-growing: a 30-piece design would otherwise push the
+ * model off the screen to explain itself. On a wide screen it lays out in
+ * columns, because one column of "2 x Standard Base" across 1200px is a lot of
+ * white space to read a short list in.
+ */
+.nd-breakdown {
+  flex: 0 0 auto;
+  max-height: min(38vh, 300px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 12px 12px 4px;
+  border-top: 1px solid var(--nd-line);
+  background: var(--nd-panel);
+}
+.nd-breakdown[hidden] { display: none; }
+.nd-breakdown .nd-label { display: block; margin-bottom: 6px; }
+.nd-breakdown .nd-lines {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  column-gap: 24px;
 }
 .nd-total-amount {
   display: block;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
@@ -745,16 +903,17 @@ button { cursor: pointer; }
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: var(--nd-tap);
-  padding: 0 14px;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 11px;
   border: 1px solid var(--nd-line-strong);
   border-radius: var(--nd-radius);
   background: var(--nd-panel);
-  font-size: .9rem;
+  font-size: .82rem;
   font-weight: 600;
 }
-.nd-present svg { width: 17px; height: 17px; }
+.nd-present svg { width: 16px; height: 16px; flex: 0 0 auto; }
 .nd-present:disabled { opacity: .4; cursor: default; }
 
 /* The share image itself: shown rather than downloaded, so it can be
@@ -781,18 +940,36 @@ button { cursor: pointer; }
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: var(--nd-tap);
-  padding: 0 16px;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 13px;
   border-radius: var(--nd-radius);
   background: var(--nd-whatsapp);
   color: #fff;
   font-weight: 700;
-  font-size: .92rem;
+  font-size: .84rem;
   text-decoration: none;
+  white-space: nowrap;
 }
-.nd-order svg { width: 18px; height: 18px; fill: currentColor; }
+.nd-order svg { width: 17px; height: 17px; fill: currentColor; flex: 0 0 auto; }
 .nd-order[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+
+/*
+ * Narrow phones: the actions keep their icons and lose their words, so the row
+ * survives at 320px without wrapping. "Order on WhatsApp" also shortens to
+ * "Order" first, at the width where the icon alone would be ambiguous next to
+ * a second icon-only button.
+ */
+@media (max-width: 560px) {
+  .nd-order .nd-button-text { font-size: 0; }
+  .nd-order .nd-button-text::after { content: "Order"; font-size: .84rem; }
+}
+@media (max-width: 420px) {
+  .nd-summary { gap: 8px; padding-left: 10px; padding-right: 10px; }
+  .nd-present .nd-button-text { display: none; }
+  .nd-present { padding: 0 10px; }
+}
 
 /* ---------------------------------------------------------------- modal -- */
 
@@ -849,6 +1026,28 @@ button { cursor: pointer; }
   gap: 8px;
 }
 
+/* ------------------------------------------------------------ full sheet -- */
+
+/*
+ * The order form takes the whole screen on a phone.
+ *
+ * Everything else in this tool is something you do TO the model, so it shares
+ * the screen with it. This is a form: eleven fields, a searchable client list
+ * and a submit that creates a real record in the books. Sharing the screen with
+ * a shelf meant scrolling past the shelf to reach the fields, and a dropdown
+ * with nowhere to open into.
+ */
+.nd-modal-full .nd-modal-panel {
+  height: 100%;
+  max-height: 100%;
+  border-radius: 0;
+}
+.nd-modal-full .nd-modal-head {
+  border-bottom: 1px solid var(--nd-line);
+  padding-bottom: 12px;
+}
+.nd-modal-full .nd-modal-body { padding-top: 14px; gap: 12px; }
+
 /* --------------------------------------------------------------- desktop -- */
 
 @media (min-width: 860px) {
@@ -868,45 +1067,9 @@ button { cursor: pointer; }
   .nd-app[data-panel="collapsed"] .nd-panel-body { display: flex; }
 
   .nd-panel-body { padding: 16px; gap: 18px; }
-  .nd-summary { padding: 14px 16px; flex-wrap: wrap; }
-  /* Secondary action beside Order: makes the client-facing image. */
-.nd-present {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: var(--nd-tap);
-  padding: 0 14px;
-  border: 1px solid var(--nd-line-strong);
-  border-radius: var(--nd-radius);
-  background: var(--nd-panel);
-  font-size: .9rem;
-  font-weight: 600;
-}
-.nd-present svg { width: 17px; height: 17px; }
-.nd-present:disabled { opacity: .4; cursor: default; }
 
-/* The share image itself: shown rather than downloaded, so it can be
-   long-pressed on a phone or right-clicked on a desktop. */
-.nd-modal-image .nd-modal-panel { max-height: 92vh; max-height: 92dvh; }
-.nd-present-frame {
-  display: flex;
-  justify-content: center;
-  background: var(--nd-soft);
-  border: 1px solid var(--nd-line);
-  border-radius: var(--nd-radius);
-  padding: 8px;
-}
-.nd-present-frame img {
-  display: block;
-  width: 100%;
-  max-width: 360px;
-  height: auto;
-  border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(32, 36, 36, .14);
-}
-
-.nd-order { flex: 1 1 100%; justify-content: center; }
+  .nd-summary { padding: 10px 16px; gap: 14px; }
+  .nd-breakdown { padding: 14px 16px 6px; }
 
   .nd-modal { align-items: center; }
   .nd-modal-panel {
@@ -914,15 +1077,22 @@ button { cursor: pointer; }
     max-height: min(560px, 82vh);
     border-radius: 14px;
   }
+
+  /* A form to work through, not a list to pick from: wider, and tall enough
+     that the client dropdown opens without moving anything. */
+  .nd-modal-full .nd-modal-panel {
+    width: min(720px, 94vw);
+    max-height: min(760px, 88vh);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
 
-/* Staff login. A quiet button in Advanced; everything else is in a modal and
-   nothing is rendered until the password is accepted, so there is nothing to
-   read over a shoulder. Customers use Advanced too. */
+/* Staff login. Reached from the last row of the Advanced options sheet, and
+   nothing about an order is rendered until the password is accepted, so there
+   is nothing to read over a shoulder. Customers use Advanced too. */
 .nd-staff { border-top: 1px solid var(--nd-line); padding-top: 12px; margin-top: 4px; }
 .nd-button.is-quiet {
   background: none;
@@ -933,16 +1103,211 @@ button { cursor: pointer; }
 .nd-button.is-quiet:hover { color: var(--nd-ink); border-color: var(--nd-line-strong); }
 
 .nd-staff-form { display: flex; flex-direction: column; gap: 12px; }
-.nd-staff-row { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 10px; align-items: center; }
+.nd-staff-row { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 10px; align-items: center; }
+/* A row whose control opens something downwards must not be overlapped by the
+   rows below it, and stacking context is decided by document order alone. */
+.nd-staff-row.is-open { position: relative; z-index: 5; }
 .nd-staff-label { font-size: .78rem; color: var(--nd-muted); }
 .nd-staff-row input[type="checkbox"] { justify-self: start; width: 20px; height: 20px; }
-.nd-staff-address { resize: vertical; font: inherit; }
+.nd-staff-address { resize: vertical; font: inherit; padding: 10px 12px; line-height: 1.4; }
 .nd-staff-window { display: flex; gap: 8px; align-items: center; }
 .nd-staff-window input { flex: 1 1 auto; min-width: 0; }
-.nd-staff-results { max-height: 168px; }
-.nd-staff-results:empty { display: none; }
 .nd-note.is-error { color: var(--nd-danger); }
+
+/* A heading inside the form, for the fields that only exist in one branch of
+   it — the four that describe a client who is not in the list yet. */
+.nd-staff-group {
+  border: 1px solid var(--nd-line);
+  border-radius: var(--nd-radius);
+  padding: 10px 12px 12px;
+  background: var(--nd-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.nd-staff-group[hidden] { display: none; }
+.nd-staff-group > .nd-label { margin-bottom: -2px; }
+.nd-staff-group .nd-search { background: var(--nd-panel); }
+
+/* Where the form's own actions sit: full width, and last. */
+.nd-staff-form .nd-button.is-primary { margin-top: 4px; }
+
+/* ------------------------------------------------------------- combo box -- */
+
+/*
+ * The client picker: a text box with a list that OVERLAYS what is under it.
+ *
+ * It used to be a block of buttons pushed into the form between the field and
+ * the next one, so choosing a client moved every remaining field down the page
+ * and, further down the form, opened below the fold with no way to reach it.
+ * A dropdown is absolutely positioned for exactly this reason — the layout must
+ * not know or care that it is open.
+ *
+ * Every client is already in the browser by the time this renders (they arrive
+ * with the password check), so filtering is an array filter and there is no
+ * request, no debounce and no spinner between a keystroke and the list.
+ */
+.nd-combo { position: relative; min-width: 0; }
+
+.nd-combo-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 6;
+  max-height: 268px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  background: var(--nd-panel);
+  border: 1px solid var(--nd-line-strong);
+  border-radius: var(--nd-radius);
+  box-shadow: var(--nd-shadow);
+  padding: 4px;
+}
+.nd-combo-list[hidden] { display: none; }
+
+.nd-combo-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  text-align: left;
+  font-size: .9rem;
+}
+.nd-combo-option:hover,
+.nd-combo-option.is-active {
+  background: var(--nd-accent-soft);
+  color: var(--nd-ink);
+}
+.nd-combo-option b { font-weight: 500; }
+/* The matched run of characters, so a long list explains why each row is in it. */
+.nd-combo-option mark { background: none; color: var(--nd-accent); font-weight: 700; }
+
+/* "+ New client" is pinned to the bottom, always — not only when nothing
+   matches. A name spelled differently in Zoho is exactly the case where
+   somebody needs it and the list is not empty. */
+.nd-combo-new {
+  position: sticky;
+  bottom: -4px;
+  margin-top: 4px;
+  border-top: 1px solid var(--nd-line);
+  border-radius: 0 0 7px 7px;
+  background: var(--nd-panel);
+  color: var(--nd-accent);
+  font-weight: 600;
+}
+.nd-combo-new:hover, .nd-combo-new.is-active { background: var(--nd-accent-soft); }
+
+.nd-combo-empty { color: var(--nd-muted); font-size: .85rem; padding: 10px; }
+
+/* The chosen client, shown as a fact rather than as text still in a box. */
+.nd-combo-chosen {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--nd-tap);
+  padding: 0 6px 0 12px;
+  border: 1px solid var(--nd-accent);
+  border-radius: var(--nd-radius);
+  background: var(--nd-accent-soft);
+}
+.nd-combo-chosen b { flex: 1 1 auto; font-weight: 600; font-size: .92rem; min-width: 0; overflow-wrap: anywhere; }
+.nd-combo-clear {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--nd-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.nd-combo-clear:hover { background: rgba(32, 36, 36, .07); color: var(--nd-ink); }
+
+/* ------------------------------------------------------------- segmented -- */
+
+/*
+ * Tentative / Confirmed, and nothing selected.
+ *
+ * Three states, and "nothing yet" is a real answer rather than a missing one —
+ * most delivery dates are agreed after the invoice is raised. Pressing the
+ * selected half again clears it, which is why these are buttons rather than a
+ * pair of radios: a radio group has no way back to empty.
+ */
+.nd-segmented {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--nd-line);
+  border-radius: 999px;
+  background: var(--nd-soft);
+}
+.nd-segmented button {
+  flex: 1 1 0;
+  min-height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--nd-muted);
+  font-size: .78rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.nd-segmented button[aria-pressed="true"] {
+  background: var(--nd-panel);
+  color: var(--nd-ink);
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(32, 36, 36, .14);
+}
+
+/* A date or a time with its own Tentative/Confirmed beside it. The status is
+   meaningless without the value, so it greys out until there is one. */
+.nd-staff-dated,
+.nd-staff-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.nd-staff-stack .nd-subtext { margin-top: 0; }
+
+/* What the other live record holds, where the two disagree. Set apart rather
+   than coloured as an error: it is a thing to settle, not a thing that broke. */
+.nd-staff-flag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 10px;
+  border: 1px solid var(--nd-line-strong);
+  border-radius: 8px;
+  background: var(--nd-soft);
+  font-size: .75rem;
+  line-height: 1.35;
+}
+.nd-staff-flag[hidden] { display: none; }
+.nd-staff-flag span { flex: 1 1 auto; }
+.nd-staff-flag .nd-button {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: .72rem;
+  background: var(--nd-panel);
+  color: var(--nd-ink);
+}
+.nd-staff-dated .nd-segmented.is-idle { opacity: .45; pointer-events: none; }
+
+/* A field the form is hiding rather than disabling — client collection removes
+   the delivery fee outright, because a fee that is merely greyed still reads as
+   a number somebody might mean. */
+.nd-staff-row[hidden] { display: none; }
 
 @media (max-width: 520px) {
   .nd-staff-row { grid-template-columns: 1fr; gap: 4px; align-items: start; }
+  .nd-staff-row input[type="checkbox"] { margin-top: 4px; }
 }

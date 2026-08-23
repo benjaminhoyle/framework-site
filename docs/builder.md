@@ -9,16 +9,52 @@ paced for a mid-range Android phone on a slow connection.
 
 ## Three interfaces, one tool
 
-The interface switch in the header changes the control column only. The viewport,
-the summary bar, the pricing and the placement engine are identical in all three,
-so moving up a level never means relearning the page. A design carries across
-switches (see "Switching down to Simple" below).
+The viewport, the bottom bar, the pricing and the placement engine are identical
+in all three, so moving up a level never means relearning the page. A design
+carries across switches (see "Switching down to Simple" below).
 
 | | Controls | Placement rules |
 |---|---|---|
-| **Simple** | unit type, width, height, colour, lamp, bookends | Design is generated from the spec — a plain run. Mirrors `/simplified-designer`. |
+| **Simple** | a control column: unit type, width, height, colour, lamp, bookends | Design is generated from the spec — a plain run. Mirrors `/simplified-designer`. |
 | **Standard** | in-viewport `+` buttons, a limited set of pieces, tap a piece to swap/remove | Units may only butt directly against each other. Mirrors `/designer`. |
-| **Advanced** | every piece, searchable, with a placement count each; rotate; save/load JSON | Also offers the gapped unit spacing that bridging spans need. |
+| **Advanced** | every piece, from a searchable sheet, with a placement count each; rotate | Also offers the gapped unit spacing that bridging spans need. |
+
+### Where the controls live
+
+**One screen, one job.** That is the rule the layout follows, and it is a
+response to what Advanced looked like before: a control column holding a
+47-row piece list, a colour picker, a bookend stepper and a price breakdown,
+beside a model covered in `+` markers, on a phone where all of it fit in about
+a third of the screen each.
+
+Every interface therefore has exactly **one** place for the options that finish
+a design — colour, bookends, starting again — and the same functions render it
+in both places:
+
+| | Building | Finishing |
+|---|---|---|
+| **Simple** | the control column (the spec generates the design) | the same control column |
+| **Standard** | `+` markers on the model | the sheet behind the button at the model's bottom right |
+| **Advanced** | the `+` at the model's bottom left, then a marker | the same sheet |
+
+Consequences worth knowing:
+
+- **Simple is the only interface with a control column**, because Simple's
+  interface *is* a form. Flexible and Advanced build on the model, so the model
+  gets the whole screen and the column's contents move into a sheet.
+- **Advanced puts no `+` markers on the model until a piece is chosen.** Showing
+  every legal spot for every piece at once is unreadable at 47 pieces, several
+  of which fit in a dozen places. Choosing the piece first cuts it to the spots
+  that matter. Flexible keeps its standing `+` anchors, because offering the few
+  places a unit can go *is* Flexible's guidance.
+- **The `+` becomes the cancel for the decision it opened.** One control, one
+  place, for "I am adding something" and "no I am not"; a separate cancel
+  somewhere else is a second thing to find while the first is still lit up.
+- **The bottom bar is the page's, not the panel's**: the caret that opens "what
+  is in it", the total, the size, and Present and Order — deliberately small,
+  because the figures are what is being read and the buttons are what is reached
+  for afterwards. It stays one row down to 320px, dropping the button labels
+  rather than wrapping, because a bar that changes height makes the model jump.
 
 The view is a locked isometric with pan, pinch/wheel zoom and auto-fit. There is
 no orbit, by design — nobody can lose the shelf off-screen or end up under it.
@@ -224,8 +260,10 @@ repeat POST must not replace the arrival details of whoever created it.
   throw the path away on the first edit.
 - A hash in the URL always wins over a code in the path: the hash is the live
   state, the code is what a share image carries.
-- **Present saves the design too**, not just Advanced's "Create link" — otherwise
-  the address printed on the image would be one that 404s.
+- **Present saves the design**, and so does Order — otherwise the address
+  printed on the image, or sent in the message, would be one that 404s. There is
+  no separate "create a link" button: nobody ever wanted a link for its own
+  sake, they wanted to send a picture or an order.
 
 ## Colours
 
@@ -327,9 +365,9 @@ designer-page exclusion list.
   dimension arrows include the lamp. Deliberate — its `+`/`−` add 30cm shelf
   levels, and showing the lamp-inclusive figure next to them read as broken — but
   flagged in case you would rather all three agreed.
-- **Saved designs are never cleaned up.** Every Present and every "Create link"
-  writes a blob, keyed by a hash of the design, so repeats cost nothing but
-  distinct designs accumulate. There is no expiry and nothing reads the store
+- **Saved designs are never cleaned up.** Every Present, every Order and every
+  raised invoice writes a blob, keyed by a hash of the design, so repeats cost
+  nothing but distinct designs accumulate. There is no expiry and nothing reads the store
   back yet — the arrival details are being collected for a report that does not
   exist.
 - **The old `/new-designer` address is a 301** to `/builder`, because links with
@@ -347,3 +385,13 @@ Later in July 2026 the pipeline handoff became the vendored contract described
 above, replacing a string-scrape of a generated JS file and a hand-copy of the
 test fixtures; the desktop builder it was ported from was retired; and corner
 units arrived.
+
+In August 2026 the control column was taken out of Flexible and Advanced and
+its contents split between the bottom bar and the two floating buttons on the
+model — see "Where the controls live". **Download**, **Upload** and **Create
+link to design** were removed at the same time: the first two moved a design as
+a JSON file between a phone and the workshop, which the resolvable share address
+now does better, and the third was a link nobody made except on the way to
+sending one. The order form behind Staff login was rebuilt in the same pass;
+`docs/order-sync.md` covers it, including the three copies of a client's phone
+number and which two of them have to agree.

@@ -235,6 +235,11 @@
     total: el("nd-total"),
     totalNote: el("nd-total-note"),
     order: el("nd-order"),
+    breakdown: el("nd-breakdown"),
+    breakdownToggle: el("nd-breakdown-toggle"),
+    add: el("nd-add"),
+    addLabel: el("nd-add-label"),
+    customise: el("nd-customise"),
     modal: el("nd-modal"),
     modalTitle: el("nd-modal-title"),
     modalBody: el("nd-modal-body"),
@@ -268,7 +273,12 @@
     simple: { family: "standard", width: 1, levels: 2, lamp: false, trimmed: false },
     search: "",
     actionMenu: null,
-    savedCode: null, // the last design given a link, so the panel can show it again
+    savedCode: null, // the last design saved, so a repeat costs no second write
+    breakdownOpen: false,
+    // The sheet on screen, kept so an edit made inside one redraws it. A colour
+    // picked in the options sheet changes the swatch that was pressed, and
+    // refresh() rebuilds panels, not modals.
+    sheet: null,
     onModalDismiss: null,
     hintTimer: 0,
     dimensionsOn: false,
@@ -721,10 +731,16 @@
     // would put the "+" anchors and the dimension witness lines at angles that
     // parallel-projection maths cannot produce.
     if (ui.mode !== "simple" && !isPerspective()) {
+      // Advanced starts from a piece, not from a place. Its "+" markers appear
+      // only once one has been chosen, so the model is a model until someone
+      // asks it to be a workbench -- which is the difference between the two
+      // upper interfaces. Flexible keeps its standing "+" anchors: offering the
+      // few places a unit can go IS its guidance.
       if (ui.activeModuleId) buildCandidateMarkers();
-      else buildAddButtons();
+      else if (ui.mode !== "advanced") buildAddButtons();
       if (ui.selectedId) buildActionMenu();
     }
+    updateStageActions();
     positionOverlays();
   }
 
@@ -1739,25 +1755,57 @@
 
   // ------------------------------------------------------------------ modal --
 
-  function openPicker(title, options) {
-    dom.modalTitle.textContent = title;
+  /*
+   * One sheet, three uses: the piece picker, the yes/no confirm, and the
+   * options sheet that stands in for the control column in Flexible and
+   * Advanced. They share the element, the dismissal rules and the focus
+   * handling, so a fourth costs a render function and nothing else.
+   *
+   * `live: true` means the sheet's contents depend on the design, so refresh()
+   * redraws it in place. Without that, picking a colour inside the options
+   * sheet repaints the model and leaves the pressed swatch showing the previous
+   * choice -- the one control on the page that would not agree with itself.
+   */
+  function openSheet(spec) {
+    ui.sheet = spec;
+    dom.modalTitle.textContent = spec.title;
     clear(dom.modalBody);
-
-    if (options.length > 8) {
-      const search = make("input", "nd-search");
-      search.type = "search";
-      search.placeholder = "Search pieces";
-      search.autocomplete = "off";
-      search.addEventListener("input", () => renderPickerRows(options, search.value));
-      dom.modalBody.appendChild(search);
-    }
-    const list = make("div", "nd-list");
-    list.id = "nd-picker-list";
-    dom.modalBody.appendChild(list);
-    renderPickerRows(options, "");
-
+    spec.render(dom.modalBody);
     dom.modal.hidden = false;
-    dom.modalClose.focus();
+    if (spec.focus !== false) dom.modalClose.focus();
+  }
+
+  /** Redraw the open sheet after a change it made. No-op when none is open. */
+  function refreshSheet() {
+    if (!ui.sheet || !ui.sheet.live || dom.modal.hidden) return;
+    dom.modalTitle.textContent = ui.sheet.title;
+    clear(dom.modalBody);
+    ui.sheet.render(dom.modalBody);
+  }
+
+  function openPicker(title, options, settings) {
+    const config = settings || {};
+    openSheet({
+      title,
+      render: (body) => {
+        if (!options.length) {
+          body.appendChild(make("p", "nd-list-empty", config.emptyLabel || "Nothing fits here yet."));
+          return;
+        }
+        if (options.length > 8) {
+          const search = make("input", "nd-search");
+          search.type = "search";
+          search.placeholder = config.searchLabel || "Search pieces";
+          search.autocomplete = "off";
+          search.addEventListener("input", () => renderPickerRows(options, search.value));
+          body.appendChild(search);
+        }
+        const list = make("div", "nd-list");
+        list.id = "nd-picker-list";
+        body.appendChild(list);
+        renderPickerRows(options, "");
+      }
+    });
   }
 
   function renderPickerRows(options, query) {
@@ -1812,16 +1860,6 @@
    * browser-chrome alert with the page's own name in it.
    */
   function openConfirm(options) {
-    dom.modalTitle.textContent = options.title;
-    clear(dom.modalBody);
-    dom.modalBody.appendChild(make("p", "nd-note", options.body));
-
-    const row = make("div", "nd-button-row nd-confirm-row");
-    const cancel = make("button", "nd-button", options.cancelLabel || "Cancel");
-    cancel.type = "button";
-    const confirm = make("button", "nd-button is-primary", options.confirmLabel || "Continue");
-    confirm.type = "button";
-
     let settled = false;
     const finish = (handler) => {
       if (settled) return;
@@ -1829,21 +1867,32 @@
       closePicker();
       if (handler) handler();
     };
-    cancel.addEventListener("click", () => finish(options.onCancel));
-    confirm.addEventListener("click", () => finish(options.onConfirm));
+    openSheet({
+      title: options.title,
+      focus: false,
+      render: (body) => {
+        body.appendChild(make("p", "nd-note", options.body));
+        const row = make("div", "nd-button-row nd-confirm-row");
+        const cancel = make("button", "nd-button", options.cancelLabel || "Cancel");
+        cancel.type = "button";
+        const confirm = make("button", "nd-button is-primary", options.confirmLabel || "Continue");
+        confirm.type = "button";
+        cancel.addEventListener("click", () => finish(options.onCancel));
+        confirm.addEventListener("click", () => finish(options.onConfirm));
+        row.appendChild(cancel);
+        row.appendChild(confirm);
+        body.appendChild(row);
+        confirm.focus();
+      }
+    });
     // Dismissing by backdrop, close button or Escape all mean "no".
     ui.onModalDismiss = () => finish(options.onCancel);
-
-    row.appendChild(cancel);
-    row.appendChild(confirm);
-    dom.modalBody.appendChild(row);
-    dom.modal.hidden = false;
-    confirm.focus();
   }
 
   function closePicker() {
     dom.modal.hidden = true;
     clear(dom.modalBody);
+    ui.sheet = null;
     const dismiss = ui.onModalDismiss;
     ui.onModalDismiss = null;
     if (dismiss) dismiss();
@@ -1914,6 +1963,24 @@
     return engine.designBounds(ui.catalog, { instances: shelfOnly });
   }
 
+  /**
+   * "What is in it", opened from the caret beside the price it explains.
+   *
+   * It used to be the last field of the control column, which meant it existed
+   * in Simple and Flexible, and in Advanced sat below a 47-row piece list
+   * nobody scrolled past. Next to the total is where someone asks what the
+   * total is made of.
+   */
+  function renderBreakdown() {
+    const { lines } = priceBreakdown();
+    if (!lines.length) ui.breakdownOpen = false;
+    dom.breakdownToggle.disabled = !lines.length;
+    dom.breakdownToggle.setAttribute("aria-expanded", String(ui.breakdownOpen));
+    dom.breakdown.hidden = !ui.breakdownOpen;
+    clear(dom.breakdown);
+    if (ui.breakdownOpen) dom.breakdown.appendChild(breakdownSection());
+  }
+
   function updateSummary() {
     const { total, unpriced } = priceBreakdown();
     dom.total.textContent = formatKsh(total);
@@ -1922,6 +1989,8 @@
     if (size) notes.unshift(size);
     if (unpriced) notes.push(`${unpriced} piece${unpriced === 1 ? "" : "s"} quoted separately`);
     dom.totalNote.textContent = notes.join(" · ");
+
+    renderBreakdown();
 
     const empty = ui.design.instances.length === 0;
     dom.present.disabled = empty;
@@ -2107,9 +2176,9 @@
   /**
    * The design code beneath the share image, with a Copy button.
    *
-   * Same clipboard handling as linkField()'s: older Android WebViews have no
-   * async clipboard, so fall back to selecting the text and letting a long-press
-   * copy what is already highlighted.
+   * Older Android WebViews have no async clipboard, so it falls back to
+   * selecting the text and letting a long-press copy what is already
+   * highlighted.
    */
   function showPresentCode(code) {
     if (!dom.presentCode || !code) return;
@@ -2537,7 +2606,6 @@
     if (options.children.length) body.appendChild(options);
 
     if (!ui.simple.trimmed) body.appendChild(bookendField());
-    body.appendChild(breakdownSection());
     body.appendChild(make(
       "p",
       "nd-note",
@@ -2545,108 +2613,207 @@
     ));
   }
 
-  function renderStandardPanel(body) {
-    body.appendChild(make(
-      "p",
-      "nd-note",
-      "Tap a + in the view to add a unit beside the run or a shelf on top. Tap any piece to swap or remove it."
-    ));
-    body.appendChild(finishField());
-    body.appendChild(bookendField());
-    body.appendChild(breakdownSection());
+  // ------------------------------------------------------- stage actions --
+
+  /*
+   * Flexible and Advanced have no control column. Everything that column held
+   * lives in one of two places instead, both of them on the model:
+   *
+   *   the "+" at the bottom left    what to add
+   *   the sliders at bottom right   colour, bookends, starting again
+   *
+   * Both are rendered by the same functions Simple's column uses, so there is
+   * one definition of the colour field and one of the bookend stepper, and the
+   * three interfaces cannot drift apart.
+   */
+
+  /** Advanced: every piece that fits somewhere right now, as picker rows. */
+  function addPieceOptions() {
+    return tierModules(ui.mode)
+      .filter((module) => (ui.candidateCache.get(module.id) || []).length)
+      .map((module) => {
+        const count = (ui.candidateCache.get(module.id) || []).length;
+        return {
+          module,
+          note: `${count} spot${count === 1 ? "" : "s"}`,
+          onPick: () => chooseModule(module.id)
+        };
+      });
   }
 
-  function renderAdvancedPanel(body) {
-    body.appendChild(make(
-      "p",
-      "nd-note",
-      "Every piece, including adapters, boosters and trimmed cuts. Units may also sit apart so a shelf can span the gap."
-    ));
-
-    const field = make("div", "nd-field");
-    field.appendChild(make("span", "nd-label", "Add a piece"));
-    const search = make("input", "nd-search");
-    search.type = "search";
-    search.placeholder = "Search pieces";
-    search.autocomplete = "off";
-    search.value = ui.search;
-    search.addEventListener("input", () => {
-      ui.search = search.value;
-      renderModuleList();
+  function openAddSheet() {
+    openPicker("Add a piece", addPieceOptions(), {
+      emptyLabel: ui.design.instances.length
+        ? "Nothing else will fit on this design."
+        : "Nothing to add yet — one moment."
     });
-    field.appendChild(search);
-    const list = make("div", "nd-list");
-    list.id = "nd-module-list";
-    field.appendChild(list);
-    body.appendChild(field);
+  }
 
-    body.appendChild(finishField());
-    body.appendChild(bookendField());
-    body.appendChild(breakdownSection());
+  /**
+   * Choose a piece, then choose where it goes.
+   *
+   * The two halves of adding something are deliberately separate steps here.
+   * Showing every legal spot for every piece at once is what the "+" markers
+   * used to do, and in Advanced — 47 pieces, some of which fit in a dozen
+   * places — that is a model you cannot see for the markers on it.
+   */
+  function chooseModule(moduleId) {
+    ui.activeModuleId = moduleId;
+    ui.selectedId = null;
+    ensureGeometry([moduleId]);
+    fitToCandidates(moduleId);
+    syncScene();
+    buildOverlay();
+  }
 
-    body.appendChild(linkField());
+  /** Back out of placing, without backing out of the design. */
+  function cancelAdd() {
+    if (!ui.activeModuleId) return;
+    ui.activeModuleId = null;
+    setHint(null);
+    buildOverlay();
+  }
 
-    // Download and Upload are for us, not for customers -- they move a design as
-    // a file between a phone and the workshop -- so they sit small and last.
-    const actions = make("div", "nd-button-row nd-button-row-small");
-    const save = make("button", "nd-button is-small", "Download");
-    save.type = "button";
-    save.addEventListener("click", saveDesignFile);
-    const load = make("button", "nd-button is-small", "Upload");
-    load.type = "button";
-    load.addEventListener("click", () => fileInput.click());
-    const reset = make("button", "nd-button is-small", "Start again");
-    reset.type = "button";
-    reset.addEventListener("click", () => {
-      if (!ui.design.instances.length) return;
-      commit(engine.createState(ui.catalog, { finish: ui.design.finish, bookends: ui.design.bookends }), { fit: true });
+  /**
+   * The two floating buttons, kept in step with the interface and with whether
+   * a piece is mid-placement.
+   *
+   * The "+" becomes the cancel for the decision it opened: one control, in one
+   * place, for "I am adding something" and "no I am not". A separate cancel
+   * elsewhere on the screen is a second thing to find while the first is still
+   * lit up.
+   */
+  function updateStageActions() {
+    const placing = Boolean(ui.activeModuleId && ui.catalog.modules[ui.activeModuleId]);
+    // The front view is for looking: it cannot project a placement marker, so
+    // there is nothing for the "+" to open onto.
+    dom.add.hidden = ui.mode !== "advanced" || isPerspective();
+    dom.add.classList.toggle("is-cancel", placing);
+    dom.addLabel.textContent = placing ? "Cancel" : "Add a piece";
+    const label = placing
+      ? `Cancel adding the ${moduleLabel(ui.catalog.modules[ui.activeModuleId])}`
+      : "Add a piece";
+    dom.add.setAttribute("aria-label", label);
+    dom.add.title = label;
+
+    // Simple keeps these in its control column, because that column is Simple's
+    // whole interface and a colour is the choice people most want to see.
+    dom.customise.hidden = ui.mode === "simple";
+  }
+
+  /**
+   * Colour, bookends and starting again: what finishes a design rather than
+   * what builds it.
+   *
+   * `live` because a colour picked here has to repaint the swatch that was
+   * pressed as well as the model — refresh() rebuilds the control column, and
+   * in these two interfaces there is no control column to rebuild.
+   */
+  function openCustomiseSheet() {
+    openSheet({
+      title: "Colour and options",
+      live: true,
+      render: (body) => {
+        body.appendChild(finishField());
+        body.appendChild(bookendField());
+
+        const actions = make("div", "nd-button-row nd-button-row-small");
+        const recoloured = ui.design.instances.filter((instance) => instance.finish).length;
+        if (recoloured) {
+          const label = `Reset ${recoloured} recoloured piece${recoloured === 1 ? "" : "s"}`;
+          const resetColour = make("button", "nd-button is-small", label);
+          resetColour.type = "button";
+          resetColour.addEventListener("click", resetPieceColours);
+          actions.appendChild(resetColour);
+        }
+        const reset = make("button", "nd-button is-small", "Start again");
+        reset.type = "button";
+        reset.disabled = !ui.design.instances.length;
+        reset.addEventListener("click", startAgain);
+        actions.appendChild(reset);
+        body.appendChild(actions);
+
+        if (ui.mode === "advanced") body.appendChild(staffField());
+      }
     });
-    actions.appendChild(save);
-    actions.appendChild(load);
-    actions.appendChild(reset);
-    body.appendChild(actions);
-    body.appendChild(staffField());
+  }
 
-    renderModuleList();
+  /** Put every individually recoloured piece back to the design's own colour. */
+  function resetPieceColours() {
+    const ids = ui.design.instances.filter((instance) => instance.finish).map((instance) => instance.id);
+    if (!ids.length) return;
+    // One commit, so one undo puts all of them back rather than one per piece.
+    let next = ui.design;
+    for (const id of ids) next = engine.setInstanceFinish(ui.catalog, next, id, null) || next;
+    commit(next, {});
+    setHint(`${ids.length} piece${ids.length === 1 ? "" : "s"} back to ${currentFinish().displayName}.`);
+  }
+
+  /**
+   * An empty shelf, keeping the colour and the bookend count.
+   *
+   * The sheet closes rather than redrawing: what someone wants to see after
+   * clearing the design is the cleared design. It is a normal edit, so undo
+   * brings it back — which is why it does not ask first.
+   */
+  function startAgain() {
+    if (!ui.design.instances.length) return;
+    closePicker();
+    commit(
+      engine.createState(ui.catalog, { finish: ui.design.finish, bookends: ui.design.bookends }),
+      { fit: true }
+    );
+    setHint("Started again. Undo to bring it back.");
   }
 
   /**
    * Staff login: raise a draft invoice in Zoho from the design on screen.
    *
-   * A quiet button, and everything else behind a password in a modal. Customers
-   * use Advanced — Download and Upload live there — so an order form sitting
-   * open in the sidebar would invite "what is that?" from everyone who does not
-   * need it. Nothing about the order is even rendered until the password is
-   * accepted, so there is nothing to read over a shoulder.
+   * The last row of Advanced's options sheet, and everything past it behind a
+   * password. Customers use Advanced too, so an order form anyone could read
+   * would invite "what is that?" from everyone who does not need it. Nothing
+   * about the order is rendered until the password is accepted, so there is
+   * nothing to read over a shoulder either.
    *
-   * The endpoint creates a DRAFT and can do nothing else: no send, no payment,
-   * no void, no delete. That is what keeps a shared typed password
-   * proportionate, and why there is no "send" button to reach for here.
+   * The endpoint creates a DRAFT invoice, and can amend the client record it
+   * bills. It cannot send, take payment, void or delete — that is what keeps a
+   * shared typed password proportionate, and why there is no "send" button here
+   * to reach for.
    */
   function staffField() {
     const field = make("div", "nd-field nd-staff");
     const open = make("button", "nd-button is-small is-quiet", "Staff login");
     open.type = "button";
-    open.addEventListener("click", openStaffModal);
+    open.addEventListener("click", () => { closePicker(); openStaffModal(); });
     field.appendChild(open);
     return field;
   }
 
-  let staffKey = null;   // held only for this page view; never stored.
+  let staffKey = null;      // held only for this page view; never stored.
+  let staffClients = null;  // every client, fetched once with the password check
 
   function openStaffModal() {
-    const modal = document.getElementById("nd-staff-modal");
-    const body = document.getElementById("nd-staff-body");
-    const title = document.getElementById("nd-staff-title");
-    const close = document.getElementById("nd-staff-close");
+    const modal = el("nd-staff-modal");
+    const body = el("nd-staff-body");
+    const title = el("nd-staff-title");
+    const close = el("nd-staff-close");
     if (!modal || !body) return;
+    const dismiss = () => { modal.hidden = true; clear(body); };
     modal.hidden = false;
-    close.onclick = () => { modal.hidden = true; };
-    modal.onclick = (event) => { if (event.target === modal) modal.hidden = true; };
-    if (staffKey) { renderOrderForm(body, title); } else { renderPasswordStep(body, title); }
+    close.onclick = dismiss;
+    modal.onclick = (event) => { if (event.target === modal) dismiss(); };
+    if (staffKey) renderOrderForm(body, title);
+    else renderPasswordStep(body, title);
   }
 
-  /** Step one. Nothing else exists on the page until this is accepted. */
+  /**
+   * Step one. Nothing else exists on the page until this is accepted.
+   *
+   * The check IS the client fetch. Asking the endpoint for the client list
+   * either returns it or 401s, so a correct password arrives at the form with
+   * all 189 names already in the browser — one round trip rather than a probe
+   * followed by a wait, and no spinner between a keystroke and a match.
+   */
   function renderPasswordStep(body, title) {
     clear(body);
     title.textContent = "Staff login";
@@ -2663,20 +2830,25 @@
       go.disabled = true;
       note.textContent = "Checking…";
       note.classList.remove("is-error");
-      // A search with no query is the cheapest thing the endpoint does, so it
-      // doubles as the password check without a second route to keep in step.
       const response = await fetch("/api/zoho-push", {
         method: "POST",
         headers: { "content-type": "application/json", "x-framework-key": password.value },
-        body: JSON.stringify({ action: "search", query: "" })
+        body: JSON.stringify({ action: "clients" })
       }).catch(() => null);
+      const payload = response ? await response.json().catch(() => null) : null;
       go.disabled = false;
       if (!response || response.status === 401) {
         note.textContent = "That password was not accepted.";
         note.classList.add("is-error");
         return;
       }
+      if (!payload || !payload.ok) {
+        note.textContent = "The client list could not be loaded. Check your connection and try again.";
+        note.classList.add("is-error");
+        return;
+      }
       staffKey = password.value;
+      staffClients = payload.results || [];
       renderOrderForm(body, title);
     };
     go.addEventListener("click", attempt);
@@ -2687,6 +2859,244 @@
     field.appendChild(note);
     body.appendChild(field);
     password.focus();
+  }
+
+  // -------------------------------------------------------- the order form --
+
+  /** A labelled row. `open` rows lift above the ones under them; see below. */
+  function staffRow(text, control) {
+    const row = make("label", "nd-staff-row");
+    row.appendChild(make("span", "nd-staff-label", text));
+    row.appendChild(control);
+    return row;
+  }
+
+  function staffInput(type, placeholder) {
+    const field = make("input", "nd-search");
+    field.type = type;
+    if (placeholder) field.placeholder = placeholder;
+    field.autocomplete = "off";
+    // Anything the rep types is theirs: a client chosen afterwards must not
+    // overwrite a number they have already corrected by hand.
+    field.addEventListener("input", () => { field.dataset.touched = "1"; });
+    return field;
+  }
+
+  /**
+   * A field, with room under it for what the other record says.
+   *
+   * Phone and address exist in two live places — the Zoho contact and Airtable's
+   * Base - Clients — and both are written on save. Where they already disagree
+   * there is no way to tell from here which is current, and no rule that could:
+   * both are real numbers somebody wrote down. The person who just spoke to the
+   * client can tell, so the form shows them the other one and gets out of the
+   * way.
+   */
+  function flaggable(field) {
+    const stack = make("div", "nd-staff-stack");
+    const flag = make("div", "nd-staff-flag");
+    flag.hidden = true;
+    stack.appendChild(field);
+    stack.appendChild(flag);
+    stack.field = field;
+    stack.disagree = (other) => {
+      clear(flag);
+      if (!other) {
+        flag.hidden = true;
+        return;
+      }
+      flag.appendChild(make("span", null, `Airtable has ${other} — the box wins on save.`));
+      const use = make("button", "nd-button is-small", "Use it");
+      use.type = "button";
+      use.addEventListener("click", () => {
+        field.value = other;
+        field.dataset.touched = "1";
+        flag.hidden = true;
+      });
+      flag.appendChild(use);
+      flag.hidden = false;
+    };
+    return stack;
+  }
+
+  /**
+   * Tentative / Confirmed / neither.
+   *
+   * Buttons rather than radios because "neither" is a real answer and the
+   * common one — most delivery dates are agreed after the invoice is raised —
+   * and a radio group has no way back to empty once one is chosen. Pressing the
+   * selected half again clears it.
+   */
+  function statusToggle(state, key, isReady) {
+    const row = make("div", "nd-segmented");
+    const paint = () => {
+      row.classList.toggle("is-idle", !isReady());
+      Array.prototype.forEach.call(row.children, (button) => {
+        button.setAttribute("aria-pressed", String(state[key] === button.textContent));
+      });
+    };
+    for (const value of ["Tentative", "Confirmed"]) {
+      const button = make("button", null, value);
+      button.type = "button";
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        state[key] = state[key] === value ? "" : value;
+        paint();
+      });
+      row.appendChild(button);
+    }
+    row.paint = paint;
+    paint();
+    return row;
+  }
+
+  /**
+   * The client picker: a text box over a list that is already in the browser.
+   *
+   * Three things it has to do that the old one did not. It has to answer while
+   * you type, so the whole list is fetched once and filtered in an array rather
+   * than asked for on every keystroke. Its results have to OVERLAY the form
+   * rather than push it apart, so they are absolutely positioned — the old rows
+   * were laid out between the field and the next one, which moved everything
+   * below them and, far enough down the form, opened off the bottom of the
+   * screen. And it has to offer "+ New client" always, not only when nothing
+   * matches: a client whose name is spelled differently in Zoho is exactly the
+   * case where the list is not empty and still not right.
+   */
+  function clientCombo(onChoose, onNewClient) {
+    const wrap = make("div", "nd-combo");
+    const input = make("input", "nd-search");
+    input.type = "text";
+    input.placeholder = "Type a client's name";
+    input.autocomplete = "off";
+    input.setAttribute("role", "combobox");
+    input.setAttribute("aria-autocomplete", "list");
+    input.setAttribute("aria-expanded", "false");
+    input.setAttribute("aria-controls", "nd-client-list");
+
+    const list = make("div", "nd-combo-list");
+    list.id = "nd-client-list";
+    list.setAttribute("role", "listbox");
+    list.hidden = true;
+
+    // Enough rows that scrolling is worth doing and few enough that building
+    // them on every keystroke stays imperceptible. With an empty box this is
+    // the alphabetical head of the list, which is a fine place to start.
+    const MAX_ROWS = 60;
+    let active = -1;
+    let rows = [];
+
+    const matching = () => {
+      const needle = input.value.trim().toLowerCase();
+      if (!needle) return (staffClients || []).slice(0, MAX_ROWS);
+      // A match at the start of the name outranks one in the middle, so typing
+      // "ann" puts Ann Mwangi above Joanne Karanja.
+      const starts = [];
+      const contains = [];
+      for (const entry of staffClients || []) {
+        const at = entry.name.toLowerCase().indexOf(needle);
+        if (at === 0) starts.push(entry);
+        else if (at > 0) contains.push(entry);
+      }
+      return starts.concat(contains).slice(0, MAX_ROWS);
+    };
+
+    /** The name with the typed run marked, so a long list explains itself. */
+    const nameNode = (name) => {
+      const needle = input.value.trim().toLowerCase();
+      const at = needle ? name.toLowerCase().indexOf(needle) : -1;
+      const node = make("b");
+      if (at < 0) {
+        node.textContent = name;
+        return node;
+      }
+      node.appendChild(document.createTextNode(name.slice(0, at)));
+      node.appendChild(make("mark", null, name.slice(at, at + needle.length)));
+      node.appendChild(document.createTextNode(name.slice(at + needle.length)));
+      return node;
+    };
+
+    const paintActive = () => {
+      rows.forEach((row, index) => {
+        const on = index === active;
+        row.classList.toggle("is-active", on);
+        row.setAttribute("aria-selected", String(on));
+        if (on) row.scrollIntoView({ block: "nearest" });
+      });
+    };
+
+    const render = () => {
+      clear(list);
+      rows = [];
+      const found = matching();
+      if (!found.length) {
+        list.appendChild(make("p", "nd-combo-empty", (staffClients || []).length
+          ? "No client of that name is linked to Zoho."
+          : "No clients loaded."));
+      }
+      for (const entry of found) {
+        const row = make("button", "nd-combo-option");
+        row.type = "button";
+        row.setAttribute("role", "option");
+        row.appendChild(nameNode(entry.name));
+        row.addEventListener("click", () => { close(); onChoose(entry); });
+        list.appendChild(row);
+        rows.push(row);
+      }
+      const fresh = make("button", "nd-combo-option nd-combo-new", "+ New client");
+      fresh.type = "button";
+      fresh.setAttribute("role", "option");
+      fresh.addEventListener("click", () => { close(); onNewClient(input.value.trim()); });
+      list.appendChild(fresh);
+      rows.push(fresh);
+      active = -1;
+      paintActive();
+    };
+
+    const open = () => {
+      render();
+      list.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+      // Only the row that is open lifts above its neighbours, so the dropdown
+      // is never underneath the field below it.
+      if (wrap.parentElement) wrap.parentElement.classList.add("is-open");
+    };
+    const close = () => {
+      list.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+      if (wrap.parentElement) wrap.parentElement.classList.remove("is-open");
+    };
+
+    input.addEventListener("focus", open);
+    input.addEventListener("input", () => { if (list.hidden) open(); else render(); });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        if (list.hidden) return open();
+        active = (active + (event.key === "ArrowDown" ? 1 : -1) + rows.length) % rows.length;
+        return paintActive();
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (!list.hidden && active >= 0) rows[active].click();
+        return;
+      }
+      // Escape closes the list, not the form. Anything else would make a
+      // mistyped name cost the eleven fields already filled in.
+      if (event.key === "Escape" && !list.hidden) {
+        event.stopPropagation();
+        close();
+      }
+    });
+    // A blur that lands on one of the options is the option being clicked.
+    input.addEventListener("blur", () => window.setTimeout(() => {
+      if (!wrap.contains(document.activeElement)) close();
+    }, 120));
+
+    wrap.appendChild(input);
+    wrap.appendChild(list);
+    wrap.focusInput = () => input.focus();
+    return wrap;
   }
 
   /**
@@ -2707,19 +3117,17 @@
       note.classList.toggle("is-error", Boolean(bad));
     };
 
-    const labelled = (text, control) => {
-      const row = make("label", "nd-staff-row");
-      row.appendChild(make("span", "nd-staff-label", text));
-      row.appendChild(control);
-      return row;
-    };
-    const input = (type, placeholder) => {
-      const el = make("input", "nd-search");
-      el.type = type;
-      if (placeholder) el.placeholder = placeholder;
-      el.autocomplete = "off";
-      return el;
-    };
+    // What is being invoiced, said once at the top. The code is a hash of the
+    // design itself, so it is known before anything is saved and it is the same
+    // code the invoice will carry.
+    const { total } = priceBreakdown();
+    const pieces = ui.design.instances.length;
+    form.appendChild(make("p", "nd-note", [
+      `${pieces} piece${pieces === 1 ? "" : "s"}`,
+      formatKsh(total),
+      finishLabel(),
+      `code ${designCode()}`
+    ].join(" · ")));
 
     const rep = make("select", "nd-search");
     for (const name of ["", "Ben", "Elvis"]) {
@@ -2728,75 +3136,213 @@
       rep.appendChild(option);
     }
 
-    const customer = input("search", "Start typing a client name");
-    const results = make("div", "nd-list nd-staff-results");
-    let chosen = null;
-
-    let timer = null;
-    customer.addEventListener("input", () => {
-      chosen = null;
-      window.clearTimeout(timer);
-      timer = window.setTimeout(async () => {
-        clear(results);
-        if (customer.value.trim().length < 2) return;
-        const found = await callPush({ action: "search", query: customer.value });
-        if (!found || !found.ok) return say("Could not search clients.", true);
-        if (!found.results.length) {
-          results.appendChild(make("p", "nd-list-empty", "No client of that name is linked to Zoho."));
-          return;
-        }
-        for (const result of found.results) {
-          const button = make("button", "nd-button is-small", result.name);
-          button.type = "button";
-          button.addEventListener("click", () => {
-            chosen = result;
-            customer.value = result.name;
-            clear(results);
-            say(`Invoicing ${result.name}.`);
-          });
-          results.appendChild(button);
-        }
-      }, 250);
-    });
-
-    const phone = input("tel", "07…");
+    const phone = staffInput("tel", "07…");
     const address = make("textarea", "nd-search nd-staff-address");
     address.rows = 2;
     address.placeholder = "Where it is going";
-    const date = input("date");
-    const from = input("time");
-    const until = input("time");
-    const pickup = make("input", null);
-    pickup.type = "checkbox";
+    address.addEventListener("input", () => { address.dataset.touched = "1"; });
+    const phoneField = flaggable(phone);
+    const addressField = flaggable(address);
 
+    const firstName = staffInput("text", "First name");
+    const lastName = staffInput("text", "Last name");
+    // Zoho keeps a contact's name in two parts and refuses a duplicate display
+    // name, so the split is not cosmetic — it is what the record is stored as.
+    const newGroup = make("div", "nd-staff-group");
+    newGroup.appendChild(make("span", "nd-label", "New client"));
+    newGroup.appendChild(staffRow("First name", firstName));
+    newGroup.appendChild(staffRow("Last name", lastName));
+    const backToList = make("button", "nd-button is-small is-quiet", "Choose an existing client instead");
+    backToList.type = "button";
+    newGroup.appendChild(backToList);
+    newGroup.hidden = true;
+
+    let chosen = null;
+    let creating = false;
+
+    const clientRow = make("div", "nd-staff-row");
+    clientRow.appendChild(make("span", "nd-staff-label", "Client"));
+    const combo = clientCombo(
+      (entry) => selectClient(entry),
+      (typed) => startNewClient(typed)
+    );
+    clientRow.appendChild(combo);
+
+    /** Prefill only what the rep has not already typed over. */
+    const prefill = (field, value) => {
+      if (field.dataset.touched === "1") return false;
+      field.value = value || "";
+      return Boolean(value);
+    };
+
+    const showChosen = () => {
+      clear(clientRow);
+      clientRow.appendChild(make("span", "nd-staff-label", "Client"));
+      const box = make("div", "nd-combo-chosen");
+      box.appendChild(make("b", null, chosen.name));
+      const clear_ = make("button", "nd-combo-clear", "×");
+      clear_.type = "button";
+      clear_.setAttribute("aria-label", `Choose someone other than ${chosen.name}`);
+      clear_.addEventListener("click", resetClient);
+      box.appendChild(clear_);
+      clientRow.appendChild(box);
+    };
+
+    const showCombo = () => {
+      clear(clientRow);
+      clientRow.appendChild(make("span", "nd-staff-label", "Client"));
+      clientRow.appendChild(combo);
+    };
+
+    function resetClient() {
+      chosen = null;
+      creating = false;
+      newGroup.hidden = true;
+      // Forget that anything was typed, as well as what.
+      //
+      // These details belong to a person, and this is the button that says "not
+      // that person". Without the reset, a number the rep typed -- or adopted
+      // from the flag below the box -- would survive into the next client and
+      // be invoiced against them, because prefill deliberately never overwrites
+      // what somebody typed. Clearing the value alone was not enough: the
+      // `touched` mark outlives it and blocks the next client's prefill too.
+      delete phone.dataset.touched;
+      delete address.dataset.touched;
+      prefill(phone, "");
+      prefill(address, "");
+      phoneField.disagree(null);
+      addressField.disagree(null);
+      showCombo();
+      combo.focusInput();
+      say("");
+    }
+
+    async function selectClient(entry) {
+      chosen = entry;
+      creating = false;
+      newGroup.hidden = true;
+      phoneField.disagree(null);
+      addressField.disagree(null);
+      showChosen();
+      say(`Invoicing ${entry.name}. Fetching what we have on file…`);
+      const detail = await callPush({ action: "client", contact_id: entry.contact_id });
+      // A client chosen and then changed while this was in flight must not have
+      // the wrong person's number written into the form.
+      if (!chosen || chosen.contact_id !== entry.contact_id) return;
+      if (!detail || !detail.ok) return say(`Invoicing ${entry.name}. Their details could not be loaded — type them in.`, true);
+      // What the note claims is what was actually written into the boxes: a
+      // field the rep had already typed into is left alone, and saying it came
+      // from the file would be describing a value that is not there.
+      const filled = [
+        prefill(phone, detail.phone) ? "phone" : null,
+        prefill(address, detail.address) ? "address" : null
+      ].filter(Boolean);
+      // Where the two records already hold different real values, say so. The
+      // save reconciles them either way; this is about reconciling them to the
+      // RIGHT one.
+      const differs = detail.differs || {};
+      if (differs.phone) phoneField.disagree(detail.airtable.phone);
+      if (differs.address) addressField.disagree(detail.airtable.address);
+      say(filled.length
+        ? `Invoicing ${entry.name}. Their ${filled.join(" and ")} came from the file — edit to correct it.`
+        : `Invoicing ${entry.name}. Nothing on file to fill in.`);
+    }
+
+    function startNewClient(typed) {
+      chosen = null;
+      creating = true;
+      newGroup.hidden = false;
+      // The name already typed into the search box is almost always the new
+      // client's, so split it rather than making them type it a second time.
+      const parts = String(typed || "").split(/\s+/).filter(Boolean);
+      if (parts.length) {
+        firstName.value = parts[0];
+        lastName.value = parts.slice(1).join(" ");
+      }
+      showCombo();
+      firstName.focus();
+      say("This creates a new client in Zoho when the invoice is raised.");
+    }
+
+    backToList.addEventListener("click", resetClient);
+
+    // --- delivery ---------------------------------------------------------
+    const state = { date: "", time: "" };
+    const date = staffInput("date");
+    const dateStatus = statusToggle(state, "date", () => Boolean(date.value));
+    date.addEventListener("change", () => dateStatus.paint());
+    const dateField = make("div", "nd-staff-dated");
+    dateField.appendChild(date);
+    dateField.appendChild(dateStatus);
+
+    const from = staffInput("time");
+    const until = staffInput("time");
     const window_ = make("div", "nd-staff-window");
     window_.appendChild(from);
     window_.appendChild(make("span", "nd-staff-label", "to"));
     window_.appendChild(until);
+    const timeStatus = statusToggle(state, "time", () => Boolean(from.value || until.value));
+    from.addEventListener("change", () => timeStatus.paint());
+    until.addEventListener("change", () => timeStatus.paint());
+    const timeField = make("div", "nd-staff-dated");
+    timeField.appendChild(window_);
+    timeField.appendChild(timeStatus);
 
+    const fee = staffInput("number", "2000");
+    fee.min = "0";
+    fee.step = "50";
+    fee.inputMode = "decimal";
+    // The note belongs under the box, not in the label column: a two-column row
+    // puts a third child at the start of the next line.
+    const feeField = make("div", "nd-staff-stack");
+    feeField.appendChild(fee);
+    feeField.appendChild(make("small", "nd-subtext", "VAT inclusive, as its own invoice line"));
+    const feeRow = staffRow("Delivery fee", feeField);
+
+    const pickup = make("input", null);
+    pickup.type = "checkbox";
+    pickup.addEventListener("change", () => {
+      // Hidden rather than greyed: a fee that is merely disabled still reads as
+      // a number somebody meant, and it is cleared so it cannot be sent either.
+      feeRow.hidden = pickup.checked;
+      if (pickup.checked) fee.value = "";
+    });
+
+    // --- submit -----------------------------------------------------------
     const send = make("button", "nd-button is-primary", "Create draft invoice");
     send.type = "button";
     send.addEventListener("click", async () => {
       if (!ui.design.instances.length) return say("There are no pieces on this design.", true);
       if (!rep.value) return say("Say who is raising this.", true);
-      if (!chosen) return say("Choose a client from the list.", true);
+      const first = firstName.value.trim();
+      const last = lastName.value.trim();
+      if (!chosen && !(creating && (first || last))) {
+        return say("Choose a client, or add a new one.", true);
+      }
       send.disabled = true;
-      say("Saving the design, then raising the draft…");
+      say(chosen ? "Saving the design, then raising the draft…" : "Creating the client, then raising the draft…");
       try {
         // The invoice references the design by code, so the design has to exist
         // under that code before the invoice mentions it.
         const code = await saveDesign();
         const out = await callPush({
-          action: "push", code, contact_id: chosen.contact_id, rep: rep.value,
-          phone: phone.value, address: address.value, delivery_date: date.value,
-          window_start: from.value, window_end: until.value, pickup: pickup.checked
+          action: "push",
+          code,
+          rep: rep.value,
+          contact_id: chosen ? chosen.contact_id : null,
+          new_client: chosen ? null : { first_name: first, last_name: last },
+          phone: phone.value,
+          address: address.value,
+          delivery_date: date.value,
+          delivery_date_status: state.date,
+          window_start: from.value,
+          window_end: until.value,
+          delivery_time_status: state.time,
+          pickup: pickup.checked,
+          delivery_fee: pickup.checked ? null : fee.value
         });
-        if (!out || !out.ok) {
-          return say(out && out.error === "nothing_priceable"
-            ? "None of these pieces are sellable in Zoho yet."
-            : `Could not raise it${out && out.detail ? ": " + out.detail : "."}`, true);
-        }
-        showResult(body, title, out, chosen);
+        if (!out || !out.ok) return say(pushProblem(out), true);
+        showResult(body, title, out);
       } catch (error) {
         say(`Could not raise it: ${error.message}`, true);
       } finally {
@@ -2804,39 +3350,95 @@
       }
     });
 
-    form.appendChild(labelled("Raised by", rep));
-    form.appendChild(labelled("Client", customer));
-    form.appendChild(results);
-    form.appendChild(labelled("Phone", phone));
-    form.appendChild(labelled("Delivery address", address));
-    form.appendChild(labelled("Delivery date", date));
-    form.appendChild(labelled("Delivery window", window_));
-    form.appendChild(labelled("Client collects", pickup));
+    form.appendChild(staffRow("Raised by", rep));
+    form.appendChild(clientRow);
+    form.appendChild(newGroup);
+    form.appendChild(staffRow("Phone", phoneField));
+    form.appendChild(staffRow("Delivery address", addressField));
+    form.appendChild(staffRow("Delivery date", dateField));
+    form.appendChild(staffRow("Delivery time", timeField));
+    form.appendChild(staffRow("Client collects", pickup));
+    form.appendChild(feeRow);
     form.appendChild(send);
     form.appendChild(note);
     body.appendChild(form);
-    rep.focus();
+    // preventScroll, and then the top: a sheet that opens halfway down its own
+    // form reads as a form somebody has already been filling in.
+    rep.focus({ preventScroll: true });
+    body.scrollTop = 0;
+  }
+
+  /** What went wrong, in the words of someone who can do something about it. */
+  function pushProblem(out) {
+    if (!out) return "Could not raise it — check your connection and try again.";
+    if (out.error === "nothing_priceable") return "None of these pieces are sellable in Zoho yet.";
+    if (out.error === "client_exists") return "Zoho already has a client with that name. Search for them in the list instead.";
+    if (out.error === "client_failed") return `The client could not be created${out.detail ? ": " + out.detail : "."}`;
+    if (out.error === "no_customer") return "Choose a client, or add a new one.";
+    return `Could not raise it${out.detail ? ": " + out.detail : "."}`;
   }
 
   /** What happened, and the one link worth having afterwards. */
-  function showResult(body, title, out, chosen) {
+  function showResult(body, title, out) {
     clear(body);
     title.textContent = `Draft ${out.invoice_number}`;
     const wrap = make("div", "nd-staff-form");
-    wrap.appendChild(make("p", "nd-note", `Raised for ${chosen.name}: ${out.lines} line${out.lines === 1 ? "" : "s"}, ${formatKsh(out.computed_total)}.`));
+    const who = (out.client && out.client.name) || "the client";
+    wrap.appendChild(make("p", "nd-note",
+      `Raised for ${who}: ${out.lines} line${out.lines === 1 ? "" : "s"}, ${formatKsh(out.computed_total)}${
+        out.delivery_total ? ` (including ${formatKsh(out.delivery_total)} delivery)` : ""}.`));
+
+    if (out.client && out.client.created) {
+      const at = out.client.airtable;
+      wrap.appendChild(at && at.ok
+        ? make("p", "nd-note", `${who} is a new client, in Zoho and in Airtable's Base - Clients.`)
+        : make("p", "nd-note is-error",
+          `${who} is a new client in Zoho, but could not be added to Airtable's Base - Clients — add them by hand.`));
+    }
+
+    // Two live records, reported separately: half a correction that says it is
+    // half a correction can be finished, one that claims to be whole cannot.
+    const saved = [
+      ["Zoho", out.contact_saved],
+      ["Airtable", out.client_saved]
+    ];
+    const landed = saved.filter(([, r]) => r && r.ok);
+    if (landed.length) {
+      const changed = [landed[0][1].phone ? "phone" : null, landed[0][1].address ? "address" : null].filter(Boolean);
+      const noted = landed.some(([, r]) => r.replaced && r.replaced.length);
+      wrap.appendChild(make("p", "nd-note",
+        `Their ${changed.join(" and ")} ${changed.length === 1 ? "was" : "were"} updated in ${
+          landed.map(([name]) => name).join(" and ")}${noted ? ", and what it replaced is in their notes" : ""}.`));
+    }
+    for (const [name, result] of saved) {
+      if (!result || result.ok !== false) continue;
+      wrap.appendChild(make("p", "nd-note is-error", result.missing
+        ? "This client is in Zoho but not in Airtable's Base - Clients, so only Zoho was corrected. Add them to Airtable."
+        : `The invoice is raised, but ${name} would not take the client's new details — correct it there by hand.`));
+    }
     if (out.drift) {
       wrap.appendChild(make("p", "nd-note is-error",
         `Priced at ${formatKsh(out.drift.now)} today; this design was quoted at ${formatKsh(out.drift.quoted)}.`));
     }
+    if (out.skipped_fields && out.skipped_fields.length) {
+      wrap.appendChild(make("p", "nd-note is-error",
+        `Zoho has no field for ${out.skipped_fields.join(", ")}, so ${out.skipped_fields.length === 1 ? "it was" : "they were"} not saved. Add ${out.skipped_fields.length === 1 ? "it" : "them"} to the invoice by hand.`));
+    }
     if (out.unknown && out.unknown.length) {
       wrap.appendChild(make("p", "nd-note is-error",
-        `${out.unknown.length} piece${out.unknown.length === 1 ? "" : "s"} could not be priced and need a line adding by hand: ${out.unknown.map((u) => u.expected).join(", ")}.`));
+        `${out.unknown.length} item${out.unknown.length === 1 ? "" : "s"} could not be priced and need a line adding by hand: ${out.unknown.map((u) => u.expected).join(", ")}.`));
     }
+
     const open = make("a", "nd-button is-primary", "Open it in Zoho");
     open.href = out.url;
     open.target = "_blank";
     open.rel = "noopener";
     wrap.appendChild(open);
+
+    const another = make("button", "nd-button is-small", "Raise another");
+    another.type = "button";
+    another.addEventListener("click", () => renderOrderForm(body, title));
+    wrap.appendChild(another);
     body.appendChild(wrap);
   }
 
@@ -2849,159 +3451,42 @@
     return response.json().catch(() => null);
   }
 
-  /**
-   * "Create link to design": stores the design and hands back its short address,
-   * the same one the share image prints. Deliberately an explicit action rather
-   * than something that happens on every edit -- a design is only worth a record
-   * once someone means to pass it on.
+  /*
+   * "Create link to design", Download and Upload used to live here.
+   *
+   * The link is not gone, only the button: Present and Order both save the
+   * design and print or send its address, which is every route a design
+   * actually travelled — nobody made a link for its own sake. Download and
+   * Upload moved a design as a JSON file between a phone and the workshop, and
+   * were replaced by that same address, which survives being read off a photo.
    */
-  function linkField() {
-    const field = make("div", "nd-field");
-    field.appendChild(make("span", "nd-label", "Link to this design"));
-
-    const row = make("div", "nd-button-row");
-    const create = make("button", "nd-button is-primary", "Create link to design");
-    create.type = "button";
-    const output = make("div", "nd-link-out");
-    output.hidden = true;
-
-    const show = (code) => {
-      clear(output);
-      const url = designLink(code);
-      const address = make("code", "nd-link-url", url);
-      const copy = make("button", "nd-button is-small", "Copy");
-      copy.type = "button";
-      copy.addEventListener("click", () => {
-        const done = () => {
-          copy.textContent = "Copied";
-          window.setTimeout(() => { copy.textContent = "Copy"; }, 2000);
-        };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(url).then(done, () => setHint("Copying was blocked — select the link instead.", true));
-        } else {
-          // Older Android WebViews have no async clipboard; select it so a
-          // long-press "copy" works on what is already highlighted.
-          const range = document.createRange();
-          range.selectNodeContents(address);
-          const selection = window.getSelection();
-          selection.removeAllRanges();
-          selection.addRange(range);
-          done();
-        }
-      });
-      output.appendChild(address);
-      output.appendChild(copy);
-      output.hidden = false;
-      ui.savedCode = code;
-    };
-
-    create.addEventListener("click", () => {
-      if (!ui.design.instances.length) {
-        setHint("Add a unit first — there is nothing to link to yet.");
-        return;
-      }
-      create.disabled = true;
-      create.textContent = "Creating…";
-      saveDesign()
-        .then((code) => {
-          show(code);
-          track("designer_link", { mode: ui.mode, pieces: ui.design.instances.length });
-        })
-        .catch((error) => {
-          console.warn("could not create the link:", error.message);
-          setHint("The link could not be created. Check your connection and try again.", true);
-        })
-        .then(() => {
-          create.disabled = false;
-          create.textContent = "Create link to design";
-        });
-    });
-
-    row.appendChild(create);
-    field.appendChild(row);
-    field.appendChild(output);
-    // A design edited since its link was made has a different code, so the old
-    // link no longer describes what is on screen. Say so rather than imply it.
-    if (ui.savedCode && ui.savedCode === designCode()) show(ui.savedCode);
-    return field;
-  }
-
-  function renderModuleList() {
-    const list = el("nd-module-list");
-    if (!list) return;
-    clear(list);
-    const needle = ui.search.trim().toLowerCase();
-    const rows = tierModules("advanced").filter((module) => {
-      if (!(ui.candidateCache.get(module.id) || []).length) return false;
-      if (!needle) return true;
-      return `${module.id} ${moduleLabel(module)} ${module.family || ""} ${module.role}`.toLowerCase().indexOf(needle) >= 0;
-    });
-    if (!rows.length) {
-      list.appendChild(make("p", "nd-list-empty", needle ? "No matching pieces fit right now." : "Nothing fits yet — add a unit first."));
-      return;
-    }
-    for (const module of rows) {
-      const count = (ui.candidateCache.get(module.id) || []).length;
-      const row = make("button", "nd-list-row");
-      row.type = "button";
-      row.setAttribute("aria-pressed", String(ui.activeModuleId === module.id));
-      row.appendChild(make("b", null, moduleLabel(module)));
-      row.appendChild(make("small", null, `${count} spot${count === 1 ? "" : "s"}`));
-      row.addEventListener("click", () => {
-        ui.activeModuleId = ui.activeModuleId === module.id ? null : module.id;
-        ui.selectedId = null;
-        if (ui.activeModuleId) {
-          ensureGeometry([ui.activeModuleId]);
-          fitToCandidates(ui.activeModuleId);
-        } else {
-          ui.renderer.fit(null, ui.dimensionsOn ? DIMENSION_FIT_PADDING : null);
-        }
-        buildOverlay();
-        renderModuleList();
-      });
-      list.appendChild(row);
-    }
-  }
-
-  const fileInput = document.createElement("input");
-  fileInput.type = "file";
-  fileInput.accept = "application/json,.json";
-  fileInput.hidden = true;
-  document.body.appendChild(fileInput);
-  fileInput.addEventListener("change", () => {
-    const file = fileInput.files && fileInput.files[0];
-    fileInput.value = "";
-    if (!file) return;
-    file.text().then((text) => {
-      try {
-        const next = engine.deserializeState(ui.catalog, text);
-        commit(next, { fit: true });
-      } catch (error) {
-        setHint(`That file could not be read: ${error.message}`, true);
-      }
-    });
-  });
-
-  function saveDesignFile() {
-    const blob = new Blob([JSON.stringify(engine.serializeState(ui.design), null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `framework-shelf-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 20000);
-  }
 
   // ------------------------------------------------------------------ modes --
+
+  /*
+   * What to do here, said once per interface per visit.
+   *
+   * Flexible and Advanced have no control column to explain themselves in, and
+   * the two are worked differently enough that arriving in one from the other
+   * without a word is a puzzle: the "+" markers someone just learned to use
+   * are not there any more.
+   */
+  const MODE_HINTS = {
+    standard: "Tap a + on the model to add a unit or a shelf on top. Tap any piece to swap or remove it.",
+    advanced: "Tap + to choose a piece, then tap where it goes. Tap any piece already there to change or remove it."
+  };
+  const hinted = new Set();
 
   function applyMode(mode, options) {
     const next = MODES.indexOf(mode) >= 0 ? mode : "simple";
     const previous = ui.mode;
+    if (MODE_HINTS[next] && !hinted.has(next)) {
+      hinted.add(next);
+      setHint(MODE_HINTS[next]);
+    }
     ui.mode = next;
     dom.app.dataset.mode = next;
-    dom.panelTitle.textContent = next === "simple" ? "Build" : next === "standard" ? "Flexible" : "Pieces";
+    dom.panelTitle.textContent = "Build";
     Array.prototype.forEach.call(dom.modes.querySelectorAll("button"), (button) => {
       button.setAttribute("aria-selected", String(button.dataset.mode === next));
     });
@@ -3068,19 +3553,23 @@
     ensureGeometry(needed);
     syncScene();
 
-    dom.panelTitle.textContent = ui.mode === "simple" ? "Build" : ui.mode === "standard" ? "Flexible" : "Pieces";
+    // Only Simple has a control column. Building it for the other two would be
+    // building a hidden one, and its steppers would still be in the tab order.
     const body = dom.controls;
-    // The panel is rebuilt wholesale on every change, which resets its scroll.
-    // Nudging the bookend stepper near the bottom of the list would jump you
-    // back to the top of the form, so put the scroll position back.
-    const scrollTop = body.scrollTop;
-    clear(body);
-    if (ui.mode === "simple") renderSimplePanel(body);
-    else if (ui.mode === "standard") renderStandardPanel(body);
-    else renderAdvancedPanel(body);
-    body.scrollTop = scrollTop;
+    if (ui.mode === "simple") {
+      // The panel is rebuilt wholesale on every change, which resets its scroll.
+      // Nudging the bookend stepper near the bottom of the list would jump you
+      // back to the top of the form, so put the scroll position back.
+      const scrollTop = body.scrollTop;
+      clear(body);
+      renderSimplePanel(body);
+      body.scrollTop = scrollTop;
+    } else if (body.firstChild) {
+      clear(body);
+    }
 
     updateSummary();
+    refreshSheet();
 
     // Frame before laying out the overlay: the "+" anchors are projected with
     // the camera, so re-framing afterwards would place them for the old view.
@@ -3141,6 +3630,20 @@
       window.requestAnimationFrame(() => ui.renderer.fit());
     });
 
+    dom.add.addEventListener("click", () => {
+      if (ui.activeModuleId) cancelAdd();
+      else openAddSheet();
+    });
+    dom.customise.addEventListener("click", openCustomiseSheet);
+
+    dom.breakdownToggle.addEventListener("click", () => {
+      ui.breakdownOpen = !ui.breakdownOpen;
+      renderBreakdown();
+      // The stage just changed height. The ResizeObserver below redraws it at
+      // the new size; deliberately no re-fit, because opening a list to read it
+      // is not a reason to move someone's camera.
+    });
+
     dom.present.addEventListener("click", openPresent);
     dom.presentClose.addEventListener("click", closePresent);
     dom.presentModal.addEventListener("click", (event) => {
@@ -3184,6 +3687,14 @@
       }
       if (event.key === "Escape") {
         if (!dom.presentModal.hidden) return closePresent();
+        // The order form's own controls stop this first where they need to --
+        // the client dropdown closes its list rather than the sheet around it.
+        const staff = el("nd-staff-modal");
+        if (staff && !staff.hidden) {
+          staff.hidden = true;
+          clear(el("nd-staff-body"));
+          return;
+        }
         if (!dom.modal.hidden) return closePicker();
         if (ui.previewCandidateId) return clearGhost();
         if (ui.activeModuleId || ui.selectedId) {
@@ -3191,7 +3702,6 @@
           ui.selectedId = null;
           syncScene();
           buildOverlay();
-          renderModuleList();
         }
       }
     });
@@ -3282,9 +3792,7 @@
         clearGhost();
         return;
       }
-      ui.activeModuleId = null;
-      buildOverlay();
-      renderModuleList();
+      cancelAdd();
       return;
     }
     const hit = ui.renderer.pick(clientX, clientY);
