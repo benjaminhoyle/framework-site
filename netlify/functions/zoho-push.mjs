@@ -34,6 +34,17 @@ const json = (obj, status = 200) => new Response(JSON.stringify(obj), {
 
 const CODE_RE = /^[0-9A-Z]{7}$/;
 
+const clean = (v, max) => (v == null ? null : String(v).trim().slice(0, max) || null);
+
+/**
+ * Zoho's delivery window fields are text with a 24h regex, so a browser's
+ * "14:30" passes but its empty string would be rejected as malformed.
+ */
+const time = (v) => {
+  const s = clean(v, 5);
+  return s && /^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(s) ? s : null;
+};
+
 export default async (req) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
   const denied = refusePush(req);
@@ -69,7 +80,8 @@ async function search(query) {
   return json({ ok: true, results });
 }
 
-async function push({ code, contact_id, rep, notes }) {
+async function push({ code, contact_id, rep, phone, address, delivery_date,
+                      window_start, window_end, pickup, notes }) {
   const upper = String(code || '').toUpperCase();
   if (!CODE_RE.test(upper)) return json({ ok: false, error: 'bad_code' }, 422);
   if (!contact_id) return json({ ok: false, error: 'no_customer' }, 422);
@@ -87,13 +99,29 @@ async function push({ code, contact_id, rep, notes }) {
     return json({ ok: false, error: 'nothing_priceable', unknown }, 422);
   }
 
+  // Only fields the form actually has. cf_work_type is MANDATORY — an invoice
+  // without it is refused outright — and cf_created_by_rep may not exist yet,
+  // so it is sent only once someone creates it.
+  const available = await zoho.invoiceFields();
+  const wanted = [
+    ['cf_work_type', 'Shelving'],
+    ['cf_design_code', upper],
+    ['cf_created_by_rep', String(rep).slice(0, 60)],
+    ['cf_primary_contact_number', clean(phone, 40)],
+    ['cf_delivery_address', clean(address, 500)],
+    ['cf_delivery_date', clean(delivery_date, 10)],
+    ['cf_delivery_window_start', time(window_start)],
+    ['cf_delivery_window_end', time(window_end)],
+    ['cf_client_pickup', pickup === true ? true : null]
+  ];
+  const custom_fields = wanted
+    .filter(([name, value]) => available.has(name) && value !== null && value !== '')
+    .map(([api_name, value]) => ({ api_name, value }));
+
   const invoice = await zoho.createDraftInvoice({
     customer_id: contact_id,
     line_items,
-    custom_fields: [
-      { api_name: 'cf_design_code', value: upper },
-      { api_name: 'cf_created_by_rep', value: String(rep).slice(0, 60) }
-    ],
+    custom_fields,
     ...(notes ? { notes: String(notes).slice(0, 500) } : {})
   });
 

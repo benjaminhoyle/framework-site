@@ -2605,97 +2605,181 @@
     actions.appendChild(load);
     actions.appendChild(reset);
     body.appendChild(actions);
-    body.appendChild(zohoPushField());
+    body.appendChild(staffField());
 
     renderModuleList();
   }
 
   /**
-   * "Send to Zoho": raise a draft invoice for this design.
+   * Staff login: raise a draft invoice in Zoho from the design on screen.
    *
-   * It sits in Advanced next to Download and Upload, which are already the
-   * staff-facing corner of the panel. Customers do use Advanced, so the section
-   * is visible to everyone and simply does nothing without the password -- which
-   * is honest, and cheaper than a second gated page nobody would remember to
-   * open. The password is asked for FIRST, because the rep's name only means
-   * something once staff has been established.
+   * A quiet button, and everything else behind a password in a modal. Customers
+   * use Advanced — Download and Upload live there — so an order form sitting
+   * open in the sidebar would invite "what is that?" from everyone who does not
+   * need it. Nothing about the order is even rendered until the password is
+   * accepted, so there is nothing to read over a shoulder.
    *
-   * The endpoint it calls creates a DRAFT and can do nothing else -- it cannot
-   * send, take payment, void or delete. That is what makes a shared typed
-   * password proportionate here: the worst a leaked one buys is junk drafts.
+   * The endpoint creates a DRAFT and can do nothing else: no send, no payment,
+   * no void, no delete. That is what keeps a shared typed password
+   * proportionate, and why there is no "send" button to reach for here.
    */
-  function zohoPushField() {
+  function staffField() {
     const field = make("div", "nd-field nd-staff");
-    const toggle = make("button", "nd-button is-small", "Send to Zoho");
-    toggle.type = "button";
-    field.appendChild(toggle);
+    const open = make("button", "nd-button is-small is-quiet", "Staff login");
+    open.type = "button";
+    open.addEventListener("click", openStaffModal);
+    field.appendChild(open);
+    return field;
+  }
 
-    const panel = make("div", "nd-staff-panel");
-    panel.hidden = true;
-    field.appendChild(panel);
-    toggle.addEventListener("click", () => { panel.hidden = !panel.hidden; });
+  let staffKey = null;   // held only for this page view; never stored.
 
-    const status = make("p", "nd-note");
-    const say = (text, bad) => {
-      status.textContent = text;
-      status.classList.toggle("is-error", Boolean(bad));
-    };
+  function openStaffModal() {
+    const modal = document.getElementById("nd-staff-modal");
+    const body = document.getElementById("nd-staff-body");
+    const title = document.getElementById("nd-staff-title");
+    const close = document.getElementById("nd-staff-close");
+    if (!modal || !body) return;
+    modal.hidden = false;
+    close.onclick = () => { modal.hidden = true; };
+    modal.onclick = (event) => { if (event.target === modal) modal.hidden = true; };
+    if (staffKey) { renderOrderForm(body, title); } else { renderPasswordStep(body, title); }
+  }
 
+  /** Step one. Nothing else exists on the page until this is accepted. */
+  function renderPasswordStep(body, title) {
+    clear(body);
+    title.textContent = "Staff login";
+    const field = make("div", "nd-staff-form");
     const password = make("input", "nd-search");
     password.type = "password";
-    password.placeholder = "Staff password";
-    password.autocomplete = "off";
+    password.placeholder = "Password";
+    password.autocomplete = "current-password";
+    const note = make("p", "nd-note");
+    const go = make("button", "nd-button is-primary", "Continue");
+    go.type = "button";
+
+    const attempt = async () => {
+      go.disabled = true;
+      note.textContent = "Checking…";
+      note.classList.remove("is-error");
+      // A search with no query is the cheapest thing the endpoint does, so it
+      // doubles as the password check without a second route to keep in step.
+      const response = await fetch("/api/zoho-push", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-framework-key": password.value },
+        body: JSON.stringify({ action: "search", query: "" })
+      }).catch(() => null);
+      go.disabled = false;
+      if (!response || response.status === 401) {
+        note.textContent = "That password was not accepted.";
+        note.classList.add("is-error");
+        return;
+      }
+      staffKey = password.value;
+      renderOrderForm(body, title);
+    };
+    go.addEventListener("click", attempt);
+    password.addEventListener("keydown", (event) => { if (event.key === "Enter") attempt(); });
+
+    field.appendChild(password);
+    field.appendChild(go);
+    field.appendChild(note);
+    body.appendChild(field);
+    password.focus();
+  }
+
+  /**
+   * Step two: the details that are always typed anyway.
+   *
+   * Delivery address, phone and the delivery window all live on the Zoho
+   * invoice as custom fields, and someone fills them in by hand today. Asking
+   * here means the rep types them once, next to the design they belong to,
+   * rather than opening the invoice afterwards to complete it.
+   */
+  function renderOrderForm(body, title) {
+    clear(body);
+    title.textContent = "Raise a draft invoice";
+    const form = make("div", "nd-staff-form");
+    const note = make("p", "nd-note");
+    const say = (text, bad) => {
+      note.textContent = text;
+      note.classList.toggle("is-error", Boolean(bad));
+    };
+
+    const labelled = (text, control) => {
+      const row = make("label", "nd-staff-row");
+      row.appendChild(make("span", "nd-staff-label", text));
+      row.appendChild(control);
+      return row;
+    };
+    const input = (type, placeholder) => {
+      const el = make("input", "nd-search");
+      el.type = type;
+      if (placeholder) el.placeholder = placeholder;
+      el.autocomplete = "off";
+      return el;
+    };
 
     const rep = make("select", "nd-search");
     for (const name of ["", "Ben", "Elvis"]) {
-      const o = make("option", null, name || "Who is raising this?");
-      o.value = name;
-      rep.appendChild(o);
+      const option = make("option", null, name || "Who is raising this?");
+      option.value = name;
+      rep.appendChild(option);
     }
 
-    const customer = make("input", "nd-search");
-    customer.type = "search";
-    customer.placeholder = "Customer name";
-    customer.autocomplete = "off";
-    const results = make("div", "nd-list");
+    const customer = input("search", "Start typing a client name");
+    const results = make("div", "nd-list nd-staff-results");
     let chosen = null;
 
-    // Search runs server-side: the browser cannot hold a Zoho or Airtable
-    // credential, and the endpoint returns names and ids only -- never a phone
-    // number or an address.
-    let searchTimer = null;
+    let timer = null;
     customer.addEventListener("input", () => {
       chosen = null;
-      window.clearTimeout(searchTimer);
-      searchTimer = window.setTimeout(async () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(async () => {
         clear(results);
         if (customer.value.trim().length < 2) return;
         const found = await callPush({ action: "search", query: customer.value });
-        if (!found || !found.ok) { say("Could not search customers.", true); return; }
+        if (!found || !found.ok) return say("Could not search clients.", true);
         if (!found.results.length) {
-          results.appendChild(make("p", "nd-list-empty", "No matching client with a Zoho contact."));
+          results.appendChild(make("p", "nd-list-empty", "No client of that name is linked to Zoho."));
           return;
         }
-        for (const r of found.results) {
-          const b = make("button", "nd-button is-small", r.name);
-          b.type = "button";
-          b.addEventListener("click", () => {
-            chosen = r;
-            customer.value = r.name;
+        for (const result of found.results) {
+          const button = make("button", "nd-button is-small", result.name);
+          button.type = "button";
+          button.addEventListener("click", () => {
+            chosen = result;
+            customer.value = result.name;
             clear(results);
-            say(`Selected ${r.name}.`);
+            say(`Invoicing ${result.name}.`);
           });
-          results.appendChild(b);
+          results.appendChild(button);
         }
       }, 250);
     });
 
+    const phone = input("tel", "07…");
+    const address = make("textarea", "nd-search nd-staff-address");
+    address.rows = 2;
+    address.placeholder = "Where it is going";
+    const date = input("date");
+    const from = input("time");
+    const until = input("time");
+    const pickup = make("input", null);
+    pickup.type = "checkbox";
+
+    const window_ = make("div", "nd-staff-window");
+    window_.appendChild(from);
+    window_.appendChild(make("span", "nd-staff-label", "to"));
+    window_.appendChild(until);
+
     const send = make("button", "nd-button is-primary", "Create draft invoice");
     send.type = "button";
     send.addEventListener("click", async () => {
-      if (!ui.design.instances.length) return say("Add some pieces first.", true);
+      if (!ui.design.instances.length) return say("There are no pieces on this design.", true);
       if (!rep.value) return say("Say who is raising this.", true);
-      if (!chosen) return say("Choose a customer from the list.", true);
+      if (!chosen) return say("Choose a client from the list.", true);
       send.disabled = true;
       say("Saving the design, then raising the draft…");
       try {
@@ -2703,49 +2787,66 @@
         // under that code before the invoice mentions it.
         const code = await saveDesign();
         const out = await callPush({
-          action: "push", code, contact_id: chosen.contact_id, rep: rep.value
+          action: "push", code, contact_id: chosen.contact_id, rep: rep.value,
+          phone: phone.value, address: address.value, delivery_date: date.value,
+          window_start: from.value, window_end: until.value, pickup: pickup.checked
         });
         if (!out || !out.ok) {
-          say(out && out.error === "nothing_priceable"
+          return say(out && out.error === "nothing_priceable"
             ? "None of these pieces are sellable in Zoho yet."
-            : `Could not raise the invoice${out && out.detail ? ": " + out.detail : "."}`, true);
-          return;
+            : `Could not raise it${out && out.detail ? ": " + out.detail : "."}`, true);
         }
-        clear(panel);
-        const done = make("p", "nd-note", `Draft ${out.invoice_number} raised for ${chosen.name}.`);
-        panel.appendChild(done);
-        if (out.drift) {
-          panel.appendChild(make("p", "nd-note is-error",
-            `Priced at ${formatKsh(out.drift.now)} today; the design was quoted at ${formatKsh(out.drift.quoted)}.`));
-        }
-        if (out.unknown && out.unknown.length) {
-          panel.appendChild(make("p", "nd-note is-error",
-            `${out.unknown.length} piece${out.unknown.length === 1 ? "" : "s"} could not be priced and need a manual line: ${out.unknown.map((u) => u.expected).join(", ")}.`));
-        }
-        const open = make("a", "nd-button is-small", "Open in Zoho");
-        open.href = out.url;
-        open.target = "_blank";
-        open.rel = "noopener";
-        panel.appendChild(open);
+        showResult(body, title, out, chosen);
       } catch (error) {
-        say(`Could not raise the invoice: ${error.message}`, true);
+        say(`Could not raise it: ${error.message}`, true);
       } finally {
         send.disabled = false;
       }
     });
 
-    async function callPush(body) {
-      const response = await fetch("/api/zoho-push", {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-framework-key": password.value },
-        body: JSON.stringify(body)
-      });
-      if (response.status === 401) { say("That password was not accepted.", true); return null; }
-      return response.json().catch(() => null);
-    }
+    form.appendChild(labelled("Raised by", rep));
+    form.appendChild(labelled("Client", customer));
+    form.appendChild(results);
+    form.appendChild(labelled("Phone", phone));
+    form.appendChild(labelled("Delivery address", address));
+    form.appendChild(labelled("Delivery date", date));
+    form.appendChild(labelled("Delivery window", window_));
+    form.appendChild(labelled("Client collects", pickup));
+    form.appendChild(send);
+    form.appendChild(note);
+    body.appendChild(form);
+    rep.focus();
+  }
 
-    for (const el of [password, rep, customer, results, send, status]) panel.appendChild(el);
-    return field;
+  /** What happened, and the one link worth having afterwards. */
+  function showResult(body, title, out, chosen) {
+    clear(body);
+    title.textContent = `Draft ${out.invoice_number}`;
+    const wrap = make("div", "nd-staff-form");
+    wrap.appendChild(make("p", "nd-note", `Raised for ${chosen.name}: ${out.lines} line${out.lines === 1 ? "" : "s"}, ${formatKsh(out.computed_total)}.`));
+    if (out.drift) {
+      wrap.appendChild(make("p", "nd-note is-error",
+        `Priced at ${formatKsh(out.drift.now)} today; this design was quoted at ${formatKsh(out.drift.quoted)}.`));
+    }
+    if (out.unknown && out.unknown.length) {
+      wrap.appendChild(make("p", "nd-note is-error",
+        `${out.unknown.length} piece${out.unknown.length === 1 ? "" : "s"} could not be priced and need a line adding by hand: ${out.unknown.map((u) => u.expected).join(", ")}.`));
+    }
+    const open = make("a", "nd-button is-primary", "Open it in Zoho");
+    open.href = out.url;
+    open.target = "_blank";
+    open.rel = "noopener";
+    wrap.appendChild(open);
+    body.appendChild(wrap);
+  }
+
+  async function callPush(body) {
+    const response = await fetch("/api/zoho-push", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-framework-key": staffKey || "" },
+      body: JSON.stringify(body)
+    });
+    return response.json().catch(() => null);
   }
 
   /**

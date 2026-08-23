@@ -162,6 +162,23 @@ export async function createDraftInvoice(payload) {
   return d.invoice;
 }
 
+/**
+ * Which custom fields the invoice form actually has.
+ *
+ * Sending one that does not exist is rejected, and omitting a MANDATORY one is
+ * rejected too — `cf_work_type` is mandatory, so an invoice raised without it
+ * never gets created at all. Reading the list once per container means a field
+ * added in Zoho starts working without a deploy, and one that is missing is
+ * skipped rather than failing the whole push.
+ */
+let fieldCache = null;
+export async function invoiceFields() {
+  if (fieldCache) return fieldCache;
+  const d = await call('/settings/fields', { entity: 'invoice' });
+  fieldCache = new Set((d.fields || []).map((f) => f.api_name));
+  return fieldCache;
+}
+
 export function items() {
   return pageAll('/items', 'items', { filter_by: 'Status.All' });
 }

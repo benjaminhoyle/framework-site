@@ -124,10 +124,21 @@ would change that calculation, and the key with it.
 
 ## Raising an invoice from a design
 
-The builder's Advanced panel, next to Download and Upload — already the staff
-corner. Customers use Advanced, so the section is visible to everyone and simply
-does nothing without the password. Password first; the rep's name only means
-something once staff has been established.
+A quiet **Staff login** button in the Advanced panel opens a modal. Nothing about
+the order is rendered until the password is accepted — customers use Advanced
+too, and an order form sitting open in the sidebar invites "what is that?" from
+everyone who does not need it.
+
+Step two asks for the details someone types by hand today anyway: client, phone,
+delivery address, delivery date and window, whether the client collects. They
+live on the invoice as custom fields, so asking here means typing them once,
+beside the design they belong to, rather than reopening the invoice to finish it.
+
+**`cf_work_type` is mandatory in Zoho** — an invoice without it is refused
+outright — so the push always sends `Shelving`. Custom fields are checked against
+the live form first, so one that does not exist yet (`cf_created_by_rep`) is
+skipped rather than failing the push, and starts working the moment it is
+created.
 
 ```
 POST /api/zoho-push  { action: "search", query }  -> [{ contact_id, name }]

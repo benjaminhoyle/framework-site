@@ -202,6 +202,20 @@
                 <div class="nd-modal-body" id="nd-modal-body"></div>
             </div>
         </div>
+
+        <!-- Staff only: raise a draft invoice in Zoho from this design. Kept out
+             of the panel and behind a password because customers use Advanced
+             too, and an order form sitting open in the sidebar invites the
+             question "what is that?" from everyone who does not need it. -->
+        <div class="nd-modal" id="nd-staff-modal" hidden role="dialog" aria-modal="true" aria-labelledby="nd-staff-title">
+            <div class="nd-modal-panel">
+                <div class="nd-modal-head">
+                    <strong id="nd-staff-title">Staff login</strong>
+                    <button type="button" class="nd-modal-close" id="nd-staff-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="nd-modal-body" id="nd-staff-body"></div>
+            </div>
+        </div>
     </div>
 
     <script src="/js/builder/engine.js?v=80" defer></script>

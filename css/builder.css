@@ -920,11 +920,29 @@ button { cursor: pointer; }
   * { transition: none !important; animation: none !important; }
 }
 
-/* The staff corner of Advanced: raising a draft invoice from a design.
-   Visible to everyone, because customers do use Advanced and hiding it would
-   only mean a second page nobody remembers. It does nothing without the
-   password, which is honest about what it is. */
+/* Staff login. A quiet button in Advanced; everything else is in a modal and
+   nothing is rendered until the password is accepted, so there is nothing to
+   read over a shoulder. Customers use Advanced too. */
 .nd-staff { border-top: 1px solid var(--nd-line); padding-top: 12px; margin-top: 4px; }
-.nd-staff-panel { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.nd-staff-panel .nd-list { max-height: 180px; }
+.nd-button.is-quiet {
+  background: none;
+  border: 1px solid var(--nd-line);
+  color: var(--nd-muted);
+  font-weight: 500;
+}
+.nd-button.is-quiet:hover { color: var(--nd-ink); border-color: var(--nd-line-strong); }
+
+.nd-staff-form { display: flex; flex-direction: column; gap: 12px; }
+.nd-staff-row { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 10px; align-items: center; }
+.nd-staff-label { font-size: .78rem; color: var(--nd-muted); }
+.nd-staff-row input[type="checkbox"] { justify-self: start; width: 20px; height: 20px; }
+.nd-staff-address { resize: vertical; font: inherit; }
+.nd-staff-window { display: flex; gap: 8px; align-items: center; }
+.nd-staff-window input { flex: 1 1 auto; min-width: 0; }
+.nd-staff-results { max-height: 168px; }
+.nd-staff-results:empty { display: none; }
 .nd-note.is-error { color: var(--nd-danger); }
+
+@media (max-width: 520px) {
+  .nd-staff-row { grid-template-columns: 1fr; gap: 4px; align-items: start; }
+}
