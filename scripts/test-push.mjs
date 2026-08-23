@@ -6,7 +6,9 @@
 
 import assert from 'node:assert/strict';
 import {
-  zohoItemName, finishLabel, groupDesign, buildLineItems, linesTotal, quoteDrift
+  zohoItemName, finishLabel, groupDesign, buildLineItems, linesTotal, quoteDrift,
+  deliveryLine, goodsLines, samePhone, sameAddress, contactDetails, contactName,
+  contactUpdate, newContactPayload, airtableClientPatch, clientDisagreement
 } from '../netlify/functions/_push.mjs';
 import { draftInvoicePayload } from '../netlify/functions/_zoho.mjs';
 
@@ -23,6 +25,7 @@ const CATALOGUE = [
   item('Lamp', 4500), item('Retired Thing', 100)
 ];
 CATALOGUE.push({ name: 'Inactive Thing', rate: 999, item_id: 'it_x', status: 'inactive' });
+CATALOGUE.push(item('Delivery Fees', 2000, 'it_delivery'));
 
 const inst = (type, extra = {}) => ({ id: type, type, originWorldMm: [0, 0, 0], ...extra });
 
@@ -151,6 +154,209 @@ test('the caller cannot accidentally drop the tax flag', () => {
   const p = draftInvoicePayload({ customer_id: 'c1', line_items: [{ rate: 6500, quantity: 1 }] });
   assert.equal(p.is_inclusive_tax, true);
   assert.equal(p.customer_id, 'c1');
+});
+
+// ---- delivery -----------------------------------------------------------
+test('a typed delivery fee becomes one line on the delivery item', () => {
+  const line = deliveryLine(CATALOGUE, 2500);
+  assert.equal(line.item_id, 'it_delivery');
+  assert.equal(line.rate, 2500, 'the typed figure is the rate, not the item default');
+  assert.equal(line.quantity, 1);
+});
+
+test('no fee, or a zero fee, adds no delivery line at all', () => {
+  // A "KSh 0" delivery line reads as a promise that delivery is free.
+  assert.equal(deliveryLine(CATALOGUE, 0), null);
+  assert.equal(deliveryLine(CATALOGUE, ''), null);
+  assert.equal(deliveryLine(CATALOGUE, null), null);
+  assert.equal(deliveryLine(CATALOGUE, 'abc'), null);
+});
+
+test('the delivery item is found by what it is, not by one exact name', () => {
+  const renamed = [item('Delivery and Installation', 0, 'it_d2')];
+  assert.equal(deliveryLine(renamed, 3000).item_id, 'it_d2');
+});
+
+test('a missing delivery item is reported, not silently dropped', () => {
+  const out = deliveryLine([item('Standard Base', 6500)], 2000);
+  assert.equal(out.unknown, true);
+  assert.equal(out.amount, 2000);
+});
+
+test('delivery is excluded from the goods total', () => {
+  const lines = [
+    { name: 'Standard Base', rate: 6500, quantity: 2 },
+    { name: 'Delivery Fees', rate: 2000, quantity: 1 }
+  ];
+  assert.equal(linesTotal(lines), 15000);
+  assert.equal(linesTotal(goodsLines(lines)), 13000);
+});
+
+test('a delivery charge is not reported as quote drift', () => {
+  // The builder quotes furniture and has never known what delivery costs.
+  // Comparing the whole invoice would warn on every delivered order.
+  const lines = [
+    { name: 'Standard Base', rate: 6500, quantity: 2 },
+    { name: 'Delivery Fees', rate: 2000, quantity: 1 }
+  ];
+  assert.equal(quoteDrift(goodsLines(lines), 13000), null);
+  assert.deepEqual(quoteDrift(lines, 13000), { quoted: 13000, now: 15000, delta: 2000 });
+});
+
+// ---- client details -----------------------------------------------------
+const CONTACT = {
+  contact_id: '900', contact_name: 'Jane Doe', first_name: 'Jane', last_name: 'Doe',
+  notes: 'interior designer',
+  billing_address: { address_id: 'b1', address: '12 Riverside Drive', city: 'Nairobi' },
+  shipping_address: { address_id: 's1', address: '12 Riverside Drive' },
+  contact_persons: [{ contact_person_id: 'p1', first_name: 'Jane', last_name: 'Doe', mobile: '0722123456', is_primary_contact: true }]
+};
+
+test('a phone is read off the primary contact person, not the contact', () => {
+  // The contact-level phone/mobile in a Zoho response are read-through copies
+  // of the primary person's; a contact with persons has them blank on create.
+  const d = contactDetails(CONTACT);
+  assert.equal(d.phone, '0722123456');
+  assert.equal(d.address, '12 Riverside Drive');
+  assert.equal(d.name, 'Jane Doe');
+});
+
+test('one number written four ways is still one number', () => {
+  for (const written of ['0722123456', '722123456', '+254722123456', '254 722 123 456']) {
+    assert.ok(samePhone(written, '0722123456'), `${written} should match`);
+  }
+  assert.equal(samePhone('0722123456', '0733999888'), false);
+});
+
+test('an address is compared without its trailing newline', () => {
+  assert.ok(sameAddress('12 Riverside Drive', '12  riverside drive\n'));
+  assert.equal(sameAddress('12 Riverside Drive', '14 Riverside Drive'), false);
+});
+
+// ---- correcting a client -------------------------------------------------
+test('retyping the same number differently is not a correction', () => {
+  // Otherwise every push writes a contact update and leaves a "previous phone"
+  // note recording no change at all.
+  assert.equal(contactUpdate(CONTACT, { phone: '+254722123456', address: '12 Riverside Drive', today: '2026-08-23' }), null);
+});
+
+test('leaving a field blank never erases what is on file', () => {
+  assert.equal(contactUpdate(CONTACT, { phone: '', address: '', today: '2026-08-23' }), null);
+});
+
+test('a new phone updates the existing person rather than adding a second', () => {
+  const out = contactUpdate(CONTACT, { phone: '0733999888', today: '2026-08-23' });
+  assert.equal(out.payload.contact_persons.length, 1);
+  assert.equal(out.payload.contact_persons[0].contact_person_id, 'p1',
+    'without the id Zoho adds a second contact person');
+  assert.equal(out.payload.contact_persons[0].mobile, '0733999888');
+  assert.equal(out.changed.phone, true);
+  assert.equal(out.changed.address, false);
+});
+
+test('the number it replaced is kept in the notes, dated, above what was there', () => {
+  const out = contactUpdate(CONTACT, { phone: '0733999888', today: '2026-08-23' });
+  assert.match(out.payload.notes, /^2026-08-23 \(shelf designer\): previous phone 0722123456\ninterior designer$/);
+});
+
+test('a new address moves both billing and shipping, keeping the rest of each', () => {
+  const out = contactUpdate(CONTACT, { address: '3 Karen Road', today: '2026-08-23' });
+  assert.equal(out.payload.billing_address.address, '3 Karen Road');
+  assert.equal(out.payload.billing_address.city, 'Nairobi', 'the rest of the address is preserved');
+  assert.equal(out.payload.billing_address.address_id, 'b1');
+  assert.equal(out.payload.shipping_address.address, '3 Karen Road');
+  assert.equal(out.payload.contact_persons, undefined, 'an address change must not touch the phone');
+});
+
+test('filling in a blank leaves no "previous" note to read', () => {
+  const blank = { contact_persons: [{ contact_person_id: 'p1', is_primary_contact: true }], notes: '' };
+  const out = contactUpdate(blank, { phone: '0700111222', today: '2026-08-23' });
+  assert.deepEqual(out.replaced, []);
+  assert.equal(out.payload.notes, undefined, '"previous phone: (blank)" is noise');
+});
+
+// ---- a new client --------------------------------------------------------
+test('a new client carries its phone on the contact person, where Zoho keeps it', () => {
+  const p = newContactPayload({ first_name: 'Amina', last_name: 'Wanjiru', phone: '0711222333', address: '9 Ngong Road' });
+  assert.equal(p.contact_name, 'Amina Wanjiru');
+  assert.equal(p.customer_sub_type, 'individual');
+  assert.equal(p.contact_persons[0].mobile, '0711222333');
+  assert.equal(p.contact_persons[0].is_primary_contact, true);
+  assert.equal(p.billing_address.address, '9 Ngong Road');
+  assert.equal(p.shipping_address.address, '9 Ngong Road');
+});
+
+test('a one-name client does not get a contact name with a dangling space', () => {
+  assert.equal(contactName('Kioko', ''), 'Kioko');
+  assert.equal(contactName('', 'Kioko'), 'Kioko');
+  assert.equal(newContactPayload({ first_name: 'Kioko', last_name: '' }).contact_name, 'Kioko');
+});
+
+test('a new client with no address sends no address at all', () => {
+  // An empty billing_address on create is not the same as omitting it.
+  const p = newContactPayload({ first_name: 'Amina', last_name: 'Wanjiru' });
+  assert.equal(p.billing_address, undefined);
+  assert.equal(p.contact_persons[0].mobile, undefined);
+});
+
+// ---- the Airtable half of a correction -----------------------------------
+const ROW = {
+  id: 'recABC',
+  fields: {
+    Name: 'Jane Doe',
+    'Primary Phone Number': '0722123456',
+    Address: '12 Riverside Drive',
+    Notes: 'interior designer',
+    'Zoho Contact ID': '900'
+  }
+};
+
+test('the two records answer "has this changed?" the same way', () => {
+  // If they disagreed, one side would be written and the other left alone, and
+  // a correction would converge on two different answers.
+  const args = { phone: '+254722123456', address: '12  riverside drive\n', today: '2026-08-23' };
+  assert.equal(contactUpdate(CONTACT, args), null);
+  assert.equal(airtableClientPatch(ROW, args), null);
+});
+
+test('a corrected phone patches Base - Clients and keeps the old one in Notes', () => {
+  const out = airtableClientPatch(ROW, { phone: '0733999888', today: '2026-08-23' });
+  assert.equal(out.fields['Primary Phone Number'], '0733999888');
+  assert.equal(out.fields.Address, undefined, 'a phone change must not touch the address');
+  assert.match(out.fields.Notes, /^2026-08-23 \(shelf designer\): previous phone 0722123456\ninterior designer$/);
+  assert.deepEqual(out.changed, { phone: true, address: false });
+});
+
+test('a blank never erases what Base - Clients holds', () => {
+  assert.equal(airtableClientPatch(ROW, { phone: '', address: '', today: '2026-08-23' }), null);
+});
+
+test('filling a blank client leaves no "previous" note', () => {
+  const bare = { id: 'r', fields: { Name: 'New Person' } };
+  const out = airtableClientPatch(bare, { phone: '0700111222', address: '9 Ngong Rd', today: '2026-08-23' });
+  assert.deepEqual(out.replaced, []);
+  assert.equal(out.fields.Notes, undefined);
+});
+
+// ---- where the two live records disagree ---------------------------------
+test('two real, different numbers are a disagreement for a person to settle', () => {
+  const d = clientDisagreement({ phone: '0722123456', address: '12 Riverside Drive' },
+    { 'Primary Phone Number': '0733999888', Address: '12 Riverside Drive' });
+  assert.deepEqual(d, { phone: true, address: false });
+});
+
+test('a blank on one side is a gap, not a disagreement', () => {
+  // Most Zoho contacts carry no address at all; flagging every one of those
+  // would make the warning mean nothing.
+  const d = clientDisagreement({ phone: '0722123456', address: '' },
+    { 'Primary Phone Number': '', Address: '12 Riverside Drive' });
+  assert.deepEqual(d, { phone: false, address: false });
+});
+
+test('the same number written two ways is not a disagreement', () => {
+  const d = clientDisagreement({ phone: '+254722123456', address: '12 Riverside Drive' },
+    { 'Primary Phone Number': '0722123456', Address: '12  riverside drive\n' });
+  assert.deepEqual(d, { phone: false, address: false });
 });
 
 console.log(`test-push: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);

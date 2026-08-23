@@ -24,10 +24,26 @@ whatever exists on its next pass.
 |---|---|
 | **Zoho Books** | invoice, line items, prices, discounts, payment, eTIMS, customer billing identity |
 | **Airtable** | production status, delivery scheduling and coordination, QC, post-sale check-in, marketing links |
+| **Both, and they must agree** | a client's phone and address. Base - Clients is what the workshop and the driver read; the Zoho contact is what the books bill. See "Three copies of a phone number" below. |
 
 Delivery **date** is the sharp case: Zoho seeds it once at order creation and
 Airtable owns it forever after, because deliveries get rescheduled and Zoho never
 hears. Do not "fix" this by syncing it back.
+
+**What the rule covers, and what it does not.** It is about the ORDER PIPELINE —
+orders, line items, money. The push does not write there, and must not. It does
+write **Base - Clients**, which is a different kind of thing: who a client is,
+not what was sold. A client record cannot leave an order without an invoice, so
+the rule's reason is untouched.
+
+That carve-out is necessary rather than convenient, because **Base - Clients is
+the only writable home a client's phone and address have.** On the order,
+`Delivery Address` and `Primary Phone Number` are *lookups* from it,
+`Delivery Address Baked` is `IF({Client Pickup}, "Client to Collect",
+{Delivery Address})`, and `Delivery Details Summary` — the text a driver is
+actually sent — is a formula over those. A correction that landed only in Zoho
+would not go quietly stale in a table nobody reads. It would send the van to the
+old house.
 
 ---
 
@@ -37,12 +53,13 @@ hears. Do not "fix" this by syncing it back.
 |---|---|
 | `netlify/functions/_zoho.mjs` | Zoho Books from a refresh token. Auth, paging, and the one place VAT-inclusive vs ex-VAT is decided. |
 | `netlify/functions/_airtable.mjs` | The slice of Airtable the sync needs. Table ids live here. |
-| `netlify/functions/_sync.mjs` | The reconciler: all checks, and the report writer. |
+| `netlify/functions/_sync.mjs` | The reconciler: all checks, the delivery seeding, and the report writer. |
 | `netlify/functions/sync-orders-background.mjs` | Entry point. Background function — a full pass takes minutes. |
 | `netlify/functions/sync-health.mjs` | `/api/sync-health` — is the environment wired up? Synchronous, so it can report what the background function cannot. |
 | `scripts/test-sync.mjs` | Unit tests over the pure helpers. No network. |
-| `netlify/functions/_push.mjs` | Design → invoice lines. Pure, so it is tested without spending Zoho calls. |
-| `netlify/functions/zoho-push.mjs` | `/api/zoho-push` — customer search and draft creation, behind `ZOHO_PUSH_KEY`. |
+| `netlify/functions/_push.mjs` | Design → invoice lines, plus the delivery line and everything that decides how a client record is corrected. Pure, so it is tested without spending Zoho calls. |
+| `netlify/functions/zoho-push.mjs` | `/api/zoho-push` — the client list, one client's details, draft creation and the client write, behind `ZOHO_PUSH_KEY`. |
+| `scripts/dev-builder.mjs` | The local server. Fakes `/api/zoho-push` over invented people, so the order form can be worked on without credentials or a live draft per attempt. |
 | `netlify/functions/sync-cron.mjs` | The clock. Inert until `SYNC_SCHEDULE_ENABLED=1`. |
 | `scripts/test-reconcile.mjs` | Every check, against fixtures. No network — the Zoho budget makes live testing of the checks impractical, and they are the part most worth testing. |
 | `scripts/test-push.mjs` | Design → lines, including the cases that would invoice the wrong thing quietly. |
@@ -116,40 +133,193 @@ key's unset-fallback exists so a lost variable never locks anyone out of a page;
 the opposite instinct applies to something that writes.
 
 What makes a shared typed password proportionate is the endpoint's own limit: it
-creates a **draft** and can do nothing else — no send, no payment, no void, no
-delete. The worst a leaked password buys is junk drafts. Adding a `send` action
-would change that calculation, and the key with it.
+creates a **draft** invoice, and it can create or amend the **client** that draft
+bills. No send, no payment, no void, no delete. The worst a leaked password buys
+is junk drafts and junk contacts, both visible and free to delete, plus a
+customer list it can walk **one name at a time** — the list action returns names
+and ids only, and details come from a per-contact call under a 2,000-a-day
+budget. Adding a `send` action would change that calculation, and the key with
+it.
 
 ---
 
 ## Raising an invoice from a design
 
-A quiet **Staff login** button in the Advanced panel opens a modal. Nothing about
-the order is rendered until the password is accepted — customers use Advanced
-too, and an order form sitting open in the sidebar invites "what is that?" from
-everyone who does not need it.
+A quiet **Staff login** row at the foot of Advanced's options sheet opens the
+form. Nothing about the order is rendered until the password is accepted —
+customers use Advanced too, and an order form anyone can read invites "what is
+that?" from everyone who does not need it. It then takes the **whole screen**:
+eleven fields, a searchable client list and a submit that creates a real record
+in the books is a job to work through, not something to share a screen with a
+shelf.
 
-Step two asks for the details someone types by hand today anyway: client, phone,
-delivery address, delivery date and window, whether the client collects. They
-live on the invoice as custom fields, so asking here means typing them once,
-beside the design they belong to, rather than reopening the invoice to finish it.
+It asks for the details someone types by hand today anyway: client, phone,
+delivery address, delivery date and window and whether each is agreed, whether
+the client collects, and the delivery fee. They live on the invoice as custom
+fields, so asking here means typing them once, beside the design they belong to,
+rather than reopening the invoice to finish it. The design code is not asked for
+— it is a hash of the design on screen, so the form shows it before anything is
+saved and the invoice carries the same one.
+
+```
+POST /api/zoho-push  { action: "clients" }             -> every client, [{ contact_id, name }]
+POST /api/zoho-push  { action: "client", contact_id }  -> that one client's phone + address
+POST /api/zoho-push  { action: "search", query }       -> the old filter, kept for cached pages
+POST /api/zoho-push  { action: "push", code, rep, ... }
+```
+
+**The client list is fetched once, and the password check is what fetches it.**
+Asking the server on every keystroke meant paging the whole of Base - Clients out
+of Airtable to answer each letter — a quarter of a second of nothing per
+keystroke, which is why the old dropdown felt broken. 189 names is about 11KB;
+the right shape is to send it once and filter an array. Asking for the list
+either returns it or 401s, so it doubles as the password check and the form
+opens with every name already in the browser.
+
+The list runs against Airtable's clients rather than Zoho's 374 contacts (which
+include vendors and duplicates), and returns **names and ids only** — a leaked
+password should not also hand over a customer database. The Airtable record
+already carries its `Zoho Contact ID`, so the push resolves rather than guesses
+and cannot mint a second contact for someone who has one.
+
+**A client created here is remembered locally**, in a `client` Blobs store, and
+unioned into the list. Nothing here writes to Airtable, so without it a new
+customer would be unfindable the moment the rep closed the form — and their
+second order would mint them a second contact, which is the exact failure
+searching Airtable rather than Zoho was chosen to avoid. It dedupes by
+`contact_id`, so it disappears on its own once Base - Clients catches up.
+
+**Delivery is a real Zoho item, not an ad-hoc line.** The typed fee becomes one
+line on the "Delivery Fees" item, found by what it is (`/^delivery/i`) rather
+than by one exact string — the same predicate `money()` uses, because the line
+has been called "Delivery and Installation" as well. The rate is VAT-inclusive
+like every other line. A client who collects is not charged for it, and that is
+enforced **in the endpoint**, not merely by the form hiding the box: hidden and
+not sent are not the same thing.
+
+**Delivery is excluded from quote drift.** The builder quotes furniture and has
+never known what delivery costs, so comparing the whole invoice would report a
+2,000 discrepancy on every delivered order and train reps to ignore the one
+warning that means something.
 
 **`cf_work_type` is mandatory in Zoho** — an invoice without it is refused
 outright — so the push always sends `Shelving`. Custom fields are checked against
-the live form first, so one that does not exist yet (`cf_created_by_rep`) is
-skipped rather than failing the push, and starts working the moment it is
-created.
+the live form first, so one that does not exist yet is skipped rather than
+failing the push, and starts working the moment it is created. What *is* skipped
+comes back as `skipped_fields` and the result screen names it, so a rep who typed
+a delivery window is told it did not reach the invoice rather than assuming it
+did.
+
+### Three copies of a phone number, and which of them must agree
+
+| Copy | What it is | Reconciled? |
+|---|---|---|
+| **Base - Clients** | the live record of who the client is; every operational field on the order is a lookup from it | **yes** — written on every correction |
+| **Zoho contact** | accounting's copy of the same live fact | **yes** — written on every correction |
+| **`cf_primary_contact_number` / `cf_delivery_address` on the invoice** | a snapshot of where *this order* went | **no, deliberately** |
+
+The first two are one fact in two places and must never disagree. The third is a
+different fact — a client who moves house must not rewrite where last year's
+shelf was delivered — so it is written once, at order time, and never touched
+again.
+
+### Correcting a client
+
+Choosing a client reads **both** live records. Prefill prefers Zoho and falls
+back to Airtable, which is what makes it useful today: most Zoho contacts were
+created quickly and carry no address at all, while Base - Clients has one for 125
+of 185 people. Editing either field writes the correction to **both**, after the
+invoice is raised, prepending what it replaced to that record's Notes, dated:
 
 ```
-POST /api/zoho-push  { action: "search", query }  -> [{ contact_id, name }]
-POST /api/zoho-push  { action: "push", code, contact_id, rep }
+2026-08-23 (shelf designer): previous phone 0722123456
 ```
 
-Search runs against Airtable's 189 clients rather than Zoho's 374 contacts
-(which include vendors and duplicates), and returns **names and ids only** — a
-leaked password should not also hand over a customer database. The Airtable
-record already carries its `Zoho Contact ID`, so the push resolves rather than
-guesses and cannot mint a second contact for someone who has one.
+**Where the two already disagree, the form says so and the rep settles it.** It
+shows the other record's value under the box with a "Use it" button. There is no
+rule that could decide this from the outside — both are real numbers somebody
+wrote down — but the person who has just spoken to the client can. Only a genuine
+disagreement is flagged: a blank on one side is a gap the save fills, and
+`+254722123456` against `0722123456` is one number written twice.
+
+Six things about it, each of which would otherwise be a quiet error:
+
+- **The invoice first, the client records after, and never the other way round.**
+  The invoice carries the phone and the address as custom fields of its own, so
+  the order is complete whether or not either client write succeeds — which is
+  exactly what lets them be best-effort rather than gates. A failure to update a
+  phone number must never cost a rep the invoice they were raising.
+- **The two writes are independent, and reported separately.** One failing still
+  corrects the other. Half a correction that says it is half a correction can be
+  finished; one that claims to be whole cannot.
+- **Both sides answer "has this changed?" with the same comparison.**
+  `contactUpdate` and `airtableClientPatch` share `samePhone`/`sameAddress`. If
+  they diverged, one record would be written and the other skipped, and a
+  correction would converge on two different answers.
+- **A phone is not changed when it has only been retyped.** `0722123456`,
+  `722123456`, `+254722123456` and `254 722 123 456` are one number; treating a
+  rep's retype as a correction would write a pointless update and leave a
+  "previous phone" note recording no change at all.
+- **A phone lives on the primary contact person, not on the contact.** The
+  contact-level `phone`/`mobile` in a Zoho response are read-through copies, and
+  sending them at the top level silently does nothing. The update must carry the
+  existing `contact_person_id` too, or Zoho **adds** a second contact person
+  rather than editing the one that is there.
+- **Blank never erases.** A field the rep left empty is not a correction to
+  nothing.
+
+**A new client** is created in Zoho before the invoice, because an invoice needs
+a `customer_id` — so there is no ordering in which a failure leaves an invoice
+pointing nowhere, and the worst case is a contact with no invoice. Zoho refuses a
+duplicate `contact_name`, and that refusal is the useful one: it means the person
+is already in the books, and the form says "search for them in the list instead"
+rather than minting a second record.
+
+It is then created in **Base - Clients** too, carrying its `Zoho Contact ID` from
+birth, so the two records start life agreeing rather than starting apart and
+waiting for somebody to remember. Airtable has no uniqueness constraint of its
+own, so the create refuses a name already in the list: `Order ID` is
+`Order Code & "_" & Client Name`, and two of the same person means orders that
+look interchangeable and are not.
+
+### Delivery details reach Airtable through the reconciler
+
+The rep types the delivery date, the window, whether each is agreed and whether
+the client collects into the builder. Those go onto the invoice as custom fields,
+and the reconciler seeds them onto the order — otherwise they get typed a second
+time into Airtable, which is the duplication the form exists to remove.
+
+| Invoice | Order |
+|---|---|
+| `cf_delivery_date` | `Delivery - Scheduled Date` |
+| `cf_delivery_window_start` / `_end` | `Delivery Window Start` / `End` |
+| `cf_delivery_date_status` | `Delivery - Date Status` |
+| `cf_delivery_time_status` | `Delivery - Time Status` |
+| `cf_client_pickup` | `Client Pickup` |
+
+**Seed once, never overwrite.** This is the delivery-date rule applied to
+everything that travels with a delivery date: Zoho seeds it at order creation,
+Airtable owns it forever after. Deliveries get rescheduled and re-confirmed by
+people looking at Airtable and Zoho never hears, so a July invoice must not be
+able to drag September's delivery back — or un-confirm it. `seedDelivery()`
+therefore fills blanks only, which also makes it idempotent: a repeated full pass
+writes nothing twice.
+
+`Client Pickup` is one-directional for the same reason. An invoice that says the
+client collects can tick the box; an invoice merely silent about it can never
+untick a box somebody ticked.
+
+Two traps in that table:
+
+- **Airtable's window fields are `duration`, which is a count of SECONDS.**
+  Writing Zoho's `"14:30"` straight across stores nothing at all —
+  `hhmmToSeconds()` is the only place that conversion happens.
+- **`0:00` is a real time, not a blank.** The blank test is `undefined | null |
+  ''`, not falsiness, or a midnight window would be overwritten on every pass.
+
+**This is inert until `SYNC_ALLOW_WRITES=1`.** The seeds are computed on every
+pass and appear in the run's pending writes, so a read-only pass shows exactly
+what it would do — but nothing lands until write mode is on. See the runbook.
 
 Three rules in `_push.mjs`, each of which would otherwise fail silently:
 
@@ -235,6 +405,11 @@ Edits and payments run on different clocks:
 
 Each of these cost a wrong answer while building this.
 
+- **A Zoho contact's `phone`/`mobile` are read-through copies** of its primary
+  contact person's. Sending them at the top level of an update silently does
+  nothing, and an update to `contact_persons` without the existing
+  `contact_person_id` **adds** a second person rather than editing the first.
+
 - **Line-item names are snapshots; the customer name is live.** All 327 invoices
   show their contact's *current* name, so renaming a Zoho contact rewrites how
   history reads. Old lines still say `Coat Hanger Module`, `Shelf - Standard Base`
@@ -286,8 +461,19 @@ Each of these cost a wrong answer while building this.
 - [ ] Re-measure the revenue baseline in `framework-ops/INTEGRITY-SPEC.md`
       (5,786,000 across 230 orders before invoiced prices land) and record why it moved
 - [ ] Schedule: `*/5 * * * *` incremental, nightly full
-- [ ] Build `/api/zoho-push` + the Advanced-panel menu entry
-- [ ] `cf_created_by_rep` custom field in Zoho, for rep attribution
+- [x] Build `/api/zoho-push` + the entry point in Advanced (now the last row of
+      its options sheet)
+- [x] `cf_created_by_rep` custom field in Zoho, for rep attribution
+- [x] `cf_delivery_date_status` / `cf_delivery_time_status` dropdowns
+      (Tentative / Confirmed), created 2026-08-23
+- [x] The form rebuilt: preloaded client list, per-client prefill, new clients,
+      the delivery fee, and both delivery statuses
+- [x] `Delivery - Date Status` / `Delivery - Time Status` on Orders - Pipeline
+      (single select, Tentative / Confirmed), created 2026-08-23
+- [x] Client phone and address written to BOTH live records, with disagreements
+      surfaced in the form
+- [ ] Turn on `SYNC_ALLOW_WRITES=1` — until then the delivery seeding is
+      computed and previewed but never lands
 
 ### Tomorrow's runbook
 

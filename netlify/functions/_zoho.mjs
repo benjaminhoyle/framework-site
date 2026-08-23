@@ -57,7 +57,7 @@ export async function accessToken() {
  */
 export const calls = { n: 0 };
 
-async function call(path, params = {}, tries = 3, post = null) {
+async function call(path, params = {}, tries = 3, post = null, method = null) {
   calls.n += 1;
   const token = await accessToken();
   const url = new URL(`${need('ZOHO_API_HOST')}/books/v3${path}`);
@@ -65,8 +65,9 @@ async function call(path, params = {}, tries = 3, post = null) {
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
   }
+  const verb = method || (post ? 'POST' : 'GET');
   const res = await fetch(url, {
-    method: post ? 'POST' : 'GET',
+    method: verb,
     headers: {
       Authorization: `Zoho-oauthtoken ${token}`,
       ...(post ? { 'Content-Type': 'application/json' } : {})
@@ -83,14 +84,14 @@ async function call(path, params = {}, tries = 3, post = null) {
     }
     if (tries > 0) {
       await new Promise((r) => setTimeout(r, 1500));
-      return call(path, params, tries - 1, post);
+      return call(path, params, tries - 1, post, method);
     }
     throw new Error(`Zoho 429 on ${path}: ${body.slice(0, 160)}`);
   }
   // Only a read is safe to retry blindly. Re-POSTing a create could raise the
   // same invoice twice, and a duplicate in the books is worse than a failure a
   // person can see and repeat deliberately.
-  if (res.status >= 500 && tries > 0 && !post) {
+  if (res.status >= 500 && tries > 0 && verb === 'GET') {
     await new Promise((r) => setTimeout(r, 1500));
     return call(path, params, tries - 1);
   }
@@ -199,6 +200,49 @@ export function items() {
 
 export function contacts() {
   return pageAll('/contacts', 'contacts');
+}
+
+/**
+ * One contact in full: its addresses, its notes and its contact persons.
+ *
+ * The LIST response flattens phone and mobile off the primary contact person
+ * and omits `notes` and the address objects entirely, so anything that means to
+ * read or amend a person's details has to fetch the detail — the same trap as
+ * `invoice()` above.
+ *
+ * Fetched one at a time and only for a contact a rep has actually chosen. That
+ * is deliberate: a leaked push password should not be able to walk the customer
+ * database out through this endpoint any faster than one call per person, under
+ * a daily quota that runs out well before the list does.
+ */
+export async function contact(id) {
+  return (await call(`/contacts/${id}`)).contact;
+}
+
+/**
+ * A new customer.
+ *
+ * Zoho refuses a duplicate `contact_name` outright, which is the behaviour we
+ * want: it is the only thing standing between "the rep could not find Jane" and
+ * a second Jane Doe with half her history. The caller turns that refusal into
+ * "search for them instead" rather than swallowing it.
+ */
+export async function createContact(payload) {
+  const d = await call('/contacts', {}, 1, payload);
+  if (!d.contact) throw new Error(`Zoho create returned no contact: ${JSON.stringify(d).slice(0, 200)}`);
+  return d.contact;
+}
+
+/**
+ * Amend an existing customer — phone, address, notes. Nothing else.
+ *
+ * A PUT, and `call()` will not retry it: a repeated update is harmless in
+ * principle but would append a second "previous phone" line to the notes, and a
+ * record that grows a line every time the network hiccups stops being read.
+ */
+export async function updateContact(id, payload) {
+  const d = await call(`/contacts/${id}`, {}, 1, payload, 'PUT');
+  return (d && d.contact) || null;
 }
 
 /**

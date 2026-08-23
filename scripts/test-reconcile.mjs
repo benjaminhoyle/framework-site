@@ -7,7 +7,7 @@
 // of invoices.
 
 import assert from 'node:assert/strict';
-import { reconcile, canonicalItem, matchProducts } from '../netlify/functions/_sync.mjs';
+import { reconcile, canonicalItem, matchProducts, hhmmToSeconds, seedDelivery } from '../netlify/functions/_sync.mjs';
 
 let passed = 0;
 const test = async (name, fn) => {
@@ -441,6 +441,76 @@ await test('a line typed without a catalogue item still falls back to the name',
   });
   assert.equal(r.pending.lines.length, 1);
   assert.equal(r.pending.lines[0].now, 13000);
+});
+
+// ---- seeding delivery details from the invoice ---------------------------
+await test('a delivery window crosses as seconds, which is what a duration field is', () => {
+  // Writing "14:30" straight into an Airtable duration silently stores nothing.
+  assert.equal(hhmmToSeconds('14:30'), 52200);
+  assert.equal(hhmmToSeconds('7:00'), 25200);
+  assert.equal(hhmmToSeconds('0:05'), 300);
+  assert.equal(hhmmToSeconds('25:00'), null);
+  assert.equal(hhmmToSeconds(''), null);
+  assert.equal(hhmmToSeconds(null), null);
+});
+
+await test('a blank order takes everything the invoice offers', () => {
+  const out = seedDelivery({}, {
+    cf_delivery_date: '2026-09-04',
+    cf_delivery_window_start: '9:00',
+    cf_delivery_window_end: '12:00',
+    cf_delivery_date_status: 'Confirmed',
+    cf_delivery_time_status: 'Tentative',
+    cf_client_pickup: false
+  });
+  assert.deepEqual(out, {
+    'Delivery - Scheduled Date': '2026-09-04',
+    'Delivery Window Start': 32400,
+    'Delivery Window End': 43200,
+    'Delivery - Date Status': 'Confirmed',
+    'Delivery - Time Status': 'Tentative'
+  });
+});
+
+await test('an order that already has a date keeps it', () => {
+  // Airtable owns delivery scheduling after it is seeded: deliveries get moved
+  // and re-confirmed by people looking at Airtable, and Zoho never hears. A
+  // July invoice must not be able to drag September's delivery back.
+  const out = seedDelivery(
+    { 'Delivery - Scheduled Date': '2026-09-20', 'Delivery - Date Status': 'Confirmed' },
+    { cf_delivery_date: '2026-07-04', cf_delivery_date_status: 'Tentative' }
+  );
+  assert.deepEqual(out, {});
+});
+
+await test('a 00:00 window is a real time, not an empty one', () => {
+  const out = seedDelivery({}, { cf_delivery_window_start: '0:00' });
+  assert.equal(out['Delivery Window Start'], 0);
+});
+
+await test('an existing 00:00 window is not treated as blank and overwritten', () => {
+  const out = seedDelivery({ 'Delivery Window Start': 0 }, { cf_delivery_window_start: '9:00' });
+  assert.equal(out['Delivery Window Start'], undefined);
+});
+
+await test('pickup can only ever be set by an invoice, never cleared', () => {
+  assert.deepEqual(seedDelivery({}, { cf_client_pickup: true }), { 'Client Pickup': true });
+  // An invoice silent about pickup must not untick a box somebody ticked.
+  assert.deepEqual(seedDelivery({ 'Client Pickup': true }, {}), {});
+  assert.deepEqual(seedDelivery({ 'Client Pickup': true }, { cf_client_pickup: false }), {});
+});
+
+await test('a status Zoho does not recognise is not written', () => {
+  assert.deepEqual(seedDelivery({}, { cf_delivery_date_status: 'Maybe' }), {});
+});
+
+await test('seeding is idempotent, so a repeated full pass writes nothing twice', () => {
+  const cf = {
+    cf_delivery_date: '2026-09-04', cf_delivery_window_start: '9:00',
+    cf_delivery_date_status: 'Confirmed', cf_client_pickup: true
+  };
+  const first = seedDelivery({}, cf);
+  assert.deepEqual(seedDelivery(first, cf), {});
 });
 
 console.log(`test-reconcile: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);

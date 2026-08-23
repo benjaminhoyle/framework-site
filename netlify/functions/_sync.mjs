@@ -116,6 +116,56 @@ export function apportionFactor(gross, discount) {
   return (gross - discount) / gross;
 }
 
+/**
+ * "14:30" as an Airtable duration, which is a count of SECONDS.
+ *
+ * Zoho stores the delivery window as text against a 24h regex; Airtable's
+ * `Delivery Window Start` / `End` are duration fields formatted h:mm. Writing
+ * the string straight across silently stores nothing.
+ */
+export function hhmmToSeconds(hhmm) {
+  const m = /^([0-9]|0[0-9]|1[0-9]|2[0-3]):([0-5][0-9])$/.exec(String(hhmm || '').trim());
+  return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 : null;
+}
+
+/**
+ * The delivery details an invoice can seed onto a brand-new order.
+ *
+ * **Seed once, never overwrite.** This is the delivery-date rule applied to
+ * everything that travels with a delivery date: Zoho seeds it at order creation
+ * and Airtable owns it forever after, because deliveries get rescheduled and
+ * re-confirmed by people looking at Airtable, and Zoho never hears about it. An
+ * invoice raised in July must not be able to un-confirm a delivery that ops
+ * moved to September.
+ *
+ * So every field here is written only where the order has nothing at all. That
+ * makes the whole thing idempotent, and makes a re-run of a full pass harmless.
+ *
+ * `Client Pickup` is one-directional for the same reason: an invoice that says
+ * the client collects can set the box, but an invoice that is merely silent
+ * about it can never clear a box somebody ticked.
+ */
+export function seedDelivery(order, cf) {
+  const has = (name) => {
+    const v = order[name];
+    return v !== undefined && v !== null && v !== '';
+  };
+  const out = {};
+  if (!has('Delivery - Scheduled Date') && cf.cf_delivery_date) {
+    out['Delivery - Scheduled Date'] = String(cf.cf_delivery_date);
+  }
+  const start = hhmmToSeconds(cf.cf_delivery_window_start);
+  const end = hhmmToSeconds(cf.cf_delivery_window_end);
+  if (!has('Delivery Window Start') && start != null) out['Delivery Window Start'] = start;
+  if (!has('Delivery Window End') && end != null) out['Delivery Window End'] = end;
+  for (const [from, to] of [['cf_delivery_date_status', 'Delivery - Date Status'],
+                            ['cf_delivery_time_status', 'Delivery - Time Status']]) {
+    if (!has(to) && ['Tentative', 'Confirmed'].includes(cf[from])) out[to] = cf[from];
+  }
+  if (order['Client Pickup'] !== true && cf.cf_client_pickup === true) out['Client Pickup'] = true;
+  return out;
+}
+
 /** Run `fn` over `list` a few at a time — serial is too slow for a full pass. */
 async function pool(list, size, fn) {
   const out = [];
@@ -305,6 +355,21 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
           });
         }
       }
+    }
+
+    // -- delivery scheduling: seeded from the invoice, once, onto a blank order
+    //
+    //    The rep typed the date, the window and whether each is agreed into the
+    //    builder beside the design. Without this they type them a second time
+    //    into Airtable, which is the duplication the order form exists to
+    //    remove. `seedDelivery` fills blanks only; see the note on it.
+    const seeds = seedDelivery(order.fields, full.custom_field_hash || {});
+    if (Object.keys(seeds).length) {
+      writes.orders.push({
+        id: order.id, orderId: order.fields['Order ID'],
+        was: null, now: Object.keys(seeds).join(', '),
+        fields: seeds
+      });
     }
 
     // -- eTIMS: added to the invoice after the sale, so it arrives late and
