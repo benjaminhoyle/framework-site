@@ -149,6 +149,20 @@ export async function payments(id) {
 }
 
 /**
+ * What actually goes to Zoho when raising a draft.
+ *
+ * `is_inclusive_tax` is the whole reason this is a separate function. The org is
+ * tax-inclusive and catalogue rates already contain VAT, but a created invoice
+ * defaults to EXCLUSIVE — so Zoho adds 16% on top and the customer is billed
+ * 20,300 for a 17,500 shelf. Every invoice raised by hand carries `true`; the
+ * first one raised through the API did not, and nothing about the response said
+ * so. Verified against INV640435.
+ */
+export function draftInvoicePayload(fields) {
+  return { is_inclusive_tax: true, ...fields };
+}
+
+/**
  * Raise a DRAFT invoice. Never a sent one.
  *
  * Zoho creates invoices as drafts unless told otherwise, and nothing here tells
@@ -157,7 +171,7 @@ export async function payments(id) {
  * behind a typed password, and why there is no `send` here to reach for.
  */
 export async function createDraftInvoice(payload) {
-  const d = await call('/invoices', {}, 1, payload);
+  const d = await call('/invoices', {}, 1, draftInvoicePayload(payload));
   if (!d.invoice) throw new Error(`Zoho create returned no invoice: ${JSON.stringify(d).slice(0, 200)}`);
   return d.invoice;
 }

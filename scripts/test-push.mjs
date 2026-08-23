@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {
   zohoItemName, finishLabel, groupDesign, buildLineItems, linesTotal, quoteDrift
 } from '../netlify/functions/_push.mjs';
+import { draftInvoicePayload } from '../netlify/functions/_zoho.mjs';
 
 let passed = 0;
 const test = (name, fn) => {
@@ -136,6 +137,20 @@ test('a quote raised before a price change reports the difference', () => {
 
 test('an unsaved quote total is not treated as a zero quote', () => {
   assert.equal(quoteDrift([{ rate: 6500, quantity: 1 }], null), null);
+});
+
+// ---- the 16% that nearly went out --------------------------------------
+test('a raised invoice is always tax-INCLUSIVE', () => {
+  // The org is tax-inclusive and catalogue rates already contain VAT, but a
+  // created invoice defaults to exclusive. INV640435 came back at 20,300 for a
+  // 17,500 shelf and nothing in the response said why.
+  assert.equal(draftInvoicePayload({ line_items: [] }).is_inclusive_tax, true);
+});
+
+test('the caller cannot accidentally drop the tax flag', () => {
+  const p = draftInvoicePayload({ customer_id: 'c1', line_items: [{ rate: 6500, quantity: 1 }] });
+  assert.equal(p.is_inclusive_tax, true);
+  assert.equal(p.customer_id, 'c1');
 });
 
 console.log(`test-push: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);
