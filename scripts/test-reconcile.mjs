@@ -192,6 +192,21 @@ await test('the same change is applied once the order is delivered', async () =>
   assert.equal(r.pending.lines[0].now, 10000);
 });
 
+await test('a write pass does not flag the work it is doing', async () => {
+  // The line is blank and about to be filled. Judging the pre-write state
+  // reported three orders as short by the very pass that was fixing them.
+  const r = await run(backfillWorld, { mode: 'read-only' });
+  assert.equal(of(r, 'line-totals-match-invoice').length, 0);
+});
+
+await test('a genuine shortfall is still an error', async () => {
+  const r = await run({
+    ...backfillWorld,
+    invoices: [invoice('INV1', [zline('Standard Base', 2, 6500), zline('Steel Decoration', 2, 3000)])]
+  });
+  assert.equal(of(r, 'line-totals-match-invoice').length, 1);
+});
+
 // ---- the epoch ---------------------------------------------------------
 await test('a paid invoice predating the pipeline is not reported as a gap', async () => {
   // Zoho goes back to 2023 and Airtable does not. Reporting those opened the

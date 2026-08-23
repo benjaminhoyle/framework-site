@@ -408,16 +408,17 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       target: zoho.round2(m.goods - m.discount), projected
     });
 
-    const stored = aLines.reduce((n, l) => n + (l.fields['Zoho Line Total'] || 0), 0);
+    // Judge the state this pass LEAVES BEHIND, not the one it found. Summing the
+    // values read before the write meant a write pass flagged its own work in
+    // progress: three orders were reported as short by the very pass that was
+    // filling them in.
     const anyStored = aLines.some((l) => l.fields['Zoho Line Total'] != null);
-    if (anyStored) {
-      const target = zoho.round2(m.goods - m.discount);
-      if (Math.abs(stored - target) > 1) {
-        add(ERROR, 'line-totals-match-invoice', `${order.fields['Order ID']} revenue ${stored} vs ${target}`, {
-          invoice: num, orderRecIds: [order.id],
-          detail: `Line totals sum to ${stored}; the invoice goods total after discount is ${target}. Airtable is missing a line, or has one the invoice does not.`
-        });
-      }
+    const target = zoho.round2(m.goods - m.discount);
+    if ((anyStored || pendingHere.length) && Math.abs(projected - target) > 1) {
+      add(ERROR, 'line-totals-match-invoice', `${order.fields['Order ID']} revenue ${projected} vs ${target}`, {
+        invoice: num, orderRecIds: [order.id],
+        detail: `Line totals come to ${projected}; the invoice goods total after discount is ${target}. Airtable is missing a line the invoice has, or holds one it does not.`
+      });
     }
 
     // -- first payment date, which is not last_payment_date
