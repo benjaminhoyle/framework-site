@@ -6,11 +6,28 @@
 // www.zohoapis.com) — a Kenya org on the wrong DC 401s on every call, which is
 // the first thing to check if this suddenly stops working.
 //
-// The scopes here are deliberately narrow. This credential lives in the cloud,
-// so it can create and read invoices and contacts and nothing else — it is
-// *verified* unable to reach banking or expenses. The wider credential, with
-// banking and expenses, stays on Ben's machine in framework-ops/.env. Do not
-// widen this one to save a round trip.
+// The scopes here are deliberately narrow. This credential lives in the cloud
+// and is verified unable to reach banking or expenses; the wider credential,
+// with both, stays on Ben's machine in framework-ops/.env. Do not widen this one
+// to save a round trip.
+//
+// What it actually holds, read back from the refresh response on 2026-08-23
+// rather than assumed — an earlier version of this comment said "create and read
+// invoices and contacts and nothing else", which was wrong in both directions:
+//
+//   ZohoBooks.invoices.CREATE  READ  UPDATE
+//   ZohoBooks.contacts.CREATE  READ
+//   ZohoBooks.settings.READ
+//
+// **There is no `ZohoBooks.contacts.UPDATE`**, so `updateContact()` below fails
+// 401 code 57 on every call — which is a standing condition, not a fault, and is
+// reported as such. To make client corrections stick, reissue the refresh token
+// at api-console.zoho.com with that scope added; no code changes when you do.
+//
+// `invoices.UPDATE` is present and unused. The endpoint only ever creates
+// drafts, so a leaked ZOHO_PUSH_KEY still buys nothing but junk drafts — but the
+// credential itself is broader than the code, which is worth knowing before
+// anyone reasons about it from this file.
 
 const ORG = () => need('ZOHO_ORG_ID');
 

@@ -225,14 +225,23 @@ again.
 
 ### Correcting a client
 
-> **The Zoho half does not work yet.** The Self Client credential can read and
-> create contacts but not update them, so every contact correction comes back
-> `401 code 57: You are not authorized to perform this operation`. It needs the
-> refresh token reissuing at api-console.zoho.com with **`ZohoBooks.contacts.UPDATE`**
-> added to its scopes; nothing in the code changes when it is. Until then the
-> Airtable half — which is the half the driver's message reads — still lands, and
-> the result screen says plainly that Zoho's copy was not updated rather than
-> reporting a fault. Found on INV640437, the first live push.
+> **The Zoho half does not work yet.** Every contact correction comes back
+> `401 code 57: You are not authorized to perform this operation`. Read back from
+> the refresh response, the credential holds:
+>
+> ```
+> ZohoBooks.invoices.CREATE  READ  UPDATE
+> ZohoBooks.contacts.CREATE  READ
+> ZohoBooks.settings.READ
+> ```
+>
+> — no `ZohoBooks.contacts.UPDATE`. Reissue the refresh token at
+> api-console.zoho.com with that scope added and it starts working with no
+> deploy. **`contacts.CREATE` is present**, so "+ New client" is unaffected.
+>
+> Until then the Airtable half — which is the half the driver's message reads —
+> still lands, and the result screen says plainly that Zoho's copy was not
+> updated rather than reporting a fault. Found on INV640437, the first live push.
 
 Choosing a client reads **both** live records. Prefill prefers Zoho and falls
 back to Airtable, which is what makes it useful today: most Zoho contacts were
