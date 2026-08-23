@@ -225,6 +225,15 @@ again.
 
 ### Correcting a client
 
+> **The Zoho half does not work yet.** The Self Client credential can read and
+> create contacts but not update them, so every contact correction comes back
+> `401 code 57: You are not authorized to perform this operation`. It needs the
+> refresh token reissuing at api-console.zoho.com with **`ZohoBooks.contacts.UPDATE`**
+> added to its scopes; nothing in the code changes when it is. Until then the
+> Airtable half — which is the half the driver's message reads — still lands, and
+> the result screen says plainly that Zoho's copy was not updated rather than
+> reporting a fault. Found on INV640437, the first live push.
+
 Choosing a client reads **both** live records. Prefill prefers Zoho and falls
 back to Airtable, which is what makes it useful today: most Zoho contacts were
 created quickly and carry no address at all, while Base - Clients has one for 125
@@ -293,7 +302,7 @@ time into Airtable, which is the duplication the form exists to remove.
 |---|---|
 | `cf_delivery_date` | `Delivery - Scheduled Date` |
 | `cf_delivery_window_start` / `_end` | `Delivery Window Start` / `End` |
-| `cf_delivery_date_status` | `Delivery - Date Status` |
+| `cf_delivery_date_status` | `Delivery - Date Set` (ticked only when Confirmed) |
 | `cf_delivery_time_status` | `Delivery - Time Status` |
 | `cf_client_pickup` | `Client Pickup` |
 
@@ -305,9 +314,31 @@ able to drag September's delivery back — or un-confirm it. `seedDelivery()`
 therefore fills blanks only, which also makes it idempotent: a repeated full pass
 writes nothing twice.
 
-`Client Pickup` is one-directional for the same reason. An invoice that says the
-client collects can tick the box; an invoice merely silent about it can never
-untick a box somebody ticked.
+**The date status lands on `Delivery - Date Set`, the checkbox that was already
+there.** That checkbox is not decor — `Delivery Details Summary`, the text the
+delivery team is sent, reads:
+
+```
+IF({Delivery - Date Set},
+   <the delivery window>,
+   <the date> & " (⚠️ Delivery date not confirmed)")
+```
+
+which is precisely the tentative/confirmed distinction the form asks about,
+already wired to the people who act on it. A second field saying the same thing
+would be two answers to one question. (A `Delivery - Date Status` select was
+created here first and then abandoned; it is renamed `zzz - delete me` because
+Airtable's API can create and rename fields but cannot delete them.)
+
+`Delivery - Date Set` and `Client Pickup` are both one-directional, because a
+checkbox cannot tell "no" from "nobody said". An invoice can tick one; an
+invoice merely silent about it can never untick a box somebody ticked.
+
+`Delivery - Time Status` has no existing equivalent, and the summary formula
+above collapses the window into the date flag — so it is recorded on the order
+and visible to ops, but the driver's message does not yet mention a tentative
+*time*. Extending that formula is a one-line change to what the delivery team
+reads, so it is left as a decision rather than made here.
 
 Two traps in that table:
 
@@ -317,9 +348,16 @@ Two traps in that table:
 - **`0:00` is a real time, not a blank.** The blank test is `undefined | null |
   ''`, not falsiness, or a midnight window would be overwritten on every pass.
 
-**This is inert until `SYNC_ALLOW_WRITES=1`.** The seeds are computed on every
-pass and appear in the run's pending writes, so a read-only pass shows exactly
-what it would do — but nothing lands until write mode is on. See the runbook.
+Two things about when this actually happens:
+
+- **The reconciler never creates orders.** It matches invoices to orders that
+  already exist and reconciles those; a draft invoice with no order is skipped
+  entirely. So the seeding fills in a hand-made order's blanks on the next pass
+  after somebody creates it — which is what "seeded at order creation" has
+  always meant here.
+- It needs `SYNC_ALLOW_WRITES=1`, which **is** on (a Write-mode pass ran
+  2026-08-23). The seeds are computed on every pass and appear in the pending
+  writes either way, so a read-only pass still shows exactly what it would do.
 
 Three rules in `_push.mjs`, each of which would otherwise fail silently:
 
@@ -405,6 +443,12 @@ Edits and payments run on different clocks:
 
 Each of these cost a wrong answer while building this.
 
+- **`<input type="number">` reports an empty string for "2,500".** Not the
+  digits behind it — nothing. A rep typing a thousands separator, which in Kenya
+  is most of them, sent no delivery fee at all and got an invoice with no
+  delivery line and no warning. INV640437 went out that way. The field is now
+  plain text with a decimal keypad, both ends strip anything that is not a digit
+  or a point, and a fee that fails to become a line is reported.
 - **A Zoho contact's `phone`/`mobile` are read-through copies** of its primary
   contact person's. Sending them at the top level of an update silently does
   nothing, and an update to `contact_persons` without the existing

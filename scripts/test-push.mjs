@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {
   zohoItemName, finishLabel, groupDesign, buildLineItems, linesTotal, quoteDrift,
   deliveryLine, goodsLines, samePhone, sameAddress, contactDetails, contactName,
-  contactUpdate, newContactPayload, airtableClientPatch, clientDisagreement
+  contactUpdate, newContactPayload, airtableClientPatch, clientDisagreement, moneyValue
 } from '../netlify/functions/_push.mjs';
 import { draftInvoicePayload } from '../netlify/functions/_zoho.mjs';
 
@@ -357,6 +357,32 @@ test('the same number written two ways is not a disagreement', () => {
   const d = clientDisagreement({ phone: '+254722123456', address: '12 Riverside Drive' },
     { 'Primary Phone Number': '0722123456', Address: '12  riverside drive\n' });
   assert.deepEqual(d, { phone: false, address: false });
+});
+
+// ---- the fee that vanished on INV640437 ---------------------------------
+test('a fee typed the way people type money is still a fee', () => {
+  // "2,500" was the whole bug: Number() gives NaN, and a browser number input
+  // reports "" for it, so the invoice went out with no delivery line and
+  // nothing said so.
+  assert.equal(moneyValue('2,500'), 2500);
+  assert.equal(moneyValue('KSh 2,500'), 2500);
+  assert.equal(moneyValue(' 2500 '), 2500);
+  assert.equal(moneyValue('2500.50'), 2500.5);
+  assert.equal(moneyValue(2500), 2500);
+});
+
+test('nothing typed is still nothing', () => {
+  assert.equal(moneyValue(''), null);
+  assert.equal(moneyValue('   '), null);
+  assert.equal(moneyValue(null), null);
+  assert.equal(moneyValue(undefined), null);
+  assert.equal(moneyValue('free'), null);
+});
+
+test('a comma-separated fee reaches the invoice as a line', () => {
+  const line = deliveryLine(CATALOGUE, '2,500');
+  assert.equal(line.rate, 2500);
+  assert.equal(line.item_id, 'it_delivery');
 });
 
 console.log(`test-push: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);

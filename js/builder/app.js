@@ -3288,9 +3288,12 @@
     timeField.appendChild(window_);
     timeField.appendChild(timeStatus);
 
-    const fee = staffInput("number", "2000");
-    fee.min = "0";
-    fee.step = "50";
+    // Deliberately NOT type="number". A browser reports an empty string for
+    // "2,500" rather than the digits behind it, so a rep typing a thousands
+    // separator -- which in Kenya is most of them -- silently sent no fee at
+    // all and got an invoice with no delivery line on it. Text plus a decimal
+    // keypad accepts what people actually type; the server strips the rest.
+    const fee = staffInput("text", "e.g. 2,000");
     fee.inputMode = "decimal";
     // The note belongs under the box, not in the label column: a two-column row
     // puts a third child at the start of the next line.
@@ -3412,9 +3415,28 @@
     }
     for (const [name, result] of saved) {
       if (!result || result.ok !== false) continue;
-      wrap.appendChild(make("p", "nd-note is-error", result.missing
-        ? "This client is in Zoho but not in Airtable's Base - Clients, so only Zoho was corrected. Add them to Airtable."
-        : `The invoice is raised, but ${name} would not take the client's new details — correct it there by hand.`));
+      if (result.missing) {
+        wrap.appendChild(make("p", "nd-note is-error",
+          "This client is in Zoho but not in Airtable's Base - Clients, so only Zoho was corrected. Add them to Airtable."));
+        continue;
+      }
+      if (result.scope) {
+        // A standing condition, not a fault. Saying "Zoho would not take it"
+        // sends someone looking for a bug that is not there.
+        wrap.appendChild(make("p", "nd-note",
+          "Airtable has the client's details. Zoho's copy was not updated: this app's Zoho credential can read and create contacts but not change them, which needs the token reissuing."));
+        continue;
+      }
+      const problem = make("p", "nd-note is-error",
+        `The invoice is raised, but ${name} would not take the client's new details — correct it there by hand.`);
+      // The reason, verbatim. Withholding it turned one real failure into an
+      // afternoon of guessing at payload shapes.
+      if (result.detail) problem.appendChild(make("small", "nd-subtext", result.detail));
+      wrap.appendChild(problem);
+    }
+
+    for (const warning of out.warnings || []) {
+      wrap.appendChild(make("p", "nd-note is-error", warning));
     }
     if (out.drift) {
       wrap.appendChild(make("p", "nd-note is-error",

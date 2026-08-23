@@ -46,8 +46,8 @@ import { refusePush } from './_auth.mjs';
 import { TABLES, all, patch, create } from './_airtable.mjs';
 import {
   groupDesign, buildLineItems, linesTotal, quoteDrift,
-  deliveryLine, goodsLines, contactDetails, contactName, contactUpdate, newContactPayload,
-  airtableClientPatch, clientDisagreement
+  deliveryLine, goodsLines, moneyValue, contactDetails, contactName, contactUpdate,
+  newContactPayload, airtableClientPatch, clientDisagreement
 } from './_push.mjs';
 import * as zoho from './_zoho.mjs';
 
@@ -293,11 +293,18 @@ async function push({ code, contact_id, new_client, rep, phone, address, deliver
   // A client who collects is not charged for delivery, whatever is in the box
   // the form just hid. Enforced here rather than trusted to the form, because
   // "hidden" and "not sent" are not the same thing.
+  const warnings = [];
   const delivery = collects ? null : deliveryLine(items, delivery_fee);
   if (delivery && delivery.unknown) {
     unknown.push({ moduleId: 'delivery', expected: delivery.expected, quantity: 1, finish: null });
   } else if (delivery) {
     line_items.push(delivery);
+  } else if (!collects && String(delivery_fee || '').trim()) {
+    // A fee was typed and did not become a line. That must never be silent: it
+    // is money the customer would not be charged, on an invoice that looks
+    // complete. INV640437 went out without its delivery line and nothing said
+    // so.
+    warnings.push(`The delivery fee "${String(delivery_fee).slice(0, 20)}" was not a usable amount, so no delivery line was added.`);
   }
 
   // Either an existing client, or one created here and now. Creating the contact
@@ -397,7 +404,17 @@ async function push({ code, contact_id, new_client, rep, phone, address, deliver
         contactSaved = { ok: true, ...change.changed, replaced: change.replaced };
       }
     } catch (err) {
-      contactSaved = { ok: false, detail: String(err.message).slice(0, 200) };
+      // The Self Client credential can READ and CREATE contacts but not update
+      // them, so this fails 401 code 57 on every correction until the refresh
+      // token is reissued with ZohoBooks.contacts.UPDATE. It is a standing
+      // condition rather than a fault, and saying "Zoho would not take it"
+      // sends someone looking for a bug that is not there.
+      const detail = String(err.message);
+      contactSaved = {
+        ok: false,
+        scope: /\bcode":\s*57\b|not authorized to perform/i.test(detail),
+        detail: detail.slice(0, 200)
+      };
     }
 
     try {
@@ -444,6 +461,7 @@ async function push({ code, contact_id, new_client, rep, phone, address, deliver
     client: { contact_id: customerId, name: clientName, created, airtable: airtableClient },
     contact_saved: contactSaved,
     client_saved: clientSaved,
+    warnings,
     skipped_fields: skipped,
     // Surfaced, never blocking: a quote raised before a price change is a
     // normal thing to invoice at today's rate, and reps zero-rate on purpose.

@@ -467,9 +467,19 @@ await test('a blank order takes everything the invoice offers', () => {
     'Delivery - Scheduled Date': '2026-09-04',
     'Delivery Window Start': 32400,
     'Delivery Window End': 43200,
-    'Delivery - Date Status': 'Confirmed',
+    // The existing checkbox, not a field of its own: it is what
+    // Delivery Details Summary reads to decide whether the driver is told
+    // "⚠️ Delivery date not confirmed".
+    'Delivery - Date Set': true,
     'Delivery - Time Status': 'Tentative'
   });
+});
+
+await test('a tentative date leaves the confirmed box alone', () => {
+  // A checkbox cannot say "no" and "nobody said" differently, so it is only
+  // ever ticked, never cleared -- same rule as Client Pickup.
+  assert.deepEqual(seedDelivery({}, { cf_delivery_date_status: 'Tentative' }), {});
+  assert.deepEqual(seedDelivery({ 'Delivery - Date Set': true }, { cf_delivery_date_status: 'Tentative' }), {});
 });
 
 await test('an order that already has a date keeps it', () => {
@@ -477,7 +487,7 @@ await test('an order that already has a date keeps it', () => {
   // and re-confirmed by people looking at Airtable, and Zoho never hears. A
   // July invoice must not be able to drag September's delivery back.
   const out = seedDelivery(
-    { 'Delivery - Scheduled Date': '2026-09-20', 'Delivery - Date Status': 'Confirmed' },
+    { 'Delivery - Scheduled Date': '2026-09-20', 'Delivery - Date Set': true },
     { cf_delivery_date: '2026-07-04', cf_delivery_date_status: 'Tentative' }
   );
   assert.deepEqual(out, {});
@@ -502,12 +512,14 @@ await test('pickup can only ever be set by an invoice, never cleared', () => {
 
 await test('a status Zoho does not recognise is not written', () => {
   assert.deepEqual(seedDelivery({}, { cf_delivery_date_status: 'Maybe' }), {});
+  assert.deepEqual(seedDelivery({}, { cf_delivery_time_status: 'Maybe' }), {});
 });
 
 await test('seeding is idempotent, so a repeated full pass writes nothing twice', () => {
   const cf = {
     cf_delivery_date: '2026-09-04', cf_delivery_window_start: '9:00',
-    cf_delivery_date_status: 'Confirmed', cf_client_pickup: true
+    cf_delivery_date_status: 'Confirmed', cf_delivery_time_status: 'Confirmed',
+    cf_client_pickup: true
   };
   const first = seedDelivery({}, cf);
   assert.deepEqual(seedDelivery(first, cf), {});

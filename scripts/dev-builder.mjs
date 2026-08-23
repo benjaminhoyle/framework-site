@@ -145,7 +145,10 @@ function fakePush(body) {
     const name = created
       ? [body.new_client?.first_name, body.new_client?.last_name].filter(Boolean).join(' ')
       : (FAKE_CLIENTS.find((c) => c.contact_id === String(body.contact_id)) || {}).name;
-    const fee = body.pickup ? 0 : Number(body.delivery_fee) || 0;
+    // Same lenient parse as _push.mjs moneyValue, so "2,500" behaves here the
+    // way it behaves in production rather than quietly becoming zero.
+    const fee = body.pickup ? 0 : (Number(String(body.delivery_fee ?? '').replace(/[^0-9.]/g, '')) || 0);
+    const feeTyped = !body.pickup && String(body.delivery_fee || '').trim();
     fakeInvoice += 1;
     return {
       ok: true,
@@ -164,6 +167,9 @@ function fakePush(body) {
       contact_saved: created || !body.phone ? null : { ok: true, phone: true, address: false, replaced: ['previous phone 0722123456'] },
       client_saved: created || !body.phone ? null : { ok: true, phone: true, address: false, replaced: ['previous phone 0711555444'] },
       skipped_fields: [],
+      warnings: feeTyped && !fee
+        ? [`The delivery fee "${body.delivery_fee}" was not a usable amount, so no delivery line was added.`]
+        : [],
       drift: null,
       unknown: []
     };

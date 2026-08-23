@@ -132,6 +132,27 @@ export function quoteDrift(line_items, quotedTotal) {
 export const isDeliveryName = (name) => /^delivery/i.test(String(name || '').trim());
 
 /**
+ * A typed amount of money, however it was typed.
+ *
+ * `Number("2,500")` is NaN, and a browser `<input type=number>` reports an
+ * empty string for the same text rather than the digits behind it — so a rep
+ * typing a thousands separator, which in Kenya is most of them, produced no
+ * amount at all and no delivery line. Both ends now strip anything that is not
+ * a digit or a decimal point before believing the field is empty.
+ *
+ * Returns null for "nothing was typed" AND for "that is not a number". The
+ * caller has the raw text and can tell those apart; it must, because one of
+ * them is a rep who meant to charge for delivery.
+ */
+export function moneyValue(v) {
+  if (v == null) return null;
+  const digits = String(v).replace(/[^0-9.]/g, '');
+  if (!digits) return null;
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
  * The delivery line for a typed fee, or null when there is nothing to charge.
  *
  * The rate is VAT-INCLUSIVE, like every other line: the org is tax-inclusive,
@@ -140,8 +161,8 @@ export const isDeliveryName = (name) => /^delivery/i.test(String(name || '').tri
  * as "delivery is free", which is a promise nobody made.
  */
 export function deliveryLine(zohoItems, amountKsh) {
-  const amount = Number(amountKsh);
-  if (!Number.isFinite(amount) || amount <= 0) return null;
+  const amount = moneyValue(amountKsh);
+  if (amount == null || amount <= 0) return null;
   const item = zohoItems.find((i) => i.status === 'active' && isDeliveryName(i.name));
   if (!item) return { unknown: true, expected: 'Delivery Fees', amount };
   return { item_id: item.item_id, name: item.name, rate: amount, quantity: 1, item_custom_fields: [] };

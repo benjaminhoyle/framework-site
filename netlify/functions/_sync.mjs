@@ -141,9 +141,21 @@ export function hhmmToSeconds(hhmm) {
  * So every field here is written only where the order has nothing at all. That
  * makes the whole thing idempotent, and makes a re-run of a full pass harmless.
  *
- * `Client Pickup` is one-directional for the same reason: an invoice that says
- * the client collects can set the box, but an invoice that is merely silent
- * about it can never clear a box somebody ticked.
+ * The date status lands on **`Delivery - Date Set`**, the checkbox that was
+ * already there, rather than on a field of its own. That checkbox is not decor:
+ * `Delivery Details Summary` — the text the delivery team is sent — reads
+ *
+ *     IF({Delivery - Date Set}, <the window>, <the date> & " (⚠️ Delivery date
+ *     not confirmed)")
+ *
+ * so it is exactly the tentative/confirmed distinction the form is asking about,
+ * already wired to the people who act on it. A second field saying the same
+ * thing would be two answers to one question, which is the divergence this whole
+ * pass exists to remove.
+ *
+ * `Delivery - Date Set` and `Client Pickup` are both one-directional, because a
+ * checkbox cannot distinguish "no" from "nobody said". An invoice can tick one;
+ * an invoice merely silent about it can never untick a box somebody ticked.
  */
 export function seedDelivery(order, cf) {
   const has = (name) => {
@@ -158,9 +170,11 @@ export function seedDelivery(order, cf) {
   const end = hhmmToSeconds(cf.cf_delivery_window_end);
   if (!has('Delivery Window Start') && start != null) out['Delivery Window Start'] = start;
   if (!has('Delivery Window End') && end != null) out['Delivery Window End'] = end;
-  for (const [from, to] of [['cf_delivery_date_status', 'Delivery - Date Status'],
-                            ['cf_delivery_time_status', 'Delivery - Time Status']]) {
-    if (!has(to) && ['Tentative', 'Confirmed'].includes(cf[from])) out[to] = cf[from];
+  if (!has('Delivery - Time Status') && ['Tentative', 'Confirmed'].includes(cf.cf_delivery_time_status)) {
+    out['Delivery - Time Status'] = cf.cf_delivery_time_status;
+  }
+  if (order['Delivery - Date Set'] !== true && cf.cf_delivery_date_status === 'Confirmed') {
+    out['Delivery - Date Set'] = true;
   }
   if (order['Client Pickup'] !== true && cf.cf_client_pickup === true) out['Client Pickup'] = true;
   return out;
