@@ -181,7 +181,10 @@ export function contacts() {
  */
 export function money(inv) {
   const lines = inv.line_items || [];
-  const isDelivery = (li) => li.name === 'Delivery Fees';
+  // Delivery has been billed under more than one name. It is identified by what
+  // it is, not by one exact string, so a line called "Delivery and Installation"
+  // is not quietly counted as goods and left out of the delivery margin.
+  const isDelivery = (li) => /^delivery/i.test(String(li.name || '').trim());
   const goods = lines.filter((li) => !isDelivery(li));
   return {
     goods: round2(goods.reduce((n, li) => n + li.rate * li.quantity, 0)),

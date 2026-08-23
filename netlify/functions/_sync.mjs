@@ -36,6 +36,74 @@ const num1 = (v) => (Array.isArray(v) ? v[0] : v);
 export const stripLegacy = (n) => String(n || '').replace(/^Shelf - /, '');
 
 /**
+ * Historical renames, for the lines that cannot be resolved any other way.
+ *
+ * Almost nothing needs this. An invoice line carries `item_id`, which survives
+ * every rename, so 95% of lines resolve to today's product without a single
+ * alias — Zoho maintains the mapping for us. This exists only for the ~5% of
+ * lines typed without picking a catalogue item, and those are usually custom
+ * work with no Airtable product either.
+ *
+ * Resist growing it. A hand-kept rename table is a second source of truth about
+ * the catalogue, and it goes stale silently.
+ */
+const RENAMED = new Map([
+  ['lamp mount', 'lamp'],
+  ['lamp mount - left', 'lamp'],
+  ['lamp mount - right', 'lamp']
+]);
+
+/**
+ * A product name reduced to what it identifies.
+ *
+ * Invoice line names are snapshots, so a 2025 line carries whatever the
+ * catalogue was called then: `Shelf - Standard Base`, `Compact Base` for what is
+ * now `Compact Base (Trimmed)`, `Lamp Mount` for `Lamp`.
+ *
+ * "(Trimmed)" is dropped on BOTH sides rather than mapped in one direction,
+ * because the drift runs both ways — Zoho says `Compact Base` where Airtable
+ * says trimmed, and `Standard Extension (Trimmed)` where Airtable says plain.
+ */
+export function canonicalItem(name) {
+  const base = stripLegacy(name).replace(/\s*\(Trimmed\)\s*$/i, '').trim().toLowerCase();
+  return RENAMED.get(base) || base;
+}
+
+/**
+ * Which Airtable line is which invoice line.
+ *
+ * Exact names first. Only then the canonical fallback, and only where exactly
+ * one unclaimed name on each side canonicalises the same way — because Zoho
+ * still sells a genuine `Compact Base` alongside the trimmed one, and a blanket
+ * rename would quietly misfile every future sale of it. Ambiguity is left
+ * unmatched on purpose: a shortfall someone investigates beats a number that is
+ * confidently wrong.
+ */
+export function matchProducts(airtableNames, zohoNames) {
+  const out = new Map();
+  const freeA = new Set(airtableNames);
+  const freeZ = new Set(zohoNames);
+  for (const a of airtableNames) {
+    if (freeZ.has(a)) { out.set(a, a); freeA.delete(a); freeZ.delete(a); }
+  }
+  const bucket = (names) => {
+    const m = new Map();
+    for (const n of names) {
+      const k = canonicalItem(n);
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(n);
+    }
+    return m;
+  };
+  const bz = bucket(freeZ);
+  for (const [k, as] of bucket(freeA)) {
+    const zs = bz.get(k);
+    if (as.length === 1 && zs && zs.length === 1) out.set(as[0], zs[0]);
+  }
+  return out;
+}
+
+/**
  * How much of each line survives an invoice-level discount.
  *
  * Zoho can discount the whole invoice rather than each line. Airtable stores
@@ -252,22 +320,46 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     }
 
     // -- invoiced line prices: match Zoho lines to Airtable lines by product
-    const zByName = new Map();
+    // Group the invoice's goods by Zoho item id where there is one, and by name
+    // only where there is not. The id is what makes three years of renames a
+    // non-problem: `Coat Hanger Module` and `Deep Hanger` are the same id, so no
+    // alias table has to know they are the same thing.
+    const zByKey = new Map();
     for (const li of m.lines) {
-      const k = stripLegacy(li.name);
-      const prev = zByName.get(k) || { qty: 0, total: 0, rate: li.rate };
-      zByName.set(k, { qty: prev.qty + li.quantity, total: prev.total + li.rate * li.quantity, rate: li.rate });
+      const k = li.item_id || `name:${stripLegacy(li.name)}`;
+      const prev = zByKey.get(k) || { qty: 0, total: 0, rate: li.rate, name: stripLegacy(li.name) };
+      zByKey.set(k, {
+        qty: prev.qty + li.quantity,
+        total: prev.total + li.rate * li.quantity,
+        rate: li.rate, name: prev.name
+      });
     }
+    const zByName = new Map();
+    for (const [k, v] of zByKey) if (k.startsWith('name:')) zByName.set(v.name, v);
     const aLines = linesByOrder.get(order.id) || [];
+    // Resolve Airtable product names to invoice line names before pricing:
+    // three years of renames mean the two rarely agree letter for letter.
+    const aNames = [...new Set(aLines
+      .map((l) => products.find((p) => p.id === (l.fields.Item || [])[0])?.fields?.Name)
+      .filter(Boolean))];
+    const nameMap = matchProducts(aNames, [...zByName.keys()]);  // id-less lines only
     // An invoice-level discount is apportioned across lines, so each line's
     // stored total is what that line actually earned.
-    const gross = [...zByName.values()].reduce((n, v) => n + v.total, 0);
+    // Every goods line, not just the id-less ones: zByName holds only the
+    // fallback remainder now, and apportioning against it would divide the
+    // discount by almost nothing and leave it unapplied.
+    const gross = [...zByKey.values()].reduce((n, v) => n + v.total, 0);
     const factor = apportionFactor(gross, m.discount);
 
     for (const al of aLines) {
       const pid = (al.fields.Item || [])[0];
       const pname = products.find((p) => p.id === pid)?.fields?.Name;
-      const z = pname ? zByName.get(pname) : null;
+      // Id first — it is immune to renaming. Name only as a fallback, for the
+      // lines someone typed by hand without picking a catalogue item.
+      const prod = products.find((p) => p.id === pid);
+      const zid = prod?.fields?.['Zoho Item ID'];
+      const z = (zid && zByKey.get(zid))
+        || (pname ? zByName.get(nameMap.get(pname) ?? pname) : null);
       if (!z) continue;
       const want = zoho.round2(z.total * factor * ((al.fields.Quantity || 0) / (z.qty || 1)));
       const have = al.fields['Zoho Line Total'];

@@ -43,6 +43,17 @@ test('delivery is excluded from goods', () => {
   assert.equal(money(invoice).hasDeliveryLine, true);
 });
 
+test('delivery billed under another name is still delivery', () => {
+  // One invoice bills "Delivery and Installation". Matching one exact string
+  // would count it as goods and drop it out of the delivery margin entirely.
+  const m = money({ discount_total: 0, line_items: [
+    { name: 'Delivery and Installation', quantity: 1, rate: 3000, item_total: 2586.21 }
+  ] });
+  assert.equal(m.hasDeliveryLine, true);
+  assert.equal(m.deliveryExVat, 2586.21);
+  assert.equal(m.goods, 0, 'delivery must never be counted as goods');
+});
+
 test('an invoice with no delivery line reports zero, not a missing line', () => {
   const m = money({ discount_total: 0, line_items: [{ name: 'Bookend', quantity: 4, rate: 1000, item_total: 3448.28 }] });
   assert.equal(m.hasDeliveryLine, false);

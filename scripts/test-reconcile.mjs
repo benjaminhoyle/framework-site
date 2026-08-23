@@ -7,7 +7,7 @@
 // of invoices.
 
 import assert from 'node:assert/strict';
-import { reconcile } from '../netlify/functions/_sync.mjs';
+import { reconcile, canonicalItem, matchProducts } from '../netlify/functions/_sync.mjs';
 
 let passed = 0;
 const test = async (name, fn) => {
@@ -23,8 +23,8 @@ const line = (id, orderRec, productRec, fields = {}) => ({
   id, fields: { Order: [orderRec], Item: [productRec], Quantity: 1, ...fields }
 });
 const product = (id, name, price) => ({ id, fields: { Name: name, Price: price, Status: 'Active' } });
-const zline = (name, quantity, rate) => ({
-  name, quantity, rate, item_total: rate * quantity / 1.16, item_custom_fields: []
+const zline = (name, quantity, rate, item_id) => ({
+  name, quantity, rate, item_id, item_total: rate * quantity / 1.16, item_custom_fields: []
 });
 const invoice = (number, lines, extra = {}) => ({
   invoice_id: `id_${number}`, invoice_number: number, status: 'paid',
@@ -153,6 +153,19 @@ await test('an invoice-level discount is apportioned onto the line', async () =>
     invoices: [invoice('INV1', [zline('Standard Base', 2, 6500)], { discount_total: 1300 })]
   });
   assert.equal(r.pending.lines[0].now, 11700); // 13000 - 1300
+});
+
+await test('a discount is apportioned even when lines carry item ids', async () => {
+  // The discount is divided across ALL goods, not just the lines that happen to
+  // lack an id — dividing by the remainder leaves it silently unapplied.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    products: [{ id: 'p1', fields: { Name: 'Standard Base', Price: 6500, Status: 'Active', 'Zoho Item ID': 'z1' } }],
+    lines: [line('l1', '1_A', 'p1', { Quantity: 2, Subtotal: 13000 })],
+    invoices: [invoice('INV1', [zline('Standard Base', 2, 6500, 'z1')], { discount_total: 1300 })]
+  });
+  assert.equal(r.pending.lines[0].now, 11700);
+  assert.equal(r.projection[0].projected, r.projection[0].target, 'and it still reconciles');
 });
 
 // ---- protecting work in progress ---------------------------------------
@@ -319,6 +332,100 @@ await test('an order that has recovered is cleared back to OK', async () => {
   });
   const flag = r.pending.orders.find((w) => w.fields['Sync Status']);
   assert.equal(flag.now, 'OK', 'a flag nobody clears is a flag nobody trusts');
+});
+
+// ---- matching across three years of renames ----------------------------
+await test('canonical form ignores the Shelf- prefix and the Trimmed suffix', () => {
+  assert.equal(canonicalItem('Shelf - Standard Base'), 'standard base');
+  assert.equal(canonicalItem('Compact Base (Trimmed)'), 'compact base');
+  assert.equal(canonicalItem('Compact Base'), 'compact base');
+});
+
+await test('a confirmed total rename resolves to today name', () => {
+  // Ben confirmed: every Lamp Mount ever invoiced is what is now called Lamp.
+  assert.equal(canonicalItem('Lamp Mount'), 'lamp');
+  assert.equal(canonicalItem('Lamp Mount - Right'), 'lamp');
+});
+
+await test('exact names match before anything clever happens', () => {
+  const m = matchProducts(['Standard Base', 'Bookend'], ['Standard Base', 'Bookend']);
+  assert.equal(m.get('Standard Base'), 'Standard Base');
+  assert.equal(m.get('Bookend'), 'Bookend');
+});
+
+await test('a renamed product matches its old invoice name', () => {
+  // 282_Estelle-Maussion: Airtable says trimmed, INV640413 says plain.
+  const m = matchProducts(['Compact Base (Trimmed)'], ['Compact Base']);
+  assert.equal(m.get('Compact Base (Trimmed)'), 'Compact Base');
+  const n = matchProducts(['Lamp'], ['Lamp Mount']);
+  assert.equal(n.get('Lamp'), 'Lamp Mount');
+});
+
+await test('the drift is matched in both directions', () => {
+  const m = matchProducts(['Standard Extension'], ['Standard Extension (Trimmed)']);
+  assert.equal(m.get('Standard Extension'), 'Standard Extension (Trimmed)');
+});
+
+await test('AMBIGUITY IS REFUSED, never guessed', () => {
+  // Zoho still sells a genuine Compact Base alongside the trimmed one. An order
+  // holding both must not have either silently reassigned to the other.
+  const m = matchProducts(
+    ['Compact Base', 'Compact Base (Trimmed)'],
+    ['Compact Base', 'Compact Base (Trimmed)']
+  );
+  assert.equal(m.get('Compact Base'), 'Compact Base', 'exact matches still hold');
+  assert.equal(m.get('Compact Base (Trimmed)'), 'Compact Base (Trimmed)');
+
+  // And where only one side has both, neither is claimed by the fallback.
+  const n = matchProducts(['Compact Base', 'Compact Base (Trimmed)'], ['Compact Base']);
+  assert.equal(n.get('Compact Base'), 'Compact Base');
+  assert.equal(n.get('Compact Base (Trimmed)'), undefined, 'must not steal an already-claimed line');
+});
+
+await test('an unconfirmed rename stays unmatched, loudly', () => {
+  // Adapter Unit, Base Unit, Short Extension and Top Shelf Bar have no known
+  // counterpart. Guessing would misfile money; a shortfall gets investigated.
+  const m = matchProducts(['Wide Adapter'], ['Adapter Unit']);
+  assert.equal(m.get('Wide Adapter'), undefined);
+});
+
+// ---- item_id: what makes renames a non-problem -------------------------
+await test('a renamed line matches by id even when the names disagree', async () => {
+  // INV640389 says "Coat Hanger Module"; the catalogue calls it "Deep Hanger".
+  // Same item_id, so no alias table has to know they are the same thing.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    products: [{ id: 'p1', fields: { Name: 'Deep Hanger', Price: 7000, Status: 'Active', 'Zoho Item ID': 'z9' } }],
+    lines: [line('l1', '1_A', 'p1', { Quantity: 2, Subtotal: 14000 })],
+    invoices: [invoice('INV1', [zline('Coat Hanger Module', 2, 7000, 'z9')])]
+  });
+  assert.equal(r.pending.lines.length, 1);
+  assert.equal(r.pending.lines[0].now, 14000);
+  assert.equal(r.projection[0].projected, r.projection[0].target);
+});
+
+await test('the id wins over a name that would match something else', async () => {
+  // Two products share a canonical name; only the id says which was sold.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    products: [
+      { id: 'p1', fields: { Name: 'Compact Base', Price: 9500, Status: 'Active', 'Zoho Item ID': 'plain' } },
+      { id: 'p2', fields: { Name: 'Compact Base (Trimmed)', Price: 9500, Status: 'Active', 'Zoho Item ID': 'trim' } }
+    ],
+    lines: [line('l1', '1_A', 'p2', { Quantity: 1, Subtotal: 9500 })],
+    invoices: [invoice('INV1', [zline('Compact Base', 1, 9500, 'trim')])]
+  });
+  assert.equal(r.pending.lines.length, 1, 'the trimmed product is matched by id despite the plain name');
+  assert.equal(r.pending.lines[0].now, 9500);
+});
+
+await test('a line typed without a catalogue item still falls back to the name', async () => {
+  const r = await run({
+    ...backfillWorld,
+    invoices: [invoice('INV1', [zline('Standard Base', 2, 6500, undefined)])]
+  });
+  assert.equal(r.pending.lines.length, 1);
+  assert.equal(r.pending.lines[0].now, 13000);
 });
 
 console.log(`test-reconcile: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);
