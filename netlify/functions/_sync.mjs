@@ -22,15 +22,6 @@ import { TABLES, all, patch, create } from './_airtable.mjs';
 const ERROR = 'Error', WARN = 'Warning', INFO = 'Info';
 
 /**
- * Products that exist to catch what the catalogue cannot name.
- *
- * `Custom Item` is an Airtable product with no Zoho twin and never will have
- * one — that is what it is for. Reporting it every pass was a permanent warning
- * about a deliberate arrangement.
- */
-const CATCH_ALL_PRODUCTS = new Set(['Custom Item']);
-
-/**
  * How far a payment date may differ before it is worth saying so.
  *
  * Airtable records the day a deposit confirmed the order; Zoho records the day
@@ -70,8 +61,33 @@ export const stripLegacy = (n) => String(n || '').replace(/^Shelf - /, '');
 const RENAMED = new Map([
   ['lamp mount', 'lamp'],
   ['lamp mount - left', 'lamp'],
-  ['lamp mount - right', 'lamp']
+  ['lamp mount - right', 'lamp'],
+  // Confirmed by Ben, 2026-08-24, against the orders they were blocking:
+  // Zoho invoices these under the older names, Airtable carries the current ones.
+  ['adapter unit', 'wide adapter'],
+  ['coat hanger module', 'deep hanger']
 ]);
+
+/**
+ * Names that mean "bespoke", whichever system they are typed into.
+ *
+ * `Custom Deep Base` on an invoice and `Medium Base` on an order are both
+ * one-off work rather than catalogue products, and both belong in the same
+ * bucket as `Custom Item` — which is the bucket that cannot be reconciled line
+ * by line, because there is no catalogue entry on either side to reconcile
+ * against.
+ *
+ * A prefix rather than a list of exact names, deliberately: these are open
+ * families that grow every time somebody types a new one-off, and a list of
+ * exact names would go stale silently. Neither prefix collides with a real
+ * family — the catalogue's are standard, compact, wide, deep, slim, broad and
+ * corner.
+ */
+const BESPOKE_PREFIXES = ['custom ', 'medium '];
+const CATCH_ALL = 'custom item';
+
+/** Is this product one of the catch-alls, under any of its names? */
+export const isCatchAll = (name) => canonicalItem(name) === CATCH_ALL;
 
 /**
  * A product name reduced to what it identifies.
@@ -86,7 +102,10 @@ const RENAMED = new Map([
  */
 export function canonicalItem(name) {
   const base = stripLegacy(name).replace(/\s*\(Trimmed\)\s*$/i, '').trim().toLowerCase();
-  return RENAMED.get(base) || base;
+  const renamed = RENAMED.get(base);
+  if (renamed) return renamed;
+  if (BESPOKE_PREFIXES.some((prefix) => base.startsWith(prefix))) return CATCH_ALL;
+  return base;
 }
 
 /**
@@ -341,7 +360,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
         // Custom Item", and Custom Item is the only one it has ever fired on.
         // A warning that is always expected is one people learn to scroll past,
         // and it teaches them to scroll past the ones beside it.
-        if (!CATCH_ALL_PRODUCTS.has(p.fields.Name)) {
+        if (!isCatchAll(p.fields.Name)) {
           add(WARN, 'catalogue-prices-agree', `${p.fields.Name} has no active Zoho item`, {
             detail: 'Active in Airtable with no matching active Zoho item.'
           });
@@ -356,7 +375,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       }
     }
     for (const [name] of liveZ) {
-      if (CATCH_ALL_PRODUCTS.has(name)) continue;
+      if (isCatchAll(name)) continue;
       if (!liveA.some((p) => p.fields.Name === name)) {
         add(WARN, 'catalogue-prices-agree', `${name} has no active Airtable product`, {
           detail: 'Sellable in Zoho with nowhere to land in Airtable. A sale of it would have no product to attach to.'
@@ -579,25 +598,44 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
         (m.lines || []).map((l) => ({ name: stripLegacy(l.name), quantity: l.quantity }))
       );
 
-      // An order carrying a catch-all cannot reconcile, by construction.
-      // `Custom Item` is bespoke work with no Zoho twin — that is what it is for
-      // — so it contributes nothing to the projected total and the order is
-      // short by exactly its value, on every pass, forever. Six of the thirteen
-      // errors this check raised were that, and an error that can never be
-      // cleared is one people learn to leave sitting there.
-      const onlyCatchAll = !missing.onInvoice.length
-        && missing.inAirtable.length
-        && missing.inAirtable.every((n) => CATCH_ALL_PRODUCTS.has(n.replace(/^\d+ x /, '')));
+      // Lines somebody typed an amount into without picking a catalogue item.
+      // They have no name, so nothing on either side can ever be matched to
+      // them and no amount of editing the ORDER will close the gap. INV640214
+      // carries five, worth 14,000, which is exactly the shortfall that made
+      // 88_Michael-Lotem_Yahel look like four missing decorations.
+      const nameless = (m.lines || []).filter((l) => !String(l.name || '').trim());
+      const namelessValue = zoho.round2(nameless.reduce((n, l) => n + l.rate * l.quantity, 0));
+
+      // Bespoke work cannot reconcile, by construction, on either side.
+      //
+      // `Custom Item` has no Zoho twin — that is what it is for — so it
+      // contributes nothing to the projected total and the order is short by
+      // exactly its value on every pass, forever. The same is true in reverse:
+      // an invoice line called `Custom Deep Base` against an order line called
+      // `Medium Base` is two people describing one piece of one-off work, and
+      // there is no catalogue entry behind either to reconcile them through.
+      // `matchProducts` leaves them unmatched on purpose rather than guessing
+      // which of three bespoke lines is which.
+      //
+      // So: if everything unmatched on BOTH sides is bespoke, this is a
+      // difference nobody can close, and an error that can never be cleared is
+      // one people learn to leave sitting there. Say it as Info.
+      const bespoke = (n) => isCatchAll(n.replace(/^\d+ x /, ''));
+      const unmatched = missing.onInvoice.concat(missing.inAirtable);
+      const onlyCatchAll = unmatched.length > 0 && unmatched.every(bespoke);
 
       add(onlyCatchAll ? INFO : ERROR, 'line-totals-match-invoice',
         `${order.fields['Order ID']} revenue ${projected} vs ${target}`, {
           invoice: num, orderRecIds: [order.id],
           detail: onlyCatchAll
-            ? `Line totals come to ${projected}; the invoice goods total after discount is ${target}. The difference is ${missing.inAirtable.join(', ')}, which has no Zoho item to be priced from — expected, and not reconcilable from here.`
+            ? `Line totals come to ${projected}; the invoice goods total after discount is ${target}. The difference is bespoke work — ${unmatched.join(', ')} — which has no catalogue entry to be priced from, so it cannot be reconciled line by line.`
             : `Line totals come to ${projected}; the invoice goods total after discount is ${target}.`
               + (missing.onInvoice.length ? ` No Airtable line for: ${missing.onInvoice.join(', ')}.` : '')
               + (missing.inAirtable.length ? ` On the order but not the invoice: ${missing.inAirtable.join(', ')}.` : '')
-              + (!missing.onInvoice.length && !missing.inAirtable.length
+              + (nameless.length
+                ? ` The invoice has ${nameless.length} line${nameless.length === 1 ? '' : 's'} with no product name, worth ${namelessValue} — typed as an amount rather than picked from the catalogue, so nothing can be matched to ${nameless.length === 1 ? 'it' : 'them'}.`
+                : '')
+              + (!missing.onInvoice.length && !missing.inAirtable.length && !nameless.length
                 ? ' Every product matches, so the difference is quantities or prices rather than a missing line.' : '')
         });
     }
@@ -727,9 +765,20 @@ export async function record(report) {
   }]);
   const runId = runs[0].id;
 
-  const open = (await all(TABLES.syncLog)).filter((r) => (r.fields.Status || 'Open') === 'Open');
+  /*
+   * Open, Acknowledged and Ignored rows are all "still on the books".
+   *
+   * Only Open was being matched, so marking a finding Ignored did not stop it
+   * coming back — it made the next pass create a SECOND row for the same thing,
+   * which is the opposite of what the person clicking Ignore meant. Resolved is
+   * deliberately excluded: a finding that was fixed and has recurred is news,
+   * and deserves a fresh row with a fresh First Seen.
+   */
+  const rows = await all(TABLES.syncLog);
+  const standing = rows.filter((r) => ['Open', 'Acknowledged', 'Ignored'].includes(r.fields.Status || 'Open'));
+  const open = standing.filter((r) => (r.fields.Status || 'Open') === 'Open');
   const keyOf = (f) => `${f.Check}|${f.Event}`;
-  const seen = new Map(open.map((r) => [keyOf(r.fields), r]));
+  const seen = new Map(standing.map((r) => [keyOf(r.fields), r]));
 
   const fresh = [], touch = [];
   const current = new Set(report.findings.map((f) => `${f.check}|${f.event}`));

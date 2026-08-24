@@ -428,10 +428,29 @@ await test('AMBIGUITY IS REFUSED, never guessed', () => {
 });
 
 await test('an unconfirmed rename stays unmatched, loudly', () => {
-  // Adapter Unit, Base Unit, Short Extension and Top Shelf Bar have no known
+  // Base Unit, Short Extension and Top Shelf Bar still have no known
   // counterpart. Guessing would misfile money; a shortfall gets investigated.
-  const m = matchProducts(['Wide Adapter'], ['Adapter Unit']);
-  assert.equal(m.get('Wide Adapter'), undefined);
+  const m = matchProducts(['Standard Base'], ['Base Unit']);
+  assert.equal(m.get('Standard Base'), undefined);
+});
+
+await test('a rename someone has confirmed does match', () => {
+  // Both confirmed 2026-08-24 against the orders they were blocking. Until
+  // then they were deliberately left as shortfalls rather than guessed at.
+  assert.equal(matchProducts(['Wide Adapter'], ['Adapter Unit']).get('Wide Adapter'), 'Adapter Unit');
+  assert.equal(matchProducts(['Deep Hanger'], ['Coat Hanger Module']).get('Deep Hanger'), 'Coat Hanger Module');
+});
+
+await test('bespoke names on either side land in the same bucket', () => {
+  // "Custom Deep Base" on an invoice and "Medium Base" on an order are both
+  // one-off work. They belong with Custom Item -- the bucket that cannot be
+  // reconciled line by line, because neither side has a catalogue entry.
+  assert.equal(canonicalItem('Custom Deep Base'), 'custom item');
+  assert.equal(canonicalItem('Medium Spacer'), 'custom item');
+  assert.equal(canonicalItem('Custom Item'), 'custom item');
+  // and a real family is untouched
+  assert.equal(canonicalItem('Standard Base'), 'standard base');
+  assert.equal(canonicalItem('Compact Extension'), 'compact extension');
 });
 
 // ---- item_id: what makes renames a non-problem -------------------------
@@ -614,6 +633,27 @@ await test('an order short only by its catch-all is not an error forever', async
   });
   const f = of(r, 'line-totals-match-invoice');
   if (f.length) assert.notEqual(f[0].severity, 'Error', 'a difference nobody can close must not be an Error');
+});
+
+await test('bespoke on BOTH sides is a difference nobody can close', async () => {
+  // "Custom Deep Base" on the invoice against "Medium Base" on the order is two
+  // people describing one piece of one-off work. matchProducts leaves them
+  // unmatched rather than guessing which of three is which, and no amount of
+  // editing either system reconciles them.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    products: [product('pB', 'Standard Base', 6500), product('pM', 'Medium Base', 4000), product('pS', 'Medium Spacer', 3000)],
+    lines: [
+      line('l1', 'rec1', 'pB', { 'Zoho Line Total': 6500 }),
+      line('l2', 'rec1', 'pM'), line('l3', 'rec1', 'pS')
+    ],
+    invoices: [invoice('INV1', [
+      zline('Standard Base', 1, 6500, 'itB'),
+      zline('Custom Deep Base', 1, 4000), zline('Custom Deep Extension', 1, 3000)
+    ])]
+  });
+  const f = of(r, 'line-totals-match-invoice');
+  if (f.length) assert.notEqual(f[0].severity, 'Error');
 });
 
 console.log(`test-reconcile: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);
