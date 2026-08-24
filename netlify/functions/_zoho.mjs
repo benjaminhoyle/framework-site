@@ -11,23 +11,29 @@
 // with both, stays on Ben's machine in framework-ops/.env. Do not widen this one
 // to save a round trip.
 //
-// What it actually holds, read back from the refresh response on 2026-08-23
-// rather than assumed — an earlier version of this comment said "create and read
-// invoices and contacts and nothing else", which was wrong in both directions:
+// What it holds, read back from the refresh response rather than assumed — an
+// earlier version of this comment said "create and read invoices and contacts
+// and nothing else", which was wrong in both directions and cost an afternoon:
 //
-//   ZohoBooks.invoices.CREATE  READ  UPDATE
-//   ZohoBooks.contacts.CREATE  READ
+//   ZohoBooks.invoices.CREATE  READ
+//   ZohoBooks.contacts.CREATE  READ  UPDATE
 //   ZohoBooks.settings.READ
 //
-// **There is no `ZohoBooks.contacts.UPDATE`**, so `updateContact()` below fails
-// 401 code 57 on every call — which is a standing condition, not a fault, and is
-// reported as such. To make client corrections stick, reissue the refresh token
-// at api-console.zoho.com with that scope added; no code changes when you do.
+// Six scopes, one per thing the code below actually calls, and nothing spare.
+// Two are not where you would guess: `/items` and `/settings/fields` both come
+// under **settings**.READ (there is no `ZohoBooks.items.*`), and
+// `/invoices/{id}/payments` works under **invoices**.READ, so no
+// `customerpayments` scope is needed.
 //
-// `invoices.UPDATE` is present and unused. The endpoint only ever creates
-// drafts, so a leaked ZOHO_PUSH_KEY still buys nothing but junk drafts — but the
-// credential itself is broader than the code, which is worth knowing before
-// anyone reasons about it from this file.
+// Reissued 2026-08-24 to add `contacts.UPDATE` — without it `updateContact()`
+// below returned 401 code 57 on every client correction — and to drop
+// `invoices.UPDATE`, which was granted and called by nothing. That drop is what
+// makes "creates a draft and can do nothing else" true of the credential and
+// not merely of the code above it.
+//
+// If you widen this, widen it here in the comment too. The gap between what
+// this file claimed and what the token held is the whole reason a real failure
+// looked like a payload bug.
 
 const ORG = () => need('ZOHO_ORG_ID');
 

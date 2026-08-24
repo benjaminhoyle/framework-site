@@ -98,6 +98,34 @@ old house.
 Two independent switches guard writing on purpose: a stray query parameter can
 never start writing on its own.
 
+### The Zoho credential's scopes
+
+Six, one per thing the code calls, and nothing spare:
+
+```
+ZohoBooks.invoices.CREATE   raising the draft
+ZohoBooks.invoices.READ     listing, fetching one in full, and its payments
+ZohoBooks.contacts.CREATE   "+ New client"
+ZohoBooks.contacts.READ     the client list, and one client's details
+ZohoBooks.contacts.UPDATE   writing a correction back
+ZohoBooks.settings.READ     /items and /settings/fields
+```
+
+Two are not where you would guess. **Items come under `settings`** — there is no
+`ZohoBooks.items.*`. And **`/invoices/{id}/payments` works under `invoices.READ`**,
+so the reconciler can take the first payment date on a split-payment invoice
+without a `customerpayments` scope.
+
+Banking and expenses are deliberately absent: that is the line between this
+cloud credential and the wider one in `framework-ops/.env`.
+
+The first live push, INV640437, failed its contact write with `401 code 57`
+because the original token had no `contacts.UPDATE` — and `invoices.UPDATE`,
+which nothing calls, instead. Reissued 2026-08-24 with the set above; the
+payload was never the problem, and no code changed. `zoho-push.mjs` still
+recognises that specific refusal and reports it as a scope problem rather than a
+fault, in case a future token is issued short again.
+
 ### Environment
 
 `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_ORG_ID`,
@@ -224,24 +252,6 @@ shelf was delivered — so it is written once, at order time, and never touched
 again.
 
 ### Correcting a client
-
-> **The Zoho half does not work yet.** Every contact correction comes back
-> `401 code 57: You are not authorized to perform this operation`. Read back from
-> the refresh response, the credential holds:
->
-> ```
-> ZohoBooks.invoices.CREATE  READ  UPDATE
-> ZohoBooks.contacts.CREATE  READ
-> ZohoBooks.settings.READ
-> ```
->
-> — no `ZohoBooks.contacts.UPDATE`. Reissue the refresh token at
-> api-console.zoho.com with that scope added and it starts working with no
-> deploy. **`contacts.CREATE` is present**, so "+ New client" is unaffected.
->
-> Until then the Airtable half — which is the half the driver's message reads —
-> still lands, and the result screen says plainly that Zoho's copy was not
-> updated rather than reporting a fault. Found on INV640437, the first live push.
 
 Choosing a client reads **both** live records. Prefill prefers Zoho and falls
 back to Airtable, which is what makes it useful today: most Zoho contacts were

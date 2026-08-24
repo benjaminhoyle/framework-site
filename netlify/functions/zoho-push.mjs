@@ -404,11 +404,11 @@ async function push({ code, contact_id, new_client, rep, phone, address, deliver
         contactSaved = { ok: true, ...change.changed, replaced: change.replaced };
       }
     } catch (err) {
-      // The Self Client credential can READ and CREATE contacts but not update
-      // them, so this fails 401 code 57 on every correction until the refresh
-      // token is reissued with ZohoBooks.contacts.UPDATE. It is a standing
-      // condition rather than a fault, and saying "Zoho would not take it"
-      // sends someone looking for a bug that is not there.
+      // A token issued without ZohoBooks.contacts.UPDATE fails 401 code 57 on
+      // every correction. That was the state until 2026-08-24, and it looked
+      // exactly like a malformed payload -- so the refusal is recognised by
+      // name, and reported as a scope problem rather than a fault, in case a
+      // future token is ever issued short again.
       const detail = String(err.message);
       contactSaved = {
         ok: false,
