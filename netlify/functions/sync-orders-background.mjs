@@ -21,6 +21,7 @@
 
 import { refuseMachine } from './_auth.mjs';
 import { reconcile, record } from './_sync.mjs';
+import * as zoho from './_zoho.mjs';
 
 /** Zoho wants 2026-08-21T09:05:00+0300, not a bare Z timestamp. */
 function nairobi(date) {
@@ -68,6 +69,11 @@ export default async (req) => {
       await record({
         started: new Date().toISOString(), finished: new Date().toISOString(),
         mode: opts.mode, trigger: opts.trigger, scanned: 0,
+        // `failed` is what stops record() closing every open finding: a pass
+        // that died reports no findings, which is indistinguishable from a pass
+        // that found nothing wrong. `full: false` says the same thing twice on
+        // purpose -- this pass saw nothing, so it may not speak for anything.
+        failed: true, full: false, zohoCalls: zoho.calls.n,
         orderWrites: 0, lineWrites: 0, errors: 1, warnings: 0,
         findings: [{
           severity: 'Error', check: 'run-failure',

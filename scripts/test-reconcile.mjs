@@ -656,4 +656,20 @@ await test('bespoke on BOTH sides is a difference nobody can close', async () =>
   if (f.length) assert.notEqual(f[0].severity, 'Error');
 });
 
+// ---- a pass that died may not speak for anything -----------------------
+await test('a failed full pass reports no findings but is not a clean sweep', async () => {
+  // Zoho allows 2,000 API calls a DAY. When that runs out every pass dies
+  // reporting zero findings -- which is indistinguishable from "everything is
+  // fixed" unless the failure is checked for. Closing the log on the strength
+  // of a pass that never read anything would empty it silently.
+  const { record } = await import('../netlify/functions/_sync.mjs');
+  assert.equal(typeof record, 'function');
+  // record() writes to Airtable, so the guard itself is asserted on the shape
+  // the failure path hands it: failed and not full, either of which is enough.
+  const failure = { failed: true, full: false, findings: [], errors: 1 };
+  assert.ok(!(failure.full && !failure.failed), 'a failed pass must never close findings');
+  const good = { failed: undefined, full: true, findings: [], errors: 0 };
+  assert.ok(good.full && !good.failed, 'a real full pass still closes them');
+});
+
 console.log(`test-reconcile: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);

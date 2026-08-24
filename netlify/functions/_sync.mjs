@@ -796,8 +796,15 @@ export async function record(report) {
    * last two hours, so a finding it does not report is overwhelmingly one it
    * never looked at. Letting it close rows would clear the whole log every five
    * minutes and reopen it on the nightly pass.
+   *
+   * **And only a pass that actually RAN.** A pass that died — Zoho's daily quota
+   * is how it happens — reports zero findings, which is indistinguishable from
+   * "everything is fixed" unless the failure is checked for. A nightly full pass
+   * hitting the quota would otherwise mark every open finding Resolved and
+   * quietly empty the log. It survived only because the failure path happened to
+   * omit `full`, which is luck rather than design.
    */
-  const resolved = report.full
+  const resolved = report.full && !report.failed
     ? open.filter((r) => !current.has(keyOf(r.fields)))
       .map((r) => ({ id: r.id, fields: { Status: 'Resolved', 'Last Seen': report.finished } }))
     : [];
@@ -814,10 +821,13 @@ export async function record(report) {
       'Lines Updated': report.lineWrites,
       Errors: report.errors,
       Warnings: report.warnings,
-      Outcome: report.errors ? 'Findings' : (report.warnings ? 'Findings' : 'Clean'),
+      // A pass that died is Failed, not Findings. Recording a quota exhaustion
+      // as "Findings" put 106 identical rows in this table wearing the same
+      // badge as a real discrepancy.
+      Outcome: report.failed ? 'Failed' : (report.errors || report.warnings ? 'Findings' : 'Clean'),
       // Zoho allows 2,000 calls per org per DAY. Recording the cost of each pass
       // is what stops a schedule quietly eating the whole budget unnoticed.
-      Notes: `${report.zohoCalls} Zoho API calls (2,000/day org limit)`
+      Notes: `${report.zohoCalls ?? 0} Zoho API calls (2,000/day org limit)`
         + (resolved.length ? `\n${resolved.length} finding${resolved.length === 1 ? '' : 's'} closed` : '')
     }
   }]);

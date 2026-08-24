@@ -60,7 +60,8 @@ old house.
 | `netlify/functions/_push.mjs` | Design → invoice lines, plus the delivery line and everything that decides how a client record is corrected. Pure, so it is tested without spending Zoho calls. |
 | `netlify/functions/zoho-push.mjs` | `/api/zoho-push` — the client list, one client's details, draft creation and the client write, behind `ZOHO_PUSH_KEY`. |
 | `scripts/dev-builder.mjs` | The local server. Fakes `/api/zoho-push` over invented people, so the order form can be worked on without credentials or a live draft per attempt. |
-| `netlify/functions/sync-cron.mjs` | The clock. Inert until `SYNC_SCHEDULE_ENABLED=1`. |
+| `netlify/functions/sync-cron.mjs` | The clock, hourly. Inert until `SYNC_SCHEDULE_ENABLED=1`. |
+| `netlify/functions/sync-now.mjs` | `/api/sync-now` — a pass on demand from the staff menu, behind `ZOHO_PUSH_KEY`. |
 | `scripts/test-reconcile.mjs` | Every check, against fixtures. No network — the Zoho budget makes live testing of the checks impractical, and they are the part most worth testing. |
 | `scripts/test-push.mjs` | Design → lines, including the cases that would invoice the wrong thing quietly. |
 
@@ -417,9 +418,13 @@ Together: **58 findings to 25, errors 13 to 7, warnings 20 to 4** — and the
 `line-totals-match-invoice` errors now name the products, so "revenue 41600 vs
 55600" reads "4 x Small Steel Decoration on the order but not the invoice".
 
-**Findings close themselves.** A FULL pass marks Open rows it no longer sees as
-Resolved. Only a full pass: an incremental one looks at two hours of invoices, so
-a finding it does not report is one it never looked at. Without this the log only
+**Findings close themselves.** A FULL pass **that actually ran** marks Open rows
+it no longer sees as Resolved. Two conditions, both load-bearing. Only a full
+pass: an incremental one looks at two hours of invoices, so a finding it does not
+report is one it never looked at. And only a pass that did not die: a failed one
+reports zero findings, which is indistinguishable from "everything is fixed", so
+a nightly full pass hitting the daily quota would otherwise empty the log
+silently. Without this the log only
 grew — 58 rows all reading Open, five of them fixed the day before by the write
 pass with nothing saying so. `Sync Status` on the order has always cleared itself
 back to `OK` for the same reason, and the log's Status field has had a `Resolved`
@@ -462,8 +467,30 @@ retrying — retrying a daily limit only burns tomorrow's allowance too.
 Every run records its own call count in `Sync - Runs.Notes`, so the budget is
 visible rather than guessed at.
 
-At `*/5` that is roughly 600 calls a day for polling plus one nightly full pass,
-leaving comfortable headroom. **A 1-minute schedule would not fit.**
+**The schedule is hourly, not `*/5`.**
+
+|  | calls/day |
+|---|---|
+| 24 incremental passes, ~2 each when nothing changed | ~50 |
+| 1 nightly full pass | ~350 |
+| **total** | **~400** |
+
+`*/5` cost ~950 a day to notice things sooner than anybody acts on them: an
+order's invoiced prices are backfilled onto a record a person made by hand, and
+nothing downstream waits on the difference between a two-minute and a
+fifty-minute lag. What the budget is actually needed for is raising invoices and
+re-running a full pass when something looks wrong.
+
+That was not theoretical. On the day the schedule went live, four full passes
+plus `*/5` polling exhausted the whole 2,000, and every pass afterwards failed —
+106 run rows, all of them errors.
+
+When somebody does need it now, **`POST /api/sync-now`** triggers a pass from the
+builder's staff menu. Cheap by default, immediate on demand, rather than
+expensive always in case somebody is watching. It is opened by `ZOHO_PUSH_KEY`
+and reaches for `SITE_EXPORT_KEY` server-side, so the machine key never goes near
+a browser — and it cannot ask for more than the clock gets, because write mode is
+still gated on `SYNC_ALLOW_WRITES` inside the background function.
 
 ## Why polling, not webhooks
 

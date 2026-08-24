@@ -1,4 +1,4 @@
-// The clock. Every five minutes, ask the reconciler to catch up.
+// The clock. Once an hour, ask the reconciler to catch up.
 //
 // It does no work itself — it triggers `sync-orders-background`. Scheduled
 // functions are synchronous and capped at 30s; a full pass takes about a minute
@@ -12,12 +12,21 @@
 //
 // Cost, against Zoho's 2,000 calls per organization per DAY:
 //
-//   288 incremental passes  ~2 calls each when nothing changed   ~600
+//   24 incremental passes  ~2 calls each when nothing changed     ~50
 //   1 full pass                                                  ~350
-//                                                          total ~950
+//                                                          total ~400
 //
-// which leaves room for the pushes and for a day with a lot of invoice edits.
-// A 1-minute schedule would not fit, and neither would two full passes a day.
+// Hourly rather than every five minutes. At */5 this cost ~950 a day to notice
+// things sooner than anybody acts on them: an order's invoiced prices are
+// backfilled onto a record a person made by hand, and nothing downstream is
+// waiting on the difference between a two-minute and a fifty-minute lag. What
+// the budget IS needed for is raising invoices and re-running a full pass when
+// something looks wrong -- and on the day the schedule went live, four full
+// passes plus */5 polling exhausted the whole 2,000 and left every pass failing.
+//
+// When somebody does need it now, `/api/sync-now` triggers a pass from the
+// builder's staff menu. That is the right shape: cheap by default, immediate on
+// demand, rather than expensive always in case somebody is watching.
 
 const FULL_AT_UTC_HOUR = 22; // 01:00 in Nairobi — after the workshop has stopped.
 
@@ -34,7 +43,9 @@ export default async () => {
   // One schedule, two jobs. The full pass is the only thing that can notice a
   // deleted invoice, so it has to happen — but only once, and not during the day.
   const d = new Date();
-  const full = d.getUTCHours() === FULL_AT_UTC_HOUR && d.getUTCMinutes() < 5;
+  // The schedule fires on the hour, so the minute window only has to be wide
+  // enough to survive a late trigger.
+  const full = d.getUTCHours() === FULL_AT_UTC_HOUR && d.getUTCMinutes() < 30;
   const params = new URLSearchParams({
     key,
     mode: full ? 'full' : 'incremental',
@@ -48,4 +59,4 @@ export default async () => {
   console.log(`[sync-cron] ${full ? 'full' : 'incremental'} -> ${res.status}`);
 };
 
-export const config = { schedule: '*/5 * * * *' };
+export const config = { schedule: '0 * * * *' };

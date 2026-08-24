@@ -3361,11 +3361,43 @@
     form.appendChild(feeRow);
     form.appendChild(send);
     form.appendChild(note);
+    form.appendChild(syncNowButton());
     body.appendChild(form);
     // preventScroll, and then the top: a sheet that opens halfway down its own
     // form reads as a form somebody has already been filling in.
     rep.focus({ preventScroll: true });
     body.scrollTop = 0;
+  }
+
+  /**
+   * "Sync Airtable now", for the moment somebody has just made an order and
+   * wants its invoiced prices without waiting for the hour.
+   *
+   * The schedule is hourly and cheap on purpose — Zoho allows 2,000 API calls a
+   * DAY — so this is the other half of that trade: cheap by default, immediate
+   * on demand. It is a background pass, so there is nothing to wait for; saying
+   * "started" and where the answer lands is the honest report.
+   */
+  function syncNowButton() {
+    const button = make("button", "nd-button is-small is-quiet", "Sync Airtable now");
+    button.type = "button";
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      const original = button.textContent;
+      button.textContent = "Starting…";
+      const response = await fetch("/api/sync-now", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-framework-key": staffKey || "" },
+        body: JSON.stringify({})
+      }).catch(() => null);
+      const body = response ? await response.json().catch(() => null) : null;
+      button.textContent = body && body.ok ? "Sync started" : "Could not start it";
+      window.setTimeout(() => {
+        button.textContent = original;
+        button.disabled = false;
+      }, 4000);
+    });
+    return button;
   }
 
   /** What went wrong, in the words of someone who can do something about it. */
@@ -3458,6 +3490,7 @@
     another.type = "button";
     another.addEventListener("click", () => renderOrderForm(body, title));
     wrap.appendChild(another);
+    wrap.appendChild(syncNowButton());
     body.appendChild(wrap);
   }
 
