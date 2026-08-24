@@ -745,58 +745,41 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
  * and stops being read, which is exactly how the markdown report failed.
  */
 export async function record(report) {
-  const runs = await create(TABLES.syncRuns, [{
-    fields: {
-      Run: report.started,
-      Started: report.started,
-      Finished: report.finished,
-      Trigger: report.trigger,
-      Mode: report.mode === 'write' ? 'Write' : 'Read-only',
-      'Invoices Scanned': report.scanned,
-      'Orders Updated': report.orderWrites,
-      'Lines Updated': report.lineWrites,
-      Errors: report.errors,
-      Warnings: report.warnings,
-      Outcome: report.errors ? 'Findings' : (report.warnings ? 'Findings' : 'Clean'),
-      // Zoho allows 2,000 calls per org per DAY. Recording the cost of each pass
-      // is what stops a schedule quietly eating the whole budget unnoticed.
-      Notes: `${report.zohoCalls} Zoho API calls (2,000/day org limit)`
-    }
-  }]);
-  const runId = runs[0].id;
-
   /*
-   * Open, Acknowledged and Ignored rows are all "still on the books".
+   * Read the log BEFORE writing the run row, so the run can say how many
+   * findings it closed. Closing 48 of them is the most consequential thing a
+   * pass does to this table, and a Runs row that does not mention it leaves
+   * somebody wondering why the log suddenly emptied.
    *
-   * Only Open was being matched, so marking a finding Ignored did not stop it
-   * coming back — it made the next pass create a SECOND row for the same thing,
-   * which is the opposite of what the person clicking Ignore meant. Resolved is
-   * deliberately excluded: a finding that was fixed and has recurred is news,
-   * and deserves a fresh row with a fresh First Seen.
+   * Open, Acknowledged and Ignored are all "still on the books". Only Open was
+   * being matched, so marking a finding Ignored did not stop it coming back —
+   * it made the next pass create a SECOND row for the same thing, which is the
+   * opposite of what the person clicking Ignore meant. Resolved is deliberately
+   * excluded: a finding that was fixed and has recurred is news, and deserves a
+   * fresh row with a fresh First Seen.
    */
   const rows = await all(TABLES.syncLog);
   const standing = rows.filter((r) => ['Open', 'Acknowledged', 'Ignored'].includes(r.fields.Status || 'Open'));
   const open = standing.filter((r) => (r.fields.Status || 'Open') === 'Open');
   const keyOf = (f) => `${f.Check}|${f.Event}`;
   const seen = new Map(standing.map((r) => [keyOf(r.fields), r]));
+  const current = new Set(report.findings.map((f) => `${f.check}|${f.event}`));
 
   const fresh = [], touch = [];
-  const current = new Set(report.findings.map((f) => `${f.check}|${f.event}`));
   for (const f of report.findings) {
     const key = `${f.check}|${f.event}`;
     const hit = seen.get(key);
     if (hit) {
-      touch.push({ id: hit.id, fields: { 'Last Seen': report.finished, Run: [runId] } });
+      touch.push({ id: hit.id, fields: { 'Last Seen': report.finished, Run: [] } });
     } else {
       fresh.push({ fields: {
         Event: f.event, Severity: f.severity, Check: f.check,
         'Zoho Invoice': f.invoice || '', Order: f.orderRecIds || [],
         Detail: f.detail || '', Status: 'Open',
-        'First Seen': report.started, 'Last Seen': report.finished, Run: [runId]
+        'First Seen': report.started, 'Last Seen': report.finished
       } });
     }
   }
-  if (fresh.length) await create(TABLES.syncLog, fresh);
 
   /*
    * Close what a FULL pass no longer sees.
@@ -818,7 +801,30 @@ export async function record(report) {
     ? open.filter((r) => !current.has(keyOf(r.fields)))
       .map((r) => ({ id: r.id, fields: { Status: 'Resolved', 'Last Seen': report.finished } }))
     : [];
+
+  const runs = await create(TABLES.syncRuns, [{
+    fields: {
+      Run: report.started,
+      Started: report.started,
+      Finished: report.finished,
+      Trigger: report.trigger,
+      Mode: report.mode === 'write' ? 'Write' : 'Read-only',
+      'Invoices Scanned': report.scanned,
+      'Orders Updated': report.orderWrites,
+      'Lines Updated': report.lineWrites,
+      Errors: report.errors,
+      Warnings: report.warnings,
+      Outcome: report.errors ? 'Findings' : (report.warnings ? 'Findings' : 'Clean'),
+      // Zoho allows 2,000 calls per org per DAY. Recording the cost of each pass
+      // is what stops a schedule quietly eating the whole budget unnoticed.
+      Notes: `${report.zohoCalls} Zoho API calls (2,000/day org limit)`
+        + (resolved.length ? `\n${resolved.length} finding${resolved.length === 1 ? '' : 's'} closed` : '')
+    }
+  }]);
+  const runId = runs[0].id;
+
+  if (fresh.length) await create(TABLES.syncLog, fresh.map((r) => ({ fields: { ...r.fields, Run: [runId] } })));
   if (resolved.length) await patch(TABLES.syncLog, resolved);
-  if (touch.length) await patch(TABLES.syncLog, touch);
-  return { runId, created: fresh.length, touched: touch.length };
+  if (touch.length) await patch(TABLES.syncLog, touch.map((r) => ({ id: r.id, fields: { ...r.fields, Run: [runId] } })));
+  return { runId, created: fresh.length, touched: touch.length, resolved: resolved.length };
 }
