@@ -267,7 +267,7 @@ async function search(query) {
 // --------------------------------------------------------------------- push --
 
 async function push({ code, contact_id, new_client, rep, phone, address, delivery_date,
-                      delivery_date_status, window_start, window_end, delivery_time_status,
+                      delivery_date_status, window_start, window_end,
                       pickup, delivery_fee, notes }) {
   const upper = String(code || '').toUpperCase();
   if (!CODE_RE.test(upper)) return json({ ok: false, error: 'bad_code' }, 422);
@@ -357,12 +357,11 @@ async function push({ code, contact_id, new_client, rep, phone, address, deliver
     ['cf_delivery_address', wantAddress],
     ['cf_delivery_date', clean(delivery_date, 10)],
     ['cf_delivery_date_status', delivery_date ? status(delivery_date_status) : null],
+    // No status for the window. A time somebody typed is a time they meant, and
+    // Airtable's driver message already gates the whole slot on the date flag,
+    // so a second question had nowhere to be answered.
     ['cf_delivery_window_start', time(window_start)],
     ['cf_delivery_window_end', time(window_end)],
-    // Gated on the times that survived validation, not on what was sent: a
-    // window Zoho would reject is a window the invoice does not have, and
-    // "Confirmed" against no window at all is worse than saying nothing.
-    ['cf_delivery_time_status', (time(window_start) || time(window_end)) ? status(delivery_time_status) : null],
     ['cf_client_pickup', collects ? true : null]
   ];
   const usable = wanted.filter(([, value]) => value !== null && value !== '');

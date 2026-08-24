@@ -7,7 +7,7 @@
 // of invoices.
 
 import assert from 'node:assert/strict';
-import { reconcile, canonicalItem, matchProducts, hhmmToSeconds, seedDelivery } from '../netlify/functions/_sync.mjs';
+import { reconcile, canonicalItem, matchProducts, hhmmToSeconds, seedDelivery, daysApart, unmatchedLines } from '../netlify/functions/_sync.mjs';
 
 let passed = 0;
 const test = async (name, fn) => {
@@ -29,6 +29,9 @@ const zline = (name, quantity, rate, item_id) => ({
 const invoice = (number, lines, extra = {}) => ({
   invoice_id: `id_${number}`, invoice_number: number, status: 'paid',
   date: '2026-02-01', customer_name: 'Someone', total: 0,
+  // Shelving unless a test says otherwise: Orders - Pipeline is the shelving
+  // pipeline, and that is what an invoice needing an order looks like.
+  custom_field_hash: { cf_work_type: 'Shelving' },
   discount_total: 0, line_items: lines, ...extra
 });
 
@@ -228,6 +231,21 @@ await test('a paid invoice after the epoch with no order IS reported', async () 
   assert.equal(f[0].severity, 'Info');
 });
 
+await test('a paid invoice for work that is not shelving needs no shelving order', async () => {
+  // Orders - Pipeline is the shelving pipeline. A window job has no order to be
+  // missing, and 17 of the 25 this check reported were Custom Projects --
+  // two thirds of a list being things that are fine is how a list stops being
+  // read.
+  const r = await run({
+    orders: [],
+    invoices: [
+      invoice('WIN', [], { date: '2026-03-01', custom_field_hash: { cf_work_type: 'Custom Projects' } }),
+      invoice('FRAME', [], { date: '2026-03-01', custom_field_hash: {} })
+    ]
+  });
+  assert.equal(of(r, 'paid-invoice-no-order').length, 0);
+});
+
 // ---- delivery ----------------------------------------------------------
 await test('delivery is taken ex-VAT from item_total, not from rate', async () => {
   const r = await run({
@@ -272,12 +290,24 @@ await test('a disagreeing payment date is reported as the first payment', async 
   const world = {
     orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Payment Received': '2026-02-05' })],
     invoices: [invoice('INV1', [], { last_payment_date: '2026-03-20' })],
-    payments: { id_INV1: [{ date: '2026-02-09' }, { date: '2026-03-20' }] }
+    payments: { id_INV1: [{ date: '2026-02-25' }, { date: '2026-03-20' }] }
   };
   const r = await run(world);
   const f = of(r, 'metadata-drift');
   assert.equal(f.length, 1);
-  assert.match(f[0].event, /2026-02-05 vs first 2026-02-09/);
+  assert.match(f[0].event, /2026-02-05 vs first 2026-02-25/);
+});
+
+await test('a payment date a few days out is the normal working gap, not drift', async () => {
+  // Airtable records the day a deposit confirmed the order; Zoho the day it
+  // cleared. Warning about that produced 19 standing warnings of which 15 meant
+  // nothing, which teaches people to scroll past the four that did.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Payment Received': '2026-02-05' })],
+    invoices: [invoice('INV1', [], { last_payment_date: '2026-03-20' })],
+    payments: { id_INV1: [{ date: '2026-02-09' }, { date: '2026-03-20' }] }
+  });
+  assert.equal(of(r, 'metadata-drift').length, 0);
 });
 
 await test('an unreadable payments lookup is reported, never swallowed', async () => {
@@ -460,7 +490,6 @@ await test('a blank order takes everything the invoice offers', () => {
     cf_delivery_window_start: '9:00',
     cf_delivery_window_end: '12:00',
     cf_delivery_date_status: 'Confirmed',
-    cf_delivery_time_status: 'Tentative',
     cf_client_pickup: false
   });
   assert.deepEqual(out, {
@@ -469,9 +498,9 @@ await test('a blank order takes everything the invoice offers', () => {
     'Delivery Window End': 43200,
     // The existing checkbox, not a field of its own: it is what
     // Delivery Details Summary reads to decide whether the driver is told
-    // "⚠️ Delivery date not confirmed".
-    'Delivery - Date Set': true,
-    'Delivery - Time Status': 'Tentative'
+    // "⚠️ Delivery date not confirmed". There is no separate flag for the
+    // window -- a time somebody typed is a time they meant.
+    'Delivery - Date Set': true
   });
 });
 
@@ -512,17 +541,79 @@ await test('pickup can only ever be set by an invoice, never cleared', () => {
 
 await test('a status Zoho does not recognise is not written', () => {
   assert.deepEqual(seedDelivery({}, { cf_delivery_date_status: 'Maybe' }), {});
-  assert.deepEqual(seedDelivery({}, { cf_delivery_time_status: 'Maybe' }), {});
 });
 
 await test('seeding is idempotent, so a repeated full pass writes nothing twice', () => {
   const cf = {
     cf_delivery_date: '2026-09-04', cf_delivery_window_start: '9:00',
-    cf_delivery_date_status: 'Confirmed', cf_delivery_time_status: 'Confirmed',
-    cf_client_pickup: true
+    cf_delivery_date_status: 'Confirmed', cf_client_pickup: true
   };
   const first = seedDelivery({}, cf);
   assert.deepEqual(seedDelivery(first, cf), {});
+});
+
+// ---- naming what is missing, not just the money ------------------------
+await test('days apart is symmetric and whole', () => {
+  assert.equal(daysApart('2026-02-05', '2026-02-09'), 4);
+  assert.equal(daysApart('2026-02-09', '2026-02-05'), 4);
+  assert.equal(daysApart('2026-02-05', '2026-02-05'), 0);
+});
+
+await test('a line the invoice has and the order does not is named', () => {
+  const out = unmatchedLines(
+    [{ name: 'Standard Base', quantity: 1 }],
+    [{ name: 'Standard Base', quantity: 1 }, { name: 'Standard Extension', quantity: 2 }]
+  );
+  assert.deepEqual(out.onInvoice, ['2 x Standard Extension']);
+  assert.deepEqual(out.inAirtable, []);
+});
+
+await test('a line the order has and the invoice does not is named too', () => {
+  const out = unmatchedLines(
+    [{ name: 'Standard Base', quantity: 1 }, { name: 'Bookend', quantity: 1 }],
+    [{ name: 'Standard Base', quantity: 1 }]
+  );
+  assert.deepEqual(out.inAirtable, ['Bookend']);
+  assert.deepEqual(out.onInvoice, []);
+});
+
+await test('a rename is not an absence', () => {
+  // Invoice line names are snapshots: a 2025 line still says "Shelf - Standard
+  // Base". Reporting that as a missing product would send someone hunting for
+  // a line that is right there.
+  const out = unmatchedLines(
+    [{ name: 'Standard Base', quantity: 1 }],
+    [{ name: 'Shelf - Standard Base', quantity: 1 }]
+  );
+  assert.deepEqual(out.onInvoice, []);
+  assert.deepEqual(out.inAirtable, []);
+});
+
+await test('matching products in different numbers are not called missing', () => {
+  // That is a quantity fault with a different fix; folding the two together
+  // produces a sentence true of neither.
+  const out = unmatchedLines(
+    [{ name: 'Standard Base', quantity: 1 }],
+    [{ name: 'Standard Base', quantity: 3 }]
+  );
+  assert.deepEqual(out.onInvoice, []);
+  assert.deepEqual(out.inAirtable, []);
+});
+
+await test('an order short only by its catch-all is not an error forever', async () => {
+  // Custom Item is bespoke work with no Zoho twin, so it can never be priced
+  // from the invoice and the order is short by exactly its value on every pass.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    products: [product('pB', 'Standard Base', 6500), product('pC', 'Custom Item', 4000)],
+    lines: [
+      line('l1', 'rec1', 'pB', { 'Zoho Line Total': 6500 }),
+      line('l2', 'rec1', 'pC', { 'Zoho Line Total': null })
+    ],
+    invoices: [invoice('INV1', [zline('Standard Base', 1, 6500, 'itB'), zline('Custom Item', 1, 4000, 'itC')])]
+  });
+  const f = of(r, 'line-totals-match-invoice');
+  if (f.length) assert.notEqual(f[0].severity, 'Error', 'a difference nobody can close must not be an Error');
 });
 
 console.log(`test-reconcile: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);

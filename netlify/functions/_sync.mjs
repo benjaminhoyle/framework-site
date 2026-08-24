@@ -20,6 +20,26 @@ import * as zoho from './_zoho.mjs';
 import { TABLES, all, patch, create } from './_airtable.mjs';
 
 const ERROR = 'Error', WARN = 'Warning', INFO = 'Info';
+
+/**
+ * Products that exist to catch what the catalogue cannot name.
+ *
+ * `Custom Item` is an Airtable product with no Zoho twin and never will have
+ * one — that is what it is for. Reporting it every pass was a permanent warning
+ * about a deliberate arrangement.
+ */
+const CATCH_ALL_PRODUCTS = new Set(['Custom Item']);
+
+/**
+ * How far a payment date may differ before it is worth saying so.
+ *
+ * Airtable records the day a deposit confirmed the order; Zoho records the day
+ * it cleared. A day or three between those is the normal working gap, not
+ * drift, and warning about it produced 19 standing warnings of which 15 meant
+ * nothing. Past a week the two are describing different events and somebody
+ * should look.
+ */
+const PAYMENT_DRIFT_DAYS = 7;
 const now = () => new Date().toISOString();
 
 /** A lookup field arrives as an array even when it holds one value. */
@@ -156,6 +176,11 @@ export function hhmmToSeconds(hhmm) {
  * `Delivery - Date Set` and `Client Pickup` are both one-directional, because a
  * checkbox cannot distinguish "no" from "nobody said". An invoice can tick one;
  * an invoice merely silent about it can never untick a box somebody ticked.
+ *
+ * There is no separate status for the TIME. A window somebody typed is a window
+ * they meant, and `Delivery Details Summary` already gates the whole slot on
+ * `Delivery - Date Set` — so a second flag would have been a question the driver
+ * never gets asked.
  */
 export function seedDelivery(order, cf) {
   const has = (name) => {
@@ -170,14 +195,49 @@ export function seedDelivery(order, cf) {
   const end = hhmmToSeconds(cf.cf_delivery_window_end);
   if (!has('Delivery Window Start') && start != null) out['Delivery Window Start'] = start;
   if (!has('Delivery Window End') && end != null) out['Delivery Window End'] = end;
-  if (!has('Delivery - Time Status') && ['Tentative', 'Confirmed'].includes(cf.cf_delivery_time_status)) {
-    out['Delivery - Time Status'] = cf.cf_delivery_time_status;
-  }
   if (order['Delivery - Date Set'] !== true && cf.cf_delivery_date_status === 'Confirmed') {
     out['Delivery - Date Set'] = true;
   }
   if (order['Client Pickup'] !== true && cf.cf_client_pickup === true) out['Client Pickup'] = true;
   return out;
+}
+
+/** Whole days between two ISO dates, whichever way round they are. */
+export function daysApart(a, b) {
+  const ms = Math.abs(Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`));
+  return Number.isFinite(ms) ? Math.round(ms / 86400000) : 0;
+}
+
+/**
+ * Which products an order has that its invoice does not, and the reverse.
+ *
+ * The money gap alone says a line is missing; this says which, so the finding
+ * is something to act on rather than something to open two systems to explain.
+ * Both sides are matched through `matchProducts`, so three years of renames do
+ * not read as absences.
+ *
+ * Takes `{ name, quantity }` on both sides. Quantities are reported but not
+ * compared: a product on both sides in the wrong number is a different fault
+ * with a different fix, and folding the two together yields a sentence that is
+ * true of neither.
+ */
+export function unmatchedLines(airtable, zoho_) {
+  const aNames = (airtable || []).map((l) => l.name).filter(Boolean);
+  const zNames = (zoho_ || []).map((l) => l.name).filter(Boolean);
+  const matched = matchProducts([...new Set(aNames)], [...new Set(zNames)]);
+  const claimed = new Set(matched.values());
+  const say = (rows, keep) => {
+    const m = new Map();
+    for (const r of rows) {
+      if (!r.name || !keep(r.name)) continue;
+      m.set(r.name, (m.get(r.name) || 0) + (Number(r.quantity) || 1));
+    }
+    return [...m.entries()].map(([n, q]) => (q > 1 ? `${q} x ${n}` : n));
+  };
+  return {
+    onInvoice: say(zoho_ || [], (n) => !claimed.has(n)),
+    inAirtable: say(airtable || [], (n) => !matched.has(n))
+  };
 }
 
 /** Run `fn` over `list` a few at a time — serial is too slow for a full pass. */
@@ -277,9 +337,15 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     for (const p of liveA) {
       const z = liveZ.get(p.fields.Name);
       if (!z) {
-        add(WARN, 'catalogue-prices-agree', `${p.fields.Name} has no active Zoho item`, {
-          detail: 'Active in Airtable with no matching active Zoho item. Expected only for catch-alls like Custom Item.'
-        });
+        // Its own detail line already said "expected only for catch-alls like
+        // Custom Item", and Custom Item is the only one it has ever fired on.
+        // A warning that is always expected is one people learn to scroll past,
+        // and it teaches them to scroll past the ones beside it.
+        if (!CATCH_ALL_PRODUCTS.has(p.fields.Name)) {
+          add(WARN, 'catalogue-prices-agree', `${p.fields.Name} has no active Zoho item`, {
+            detail: 'Active in Airtable with no matching active Zoho item.'
+          });
+        }
         continue;
       }
       const ap = p.fields.Price;
@@ -290,6 +356,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       }
     }
     for (const [name] of liveZ) {
+      if (CATCH_ALL_PRODUCTS.has(name)) continue;
       if (!liveA.some((p) => p.fields.Name === name)) {
         add(WARN, 'catalogue-prices-agree', `${name} has no active Airtable product`, {
           detail: 'Sellable in Zoho with nowhere to land in Airtable. A sale of it would have no product to attach to.'
@@ -335,7 +402,13 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       // not; 108 invoices predate the pipeline entirely and are not gaps. A
       // report that opens with 108 rows nobody can act on is a report nobody
       // reads, which is how the markdown one failed.
-      if (full.status === 'paid' && full.date >= epoch) {
+      //
+      // And only SHELVING. Orders - Pipeline is the shelving pipeline; a window
+      // job or a picture frame has no order to be missing, and 17 of the 25 this
+      // check was reporting were Custom Projects. Two thirds of a list being
+      // things that are fine is how a list stops being read.
+      const workType = full.custom_field_hash?.cf_work_type;
+      if (full.status === 'paid' && full.date >= epoch && workType === 'Shelving') {
         add(INFO, 'paid-invoice-no-order', `${num} is paid with no order`, {
           invoice: num,
           detail: `${full.customer_name}, ${full.date}, ${full.total}. Needs an order, or is a delivery-only invoice.`
@@ -494,10 +567,39 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     const anyStored = aLines.some((l) => l.fields['Zoho Line Total'] != null);
     const target = zoho.round2(m.goods - m.discount);
     if ((anyStored || pendingHere.length) && Math.abs(projected - target) > 1) {
-      add(ERROR, 'line-totals-match-invoice', `${order.fields['Order ID']} revenue ${projected} vs ${target}`, {
-        invoice: num, orderRecIds: [order.id],
-        detail: `Line totals come to ${projected}; the invoice goods total after discount is ${target}. Airtable is missing a line the invoice has, or holds one it does not.`
-      });
+      // Say WHICH. "Revenue 41600 vs 55600" is a number somebody then has to
+      // open two systems to explain; "no Airtable line for 2 x Standard
+      // Extension" is a thing they can go and fix. The matching is already done
+      // above for pricing, so naming what it could not match costs nothing.
+      const missing = unmatchedLines(
+        aLines.map((l) => ({
+          name: products.find((p) => p.id === (l.fields.Item || [])[0])?.fields?.Name,
+          quantity: l.fields.Quantity
+        })),
+        (m.lines || []).map((l) => ({ name: stripLegacy(l.name), quantity: l.quantity }))
+      );
+
+      // An order carrying a catch-all cannot reconcile, by construction.
+      // `Custom Item` is bespoke work with no Zoho twin — that is what it is for
+      // — so it contributes nothing to the projected total and the order is
+      // short by exactly its value, on every pass, forever. Six of the thirteen
+      // errors this check raised were that, and an error that can never be
+      // cleared is one people learn to leave sitting there.
+      const onlyCatchAll = !missing.onInvoice.length
+        && missing.inAirtable.length
+        && missing.inAirtable.every((n) => CATCH_ALL_PRODUCTS.has(n.replace(/^\d+ x /, '')));
+
+      add(onlyCatchAll ? INFO : ERROR, 'line-totals-match-invoice',
+        `${order.fields['Order ID']} revenue ${projected} vs ${target}`, {
+          invoice: num, orderRecIds: [order.id],
+          detail: onlyCatchAll
+            ? `Line totals come to ${projected}; the invoice goods total after discount is ${target}. The difference is ${missing.inAirtable.join(', ')}, which has no Zoho item to be priced from — expected, and not reconcilable from here.`
+            : `Line totals come to ${projected}; the invoice goods total after discount is ${target}.`
+              + (missing.onInvoice.length ? ` No Airtable line for: ${missing.onInvoice.join(', ')}.` : '')
+              + (missing.inAirtable.length ? ` On the order but not the invoice: ${missing.inAirtable.join(', ')}.` : '')
+              + (!missing.onInvoice.length && !missing.inAirtable.length
+                ? ' Every product matches, so the difference is quantities or prices rather than a missing line.' : '')
+        });
     }
 
     // -- first payment date, which is not last_payment_date
@@ -510,10 +612,10 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
         const ps = await io.payments(full.invoice_id);
         const first = ps[0]?.date;
         const have = order.fields['Payment Received'];
-        if (first && have && have !== first) {
+        if (first && have && have !== first && daysApart(have, first) > PAYMENT_DRIFT_DAYS) {
           add(WARN, 'metadata-drift', `${order.fields['Order ID']} payment ${have} vs first ${first}`, {
             invoice: num, orderRecIds: [order.id],
-            detail: `Airtable records ${have}; the first payment on the invoice is ${first}${ps.length > 1 ? ` (of ${ps.length} payments)` : ''}.`
+            detail: `Airtable records ${have}; the first payment on the invoice is ${first}${ps.length > 1 ? ` (of ${ps.length} payments)` : ''}. More than ${PAYMENT_DRIFT_DAYS} days apart, so the two are probably describing different events.`
           });
         }
       } catch (e) {
@@ -585,6 +687,9 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
   const warnings = findings.filter((f) => f.severity === WARN).length;
   return {
     started, finished: now(), mode, trigger, scanned,
+    // Whether this pass looked at everything. Only a full pass may close a log
+    // row: an incremental one has not seen the invoices it is not reporting on.
+    full: isFull,
     orderWrites, lineWrites, errors, warnings, findings,
     zohoCalls: zoho.calls.n - callsAtStart,
     // What a write pass would do, whether or not this one did it.
@@ -595,7 +700,8 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
 /**
  * Write the report where a person will actually see it.
  *
- * A clean pass writes ONE Runs row and ZERO Log rows. Recurring drift updates
+ * A clean pass writes ONE Runs row and no NEW Log rows, though a full one may
+ * close rows that are no longer true. Recurring drift updates
  * `Last Seen` on the open row rather than adding another — 24 hourly passes over
  * one unresolved problem must not produce 24 rows, or the table becomes noise
  * and stops being read, which is exactly how the markdown report failed.
@@ -620,13 +726,13 @@ export async function record(report) {
     }
   }]);
   const runId = runs[0].id;
-  if (!report.findings.length) return { runId, created: 0, touched: 0 };
 
   const open = (await all(TABLES.syncLog)).filter((r) => (r.fields.Status || 'Open') === 'Open');
   const keyOf = (f) => `${f.Check}|${f.Event}`;
   const seen = new Map(open.map((r) => [keyOf(r.fields), r]));
 
   const fresh = [], touch = [];
+  const current = new Set(report.findings.map((f) => `${f.check}|${f.event}`));
   for (const f of report.findings) {
     const key = `${f.check}|${f.event}`;
     const hit = seen.get(key);
@@ -642,6 +748,28 @@ export async function record(report) {
     }
   }
   if (fresh.length) await create(TABLES.syncLog, fresh);
+
+  /*
+   * Close what a FULL pass no longer sees.
+   *
+   * Without this the log only ever grows: 58 rows all reading Open, five of them
+   * fixed the day before by the write pass and nothing saying so. A list where
+   * everything is open forever is a list nobody can act on, which is the same
+   * way the markdown report died. `Sync Status` on the order already clears
+   * itself back to OK for exactly this reason — "a flag nobody clears is a flag
+   * nobody trusts" — and the Status field has had a `Resolved` option waiting
+   * for it all along.
+   *
+   * **Full passes only.** An incremental pass looks at invoices modified in the
+   * last two hours, so a finding it does not report is overwhelmingly one it
+   * never looked at. Letting it close rows would clear the whole log every five
+   * minutes and reopen it on the nightly pass.
+   */
+  const resolved = report.full
+    ? open.filter((r) => !current.has(keyOf(r.fields)))
+      .map((r) => ({ id: r.id, fields: { Status: 'Resolved', 'Last Seen': report.finished } }))
+    : [];
+  if (resolved.length) await patch(TABLES.syncLog, resolved);
   if (touch.length) await patch(TABLES.syncLog, touch);
   return { runId, created: fresh.length, touched: touch.length };
 }

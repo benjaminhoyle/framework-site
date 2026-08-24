@@ -322,7 +322,6 @@ time into Airtable, which is the duplication the form exists to remove.
 | `cf_delivery_date` | `Delivery - Scheduled Date` |
 | `cf_delivery_window_start` / `_end` | `Delivery Window Start` / `End` |
 | `cf_delivery_date_status` | `Delivery - Date Set` (ticked only when Confirmed) |
-| `cf_delivery_time_status` | `Delivery - Time Status` |
 | `cf_client_pickup` | `Client Pickup` |
 
 **Seed once, never overwrite.** This is the delivery-date rule applied to
@@ -353,11 +352,12 @@ Airtable's API can create and rename fields but cannot delete them.)
 checkbox cannot tell "no" from "nobody said". An invoice can tick one; an
 invoice merely silent about it can never untick a box somebody ticked.
 
-`Delivery - Time Status` has no existing equivalent, and the summary formula
-above collapses the window into the date flag — so it is recorded on the order
-and visible to ops, but the driver's message does not yet mention a tentative
-*time*. Extending that formula is a one-line change to what the delivery team
-reads, so it is left as a decision rather than made here.
+**There is no status for the TIME.** A window somebody typed is a window they
+meant, and the formula above already gates the whole slot on
+`Delivery - Date Set`, so a second flag was a question the driver never gets
+asked. The form asks once, about the date. (`cf_delivery_time_status` in Zoho and
+`Delivery - Time Status` in Airtable were created for it and are now renamed
+`zzz - delete me`; neither API can delete a field.)
 
 Two traps in that table:
 
@@ -397,6 +397,33 @@ invoice at today's rate.
 ---
 
 ## Checks
+
+A finding has to be worth reading. Every one of these earns its place by being
+something a person can act on — which took removing four things that were not:
+
+- **`paid-invoice-no-order` is Shelving only.** Orders - Pipeline is the shelving
+  pipeline; a window job has no order to be missing. 17 of the 25 it reported
+  were Custom Projects.
+- **Catch-all products are not findings.** `Custom Item` is an Airtable product
+  with no Zoho twin and never will have one — that is what it is for.
+- **A payment date within a week is the normal working gap.** Airtable records
+  the day a deposit confirmed the order, Zoho the day it cleared. Warning about
+  ±3 days produced 19 standing warnings of which 15 meant nothing.
+- **An order short only by its catch-all cannot reconcile, by construction.** It
+  is short by exactly the `Custom Item`'s value on every pass, forever. Reported
+  as Info, not an Error nobody can clear.
+
+Together: **58 findings to 25, errors 13 to 7, warnings 20 to 4** — and the
+`line-totals-match-invoice` errors now name the products, so "revenue 41600 vs
+55600" reads "4 x Small Steel Decoration on the order but not the invoice".
+
+**Findings close themselves.** A FULL pass marks Open rows it no longer sees as
+Resolved. Only a full pass: an incremental one looks at two hours of invoices, so
+a finding it does not report is one it never looked at. Without this the log only
+grew — 58 rows all reading Open, five of them fixed the day before by the write
+pass with nothing saying so. `Sync Status` on the order has always cleared itself
+back to `OK` for the same reason, and the log's Status field has had a `Resolved`
+option waiting for it since the beginning.
 
 | Check | Severity | Asserts |
 |---|---|---|

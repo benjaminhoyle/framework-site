@@ -3267,7 +3267,7 @@
     backToList.addEventListener("click", resetClient);
 
     // --- delivery ---------------------------------------------------------
-    const state = { date: "", time: "" };
+    const state = { date: "" };
     const date = staffInput("date");
     const dateStatus = statusToggle(state, "date", () => Boolean(date.value));
     date.addEventListener("change", () => dateStatus.paint());
@@ -3275,18 +3275,16 @@
     dateField.appendChild(date);
     dateField.appendChild(dateStatus);
 
+    // No Tentative/Confirmed on the window. A time somebody typed is a time they
+    // meant, and the message the delivery team receives gates the whole slot on
+    // the DATE being confirmed -- so a second control asked a question that had
+    // nowhere to be answered.
     const from = staffInput("time");
     const until = staffInput("time");
-    const window_ = make("div", "nd-staff-window");
-    window_.appendChild(from);
-    window_.appendChild(make("span", "nd-staff-label", "to"));
-    window_.appendChild(until);
-    const timeStatus = statusToggle(state, "time", () => Boolean(from.value || until.value));
-    from.addEventListener("change", () => timeStatus.paint());
-    until.addEventListener("change", () => timeStatus.paint());
-    const timeField = make("div", "nd-staff-dated");
-    timeField.appendChild(window_);
-    timeField.appendChild(timeStatus);
+    const timeField = make("div", "nd-staff-window");
+    timeField.appendChild(from);
+    timeField.appendChild(make("span", "nd-staff-label", "to"));
+    timeField.appendChild(until);
 
     // Deliberately NOT type="number". A browser reports an empty string for
     // "2,500" rather than the digits behind it, so a rep typing a thousands
@@ -3340,7 +3338,6 @@
           delivery_date_status: state.date,
           window_start: from.value,
           window_end: until.value,
-          delivery_time_status: state.time,
           pickup: pickup.checked,
           delivery_fee: pickup.checked ? null : fee.value
         });
