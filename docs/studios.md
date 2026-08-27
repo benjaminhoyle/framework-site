@@ -111,6 +111,37 @@ sentence they must agree on: the figure is a measuring stick, not content. The
 rest of each SCALE line stays with its own page, because a scene prompt and a
 catalogue-set prompt are asking for different things.
 
+### The viewpoint
+
+A photograph of a shelf is a projection of it from one place. Everything the
+scene studio used to say about product fidelity — tier count, proportions,
+spacing, colour, joints — is true from *any* vantage, so none of it stopped the
+model quietly re-shooting the shelf from somewhere else, and a render's
+perspective was lost the moment it entered a room.
+
+The catalogue studio never had this problem, and it does not mention a camera
+anywhere. The word that does the work is **silhouette**: an outline can only be
+traced from the place it was traced from, so "the product silhouette must match
+the source" locks the vantage as a side effect. The scene studio now carries
+those same lines as `viewpointPrompt`, plus an audit sentence scoped to the
+shelf rather than the whole picture, since its output is a room and the
+catalogue's is a cyclorama.
+
+Two supports underneath it. The reference image is **named** before it is sent,
+the way `buildContents` names every catalogue reference — an instruction about
+"the reference" needs something to point at. And the default aspect is **Match
+source**, which resolves at generation time to whichever fixed ratio the source
+is nearest: asking for the source's own shape makes the job an edit rather than
+a re-shoot. The other ratios are still there when a shot is wanted in a
+particular format.
+
+The one thing that had to be settled explicitly is precedence. THE PHOTOGRAPH
+already declared itself the winner over the place, and its Camera and
+Composition options describe a photographer choosing where to stand — which is
+exactly what the lock forbids. So that block now says which wins: those options
+set crop, tilt, framing, lens character and light, never where the camera stands
+in relation to the shelf.
+
 ### The handoff
 
 **Add scene** on a catalogue row opens a picker of every image the row has — the

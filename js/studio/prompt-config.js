@@ -207,6 +207,19 @@
   - Realistic scale relative to surrounding furniture and doorways
   - Preserve exact metalwork joint style — simple bolt-through connections
   - Keep the shelf readable: front vertical tubes, legs, shelf edges, bolt points, and tier gaps must remain visible`,
+
+    // A photograph of a shelf is a projection of it from one place. Everything
+    // in preservationPrompt above -- tier count, proportions, spacing, colour --
+    // is true from any vantage, so none of it stops the model re-shooting the
+    // shelf from somewhere else. Silhouette is the word that does: an outline
+    // can only be traced from the place it was traced from. That is why the
+    // catalogue studio holds its perspective without ever mentioning a camera,
+    // and these are its lines.
+    viewpointPrompt: `VIEWPOINT LOCK - the reference photo's vantage is product truth:
+  - Treat the shelf in the reference like a traced blueprint. Its silhouette must match the reference before any styling is added.
+  - Reproduce the vantage the reference was taken from: the same camera height relative to the shelf, the same horizontal angle around it, the same foreshortening along the shelf boards, the same convergence of the vertical tubes, and the same shelf tops or undersides in view.
+  - Only the vantage is locked. The room, its walls, floor, furniture and light are yours to build, and the shelf may sit anywhere in the frame at any size.
+  - INTERNAL VIEWPOINT AUDIT BEFORE RETURNING IMAGE: compare the generated shelf - the shelf, not the whole picture - to the reference. If the camera has moved around it, risen above it, or dropped below it, or if the silhouette no longer matches, correct it before finalizing.`,
     negativePrompt: `DO NOT include: strip lights, LED lighting, clamp-on lamps attached to the shelf, changed shelf count, altered shelf spacing, thickened tubes, curved or decorative frame, glass shelves, wooden shelves, drawers, doors, cabinets, decorative brackets, branding, logos, price tags, floating shelves, wall-mounted panels, perfect magazine-style staging, open books, unsupported freestanding books, bare-bulb pendant lights unless explicitly requested by the user`,
 
     // The photographic floor: authenticity may come from the place and its
@@ -315,7 +328,7 @@
   ));
   DEFAULTS.customNotes = "";
   DEFAULTS.archetype = null;
-  DEFAULTS.aspect = "4:3";
+  DEFAULTS.aspect = "match";
   DEFAULTS.fullness = "moderate";
   DEFAULTS.livedIn = "lived-in";
   DEFAULTS.details = ["british-socket","wall-scuffs"];
@@ -342,7 +355,11 @@
     overall:{n:"rawer, grittier, unedited",p:"more commercially usable and finished, without changing product geometry or material"},
   };
   const DEFAULT_REFINE = Object.fromEntries(REFINE_CATS.map(c=>[c.id,0]));
-  const ASPECTS = [{id:"4:3",l:"4:3"},{id:"4:5",l:"4:5"},{id:"1:1",l:"1:1"},{id:"9:16",l:"9:16"},{id:"16:9",l:"16:9"}];
+  // "match" is not a ratio: it resolves at generation time to whichever of the
+  // fixed ratios the source image is closest to. Asking for the source's own
+  // shape makes the job an edit rather than a re-shoot, which is half of what
+  // keeps the reference's perspective. See viewpointPrompt for the other half.
+  const ASPECTS = [{id:"match",l:"Match source"},{id:"4:3",l:"4:3"},{id:"4:5",l:"4:5"},{id:"1:1",l:"1:1"},{id:"9:16",l:"9:16"},{id:"16:9",l:"16:9"}];
   const RECIPE_GROUPS = [
     {id:"shot",label:"Shot",kind:"single",keys:["shotType","productBackground","settingType","scene"]},
     {id:"place",label:"Place",kind:"single",keys:["wall","floor","rug"]},

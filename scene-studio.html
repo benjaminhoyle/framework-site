@@ -188,6 +188,25 @@ async function bestBlobForAirtable(img,filename,originalFile=null){
   }
   return dataUrlBlobForAirtable(img,filename)||await imageBlobForAirtable(img,filename);
 }
+// "Match source" is resolved here, once, against the reference image: the
+// nearest fixed ratio by log distance, so a 3:4 render lands on 4:5 rather than
+// on whichever ratio happens to be first in the list. Everything downstream --
+// the provider options, the upscale target, the prompt -- only ever sees a real
+// ratio, so nothing else has to know "match" exists.
+const ASPECT_RATIOS={"4:3":4/3,"4:5":4/5,"1:1":1,"9:16":9/16,"16:9":16/9};
+function nearestAspect(width,height){
+  const r=Number(width)/Number(height);
+  if(!Number.isFinite(r)||r<=0)return "4:3";
+  let best="4:3",bestGap=Infinity;
+  for(const[id,value]of Object.entries(ASPECT_RATIOS)){
+    const gap=Math.abs(Math.log(r/value));
+    if(gap<bestGap){bestGap=gap;best=id}
+  }
+  return best;
+}
+function resolveAspect(aspect,img){
+  return aspect==="match"?nearestAspect(img?.width,img?.height):(aspect||"4:3");
+}
 function openAIImageSize(aspect,model){
   if(aspect==="1:1")return"1024x1024";
   if(aspect==="4:5"||aspect==="9:16")return"1024x1536";
@@ -685,6 +704,11 @@ function App(){
   // the figure composited into it.
   const[refImage,setRefImage]=useState(null);
   const[augImg,setAugImg]=useState(null);
+  // The image a "match source" aspect is measured against: the composite when
+  // there is one, since that is what the model is actually sent.
+  const aspectSourceImg=augImg||refImage;
+  const resolvedAspect=useMemo(()=>resolveAspect(params.aspect,aspectSourceImg),
+    [params.aspect,aspectSourceImg?.width,aspectSourceImg?.height]);
   // The catalogue row this session was opened for, when it was. See
   // js/studio/handoff.js -- the chosen shot goes back to that row.
   const[handoff,setHandoff]=useState(null);
@@ -738,10 +762,10 @@ function App(){
   const hasRefineText=refineFB.trim().length>0;
   const selectedUpscale=useMemo(()=>{
     if(!isGen||selNode?.source!=="uploaded-refine"||!selNode?.img)return null;
-    const info=upscaleInfo(selNode.img,provider,params.aspect);
+    const info=upscaleInfo(selNode.img,provider,resolvedAspect);
     const storedMode=Object.prototype.hasOwnProperty.call(selNode.upscale||{},"mode")?selNode.upscale.mode:info.mode;
     return {...info,mode:info.needed?storedMode:null};
-  },[isGen,selNode?.id,selNode?.source,selNode?.img?.width,selNode?.img?.height,selNode?.upscale?.mode,provider,params.aspect]);
+  },[isGen,selNode?.id,selNode?.source,selNode?.img?.width,selNode?.img?.height,selNode?.upscale?.mode,provider,resolvedAspect]);
   const hasUpscaleIntent=isGen&&mode==="refine"&&selectedUpscale?.needed&&!!selectedUpscale.mode;
   const isDirty=changedKeys.size>0||hasRefAdj||hasRefineText||hasUpscaleIntent;
   const dirtyLabels=useMemo(()=>{
@@ -893,7 +917,9 @@ function App(){
     const r=pendingUpload.img;
     const gp=normalizeParams(params);
     const parentId=refImage?(genSource?.id||"ref"):"ref";
-    const upscale=upscaleInfo(r,provider,gp.aspect);
+    // No session source yet means this upload becomes it, so it is what a
+    // "match source" aspect resolves against.
+    const upscale=upscaleInfo(r,provider,resolveAspect(gp.aspect,refImage||r));
     const genNode={id:mkId(),type:"gen",parentId,img:r,params:{...gp},history:null,source:"uploaded-refine",upscale,ts:Date.now()};
     if(refImage){
       setNodes(p=>[...p,genNode]);
@@ -955,11 +981,16 @@ function App(){
     if(FrameworkScale.isSet(scale)){const h=scale.shelfH;let rel=h<80?"desk height":h<120?"chest height":h<160?"shoulder height":"taller than most adults";
       scaleLine=`\nSCALE: Shelf is EXACTLY ${h}cm tall (${rel}).${FrameworkScale.figureNote(scale)}`;}
     let notes="";if(p.customNotes?.trim())notes=`\nADDITIONAL NOTES: ${p.customNotes.trim()}`;
-    const productTruth=`${CONFIG.referenceRolePrompt}\n\n${CONFIG.preservationPrompt}`;
+    const productTruth=`${CONFIG.referenceRolePrompt}\n\n${CONFIG.preservationPrompt}\n\n${CONFIG.viewpointPrompt}`;
+    const aspect=resolveAspect(p.aspect,aspectSourceImg);
+    // The camera and composition options describe a photographer choosing where
+    // to stand. The viewpoint lock says they may not. Say which wins, once,
+    // wherever those options are used -- otherwise it is left to luck.
+    const viewpointPrecedence="- The VIEWPOINT LOCK wins over this section. Camera and composition choices here set the crop, the tilt, where the shelf sits in the frame, the lens character and the light -- never where the camera stands in relation to the shelf.";
 
     if(p.shotType==="clean"){
       const bg=CONFIG.productBackgrounds.find(o=>o.id===p.productBackground)?.prompt||CONFIG.productBackgrounds[0]?.prompt||"A simple neutral background.";
-      return `You are a professional product photographer creating product imagery for Framework Designs, a modular steel shelving company in Nairobi, Kenya.\n\nTASK: Using the attached reference photo, generate a CLEAN PRODUCT SHOT of this EXACT shelf.\n\n${productTruth}\n\nBACKGROUND: ${bg}\n\nSHELF CONTENTS: Keep the shelf empty unless objects are already present in the reference photo. Do not add lifestyle props.\n\n${CONFIG.negativePrompt}\n${photo?`\n${photo}`:""}\nAspect ratio: ${p.aspect}.${scaleLine}${notes}`;
+      return `You are a professional product photographer creating product imagery for Framework Designs, a modular steel shelving company in Nairobi, Kenya.\n\nTASK: Using the attached reference photo, generate a CLEAN PRODUCT SHOT of this EXACT shelf.\n\n${productTruth}\n\nBACKGROUND: ${bg}\n\nSHELF CONTENTS: Keep the shelf empty unless objects are already present in the reference photo. Do not add lifestyle props.\n\n${CONFIG.negativePrompt}\n${photo?`\n${photo}${viewpointPrecedence}\n`:""}\nAspect ratio: ${aspect}.${scaleLine}${notes}`;
     }
 
     // ── In-use scene: narrative structure. THE PLACE (one coherent paragraph,
@@ -996,11 +1027,11 @@ function App(){
     }
     const shelfBlock=`THE SHELF IN THIS PLACE:\n- The shelf stands against a wall of this room, naturally placed as real furniture.${scaleLine?`\n- ${scaleLine.trim()}`:""}\n- Contents: ${contents}. Fill level: ${full}.\n- Condition of the room: ${lived}.${shelfVisibility}`;
 
-    const photoBlock=`THE PHOTOGRAPH:\n${photo?photo.trim():"Natural, competent photography appropriate to the place."}\n- If the light or mood described here conflicts with the place description above, THIS section wins.`;
+    const photoBlock=`THE PHOTOGRAPH:\n${photo?photo.trim():"Natural, competent photography appropriate to the place."}\n- If the light or mood described here conflicts with the place description above, THIS section wins.\n${viewpointPrecedence}`;
 
     const authBlock=`${CONFIG.nairobiTruthPrompt||""}${dets?`\nGROUNDING DETAILS (include naturally, not as a checklist):\n${dets}`:""}${traces?`\nTRACES OF PEOPLE (subtle, at most as described):\n${traces}`:""}`;
 
-    return `You are a location photographer shooting real interiors for Framework Designs, a modular steel shelving company in Nairobi, Kenya. Your photographs must feel like actual Nairobi spaces that happen to be beautifully shot — never like showroom renders.\n\nTASK: Using the attached reference photo, generate a NEW photorealistic image placing this EXACT shelf in the space described below.\n\n${productTruth}\n\n${placeBlock}\n\n${shelfBlock}\n\n${photoBlock}\n\n${authBlock}\n\n${CONFIG.craftFloorPrompt||""}\n\n${CONFIG.negativePrompt}\n\nAspect ratio: ${p.aspect}.${notes}`;
+    return `You are a location photographer shooting real interiors for Framework Designs, a modular steel shelving company in Nairobi, Kenya. Your photographs must feel like actual Nairobi spaces that happen to be beautifully shot — never like showroom renders.\n\nTASK: Using the attached reference photo, generate a NEW photorealistic image placing this EXACT shelf in the space described below.\n\n${productTruth}\n\n${placeBlock}\n\n${shelfBlock}\n\n${photoBlock}\n\n${authBlock}\n\n${CONFIG.craftFloorPrompt||""}\n\n${CONFIG.negativePrompt}\n\nAspect ratio: ${aspect}.${notes}`;
   };
 	  const refineAdjustmentText=(cat,val)=>{
 	    if(val===0)return null;
@@ -1043,7 +1074,7 @@ function App(){
 	    }
 	    return prompt;
 	  };
-	  const livePrompt=useMemo(()=>buildPrompt(params),[params,scale]);
+	  const livePrompt=useMemo(()=>buildPrompt(params),[params,scale,resolvedAspect]);
 	  const isLiveRefineRun=isGen&&mode==="refine";
 	  const editableRunPrompt=useMemo(()=>{
 	    return isLiveRefineRun?buildRefinePrompt():livePrompt;
@@ -1083,7 +1114,7 @@ function App(){
       const rawPrompt=editedPrompt||(isRefine?buildRefinePrompt():buildPrompt(gp));
       const prompt=promptForProvider(rawPrompt,isRefine);
       runLog("info",`${isRefine?"Refine":"Generate"} start / ${providerCfg.label}`);
-      runLog("info",`Prompt: ${prompt.length} chars${editedPrompt?" (edited)":""}; aspect ${gp.aspect}; selected ${selNode?.id||parentId}`);
+      runLog("info",`Prompt: ${prompt.length} chars${editedPrompt?" (edited)":""}; aspect ${resolvedAspect}${gp.aspect==="match"?" (matched to source)":""}; selected ${selNode?.id||parentId}`);
       setProcMsg("Preparing source image...");
       const sourceImg=isRefine?(croppedImg||parentNode.img):(augImg||refImage);
       const apiImg=!apiKey&&sourceImg?.dataUrl?await resizeDataUrl(sourceImg.dataUrl,SERVER_MAX_DIM):sourceImg;
@@ -1091,19 +1122,26 @@ function App(){
       const productRefImg=isRefine&&refImage?.dataUrl?(!apiKey?await resizeDataUrl(refImage.dataUrl,SERVER_MAX_DIM):refImage):null;
       if(productRefImg)runLog("info",`Product reference lock image: ${productRefImg.width||"?"}x${productRefImg.height||"?"} (${fmtBytes((productRefImg.base64||"").length*0.75)})`);
       const openaiOptions=provider==="openai"?{
-        aspect:gp.aspect,
+        aspect:resolvedAspect,
         quality:"high",
         outputFormat:"jpeg",
         imageMimeTypes:[dataUrlMime(apiImg.dataUrl)||"image/jpeg",...(productRefImg?[dataUrlMime(productRefImg.dataUrl)||"image/jpeg"]:[])]
       }:null;
       const geminiOptions=provider==="gemini"?{
-        aspect:gp.aspect,
+        aspect:resolvedAspect,
         imageSize:"2K"
       }:null;
-      if(openaiOptions)runLog("info",`OpenAI mode: Image API edits / target ${openAIImageSize(gp.aspect,"gpt-image-2")} / ${openaiOptions.quality} quality / ${openaiOptions.outputFormat}`);
+      if(openaiOptions)runLog("info",`OpenAI mode: Image API edits / target ${openAIImageSize(resolvedAspect,"gpt-image-2")} / ${openaiOptions.quality} quality / ${openaiOptions.outputFormat}`);
       if(geminiOptions)runLog("info",`Gemini mode: native image edit / aspect ${geminiOptions.aspect} / 2K where supported`);
       setProcMsg("Generating — 15-30s...");
-      const parts=[{text:prompt},{inlineData:{mimeType:"image/jpeg",data:apiImg.base64}}];
+      // The catalogue studio labels every reference before sending it
+      // (buildContents, catalog-studio.html). Naming the image is what gives
+      // the VIEWPOINT LOCK something to point at.
+      const parts=[
+        {text:prompt},
+        {text:"REFERENCE IMAGE 1: GEOMETRY AND VIEWPOINT MASTER - copy the shelf's exact silhouette, tier count, board endpoints, tube and post positions, overhangs, colour, material, joints, and the vantage it is seen from. Do not copy its room or styling."},
+        {inlineData:{mimeType:"image/jpeg",data:apiImg.base64}},
+      ];
       let contents=[{parts}];
       let finalPrompt=prompt;
       let imageBase64s=[apiImg.base64];
@@ -1637,6 +1675,9 @@ function App(){
       <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
         {ASPECTS.map(a=><button key={a.id} onClick={()=>setP("aspect",a.id)} style={{...S.pill,...(params.aspect===a.id?S.pillOn:{})}}>{a.l}</button>)}
       </div>
+      {params.aspect==="match"?<div style={{fontSize:10,color:"#8d887c",marginTop:5,lineHeight:1.35}}>
+        {aspectSourceImg?`Source ${aspectSourceImg.width}\u00d7${aspectSourceImg.height} \u2014 generating ${resolvedAspect}`:"Load a source image to resolve the ratio"}
+      </div>:null}
     </div>):null}
   </div>);
 
