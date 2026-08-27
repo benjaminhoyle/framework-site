@@ -22,9 +22,9 @@ whatever exists on its next pass.
 
 | System | Owns |
 |---|---|
-| **Zoho Books** | invoice, line items, prices, discounts, payment, eTIMS, customer billing identity |
-| **Airtable** | production status, delivery scheduling and coordination, QC, post-sale check-in, marketing links |
-| **Both, and they must agree** | a client's phone and address. Base - Clients is what the workshop and the driver read; the Zoho contact is what the books bill. See "Three copies of a phone number" below. |
+| **Zoho Books** | invoice, line items, prices, discounts, payment **date and balance**, eTIMS, customer billing identity |
+| **Airtable** | production status, delivery scheduling and coordination, QC, post-sale check-in, marketing links, **whether a client can be invoiced VAT-exempt** |
+| **Both, and they must agree** | a client's phone, address **and KRA PIN**. Base - Clients is what the workshop and the driver read; the Zoho contact is what the books bill. See "Three copies of a phone number" below. |
 
 Delivery **date** is the sharp case: Zoho seeds it once at order creation and
 Airtable owns it forever after, because deliveries get rescheduled and Zoho never
@@ -64,6 +64,7 @@ old house.
 | `netlify/functions/sync-now.mjs` | `/api/sync-now` — a pass on demand from the staff menu, behind `ZOHO_PUSH_KEY`. |
 | `scripts/test-reconcile.mjs` | Every check, against fixtures. No network — the Zoho budget makes live testing of the checks impractical, and they are the part most worth testing. |
 | `scripts/test-push.mjs` | Design → lines, including the cases that would invoice the wrong thing quietly. |
+| `scripts/add-sync-fields.mjs` | The three Airtable fields the sync writes, created by hand. Dry run by default, idempotent, and it says the one thing it cannot do. |
 
 ### Airtable tables it writes
 
@@ -71,6 +72,16 @@ old house.
   running, and did it find anything?"
 - **`Sync - Log`** (`tblWXSMuTUny856S3`) — findings only. **A clean pass writes
   zero rows here.** Recurring drift updates `Last Seen` rather than adding a row.
+- **`Balance to Pay`** on Orders - Pipeline — the invoice's own `balance`.
+  Written silently, like the eTIMS number: it is Zoho's arithmetic, and a
+  difference is never something a person has to act on — it is a payment
+  landing. Reporting it would put a fresh log row against every invoice every
+  time somebody paid.
+- **`Payment Received`** on Orders - Pipeline — the FIRST payment on the
+  invoice. See "The date the month is counted in" below; this one is not
+  cosmetic.
+- **`KRA PIN`** on Base - Clients — blanks only, from the PIN Zoho stamped on
+  the client's most recent invoice.
 - **`Sync Status`** on Orders - Pipeline — `OK` / `Warning` / `Error` /
   `Held - in production`. The log answers "what is wrong across the board"; this
   answers "can I trust this order", on the order itself, where the workshop and
@@ -119,6 +130,13 @@ without a `customerpayments` scope.
 
 Banking and expenses are deliberately absent: that is the line between this
 cloud credential and the wider one in `framework-ops/.env`.
+
+The balance, the first payment date and the KRA PIN all landed **without
+widening this**. The balance rides on the invoice detail already being fetched,
+the PIN on the same detail and on `contacts.UPDATE` already being held for phone
+and address, and payments were always readable under `invoices.READ`. If a
+change here ever seems to need a seventh scope, that is worth a second look
+before it is granted.
 
 The first live push, INV640437, failed its contact write with `401 code 57`
 because the original token had no `contacts.UPDATE` — and `invoices.UPDATE`,
@@ -252,6 +270,75 @@ different fact — a client who moves house must not rewrite where last year's
 shelf was delivered — so it is written once, at order time, and never touched
 again.
 
+**The KRA PIN has exactly the same three copies**, and they divide the same way:
+`Base - Clients.KRA PIN` and the Zoho contact's `tax_reg_no` are one live fact
+written together, and the invoice's own `tax_reg_no` is a snapshot Zoho stamps
+at invoice time. That third copy is not ours to write — this credential has no
+`invoices.UPDATE`, deliberately — and it should not be, for the reason the
+address is not: an invoice records the registration a sale was made under, and
+a PIN corrected in 2027 must not rewrite what a 2025 invoice was filed as.
+
+It is, however, worth *reading*. The invoice detail is already fetched for every
+non-draft invoice, so the PIN Zoho stamped on it is free — and it is the only
+cheap source there is. The contact LIST response omits `tax_reg_no` entirely, so
+reading PINs live would cost a detail call for each of 374 contacts against a
+2,000-a-day budget. The reconciler therefore **seeds `Base - Clients.KRA PIN`
+from the client's most recent invoice, into blanks only**, which brought a
+hundred-odd PINs across without anybody typing one and cost nothing.
+
+Prefill in the form runs the other way round from phone and address. Those come
+from Zoho and fall back to Airtable; the PIN comes from **Airtable** and falls
+back to Zoho, because Airtable's copy is the one the reconciler has been keeping
+current. Where the two disagree the form says which record holds the other value
+— "Zoho has P051755191T", not "the other one says".
+
+**A PIN and a tax treatment travel together, always.** Ben's rule, verbatim:
+*if no KRA number, not registered; if there is one, then they are.* The PIN is
+the fact and the treatment follows from it, so the two are never set apart.
+
+Zoho enforces the same thing from its side — it will not hold `tax_reg_no`
+against a contact it believes is not VAT-registered, and 258 of 374 contacts are
+`vat_not_registered`, the default for anyone created quickly. So typing a PIN
+into the form sets `tax_treatment: vat_registered` as well, and that is what
+typing one *means* here: this client is invoiced in their own
+registered name. It changes how the customer is classified, not what they are
+charged — the rate is the organisation's and `is_taxable` is untouched — and the
+result screen says so out loud rather than letting it happen quietly.
+
+**One consequence of writing the client records last.** The invoice is raised
+before them, deliberately, so a failed contact write can never cost a rep the
+draft they were raising. The price of that ordering is a single case: an
+*existing* client given a PIN for the first time had none on their contact when
+the invoice was stamped, so that draft does not carry it. Their next one will,
+and the result screen says to re-save the draft in Zoho if this one needs it. A
+*new* client is unaffected — their contact is created before the invoice, PIN
+and all.
+
+### VAT exempt
+
+`Base - Clients.VAT Exempt` is a checkbox, and it is **Airtable's outright** —
+nothing syncs it, in either direction.
+
+That is not a gap left for later; it is what the data says. Zoho models a real
+exemption as `is_taxable: false` on the contact, and **no contact in the books
+has it** — all 374 are taxable, split only between `vat_registered` (116) and
+`vat_not_registered` (258), which is a statement about the *customer's* own
+registration and not about whether we charge them VAT. There is nothing to
+reconcile to, so a field pretending to mirror one would be a field that is
+always false for the wrong reason.
+
+What it is instead is the standing fact somebody knows and Zoho does not: a
+mission, an NGO, an exemption certificate in a drawer. The order form reads it
+and says so when the client is chosen, because the moment an invoice is raised
+is the moment it matters and the person raising it is not usually the person who
+knows. Nothing acts on it automatically — deciding what an exempt invoice looks
+like is an accounting decision, not a sync one.
+
+If it should ever *drive* invoicing, the next step is `is_taxable: false` on the
+Zoho contact and a tax exemption reason beside it, and at that point the same
+question the phone number answered has to be answered again: who owns it, and
+what happens when the two disagree.
+
 ### Correcting a client
 
 Choosing a client reads **both** live records. Prefill prefers Zoho and falls
@@ -368,6 +455,109 @@ Two traps in that table:
 - **`0:00` is a real time, not a blank.** The blank test is `undefined | null |
   ''`, not falsiness, or a midnight window would be overwritten on every pass.
 
+### What the driver is told, and the money on it
+
+`Delivery Details Summary` is the message the delivery team is sent. It gains one
+block, and the block **says nothing at all when the invoice is settled** — which
+is nearly always: 306 of 308 paid invoices carry a zero balance, because payment
+comes before delivery. A line that appeared on every job saying "0 to pay" would
+be a line people stop reading, and the one time it matters is the one time they
+would miss it.
+
+That is what `Balance to Pay` being **zero rather than blank** is for. Blank
+means no issued invoice has been read yet; zero means nothing is owed. The
+formula tests `> 0`, so both stay quiet and only a real debt speaks.
+
+**Applied 2026-08-27.** It sits in Orders - Pipeline → Delivery Details Summary,
+immediately above the `Delivery Notes` clause at the end:
+
+```
+IF(
+  {Balance to Pay} > 0,
+  "*⚠️ Balance to pay:*" & "\n" & "Ksh " &
+  IF(
+    LEN(ROUND({Balance to Pay}, 0) & "") > 6,
+    LEFT(ROUND({Balance to Pay}, 0) & "", LEN(ROUND({Balance to Pay}, 0) & "") - 6) & "," &
+      MID(ROUND({Balance to Pay}, 0) & "", LEN(ROUND({Balance to Pay}, 0) & "") - 5, 3) & "," &
+      RIGHT(ROUND({Balance to Pay}, 0) & "", 3),
+    IF(
+      LEN(ROUND({Balance to Pay}, 0) & "") > 3,
+      LEFT(ROUND({Balance to Pay}, 0) & "", LEN(ROUND({Balance to Pay}, 0) & "") - 3) & "," &
+        RIGHT(ROUND({Balance to Pay}, 0) & "", 3),
+      ROUND({Balance to Pay}, 0) & ""
+    )
+  ) & "\n\n",
+  ""
+) &
+```
+
+The nesting is all thousands separators. Airtable has no number formatting in
+formulas, and "Ksh 195000" is a figure somebody has to count the digits of
+before they can read it aloud to a customer — which is exactly what the person
+holding this message is about to do. The two branches cover four to nine digits;
+below a thousand it prints as it stands. Verified live: 17500 renders
+`Ksh 17,500` and 4052 renders `Ksh 4,052`.
+
+**A correction to what this file used to say.** The API *can* update a formula —
+`PATCH …/fields/{id}` with `{"options": {"formula": …}}` was accepted and came
+back `isValid: true`. The 2026-07-29 note that the field-update endpoint takes
+"only name and description" was about **single-select options**, which genuinely
+cannot be changed, and it had been over-generalised to every field type. Formulas
+are written with field **ids**, not names, so read the current one back from the
+schema endpoint and edit that string rather than retyping it with names.
+
+Nothing else reads `Balance to Pay`, so until the formula is edited the field is
+simply written and not shown. `Delivery Details with Order` and `Docs Summary`
+are both formulas over this one, so they pick it up for free.
+
+### The date the month is counted in
+
+`Payment Received` is now **written** from the first payment on the invoice,
+where it used to be compared and complained about. That is a bigger change than
+it looks, and it is worth knowing why before the first write pass runs.
+
+The old reasoning was sound as far as it went: Airtable recorded the day a
+deposit confirmed the order, Zoho the day it cleared, and warning about a
+three-day gap produced 19 standing warnings of which 15 meant nothing. But two
+dates for one event is two answers to one question, and this particular field is
+not decoration:
+
+```
+Order Month  =  IF({Payment Received}, YEAR(...) & "-" & MONTH(...), "")
+Production Start for Calculation  =  IF({Manual Production Start}, …,
+                                        IF({Payment Received}, {Payment Received},
+                                           {Order Received}))
+```
+
+So the month a sale is counted in follows this field, and so does the production
+timing baseline. **Expect some orders to change months on the first write pass**
+— any whose hand-entered date sat within a few days of a month boundary on the
+other side of the invoice's. Zoho owns money, so Zoho settles it, but that is a
+number moving in reports somebody may have quoted.
+
+Two things it is careful about:
+
+- **The FIRST payment, never `last_payment_date`.** That field is the last one
+  and is wrong for all 17 split-payment invoices, and the deposit is the event
+  Airtable has always meant.
+- **A big move is mentioned once.** More than seven days and the correction gets
+  an Info row, because the usual cause is an order pointed at the wrong invoice.
+  The next pass finds the two agreeing, so the finding closes itself.
+
+And one thing it will not do: when Airtable holds a payment date and Zoho has no
+payment at all against the invoice, that is a **Warning**, not a write. Carrying
+Airtable's date into the books is the direction the whole design forbids; a
+receipt missing from the books is a real thing to go and find.
+
+**What it costs.** `last_payment_date` is free on the invoice, and for an invoice
+paid in one go it *is* the first payment — so a stored date already equal to it
+needs no lookup, which is nearly every invoice once this has run once. A
+split-payment invoice keeps costing one call a pass, because it settles on a
+first date that by definition is not the last. That is the right way round: the
+cheap case goes quiet, and the seventeen worth re-checking are re-checked. A full
+pass moves from ~350 calls to ~370 in the steady state, and to ~600 on the first
+pass that corrects everything.
+
 Two things about when this actually happens:
 
 - **The reconciler never creates orders.** It matches invoices to orders that
@@ -438,8 +628,16 @@ option waiting for it since the beginning.
 | `line-totals-match-invoice` | Error | Line totals sum to the invoice goods total, once they carry invoiced prices |
 | `catalogue-prices-agree` | Error | Live Zoho item and live Airtable product prices match |
 | `line-has-order` | Warning | Every line item belongs to an order |
-| `metadata-drift` | Warning | Payment date, delivery charge |
+| `metadata-drift` | Warning | Airtable records a payment the books have never seen |
+| `metadata-drift` | Info | A payment date corrected by more than a week — applied, and worth a glance |
 | `paid-invoice-no-order` | Info | A paid invoice with nowhere to land |
+
+Three fields the sync writes appear in none of these, on purpose. The **delivery
+charge**, the **balance** and a client's **KRA PIN** are Zoho's own facts arriving
+where they belong; a difference is not a discrepancy, it is a payment landing or
+a blank being filled. The balance is the sharp case — it moves every time
+somebody pays, so reporting it would mean a fresh log row per invoice per
+payment, and the log's entire worth is that a clean pass writes nothing to it.
 
 A price divergence blocks pushes **containing that item** and nothing else — one
 stale price must not stop unrelated sales.
@@ -456,13 +654,19 @@ schedule has to be designed around.
 |---|---|
 | Incremental, nothing changed | ~2 calls |
 | Incremental, a few invoices changed | ~2 + 1 per changed invoice |
-| Full | ~350 calls |
+| Full | ~370 calls (~600 on the first pass that corrects payment dates) |
 
 Three deliberate economies keep it there: an incremental pass skips the
 catalogue check (prices do not move every five minutes), payments are only
 fetched when Airtable's stored date disagrees with the invoice's own
-`last_payment_date`, and a daily-quota 429 fails immediately rather than
-retrying — retrying a daily limit only burns tomorrow's allowance too.
+`last_payment_date` — see "The date the month is counted in" for why that stays
+true now the date is written rather than reported — and a daily-quota 429 fails
+immediately rather than retrying, because retrying a daily limit only burns
+tomorrow's allowance too.
+
+The balance and the KRA PIN cost nothing at all: both come off an invoice detail
+that was already being fetched. Base - Clients is one extra *Airtable* read a
+pass, which has no daily quota to spend.
 
 Every run records its own call count in `Sync - Runs.Notes`, so the budget is
 visible rather than guessed at.
@@ -570,6 +774,55 @@ Each of these cost a wrong answer while building this.
       `io`, so every check is exercised against fixtures. Mutation-checked: both
       the `Delivered`-is-protected bug and the delivery VAT bug are caught.
 
+### Balance, payment date and KRA PIN — done 2026-08-27
+
+All three shipped and were applied to the live base in one sitting.
+
+1. `add-sync-fields.mjs --commit` created `Balance to Pay` on Orders - Pipeline
+   (`fld1xg1yAzG0wF67t`) and `KRA PIN` (`fldIAutQEOZBo147G`) and `VAT Exempt`
+   (`fldE8jgjBZINbJel5`) on Base - Clients.
+2. The balance block went into `Delivery Details Summary` through the API.
+3. A read-only full pass, then a write pass, both run locally against the live
+   data: **313 invoices scanned, 348 Zoho calls, 205 orders written, 20 clients
+   written, 0 lines** (the line backfill was already done), 5 errors, 0 warnings.
+   The run row is `recGIaKxk2vHY4ygw`.
+
+Order the steps that way if the base is ever rebuilt: Airtable refuses a PATCH
+naming a field that does not exist, and `patch()` sends ten records at a time, so
+a write pass run before step 1 dies on its first batch. It dies loudly —
+`Sync - Runs` records `Failed` with `UNKNOWN_FIELD_NAME` — which is why there is
+no guard in the code for it.
+
+**What it actually moved.**
+
+| | |
+|---|---|
+| Balances written (202 of them zero) | **205** |
+| Orders with anything still owed | **3** — `303_Mary-Mukuria` 17,500, `298_Lucas-Destrijcker` 28,050, `306_Chiara-Magrelli` 4,052, all `To Launch Production` |
+| Payment dates corrected | **20** |
+| …of those, ones that move an order's `Order Month` | **3** |
+| …of those, more than 7 days out, so an Info row each | **2** |
+| Clients given a KRA PIN | **20** of 189 |
+| New errors introduced | **0** — all 5 are the pre-existing `line-totals-match-invoice` cases |
+
+The three month movers are `278_Logan-Christi` (Jun → Jul), `272_Namikoye-Lusweti`
+(May → Jun) and `145_Ahmed-Ayman` (Nov 2025 → Sep 2025). The earlier estimate of
+seven was made against `last_payment_date`; fetching the real first payment
+resolved four of them back into their original month, which is the whole reason
+the first payment is what gets written.
+
+`145_Ahmed-Ayman` is the one worth knowing about: Airtable had 2025-11-03 against
+an invoice whose only payment was 2025-09-06 — a date recorded two months after
+the money arrived, where every other case was a few days before. Ben's call,
+2026-08-27: **Zoho's first payment is the source of truth**, so it was written.
+
+**Three PINs to look at.** The seeding mirrors what Zoho holds and fills blanks
+only; it does not judge. Two clients came out sharing one PIN — `Knead Bakery`
+and `Siafu Homes` are both `P050000003G` — and `Cheche Books` has `P000000003G`.
+A PIN is unique to a taxpayer, so at least two of those three are wrong in Zoho,
+and the fix belongs on the Zoho contact rather than in Airtable. Nothing here
+overwrites them once corrected: the seeding only ever fills a blank.
+
 ### Next
 - [x] `AIRTABLE_TOKEN` in Netlify env. Not `AIRTABLE_BASE` — see above.
 - [x] The six `ZOHO_*` vars in Netlify env
@@ -614,6 +867,10 @@ times over — but do it in this order.
 7. Last: `SYNC_SCHEDULE_ENABLED=1`.
 
 ### Open decisions
+- [ ] Should `VAT Exempt` drive anything? Today it is a flag the order form
+      reports and nothing acts on, because Zoho records no exemption against any
+      contact. Making it real means `is_taxable: false` and an exemption reason
+      on the Zoho contact, and answering who owns it — see "VAT exempt".
 - [ ] eTIMS field in Airtable — Zoho-owned, one-way, nothing blocks on it
 - [ ] Quotes vs draft-as-quote (would need the PDF template redone)
 - [ ] `sku = module_id` — needs `is_sku_enabled` switched on in Zoho

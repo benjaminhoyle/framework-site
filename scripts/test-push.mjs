@@ -8,7 +8,8 @@ import assert from 'node:assert/strict';
 import {
   zohoItemName, finishLabel, groupDesign, buildLineItems, linesTotal, quoteDrift,
   deliveryLine, goodsLines, samePhone, sameAddress, contactDetails, contactName,
-  contactUpdate, newContactPayload, airtableClientPatch, clientDisagreement, moneyValue
+  contactUpdate, newContactPayload, airtableClientPatch, clientDisagreement, moneyValue,
+  samePin, normalisePin
 } from '../netlify/functions/_push.mjs';
 import { draftInvoicePayload } from '../netlify/functions/_zoho.mjs';
 
@@ -324,7 +325,7 @@ test('a corrected phone patches Base - Clients and keeps the old one in Notes', 
   assert.equal(out.fields['Primary Phone Number'], '0733999888');
   assert.equal(out.fields.Address, undefined, 'a phone change must not touch the address');
   assert.match(out.fields.Notes, /^2026-08-23 \(shelf designer\): previous phone 0722123456\ninterior designer$/);
-  assert.deepEqual(out.changed, { phone: true, address: false });
+  assert.deepEqual(out.changed, { phone: true, address: false, pin: false });
 });
 
 test('a blank never erases what Base - Clients holds', () => {
@@ -342,7 +343,7 @@ test('filling a blank client leaves no "previous" note', () => {
 test('two real, different numbers are a disagreement for a person to settle', () => {
   const d = clientDisagreement({ phone: '0722123456', address: '12 Riverside Drive' },
     { 'Primary Phone Number': '0733999888', Address: '12 Riverside Drive' });
-  assert.deepEqual(d, { phone: true, address: false });
+  assert.deepEqual(d, { phone: true, address: false, pin: false });
 });
 
 test('a blank on one side is a gap, not a disagreement', () => {
@@ -350,13 +351,94 @@ test('a blank on one side is a gap, not a disagreement', () => {
   // would make the warning mean nothing.
   const d = clientDisagreement({ phone: '0722123456', address: '' },
     { 'Primary Phone Number': '', Address: '12 Riverside Drive' });
-  assert.deepEqual(d, { phone: false, address: false });
+  assert.deepEqual(d, { phone: false, address: false, pin: false });
 });
 
 test('the same number written two ways is not a disagreement', () => {
   const d = clientDisagreement({ phone: '+254722123456', address: '12 Riverside Drive' },
     { 'Primary Phone Number': '0722123456', Address: '12  riverside drive\n' });
-  assert.deepEqual(d, { phone: false, address: false });
+  assert.deepEqual(d, { phone: false, address: false, pin: false });
+});
+
+test('two different PINs are a disagreement; one retyped is not', () => {
+  // A PIN read off a certificate arrives lowercase or spaced. Treating that as
+  // a correction would write a pointless update and leave a "previous KRA PIN"
+  // note recording no change at all -- the same trap samePhone exists for.
+  assert.equal(normalisePin(' p051755191t '), 'P051755191T');
+  assert.ok(samePin('P051755191T', 'p051 755 191 t'));
+  assert.ok(!samePin('P051755191T', 'P051755191Y'));
+  assert.deepEqual(
+    clientDisagreement({ phone: '', address: '', pin: 'P051755191T' }, { 'KRA PIN': 'P051755191Y' }),
+    { phone: false, address: false, pin: true }
+  );
+  assert.deepEqual(
+    clientDisagreement({ phone: '', address: '', pin: 'P051755191T' }, { 'KRA PIN': 'p051 755 191 t' }),
+    { phone: false, address: false, pin: false }
+  );
+});
+
+// ---- the KRA PIN, on both live records ------------------------------------
+test('a PIN and a tax treatment are set together, or neither is', () => {
+  // Zoho will not hold tax_reg_no against a contact it believes is not
+  // VAT-registered, and 258 of 374 contacts default to exactly that. Sending
+  // the PIN alone would fail for precisely the clients this exists to serve.
+  const created = newContactPayload({ first_name: 'Ando', last_name: 'Foods', pin: 'p051946109m' });
+  assert.equal(created.tax_reg_no, 'P051946109M');
+  assert.equal(created.tax_treatment, 'vat_registered');
+
+  const plain = newContactPayload({ first_name: 'Rose', last_name: 'Ouma', phone: '0722123456' });
+  assert.equal(plain.tax_reg_no, undefined, 'no PIN typed is not a statement about VAT');
+  assert.equal(plain.tax_treatment, undefined);
+});
+
+test('setting a PIN on an existing contact reports that it registers them', () => {
+  const contact = {
+    contact_name: 'Ando Foods Ltd', tax_treatment: 'vat_not_registered',
+    contact_persons: [{ contact_person_id: 'cp1', is_primary_contact: true, mobile: '0722743449' }]
+  };
+  const change = contactUpdate(contact, { pin: 'P051946109M', today: '2026-08-27' });
+  assert.equal(change.payload.tax_reg_no, 'P051946109M');
+  assert.equal(change.payload.tax_treatment, 'vat_registered');
+  assert.equal(change.changed.pin, true);
+  assert.equal(change.registered, true, 'the rep is told, rather than finding out from an accountant');
+});
+
+test('a contact already registered is not reported as newly registered', () => {
+  const contact = { tax_treatment: 'vat_registered', tax_reg_no: 'P051000001A', contact_persons: [] };
+  const change = contactUpdate(contact, { pin: 'P051946109M', today: '2026-08-27' });
+  assert.equal(change.registered, false);
+  assert.deepEqual(change.replaced, ['previous KRA PIN P051000001A']);
+});
+
+test('a PIN retyped exactly as it stands is not a correction', () => {
+  // Costs an API call and leaves a note recording no change.
+  const contact = { tax_treatment: 'vat_registered', tax_reg_no: 'P051946109M', contact_persons: [] };
+  assert.equal(contactUpdate(contact, { pin: 'p051 946 109 m', today: '2026-08-27' }), null);
+});
+
+test('the same PIN decision is made on both records', () => {
+  // contactUpdate and airtableClientPatch share samePin for a reason: if they
+  // diverged, one record would be written and the other skipped, and a
+  // correction would converge on two different answers.
+  const row = { id: 'rec1', fields: { Name: 'Ando Foods Ltd', 'KRA PIN': 'P051000001A' } };
+  const patch = airtableClientPatch(row, { pin: 'p051946109m', today: '2026-08-27' });
+  assert.equal(patch.fields['KRA PIN'], 'P051946109M', 'stored normalised, so the two sides match letter for letter');
+  assert.equal(patch.changed.pin, true);
+  assert.match(patch.fields.Notes, /previous KRA PIN P051000001A/);
+  assert.equal(airtableClientPatch(row, { pin: 'P051000001A', today: '2026-08-27' }), null);
+});
+
+test('a blank PIN never erases one', () => {
+  const row = { id: 'rec1', fields: { 'KRA PIN': 'P051946109M', 'Primary Phone Number': '0722743449' } };
+  assert.equal(airtableClientPatch(row, { pin: '', phone: '0722743449', today: '2026-08-27' }), null);
+  const contact = { tax_reg_no: 'P051946109M', tax_treatment: 'vat_registered', contact_persons: [] };
+  assert.equal(contactUpdate(contact, { pin: '', today: '2026-08-27' }), null);
+});
+
+test('the PIN is read whichever of its two names Zoho used', () => {
+  assert.equal(contactDetails({ tax_reg_no: 'P051946109M' }).pin, 'P051946109M');
+  assert.equal(contactDetails({ vat_reg_no: 'P051946109M' }).pin, 'P051946109M');
+  assert.equal(contactDetails(null).pin, '');
 });
 
 // ---- the fee that vanished on INV640437 ---------------------------------

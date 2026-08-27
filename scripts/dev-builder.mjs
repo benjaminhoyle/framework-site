@@ -85,27 +85,40 @@ const designHandler = built.make(getStore);
  *
  * Dev only. It lives in scripts/, which the site 404s, and is never bundled.
  */
-// [id, name, [zoho phone, zoho address], [airtable phone, airtable address]]
+// [id, name, [zoho phone, address, PIN], [airtable phone, address, PIN], VAT exempt]
 // The interesting rows are the ones where the two sides differ, and the ones
 // where one side is blank -- a gap the first push fills, not a disagreement.
+// Most people have no PIN at all, which is the ordinary case and the one the
+// form has to look unremarkable in.
 const FAKE_CLIENTS = [
-  ['4099765000000860001', 'Rose Ouma', ['0722123456', '34 Garden Estate Rd.'], ['0722123456', '34 Garden Estate Rd.']],
-  ['4099765000000860002', 'Zeinab Aidid', ['', ''], ['', 'Heri Paradise Apartments, Dennis Pritt Rd, Kilimani']],
-  ['4099765000000860003', 'Émilie Bichon', ['0114277446', ''], ['0114277446', 'Kitisuru Ridge Villas House 12']],
-  ['4099765000000860004', 'Anne Wanjiru', ['0733999888', ''], ['0711555444', '3 Karen Road']],
-  ['4099765000000860005', 'Joanne Karanja', ['0700111222', '9 Ngong Road'], ['0700111222', '11 Ngong Road']],
-  ['4099765000000860006', 'Bernard Clouteau', ['', ''], ['', '']],
-  ['4099765000000860007', 'Kerstin Karlstrom', ['+254721000111', 'Lavington Green'], ['0721000111', 'lavington green']],
-  ['4099765000000860008', 'Ando Foods Ltd', ['0722743449', 'Westlands'], null],
-  ['4099765000000860009', 'Tom Crisp', ['', 'Karen'], ['', 'Karen']],
-  ['4099765000000860010', 'Suzanne Steyn', ['0733540066', '34 Garden Estate Rd.'], ['0733540066', '34 Garden Estate Rd.']]
-].map(([contact_id, name, zoho, airtable]) => ({ contact_id, name, zoho, airtable }));
+  ['4099765000000860001', 'Rose Ouma', ['0722123456', '34 Garden Estate Rd.', ''], ['0722123456', '34 Garden Estate Rd.', '']],
+  ['4099765000000860002', 'Zeinab Aidid', ['', '', ''], ['', 'Heri Paradise Apartments, Dennis Pritt Rd, Kilimani', '']],
+  ['4099765000000860003', 'Émilie Bichon', ['0114277446', '', ''], ['0114277446', 'Kitisuru Ridge Villas House 12', '']],
+  ['4099765000000860004', 'Anne Wanjiru', ['0733999888', '', ''], ['0711555444', '3 Karen Road', '']],
+  ['4099765000000860005', 'Joanne Karanja', ['0700111222', '9 Ngong Road', ''], ['0700111222', '11 Ngong Road', '']],
+  ['4099765000000860006', 'Bernard Clouteau', ['', '', ''], ['', '', '']],
+  ['4099765000000860007', 'Kerstin Karlstrom', ['+254721000111', 'Lavington Green', ''], ['0721000111', 'lavington green', '']],
+  // A PIN Zoho has and Airtable does not: the gap the reconciler's seeding
+  // closes on its own, and the push fills the moment somebody raises an order.
+  ['4099765000000860008', 'Ando Foods Ltd', ['0722743449', 'Westlands', 'P051946109M'], null],
+  ['4099765000000860009', 'Tom Crisp', ['', 'Karen', ''], ['', 'Karen', '']],
+  // Two PINs for one company, which is a person having retyped one of them
+  // wrong -- the case the flag under the box exists for.
+  ['4099765000000860011', 'Baraza Media Lab', ['0202000111', 'Riverside Drive', 'P051755191T'], ['0202000111', 'Riverside Drive', 'P051755191Y']],
+  // Exempt, and nothing in Zoho says so. Airtable is the only record of it,
+  // which is exactly why the form has to say it out loud.
+  ['4099765000000860012', 'Kileleshwa Mission', ['0700888999', 'Kileleshwa'], ['0700888999', 'Kileleshwa', 'P051000123Z'], true],
+  ['4099765000000860010', 'Suzanne Steyn', ['0733540066', '34 Garden Estate Rd.', ''], ['0733540066', '34 Garden Estate Rd.', '']]
+].map(([contact_id, name, zoho, airtable, vat_exempt]) => ({ contact_id, name, zoho, airtable, vat_exempt }));
 
 /** Mirrors samePhone/sameAddress in _push.mjs closely enough to demo the flag. */
 const sameish = (a, b) => String(a || '').replace(/\D/g, '').replace(/^(?:254|0)/, '').slice(-9)
   === String(b || '').replace(/\D/g, '').replace(/^(?:254|0)/, '').slice(-9);
 const sameText = (a, b) => String(a || '').trim().replace(/\s+/g, ' ').toLowerCase()
   === String(b || '').trim().replace(/\s+/g, ' ').toLowerCase();
+/** Mirrors samePin. */
+const samePinish = (a, b) => String(a || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+  === String(b || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 let fakeInvoice = 640500;
 
@@ -116,19 +129,25 @@ function fakePush(body) {
   if (body.action === 'client') {
     const found = FAKE_CLIENTS.find((c) => c.contact_id === String(body.contact_id));
     if (!found) return { ok: false, error: 'bad_contact_id' };
-    const [zp, za] = found.zoho;
-    const [ap, aa] = found.airtable || ['', ''];
+    const [zp, za, zpin = ''] = found.zoho;
+    const [ap, aa, apin = ''] = found.airtable || ['', '', ''];
     return {
       ok: true,
       contact_id: found.contact_id,
       name: found.name,
       phone: zp || ap,
       address: za || aa,
-      zoho: { phone: zp, address: za },
-      airtable: found.airtable ? { phone: ap, address: aa } : null,
+      // Airtable first for the PIN, Zoho first for the other two -- see the
+      // note on the real endpoint. Getting this backwards here would make the
+      // "Zoho has ..." flag appear on the wrong side of every disagreement.
+      pin: apin || zpin,
+      vat_exempt: Boolean(found.vat_exempt),
+      zoho: { phone: zp, address: za, pin: zpin },
+      airtable: found.airtable ? { phone: ap, address: aa, pin: apin } : null,
       differs: {
         phone: Boolean(zp && ap) && !sameish(zp, ap),
-        address: Boolean(za && aa) && !sameText(za, aa)
+        address: Boolean(za && aa) && !sameText(za, aa),
+        pin: Boolean(zpin && apin) && !samePinish(zpin, apin)
       }
     };
   }
@@ -164,8 +183,17 @@ function fakePush(body) {
         contact_id: body.contact_id || 'new', name, created,
         airtable: created ? { ok: true, created: true, record_id: 'recFAKE' } : null
       },
-      contact_saved: created || !body.phone ? null : { ok: true, phone: true, address: false, replaced: ['previous phone 0722123456'] },
-      client_saved: created || !body.phone ? null : { ok: true, phone: true, address: false, replaced: ['previous phone 0711555444'] },
+      contact_saved: created || !body.phone ? null : {
+        ok: true, phone: true, address: false, pin: Boolean(body.kra_pin),
+        // The branch worth being able to see: setting a PIN also moves the
+        // contact to vat_registered, and the result screen has to say so.
+        registered: Boolean(body.kra_pin),
+        replaced: ['previous phone 0722123456']
+      },
+      client_saved: created || !body.phone ? null : {
+        ok: true, phone: true, address: false, pin: Boolean(body.kra_pin),
+        replaced: ['previous phone 0711555444']
+      },
       skipped_fields: [],
       warnings: feeTyped && !fee
         ? [`The delivery fee "${body.delivery_fee}" was not a usable amount, so no delivery line was added.`]

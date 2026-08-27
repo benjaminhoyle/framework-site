@@ -212,9 +212,22 @@ export const sameAddress = (a, b) =>
   String(a || '').trim().replace(/\s+/g, ' ').toLowerCase()
   === String(b || '').trim().replace(/\s+/g, ' ').toLowerCase();
 
+/**
+ * A KRA PIN as it is stored, whatever the rep typed.
+ *
+ * `P051755191T` is read off a certificate, a WhatsApp message or a business
+ * card, so it arrives lowercase, spaced, or with the label still attached. The
+ * PIN itself is eleven characters with no spaces in it, so anything that is not
+ * a letter or a digit is decoration.
+ */
+export const normalisePin = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+/** The same PIN, however it was typed. */
+export const samePin = (a, b) => normalisePin(a) === normalisePin(b);
+
 /** The phone and address a Zoho contact currently holds, flattened. */
 export function contactDetails(contact) {
-  if (!contact) return { phone: '', address: '', first_name: '', last_name: '', name: '' };
+  if (!contact) return { phone: '', address: '', pin: '', tax_treatment: '', first_name: '', last_name: '', name: '' };
   const person = (contact.contact_persons || []).find((p) => p.is_primary_contact)
     || (contact.contact_persons || [])[0] || {};
   return {
@@ -225,7 +238,16 @@ export function contactDetails(contact) {
     // mobile; prefer it, but do not lose a landline that is all there is.
     phone: person.mobile || person.phone || contact.mobile || contact.phone || '',
     address: (contact.shipping_address && contact.shipping_address.address)
-      || (contact.billing_address && contact.billing_address.address) || ''
+      || (contact.billing_address && contact.billing_address.address) || '',
+    // Zoho returns the KRA PIN under two names on the same record. `tax_reg_no`
+    // is the generic one and `vat_reg_no` the Kenya-flavoured copy; they hold
+    // the same string, and reading both means a response that carries only one
+    // of them still works.
+    pin: contact.tax_reg_no || contact.vat_reg_no || '',
+    // Read so it can be reported, not so it can be echoed back. See the note in
+    // `contactUpdate`: a PIN and a treatment have to agree, and this is what
+    // says whether they already do.
+    tax_treatment: contact.tax_treatment || ''
   };
 }
 
@@ -236,7 +258,7 @@ export function contactDetails(contact) {
  * contact-level `phone`/`mobile` in a Zoho response are read-through copies of
  * that person's, and sending them at the top level silently does nothing.
  */
-export function newContactPayload({ first_name, last_name, phone, address }) {
+export function newContactPayload({ first_name, last_name, phone, address, pin }) {
   const name = contactName(first_name, last_name);
   const person = {
     first_name: String(first_name || '').trim(),
@@ -255,6 +277,16 @@ export function newContactPayload({ first_name, last_name, phone, address }) {
   if (address) {
     payload.billing_address = { address: String(address).trim() };
     payload.shipping_address = { address: String(address).trim() };
+  }
+  // A PIN comes with a tax treatment or it does not come at all: Zoho will not
+  // hold `tax_reg_no` on a contact it believes is not VAT-registered, and the
+  // PIN is what puts the customer's own registration on the eTIMS invoice. So
+  // typing one here says "invoice this client in their registered name", and
+  // the two fields are set together or neither is.
+  const registered = normalisePin(pin);
+  if (registered) {
+    payload.tax_reg_no = registered;
+    payload.tax_treatment = 'vat_registered';
   }
   return payload;
 }
@@ -283,28 +315,33 @@ export function newContactPayload({ first_name, last_name, phone, address }) {
  * so "has this actually changed?" is answered identically on both sides and the
  * two records cannot converge on different answers.
  */
-export function airtableClientPatch(row, { phone, address, today }) {
+export function airtableClientPatch(row, { phone, address, pin, today }) {
   const current = row && row.fields ? row.fields : {};
   const nowPhone = String(current['Primary Phone Number'] || '');
   const nowAddress = String(current.Address || '');
+  const nowPin = String(current['KRA PIN'] || '');
   const wantPhone = String(phone || '').trim();
   const wantAddress = String(address || '').trim();
+  const wantPin = normalisePin(pin);
   const phoneChanged = Boolean(wantPhone) && !samePhone(wantPhone, nowPhone);
   const addressChanged = Boolean(wantAddress) && !sameAddress(wantAddress, nowAddress);
-  if (!phoneChanged && !addressChanged) return null;
+  const pinChanged = Boolean(wantPin) && !samePin(wantPin, nowPin);
+  if (!phoneChanged && !addressChanged && !pinChanged) return null;
 
   const fields = {};
   if (phoneChanged) fields['Primary Phone Number'] = wantPhone;
   if (addressChanged) fields.Address = wantAddress;
+  if (pinChanged) fields['KRA PIN'] = wantPin;
 
   const replaced = [];
   if (phoneChanged && nowPhone) replaced.push(`previous phone ${nowPhone}`);
   if (addressChanged && nowAddress) replaced.push(`previous address ${nowAddress.replace(/\s+/g, ' ').trim()}`);
+  if (pinChanged && nowPin) replaced.push(`previous KRA PIN ${nowPin}`);
   if (replaced.length) {
     const line = `${today} (shelf designer): ${replaced.join('; ')}`;
     fields.Notes = [line, String(current.Notes || '').trim()].filter(Boolean).join('\n').slice(0, 2000);
   }
-  return { fields, changed: { phone: phoneChanged, address: addressChanged }, replaced };
+  return { fields, changed: { phone: phoneChanged, address: addressChanged, pin: pinChanged }, replaced };
 }
 
 /**
@@ -322,19 +359,24 @@ export function clientDisagreement(zohoDetails, airtableFields) {
   const zAddress = String((zohoDetails && zohoDetails.address) || '');
   const aPhone = String(at['Primary Phone Number'] || '').trim();
   const aAddress = String(at.Address || '').trim();
+  const zPin = String((zohoDetails && zohoDetails.pin) || '');
+  const aPin = String(at['KRA PIN'] || '').trim();
   return {
     phone: Boolean(zPhone && aPhone) && !samePhone(zPhone, aPhone),
-    address: Boolean(zAddress && aAddress) && !sameAddress(zAddress, aAddress)
+    address: Boolean(zAddress && aAddress) && !sameAddress(zAddress, aAddress),
+    pin: Boolean(zPin && aPin) && !samePin(zPin, aPin)
   };
 }
 
-export function contactUpdate(contact, { phone, address, today }) {
+export function contactUpdate(contact, { phone, address, pin, today }) {
   const now = contactDetails(contact);
   const wantPhone = String(phone || '').trim();
   const wantAddress = String(address || '').trim();
+  const wantPin = normalisePin(pin);
   const phoneChanged = Boolean(wantPhone) && !samePhone(wantPhone, now.phone);
   const addressChanged = Boolean(wantAddress) && !sameAddress(wantAddress, now.address);
-  if (!phoneChanged && !addressChanged) return null;
+  const pinChanged = Boolean(wantPin) && !samePin(wantPin, now.pin);
+  if (!phoneChanged && !addressChanged && !pinChanged) return null;
 
   const payload = {};
   if (phoneChanged) {
@@ -354,15 +396,40 @@ export function contactUpdate(contact, { phone, address, today }) {
     payload.billing_address = { ...(contact.billing_address || {}), address: wantAddress };
     payload.shipping_address = { ...(contact.shipping_address || {}), address: wantAddress };
   }
+  // A PIN and a tax treatment travel together, always.
+  //
+  // Zoho will not hold `tax_reg_no` against a contact it believes is not
+  // VAT-registered, and 258 of 374 contacts are `vat_not_registered` — the
+  // default for anyone created quickly. So echoing the treatment we found would
+  // make the write fail for exactly the clients it exists to serve, while
+  // sending the PIN alone would be an incoherent record.
+  //
+  // Setting it is therefore part of what typing a PIN MEANS here: this client
+  // is invoiced in their own registered name, and their PIN belongs on the
+  // eTIMS invoice. It changes how the customer is classified, not what they are
+  // charged — the rate is the org's, and `is_taxable` is untouched — and the
+  // result screen says so rather than letting it happen quietly.
+  if (pinChanged) {
+    payload.tax_reg_no = wantPin;
+    payload.tax_treatment = 'vat_registered';
+  }
 
   // Only record what was actually replaced. "Previous phone: (blank)" is noise
   // in a field a person reads.
   const replaced = [];
   if (phoneChanged && now.phone) replaced.push(`previous phone ${now.phone}`);
   if (addressChanged && now.address) replaced.push(`previous address ${now.address.replace(/\s+/g, ' ').trim()}`);
+  if (pinChanged && now.pin) replaced.push(`previous KRA PIN ${now.pin}`);
   if (replaced.length) {
     const line = `${today} (shelf designer): ${replaced.join('; ')}`;
     payload.notes = [line, String(contact.notes || '').trim()].filter(Boolean).join('\n').slice(0, 2000);
   }
-  return { payload, changed: { phone: phoneChanged, address: addressChanged }, replaced };
+  return {
+    payload,
+    changed: { phone: phoneChanged, address: addressChanged, pin: pinChanged },
+    // Whether this write also moves the contact from `vat_not_registered`, so
+    // the rep is told rather than finding out from an accountant.
+    registered: pinChanged && now.tax_treatment !== 'vat_registered',
+    replaced
+  };
 }

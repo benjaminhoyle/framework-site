@@ -22,13 +22,15 @@ import { TABLES, all, patch, create } from './_airtable.mjs';
 const ERROR = 'Error', WARN = 'Warning', INFO = 'Info';
 
 /**
- * How far a payment date may differ before it is worth saying so.
+ * How far a payment date may MOVE before the correction is worth mentioning.
  *
- * Airtable records the day a deposit confirmed the order; Zoho records the day
- * it cleared. A day or three between those is the normal working gap, not
- * drift, and warning about it produced 19 standing warnings of which 15 meant
- * nothing. Past a week the two are describing different events and somebody
- * should look.
+ * Airtable recorded the day a deposit confirmed the order; Zoho records the day
+ * it cleared, and Zoho now wins — the date is written, not argued with. A day or
+ * three between those is the normal working gap and nobody needs telling that it
+ * has been tidied up. A move of more than a week is a different animal: usually
+ * an order pointed at the wrong invoice, occasionally a deposit recorded months
+ * before the books saw it. That is worth one line somebody can glance at, once,
+ * because the next pass finds the two already agreeing and says nothing.
  */
 const PAYMENT_DRIFT_DAYS = 7;
 const now = () => new Date().toISOString();
@@ -280,6 +282,9 @@ export const liveIO = {
   orders: () => all(TABLES.orders),
   lines: () => all(TABLES.lines),
   products: () => all(TABLES.products),
+  // Read for one reason: the KRA PIN seeding below. It is an Airtable read, so
+  // it costs nothing against the Zoho budget that shapes everything else here.
+  clients: () => all(TABLES.clients),
   items: () => zoho.items(),
   invoices: (since) => zoho.invoices(since ? { since } : {}),
   detail: (id) => zoho.invoice(id),
@@ -298,8 +303,11 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
   // five minutes, so an incremental pass skips it. Zoho allows 2,000 calls a
   // DAY; anything on the fast path has to justify its cost.
   const isFull = !since;
-  const [orders, lines, products, zItems, zInvoices] = await Promise.all([
+  const [orders, lines, products, clients, zItems, zInvoices] = await Promise.all([
     io.orders(), io.lines(), io.products(),
+    // Optional so an older caller — or a fixture written before the PIN seeding
+    // existed — still runs rather than dying on a missing reader.
+    io.clients ? io.clients() : Promise.resolve([]),
     isFull ? io.items() : Promise.resolve(null),
     io.invoices(since)
   ]);
@@ -403,8 +411,20 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     catch (e) { return { list: i, error: String(e.message).slice(0, 160) }; }
   });
 
+  // Which Base - Clients row is which Zoho customer. `Zoho Contact ID` is
+  // carried on the client record from birth, so this resolves rather than
+  // guesses — the same join the push endpoint uses to avoid minting a second
+  // contact for somebody who already has one.
+  const clientByContact = new Map();
+  for (const c of clients) {
+    const id = String(c.fields['Zoho Contact ID'] || '').trim();
+    if (id) clientByContact.set(id, c);
+  }
+  /** Best PIN found for a client this pass: record id -> { pin, date }. */
+  const pinSeeds = new Map();
+
   let scanned = 0;
-  const writes = { orders: [], lines: [] };
+  const writes = { orders: [], lines: [], clients: [] };
   const projection = [];
 
   for (const { list, full, error } of details) {
@@ -414,6 +434,31 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     }
     scanned += 1;
     const num = full.invoice_number;
+
+    // -- the client's KRA PIN, taken from where Zoho already stamped it
+    //
+    // Base - Clients has nowhere cheaper to get this from. The contact LIST
+    // response omits `tax_reg_no` entirely, so reading it live would mean a
+    // detail call per client — 374 of them, against 2,000 a day. The invoice
+    // detail is already in hand for every non-draft invoice and carries the PIN
+    // Zoho stamped on it, so this costs nothing at all.
+    //
+    // **Blanks only, and the newest invoice wins.** The invoice copy is a
+    // snapshot, like `cf_primary_contact_number` beside it: a PIN corrected on
+    // the contact afterwards must never be dragged back to whatever a 2024
+    // invoice happened to carry. Filling a blank cannot do that. Overwriting
+    // could, and would do it silently, on the field an accountant reads.
+    const pin = String(full.tax_reg_no || '').trim();
+    const clientRow = clientByContact.get(String(full.customer_id || ''));
+    if (pin && clientRow && !String(clientRow.fields['KRA PIN'] || '').trim()) {
+      const held = pinSeeds.get(clientRow.id);
+      if (!held || String(full.date || '') > held.date) {
+        pinSeeds.set(clientRow.id, {
+          id: clientRow.id, name: clientRow.fields.Name, pin, date: String(full.date || '')
+        });
+      }
+    }
+
     const order = (orderByInvoice.get(num) || [])[0];
 
     if (!order) {
@@ -475,6 +520,29 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
         id: order.id, orderId: order.fields['Order ID'],
         was: null, now: Object.keys(seeds).join(', '),
         fields: seeds
+      });
+    }
+
+    // -- balance: what is still to collect, straight off the invoice
+    //
+    // Written silently, like the eTIMS number below it, and for the same reason:
+    // it is Zoho's own arithmetic and a difference is never something a person
+    // has to act on — it is a payment landing. Reporting it would put a fresh
+    // log row against every invoice every time somebody paid, and the log's
+    // whole worth is that a clean pass writes nothing to it.
+    //
+    // Zero is written, not left blank. Blank is "nobody has looked"; zero is
+    // "nothing is owed", which is the fact the delivery team needs — and it is
+    // what stops the driver's message asking for money on a settled order.
+    // Drafts never reach here, so an invoice nobody has issued yet stays blank
+    // rather than claiming its total is due.
+    const balance = zoho.round2(Number(full.balance) || 0);
+    const heldBalance = order.fields['Balance to Pay'];
+    if (heldBalance == null || Math.abs(heldBalance - balance) > 0.02) {
+      writes.orders.push({
+        id: order.id, orderId: order.fields['Order ID'],
+        was: heldBalance ?? null, now: balance,
+        fields: { 'Balance to Pay': balance }
       });
     }
 
@@ -641,20 +709,47 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     }
 
     // -- first payment date, which is not last_payment_date
-    // Only when there is something to explain. If Airtable already holds the
-    // invoice's last_payment_date there is nothing a payments lookup can add,
-    // and asking anyway costs ~250 calls a pass out of a 2,000/day budget.
-    const stamped = order.fields['Payment Received'];
-    if (full.status === 'paid' && stamped && stamped !== full.last_payment_date) {
+    //
+    // Written now, not merely reported. It used to be a warning, on the
+    // reasoning that Airtable recorded the day a deposit confirmed the order and
+    // Zoho the day it cleared — two honest answers to one question. But this
+    // field is load-bearing in a way that reasoning missed: `Order Month` on the
+    // order is derived from it, and so is `Production Start for Calculation`, so
+    // the month a sale is counted in follows whatever sits here. Zoho owns
+    // money, so Zoho settles it.
+    //
+    // The FIRST payment, never `last_payment_date`. That field is the last one,
+    // which is wrong for every split-payment invoice — and the deposit is the
+    // event Airtable has always meant by "Payment Received".
+    //
+    // What makes this affordable is that `last_payment_date` is free on the
+    // invoice, and for an invoice paid in one go it IS the first payment. So a
+    // stored date already equal to it needs no lookup at all, which is nearly
+    // every invoice once this has run once. A split-payment invoice keeps
+    // costing one call a pass — it settles on a first date that by definition
+    // is not the last — and there are seventeen of those. That is the right way
+    // round: the cheap case goes quiet, and the case worth re-checking is
+    // re-checked.
+    const stamped = order.fields['Payment Received'] || null;
+    if (full.last_payment_date && stamped !== full.last_payment_date) {
       try {
         const ps = await io.payments(full.invoice_id);
-        const first = ps[0]?.date;
-        const have = order.fields['Payment Received'];
-        if (first && have && have !== first && daysApart(have, first) > PAYMENT_DRIFT_DAYS) {
-          add(WARN, 'metadata-drift', `${order.fields['Order ID']} payment ${have} vs first ${first}`, {
-            invoice: num, orderRecIds: [order.id],
-            detail: `Airtable records ${have}; the first payment on the invoice is ${first}${ps.length > 1 ? ` (of ${ps.length} payments)` : ''}. More than ${PAYMENT_DRIFT_DAYS} days apart, so the two are probably describing different events.`
+        const first = ps[0]?.date || null;
+        if (first && first !== stamped) {
+          writes.orders.push({
+            id: order.id, orderId: order.fields['Order ID'],
+            was: stamped, now: first,
+            fields: { 'Payment Received': first }
           });
+          // Said once, and only when the move is big enough to mean something
+          // other than a deposit clearing a day late. The next pass finds the
+          // two agreeing and says nothing, so this closes itself.
+          if (stamped && daysApart(stamped, first) > PAYMENT_DRIFT_DAYS) {
+            add(INFO, 'metadata-drift', `${order.fields['Order ID']} payment ${stamped} -> ${first}`, {
+              invoice: num, orderRecIds: [order.id],
+              detail: `Airtable recorded ${stamped}; the first payment on the invoice is ${first}${ps.length > 1 ? ` (of ${ps.length} payments)` : ''}. More than ${PAYMENT_DRIFT_DAYS} days apart, so the invoice date has been written and the order's month moves with it — worth a glance in case the order is pointed at the wrong invoice.`
+            });
+          }
         }
       } catch (e) {
         // Never silent. Swallowing this made the warning count vary between
@@ -665,7 +760,26 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
           detail: `${String(e.message).slice(0, 160)} — the first-payment-date check did not run for this invoice.`
         });
       }
+    } else if (!full.last_payment_date && stamped) {
+      // Airtable says somebody paid and the books have nothing against the
+      // invoice. Reported rather than written back the other way: this is one
+      // of the two directions the whole design forbids, and a receipt missing
+      // from the books is a real thing to go and find.
+      add(WARN, 'metadata-drift', `${order.fields['Order ID']} paid ${stamped}, no payment in Zoho`, {
+        invoice: num, orderRecIds: [order.id],
+        detail: `Airtable records a payment on ${stamped}; ${num} has none against it. Either the receipt was never entered, or it landed on a different invoice.`
+      });
     }
+  }
+
+  // ---- the PINs this pass found, as writes ------------------------------
+  // Collected across every invoice rather than written as each is read, because
+  // one client can have five invoices and only the newest of them should speak.
+  for (const seed of pinSeeds.values()) {
+    writes.clients.push({
+      id: seed.id, orderId: seed.name, was: null, now: seed.pin,
+      fields: { 'KRA PIN': seed.pin }
+    });
   }
 
   // ---- apply the writes the sync owns ----------------------------------
@@ -714,11 +828,16 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     }
     return [...byId.values()];
   };
-  let orderWrites = 0, lineWrites = 0;
+  let orderWrites = 0, lineWrites = 0, clientWrites = 0;
   if (mode === 'write') {
     const orderPatches = merged(writes.orders);
     if (orderPatches.length) { await patch(TABLES.orders, orderPatches.map(bare)); orderWrites = orderPatches.length; }
     if (writes.lines.length) { await patch(TABLES.lines, writes.lines.map(bare)); lineWrites = writes.lines.length; }
+    // Base - Clients, not the order pipeline. The one-writer rule is about
+    // orders, lines and money; who a client is has always been the carve-out,
+    // and this is the same reconciler doing the writing either way.
+    const clientPatches = merged(writes.clients);
+    if (clientPatches.length) { await patch(TABLES.clients, clientPatches.map(bare)); clientWrites = clientPatches.length; }
   }
 
   const errors = findings.filter((f) => f.severity === ERROR).length;
@@ -728,7 +847,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     // Whether this pass looked at everything. Only a full pass may close a log
     // row: an incremental one has not seen the invoices it is not reporting on.
     full: isFull,
-    orderWrites, lineWrites, errors, warnings, findings,
+    orderWrites, lineWrites, clientWrites, errors, warnings, findings,
     zohoCalls: zoho.calls.n - callsAtStart,
     // What a write pass would do, whether or not this one did it.
     pending: writes, projection
@@ -829,6 +948,10 @@ export async function record(report) {
       // is what stops a schedule quietly eating the whole budget unnoticed.
       Notes: `${report.zohoCalls ?? 0} Zoho API calls (2,000/day org limit)`
         + (resolved.length ? `\n${resolved.length} finding${resolved.length === 1 ? '' : 's'} closed` : '')
+        // Base - Clients has no column of its own in this table, and adding one
+        // for a number that is zero on almost every pass would be a column of
+        // zeroes. It goes here, and only when there is something to say.
+        + (report.clientWrites ? `\n${report.clientWrites} client${report.clientWrites === 1 ? '' : 's'} given a KRA PIN` : '')
     }
   }]);
   const runId = runs[0].id;

@@ -47,7 +47,7 @@ import { TABLES, all, patch, create } from './_airtable.mjs';
 import {
   groupDesign, buildLineItems, linesTotal, quoteDrift,
   deliveryLine, goodsLines, moneyValue, contactDetails, contactName, contactUpdate,
-  newContactPayload, airtableClientPatch, clientDisagreement
+  newContactPayload, airtableClientPatch, clientDisagreement, normalisePin
 } from './_push.mjs';
 import * as zoho from './_zoho.mjs';
 
@@ -168,7 +168,7 @@ async function mintedClients() {
  * a missing one: `Order ID` is `Order Code & "_" & Client Name`, so two of the
  * same person means orders that look interchangeable and are not.
  */
-async function createAirtableClient(contactId, name, phone, address) {
+async function createAirtableClient(contactId, name, phone, address, pin) {
   try {
     const existing = (await all(TABLES.clients)).find((c) => {
       if (String(c.fields['Zoho Contact ID'] || '') === String(contactId)) return true;
@@ -178,6 +178,7 @@ async function createAirtableClient(contactId, name, phone, address) {
     const fields = { Name: name, 'Zoho Contact ID': String(contactId) };
     if (phone) fields['Primary Phone Number'] = phone;
     if (address) fields.Address = address;
+    if (pin) fields['KRA PIN'] = pin;
     const [row] = await create(TABLES.clients, [{ fields }]);
     clientCache = { at: 0, list: null };
     return { ok: true, created: true, record_id: row && row.id };
@@ -217,7 +218,7 @@ async function clientRow(contactId) {
 async function client(contactId) {
   if (!/^\d{4,}$/.test(contactId)) return json({ ok: false, error: 'bad_contact_id' }, 422);
 
-  let zohoSide = { name: '', first_name: '', last_name: '', phone: '', address: '' };
+  let zohoSide = { name: '', first_name: '', last_name: '', phone: '', address: '', pin: '', tax_treatment: '' };
   let reachedZoho = true;
   try {
     zohoSide = contactDetails(await zoho.contact(contactId));
@@ -230,7 +231,8 @@ async function client(contactId) {
   const row = await clientRow(contactId);
   const airtableSide = {
     phone: row ? String(row.fields['Primary Phone Number'] || '').trim() : '',
-    address: row ? String(row.fields.Address || '').trim() : ''
+    address: row ? String(row.fields.Address || '').trim() : '',
+    pin: row ? String(row.fields['KRA PIN'] || '').trim() : ''
   };
 
   return json({
@@ -241,9 +243,21 @@ async function client(contactId) {
     last_name: zohoSide.last_name,
     phone: zohoSide.phone || airtableSide.phone,
     address: zohoSide.address || airtableSide.address,
-    zoho: reachedZoho ? { phone: zohoSide.phone, address: zohoSide.address } : null,
+    // Airtable first for the PIN, unlike phone and address. The reconciler
+    // seeds Base - Clients from the PIN Zoho stamped on the client's newest
+    // invoice, so where the two differ Airtable is the one that has been
+    // reconciled recently; and where Zoho is blank, Airtable is the only copy.
+    pin: airtableSide.pin || zohoSide.pin,
+    // Read-only, and deliberately so: Airtable owns this one outright. Zoho has
+    // no exemption recorded against any contact, so there is nothing to
+    // reconcile it to — but the moment somebody raises an invoice is the moment
+    // it matters, so it is said here rather than left in a table nobody opens.
+    vat_exempt: Boolean(row && row.fields['VAT Exempt']),
+    zoho: reachedZoho ? { phone: zohoSide.phone, address: zohoSide.address, pin: zohoSide.pin } : null,
     airtable: row ? airtableSide : null,
-    differs: row && reachedZoho ? clientDisagreement(zohoSide, row.fields) : { phone: false, address: false }
+    differs: row && reachedZoho
+      ? clientDisagreement(zohoSide, row.fields)
+      : { phone: false, address: false, pin: false }
   });
 }
 
@@ -266,7 +280,7 @@ async function search(query) {
 
 // --------------------------------------------------------------------- push --
 
-async function push({ code, contact_id, new_client, rep, phone, address, delivery_date,
+async function push({ code, contact_id, new_client, rep, phone, address, kra_pin, delivery_date,
                       delivery_date_status, window_start, window_end,
                       pickup, delivery_fee, notes }) {
   const upper = String(code || '').toUpperCase();
@@ -276,6 +290,10 @@ async function push({ code, contact_id, new_client, rep, phone, address, deliver
   const collects = pickup === true;
   const wantPhone = clean(phone, 40);
   const wantAddress = clean(address, 500);
+  // Normalised here rather than at each end: a PIN read off a certificate
+  // arrives lowercase or spaced, and the two records must not disagree over
+  // punctuation somebody typed once.
+  const wantPin = normalisePin(kra_pin);
 
   const stored = await getStore('design').get(upper, { type: 'json' });
   if (!stored || !stored.design) return json({ ok: false, error: 'code_not_found' }, 404);
@@ -321,7 +339,7 @@ async function push({ code, contact_id, new_client, rep, phone, address, deliver
     if (!first && !last) return json({ ok: false, error: 'no_customer' }, 422);
     try {
       const contact = await zoho.createContact(newContactPayload({
-        first_name: first, last_name: last, phone: wantPhone, address: wantAddress
+        first_name: first, last_name: last, phone: wantPhone, address: wantAddress, pin: wantPin
       }));
       customerId = contact.contact_id;
       clientName = contact.contact_name || contactName(first, last);
@@ -331,7 +349,7 @@ async function push({ code, contact_id, new_client, rep, phone, address, deliver
       // than starting apart and waiting for somebody to remember. Best-effort:
       // the invoice is raised either way, and `rememberClient` above already
       // keeps them findable if this fails.
-      airtableClient = await createAirtableClient(customerId, clientName, wantPhone, wantAddress);
+      airtableClient = await createAirtableClient(customerId, clientName, wantPhone, wantAddress, wantPin);
     } catch (err) {
       // Zoho refuses a duplicate contact_name, and that refusal is the useful
       // one: it means this person is already in the books under that name.
@@ -393,14 +411,16 @@ async function push({ code, contact_id, new_client, rep, phone, address, deliver
   const stamp = today();
   let contactSaved = null;
   let clientSaved = null;
-  if (!created && (wantPhone || wantAddress)) {
+  if (!created && (wantPhone || wantAddress || wantPin)) {
     try {
       const existing = await zoho.contact(customerId);
       clientName = existing.contact_name || clientName;
-      const change = contactUpdate(existing, { phone: wantPhone, address: wantAddress, today: stamp });
+      const change = contactUpdate(existing, {
+        phone: wantPhone, address: wantAddress, pin: wantPin, today: stamp
+      });
       if (change) {
         await zoho.updateContact(customerId, change.payload);
-        contactSaved = { ok: true, ...change.changed, replaced: change.replaced };
+        contactSaved = { ok: true, ...change.changed, registered: change.registered, replaced: change.replaced };
       }
     } catch (err) {
       // A token issued without ZohoBooks.contacts.UPDATE fails 401 code 57 on
@@ -424,7 +444,9 @@ async function push({ code, contact_id, new_client, rep, phone, address, deliver
         clientSaved = { ok: false, missing: true };
       } else {
         if (!clientName) clientName = String(row.fields.Name || '').trim() || clientName;
-        const change = airtableClientPatch(row, { phone: wantPhone, address: wantAddress, today: stamp });
+        const change = airtableClientPatch(row, {
+          phone: wantPhone, address: wantAddress, pin: wantPin, today: stamp
+        });
         if (change) {
           await patch(TABLES.clients, [{ id: row.id, fields: change.fields }]);
           clientCache = { at: 0, list: null };

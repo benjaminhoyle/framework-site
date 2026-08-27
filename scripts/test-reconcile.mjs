@@ -28,6 +28,10 @@ const zline = (name, quantity, rate, item_id) => ({
 });
 const invoice = (number, lines, extra = {}) => ({
   invoice_id: `id_${number}`, invoice_number: number, status: 'paid',
+  // Settled unless a test says otherwise, which is what 306 of 308 paid
+  // invoices look like. A fixture that quietly owed money would put a balance
+  // write beside every other write and make each of them harder to see.
+  balance: 0,
   date: '2026-02-01', customer_name: 'Someone', total: 0,
   // Shelving unless a test says otherwise: Orders - Pipeline is the shelving
   // pipeline, and that is what an invoice needing an order looks like.
@@ -36,11 +40,12 @@ const invoice = (number, lines, extra = {}) => ({
 });
 
 /** Run the reconciler over a fixture world. */
-function io({ orders = [], lines = [], products = [], items = [], invoices = [], payments = {} }) {
+function io({ orders = [], lines = [], products = [], clients = [], items = [], invoices = [], payments = {} }) {
   return {
     orders: async () => orders,
     lines: async () => lines,
     products: async () => products,
+    clients: async () => clients,
     items: async () => items,
     invoices: async () => invoices,
     detail: async (id) => invoices.find((i) => i.invoice_id === id),
@@ -49,6 +54,8 @@ function io({ orders = [], lines = [], products = [], items = [], invoices = [],
 }
 const run = (world, opts = {}) => reconcile({ io: io(world), ...opts });
 const of = (r, check) => r.findings.filter((f) => f.check === check);
+/** The pending writes that touch one field, which is what a test usually means. */
+const writesTo = (r, table, field) => r.pending[table].filter((w) => field in w.fields);
 
 // ---- invoice-claimed-once ---------------------------------------------
 await test('two orders claiming one invoice is an error', async () => {
@@ -252,8 +259,9 @@ await test('delivery is taken ex-VAT from item_total, not from rate', async () =
     orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
     invoices: [invoice('INV1', [{ name: 'Delivery Fees', quantity: 1, rate: 2000, item_total: 1724.14, item_custom_fields: [] }])]
   });
-  assert.equal(r.pending.orders.length, 1);
-  assert.equal(r.pending.orders[0].now, 1724.14);
+  const w = writesTo(r, 'orders', 'Delivery - Charged Client (ex VAT)');
+  assert.equal(w.length, 1);
+  assert.equal(w[0].now, 1724.14);
 });
 
 // ---- the projection ----------------------------------------------------
@@ -286,28 +294,180 @@ await test('payments are only fetched when the stored date disagrees', async () 
   assert.equal(asked, 0, 'nothing to explain, so nothing to ask');
 });
 
-await test('a disagreeing payment date is reported as the first payment', async () => {
-  const world = {
+await test('the FIRST payment is written, never the last', async () => {
+  // last_payment_date is wrong for every split-payment invoice, and the deposit
+  // is the event Airtable has always meant by "Payment Received".
+  const r = await run({
     orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Payment Received': '2026-02-05' })],
     invoices: [invoice('INV1', [], { last_payment_date: '2026-03-20' })],
     payments: { id_INV1: [{ date: '2026-02-25' }, { date: '2026-03-20' }] }
-  };
-  const r = await run(world);
-  const f = of(r, 'metadata-drift');
-  assert.equal(f.length, 1);
-  assert.match(f[0].event, /2026-02-05 vs first 2026-02-25/);
+  });
+  const w = writesTo(r, 'orders', 'Payment Received');
+  assert.equal(w.length, 1);
+  assert.equal(w[0].now, '2026-02-25');
 });
 
-await test('a payment date a few days out is the normal working gap, not drift', async () => {
-  // Airtable records the day a deposit confirmed the order; Zoho the day it
-  // cleared. Warning about that produced 19 standing warnings of which 15 meant
-  // nothing, which teaches people to scroll past the four that did.
+await test('a payment date a few days out is corrected without a word', async () => {
+  // Airtable recorded the day a deposit confirmed the order; Zoho the day it
+  // cleared. Zoho wins now, but nobody needs telling that a two-day gap has
+  // been tidied up -- 19 standing warnings of which 15 meant nothing is how the
+  // old version of this taught people to scroll past the four that did.
   const r = await run({
     orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Payment Received': '2026-02-05' })],
     invoices: [invoice('INV1', [], { last_payment_date: '2026-03-20' })],
     payments: { id_INV1: [{ date: '2026-02-09' }, { date: '2026-03-20' }] }
   });
-  assert.equal(of(r, 'metadata-drift').length, 0);
+  assert.equal(writesTo(r, 'orders', 'Payment Received')[0].now, '2026-02-09');
+  assert.equal(of(r, 'metadata-drift').length, 0, 'a working gap is not news');
+});
+
+await test('a payment date that moves a long way is written AND mentioned', async () => {
+  // Usually an order pointed at the wrong invoice. Said once: the next pass
+  // finds the two agreeing and the finding closes itself.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Payment Received': '2026-02-05' })],
+    invoices: [invoice('INV1', [], { last_payment_date: '2026-06-20' })],
+    payments: { id_INV1: [{ date: '2026-06-01' }, { date: '2026-06-20' }] }
+  });
+  assert.equal(writesTo(r, 'orders', 'Payment Received')[0].now, '2026-06-01');
+  const f = of(r, 'metadata-drift');
+  assert.equal(f.length, 1);
+  assert.equal(f[0].severity, 'Info', 'the value is applied, so this is a remark, not a fault');
+  assert.match(f[0].event, /2026-02-05 -> 2026-06-01/);
+});
+
+await test('a blank payment date is filled from the invoice', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    invoices: [invoice('INV1', [], { last_payment_date: '2026-02-09' })],
+    payments: { id_INV1: [{ date: '2026-02-09' }] }
+  });
+  assert.equal(writesTo(r, 'orders', 'Payment Received')[0].now, '2026-02-09');
+  assert.equal(of(r, 'metadata-drift').length, 0, 'nothing was displaced, so nothing to remark on');
+});
+
+await test('a payment Airtable has and Zoho does not is a warning, not a write', async () => {
+  // The books are missing a receipt, or it landed on another invoice. Writing
+  // Airtable's date INTO Zoho is the direction this whole design forbids.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Payment Received': '2026-02-05' })],
+    invoices: [invoice('INV1', [], { status: 'sent', balance: 19000, last_payment_date: '' })]
+  });
+  assert.equal(writesTo(r, 'orders', 'Payment Received').length, 0);
+  const f = of(r, 'metadata-drift').filter((x) => /no payment in Zoho/.test(x.event));
+  assert.equal(f.length, 1);
+  assert.equal(f[0].severity, 'Warning');
+});
+
+// ---- balance to pay ----------------------------------------------------
+await test('the balance is carried across, and zero is a value not a blank', async () => {
+  // Blank is "nobody has looked"; zero is "nothing is owed", and it is zero
+  // that keeps the driver's message from asking for money on a settled order.
+  const owing = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    invoices: [invoice('INV1', [], { balance: 7500 })]
+  });
+  assert.equal(writesTo(owing, 'orders', 'Balance to Pay')[0].now, 7500);
+
+  const settled = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    invoices: [invoice('INV1', [], { balance: 0 })]
+  });
+  assert.equal(writesTo(settled, 'orders', 'Balance to Pay')[0].now, 0);
+});
+
+await test('a balance already recorded is not written again', async () => {
+  // Idempotence, on the field that changes most often. Re-stamping every order
+  // on every hourly pass would be a lot of writes to say nothing.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Balance to Pay': 7500 })],
+    invoices: [invoice('INV1', [], { balance: 7500 })]
+  });
+  assert.equal(writesTo(r, 'orders', 'Balance to Pay').length, 0);
+});
+
+await test('a balance never puts a row in the log', async () => {
+  // It moves every time somebody pays. Reporting it would mean a fresh log row
+  // per invoice per payment, and the log's whole worth is that a clean pass
+  // writes nothing to it.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Balance to Pay': 0 })],
+    invoices: [invoice('INV1', [], { balance: 7500 })]
+  });
+  assert.equal(writesTo(r, 'orders', 'Balance to Pay').length, 1);
+  assert.equal(r.findings.length, 0);
+});
+
+await test('a draft invoice leaves the balance alone', async () => {
+  // A draft is not owed. Its total must not appear as money to collect.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    invoices: [invoice('INV1', [], { status: 'draft', balance: 19000 })]
+  });
+  assert.equal(writesTo(r, 'orders', 'Balance to Pay').length, 0);
+});
+
+// ---- the KRA PIN -------------------------------------------------------
+const client = (id, contactId, fields = {}) => ({
+  id, fields: { Name: `Client ${id}`, 'Zoho Contact ID': contactId, ...fields }
+});
+
+await test('a PIN on the invoice fills a blank on the client record', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    clients: [client('c1', '900')],
+    invoices: [invoice('INV1', [], { customer_id: '900', tax_reg_no: 'P051755191T' })]
+  });
+  assert.equal(r.pending.clients.length, 1);
+  assert.equal(r.pending.clients[0].id, 'c1');
+  assert.equal(r.pending.clients[0].fields['KRA PIN'], 'P051755191T');
+});
+
+await test('a PIN already on the client record is never overwritten', async () => {
+  // The invoice copy is a SNAPSHOT. A PIN corrected on the contact afterwards
+  // must not be dragged back to whatever a 2024 invoice happened to carry.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    clients: [client('c1', '900', { 'KRA PIN': 'P051000001A' })],
+    invoices: [invoice('INV1', [], { customer_id: '900', tax_reg_no: 'P051755191T' })]
+  });
+  assert.equal(r.pending.clients.length, 0);
+});
+
+await test('the newest invoice is the one that speaks for a client', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' }), order('2_B', { 'Zoho Invoice': 'INV2' })],
+    clients: [client('c1', '900')],
+    invoices: [
+      invoice('INV1', [], { customer_id: '900', tax_reg_no: 'P051000001A', date: '2024-01-01' }),
+      invoice('INV2', [], { customer_id: '900', tax_reg_no: 'P051755191T', date: '2026-02-01' })
+    ]
+  });
+  assert.equal(r.pending.clients.length, 1, 'one client, one write, not one per invoice');
+  assert.equal(r.pending.clients[0].fields['KRA PIN'], 'P051755191T');
+});
+
+await test('an invoice with no order still gives up its client PIN', async () => {
+  // The reconciler never creates orders, so a paid invoice with none is skipped
+  // for everything else. It still knows one true thing about the person.
+  const r = await run({
+    clients: [client('c1', '900')],
+    invoices: [invoice('INV1', [], { customer_id: '900', tax_reg_no: 'P051755191T' })]
+  });
+  assert.equal(r.pending.clients.length, 1);
+});
+
+await test('an invoice with no PIN, or no client record, writes nothing', async () => {
+  const noPin = await run({
+    clients: [client('c1', '900')],
+    invoices: [invoice('INV1', [], { customer_id: '900', tax_reg_no: '' })]
+  });
+  assert.equal(noPin.pending.clients.length, 0);
+  const noClient = await run({
+    clients: [client('c1', '901')],
+    invoices: [invoice('INV1', [], { customer_id: '900', tax_reg_no: 'P051755191T' })]
+  });
+  assert.equal(noClient.pending.clients.length, 0);
 });
 
 await test('an unreadable payments lookup is reported, never swallowed', async () => {
@@ -330,11 +490,11 @@ await test('one order needing two changes is patched once, not twice', async () 
     orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
     invoices: [invoice('INV1', [
       { name: 'Delivery Fees', quantity: 1, rate: 2000, item_total: 1724.14, item_custom_fields: [] }
-    ], { custom_field_hash: { cf_etims_invoice_number: '12345' } })]
+    ], { balance: 500, custom_field_hash: { cf_etims_invoice_number: '12345' } })]
   });
-  assert.equal(r.pending.orders.length, 2, 'two separate reasons to write');
+  assert.equal(r.pending.orders.length, 3, 'a delivery charge, an eTIMS number and a balance');
   const ids = new Set(r.pending.orders.map((w) => w.id));
-  assert.equal(ids.size, 1, 'both target the same order');
+  assert.equal(ids.size, 1, 'all of them target the same order');
 });
 
 // ---- Sync Status -------------------------------------------------------

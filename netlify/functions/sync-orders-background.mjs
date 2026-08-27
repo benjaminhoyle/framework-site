@@ -56,6 +56,7 @@ export default async (req) => {
       warnings: report.warnings,
       orderWrites: report.orderWrites,
       lineWrites: report.lineWrites,
+      clientWrites: report.clientWrites,
       logged: written
     }));
     // A background function's return value goes nowhere — the caller already
@@ -74,7 +75,7 @@ export default async (req) => {
         // that found nothing wrong. `full: false` says the same thing twice on
         // purpose -- this pass saw nothing, so it may not speak for anything.
         failed: true, full: false, zohoCalls: zoho.calls.n,
-        orderWrites: 0, lineWrites: 0, errors: 1, warnings: 0,
+        orderWrites: 0, lineWrites: 0, clientWrites: 0, errors: 1, warnings: 0,
         findings: [{
           severity: 'Error', check: 'run-failure',
           event: `pass failed: ${String(err.message).slice(0, 80)}`,

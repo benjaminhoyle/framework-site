@@ -2899,13 +2899,18 @@
     stack.appendChild(field);
     stack.appendChild(flag);
     stack.field = field;
-    stack.disagree = (other) => {
+    // `source` is which record the other value came from. Phone and address
+    // prefill from Zoho, so the value worth showing is Airtable's; the KRA PIN
+    // prefills from Airtable, so it is the other way round. Naming the record
+    // is the whole point — "the other one says" is not a thing anybody can act
+    // on.
+    stack.disagree = (other, source) => {
       clear(flag);
       if (!other) {
         flag.hidden = true;
         return;
       }
-      flag.appendChild(make("span", null, `Airtable has ${other} — the box wins on save.`));
+      flag.appendChild(make("span", null, `${source || "Airtable"} has ${other} — the box wins on save.`));
       const use = make("button", "nd-button is-small", "Use it");
       use.type = "button";
       use.addEventListener("click", () => {
@@ -3144,6 +3149,28 @@
     const phoneField = flaggable(phone);
     const addressField = flaggable(address);
 
+    // The KRA PIN, for the clients who need their own registration on the
+    // invoice. Optional, and blank for most people: an individual buying a
+    // shelf is not asking to reclaim VAT on it. Typing one says "invoice this
+    // client in their registered name", and it is written to both live records
+    // exactly as the phone and the address are.
+    const pin = staffInput("text", "e.g. P051234567X");
+    pin.autocapitalize = "characters";
+    pin.spellcheck = false;
+    const pinField = flaggable(pin);
+    // Said under the box rather than in the label: the label column is one line
+    // wide, and this is the sentence that stops somebody typing our own PIN in.
+    const pinStack = make("div", "nd-staff-stack");
+    pinStack.appendChild(pinField);
+    pinStack.appendChild(make("small", "nd-subtext", "The client's own PIN, only if they need it on the invoice"));
+
+    // Airtable's flag, shown and not editable. It is a standing fact about a
+    // client — an NGO, a mission, an exemption certificate — and the person who
+    // knows it is not usually the person raising the invoice, so the form
+    // reports it and stays out of the way.
+    const exempt = make("p", "nd-note");
+    exempt.hidden = true;
+
     const firstName = staffInput("text", "First name");
     const lastName = staffInput("text", "Last name");
     // Zoho keeps a contact's name in two parts and refuses a duplicate display
@@ -3208,10 +3235,14 @@
       // `touched` mark outlives it and blocks the next client's prefill too.
       delete phone.dataset.touched;
       delete address.dataset.touched;
+      delete pin.dataset.touched;
       prefill(phone, "");
       prefill(address, "");
+      prefill(pin, "");
       phoneField.disagree(null);
       addressField.disagree(null);
+      pinField.disagree(null);
+      exempt.hidden = true;
       showCombo();
       combo.focusInput();
       say("");
@@ -3223,6 +3254,8 @@
       newGroup.hidden = true;
       phoneField.disagree(null);
       addressField.disagree(null);
+      pinField.disagree(null);
+      exempt.hidden = true;
       showChosen();
       say(`Invoicing ${entry.name}. Fetching what we have on file…`);
       const detail = await callPush({ action: "client", contact_id: entry.contact_id });
@@ -3235,14 +3268,24 @@
       // from the file would be describing a value that is not there.
       const filled = [
         prefill(phone, detail.phone) ? "phone" : null,
-        prefill(address, detail.address) ? "address" : null
+        prefill(address, detail.address) ? "address" : null,
+        prefill(pin, detail.pin) ? "KRA PIN" : null
       ].filter(Boolean);
+      // A standing fact about the client, said where the invoice is raised.
+      // Nothing here acts on it — Zoho decides what is charged — but somebody
+      // about to raise a VAT invoice for an exempt client should know before
+      // they press the button, not after.
+      exempt.textContent = "This client is marked VAT exempt in Airtable — check how the invoice should be raised.";
+      exempt.hidden = !detail.vat_exempt;
       // Where the two records already hold different real values, say so. The
       // save reconciles them either way; this is about reconciling them to the
       // RIGHT one.
       const differs = detail.differs || {};
       if (differs.phone) phoneField.disagree(detail.airtable.phone);
       if (differs.address) addressField.disagree(detail.airtable.address);
+      // The PIN prefills from Airtable, so where the two disagree it is ZOHO's
+      // value the rep has not seen. The other two are the other way round.
+      if (differs.pin) pinField.disagree(detail.zoho.pin, "Zoho");
       say(filled.length
         ? `Invoicing ${entry.name}. Their ${filled.join(" and ")} came from the file — edit to correct it.`
         : `Invoicing ${entry.name}. Nothing on file to fill in.`);
@@ -3334,6 +3377,7 @@
           new_client: chosen ? null : { first_name: first, last_name: last },
           phone: phone.value,
           address: address.value,
+          kra_pin: pin.value,
           delivery_date: date.value,
           delivery_date_status: state.date,
           window_start: from.value,
@@ -3355,6 +3399,8 @@
     form.appendChild(newGroup);
     form.appendChild(staffRow("Phone", phoneField));
     form.appendChild(staffRow("Delivery address", addressField));
+    form.appendChild(staffRow("KRA PIN", pinStack));
+    form.appendChild(exempt);
     form.appendChild(staffRow("Delivery date", dateField));
     form.appendChild(staffRow("Delivery time", timeField));
     form.appendChild(staffRow("Client collects", pickup));
@@ -3436,11 +3482,31 @@
     ];
     const landed = saved.filter(([, r]) => r && r.ok);
     if (landed.length) {
-      const changed = [landed[0][1].phone ? "phone" : null, landed[0][1].address ? "address" : null].filter(Boolean);
+      const changed = [
+        landed[0][1].phone ? "phone" : null,
+        landed[0][1].address ? "address" : null,
+        landed[0][1].pin ? "KRA PIN" : null
+      ].filter(Boolean);
       const noted = landed.some(([, r]) => r.replaced && r.replaced.length);
       wrap.appendChild(make("p", "nd-note",
         `Their ${changed.join(" and ")} ${changed.length === 1 ? "was" : "were"} updated in ${
           landed.map(([name]) => name).join(" and ")}${noted ? ", and what it replaced is in their notes" : ""}.`));
+      // Two things a PIN does that a phone number does not, both worth saying
+      // out loud rather than leaving somebody to discover from an accountant.
+      const zoho = (out.contact_saved && out.contact_saved.ok) ? out.contact_saved : null;
+      if (zoho && zoho.registered) {
+        wrap.appendChild(make("p", "nd-note",
+          `${who} is now marked VAT-registered in Zoho, which is what lets a PIN sit on their record. It changes how they are classified, not what they are charged.`));
+      }
+      // The client's records are written AFTER the invoice, deliberately: a
+      // failure here must never cost a rep the draft they were raising. The
+      // cost of that ordering is this one case — an existing client given a PIN
+      // for the first time had none when the invoice was stamped, so this draft
+      // does not carry it. Their next one will.
+      if (zoho && zoho.pin && !(out.client && out.client.created)) {
+        wrap.appendChild(make("p", "nd-note",
+          "This draft was raised before their PIN was on record, so it does not show one. Re-save the draft in Zoho if this invoice needs it."));
+      }
     }
     for (const [name, result] of saved) {
       if (!result || result.ok !== false) continue;
