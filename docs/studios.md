@@ -135,12 +135,20 @@ is nearest: asking for the source's own shape makes the job an edit rather than
 a re-shoot. The other ratios are still there when a shot is wanted in a
 particular format.
 
-The one thing that had to be settled explicitly is precedence. THE PHOTOGRAPH
-already declared itself the winner over the place, and its Camera and
-Composition options describe a photographer choosing where to stand — which is
-exactly what the lock forbids. So that block now says which wins: those options
-set crop, tilt, framing, lens character and light, never where the camera stands
-in relation to the shelf.
+The one thing that had to be settled is precedence, and stating it was not
+enough on its own. Three places were quietly specifying a camera position:
+the Composition options ("Standing eye-height", "Level horizon", "Optimal
+angle"), and the photographic floor, which called itself *non-negotiable* and
+then asked for a level horizon — which a render shot from above cannot have. A
+lock that has to win an argument on every sample will lose some of them, so the
+conflicting words are gone rather than out-ranked. Composition now describes how
+well the frame is composed and nothing about where the photographer stands, the
+floor defers camera attitude to the lock, and THE PHOTOGRAPH still carries the
+precedence line for anything typed into notes.
+
+The validator (`VAL_PROMPT`) gained `viewpoint_match` and `square_board_ends`,
+because drift in vantage is now the most likely failure and the hardest of them
+to judge by eye.
 
 ### The handoff
 

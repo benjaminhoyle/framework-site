@@ -37,7 +37,7 @@
     ],
     scenes: [
       { id: "living-room", name: "Living Room", prompt: "A living room with a low sofa with cushions, a large multi-pane window, a simple shaded pendant light overhead, a side table" },
-      { id: "study-nook", name: "Study / Home Office", prompt: "A home study corner with a simple desk, a laptop and mug on it, a desk chair, a window with a sheer curtain" },
+      { id: "study-nook", name: "Study / Home Office", prompt: "A home study corner with a simple desk, a laptop on it, a desk chair, a window with a sheer curtain" },
       { id: "library-wall", name: "Home Library Wall", prompt: "A reading area with a comfortable armchair, a throw blanket draped over its arm, and a separate floor lamp set away from the shelf" },
       { id: "wall-niche", name: "Wall Niche / Alcove", prompt: "A recessed wall niche or alcove, the shelf fitted into the rectangular recess, appearing integrated" },
       { id: "bedroom-corner", name: "Bedroom Corner", prompt: "A bedroom corner with the edge of a bed with linen visible, a separate bedside lamp away from the shelf, a window with a sheer curtain" },
@@ -126,10 +126,14 @@
     ],
     framing: [
       { id: "auto", label: "Auto" },
-      { id: "snapshot", label: "Snapshot", prompt: "FRAMING: No composition. Standing eye-height. Shelf off-center and tilted. Too much empty space." },
-      { id: "casual", label: "Casual", prompt: "FRAMING: Roughly centered but imperfect. Standing height, mostly level." },
-      { id: "considered", label: "Considered", prompt: "FRAMING: Approximate rule of thirds. Level horizon. Some leading lines." },
-      { id: "professional", label: "Professional", prompt: "FRAMING: Expert rule-of-thirds. Deliberate leading lines. Optimal angle." },
+      // These say how well the frame is composed, and nothing about where the
+      // photographer stands. "Standing eye-height", "level horizon" and
+      // "optimal angle" used to live here, and they are camera positions --
+      // they fought viewpointPrompt for control of the vantage and sometimes won.
+      { id: "snapshot", label: "Snapshot", prompt: "FRAMING: No composition. Shelf off-center in the frame. Too much empty space." },
+      { id: "casual", label: "Casual", prompt: "FRAMING: Roughly centered but imperfect." },
+      { id: "considered", label: "Considered", prompt: "FRAMING: Approximate rule of thirds. Some leading lines." },
+      { id: "professional", label: "Professional", prompt: "FRAMING: Expert rule-of-thirds. Deliberate leading lines." },
     ],
     light: [
       { id: "auto", label: "Auto" },
@@ -143,10 +147,10 @@
     ],
     persona: [
       { id: "auto", label: "None / Auto", contents: "" },
-      { id: "reader", label: "The Reader", contents: "books stacked horizontally and vertically, a small framed photo, perhaps a separate reading lamp nearby but not mounted on the shelf" },
+      { id: "reader", label: "The Reader", contents: "books stacked horizontally and vertically, a small framed print, perhaps a separate reading lamp nearby but not mounted on the shelf" },
       { id: "collector", label: "The Collector", contents: "travel souvenirs, ceramics, a small sculpture, a vintage clock, decorative objects" },
       { id: "minimalist", label: "The Minimalist", contents: "three deliberately placed objects — one vase, one succulent, one stack of books. Generous space." },
-      { id: "parent", label: "The Parent", contents: "children's picture books, a stuffed toy, a family photo, colourful storage boxes" },
+      { id: "parent", label: "The Parent", contents: "children's picture books, a stuffed toy, a framed print, colourful storage boxes" },
       { id: "creative", label: "The Creative", contents: "art supplies, sketchbooks, ink bottles, reference books, a camera" },
       { id: "plant-parent", label: "Plant Parent", contents: "multiple small potted plants, propagation jars, one trailing plant with hanging vines" },
     ],
@@ -183,7 +187,6 @@
     humanTraces: [
       { id: "laptop", label: "Laptop open", prompt: "A laptop open on a nearby surface, as if someone just stepped away" },
       { id: "glasses", label: "Reading glasses", prompt: "Reading glasses resting on a shelf or nearby table" },
-      { id: "mug", label: "Mug of tea", prompt: "A ceramic mug of tea or coffee on a surface" },
       { id: "phone-cable", label: "Phone charging", prompt: "A phone with a charging cable plugged in, cable slightly messy" },
       { id: "jacket", label: "Jacket on chair", prompt: "A jacket draped over the arm of a nearby chair" },
       { id: "tote-bag", label: "Tote bag", prompt: "A canvas tote bag leaning against the wall near the shelf" },
@@ -206,7 +209,8 @@
   - Maintain modular steel tube construction — powder-coated steel tubes and flat steel shelves with visible bolt connections
   - Realistic scale relative to surrounding furniture and doorways
   - Preserve exact metalwork joint style — simple bolt-through connections
-  - Keep the shelf readable: front vertical tubes, legs, shelf edges, bolt points, and tier gaps must remain visible`,
+  - Keep the shelf readable: front vertical tubes, legs, shelf edges, bolt points, and tier gaps must remain visible
+  - Shelf boards are sawn square: seen from above their ends and corners are sharp right angles, never rounded, radiused, or softened`,
 
     // A photograph of a shelf is a projection of it from one place. Everything
     // in preservationPrompt above -- tier count, proportions, spacing, colour --
@@ -226,9 +230,14 @@
     // contents, never from bad photography. Always appended to scene prompts.
     craftFloorPrompt: `PHOTOGRAPHIC FLOOR — non-negotiable regardless of how casual or lived-in the scene is:
   - The shelf is the clear subject: fully visible, well lit, in focus, not blocked by furniture or clutter.
-  - Verticals straight or near-straight; horizon level or nearly level; composition balanced.
+  - Composition balanced, and the frame not rolled or dutched for effect. How level the horizon sits and how far the verticals converge follow the VIEWPOINT LOCK instead of this floor, because those describe where the camera stands.
   - Exposure correct, colours harmonious with the room's palette.
   - Realism must come from the place, its objects, its light, and its imperfect life — never from blur, underexposure, tilted framing, or the product being obscured.`,
+
+    // Left to itself the model fills a shelf with beige and grey, then
+    // over-corrects into a rainbow when told not to. Both are wrong: real
+    // shelves take their colour from what is actually on them.
+    contentsColourPrompt: `Colour: at most half the shelf contents may be beige, grey, white, or natural fibre. The rest carry the ordinary colour real books and objects have — varied and unevenly distributed, never sorted into a rainbow or a gradient.`,
 
     // Grounding line for every in-use scene.
     nairobiTruthPrompt: `AUTHENTIC NAIROBI: This is a real, occupied space in Nairobi, Kenya — not a showroom, not a render. Nairobi sits at 1,800m on the equator: daylight is strong, clean and high-angle, shadows crisp, mornings cool. Rooms are daylight-lit in the day. Include the small honest imperfections of a real space, consistent with the lived-in level requested.`,
@@ -245,7 +254,7 @@
       name: "Kilimani new-build",
       blurb: "Bright young-professional apartment, morning light",
       place: `A bright living room in a newer Kilimani apartment block. Smooth white-painted walls; large-format light grey porcelain floor tiles with thin grout lines. Floor-to-ceiling aluminium sliding windows with white sheer curtains half drawn; through the glass, the balconies of a neighbouring block and the crown of a jacaranda tree. Strong, clean equatorial morning light diffused by the sheers. Furniture is minimal and newish — a low fabric sofa, a light-wood side table — warmed by one woven sisal basket and a potted plant. A young professional's rental: clean, slightly sparse, genuinely bright.`,
-      params: { scene:"living-room", settingType:"residential", wall:"soft-white", floor:"large-tile", rug:"sisal-jute", furniture:"minimal-modern", windowView:"apartments-trees", colourMood:"bright-airy", camera:"pro", framing:"considered", light:"bright-soft", persona:"minimalist", fullness:"light", livedIn:"tidy", details:["british-socket","sheer-curtains"], humanTraces:["mug"] },
+      params: { scene:"living-room", settingType:"residential", wall:"soft-white", floor:"large-tile", rug:"sisal-jute", furniture:"minimal-modern", windowView:"apartments-trees", colourMood:"bright-airy", camera:"pro", framing:"considered", light:"bright-soft", persona:"minimalist", fullness:"light", livedIn:"tidy", details:["british-socket","sheer-curtains"], humanTraces:[] },
     },
     {
       id: "westlands-parquet",
@@ -265,7 +274,7 @@
       id: "south-b-family",
       name: "South B family home",
       blurb: "Lived-in maisonette, cement tile, evening lamps",
-      place: `A family sitting room in a South B maisonette in the early evening. Patterned cement tile floor in a slightly faded geometric design. Pale walls repainted a few years ago, with conduit running neatly along the ceiling line. Heavy outer curtains flank sheer inner ones; framed family photos on the wall, a doily under a vase, a TV in the corner of the room's life. Warm light from a ceiling fixture and one standing lamp mixes with the last blue of dusk in the window. Comfortable, busy, unmistakably a real Nairobi family home.`,
+      place: `A family sitting room in a South B maisonette in the early evening. Patterned cement tile floor in a slightly faded geometric design. Pale walls repainted a few years ago, with conduit running neatly along the ceiling line. Heavy outer curtains flank sheer inner ones; framed prints on the wall, a doily under a vase, a TV in the corner of the room's life. Warm light from a ceiling fixture and one standing lamp mixes with the last blue of dusk in the window. Comfortable, busy, unmistakably a real Nairobi family home.`,
       params: { scene:"living-room", settingType:"residential", wall:"warm-cream", floor:"patterned-cement", rug:"solid-wool", furniture:"eclectic", windowView:"apartments-trees", colourMood:"earthy-muted", camera:"decent-phone", framing:"casual", light:"evening-lamps", persona:"parent", fullness:"full", livedIn:"settled", details:["conduit","extension-cable","british-socket","floor-wear"], humanTraces:["phone-cable","jacket"] },
     },
     {
@@ -273,7 +282,7 @@
       name: "Makers' studio",
       blurb: "Light-industrial workspace, hard midday light",
       place: `A working creative studio in a converted light-industrial space off Mombasa Road. Smooth grey cement screed floor marked by years of use; painted masonry walls, white but not precious, with pin holes and patched spots. Big steel-framed windows with slightly dusty glass throw broad hard midday light across a large worktable. Tools, sketchbooks, rolls of paper and prototypes occupy surfaces; the ceiling is open with visible trusses. Honest and functional — everything in the room earns its place.`,
-      params: { scene:"creative-studio", settingType:"commercial", wall:"soft-white", floor:"polished-concrete", rug:"auto", furniture:"industrial", windowView:"rooftop-city", colourMood:"stone-pops", camera:"entry-camera", framing:"considered", light:"bright-hard", persona:"creative", fullness:"moderate", livedIn:"lived-in", details:["steel-window","floor-wear"], humanTraces:["headphones","mug"] },
+      params: { scene:"creative-studio", settingType:"commercial", wall:"soft-white", floor:"polished-concrete", rug:"auto", furniture:"industrial", windowView:"rooftop-city", colourMood:"stone-pops", camera:"entry-camera", framing:"considered", light:"bright-hard", persona:"creative", fullness:"moderate", livedIn:"lived-in", details:["steel-window","floor-wear"], humanTraces:["headphones"] },
     },
     {
       id: "staged-bright",
@@ -287,7 +296,7 @@
       name: "Café corner",
       blurb: "Independent Nairobi café, mid-morning",
       place: `A corner of an independent Nairobi café mid-morning. Smooth cement floor; timber tables with mismatched chairs; somewhere behind, a counter with a hand-chalked menu board. Simple shaded pendant lights hang from a high ceiling. Big windows bring in soft bright light and a hint of the street — a tree, a parked motorbike, passers-by implied rather than shown. Potted plants soften the corners. The shelf works for the space: crockery, retail products, plants, cookbooks.`,
-      params: { scene:"cafe-display", settingType:"commercial", wall:"warm-cream", floor:"polished-concrete", rug:"auto", furniture:"eclectic", windowView:"apartments-trees", colourMood:"warm-wood", camera:"entry-camera", framing:"considered", light:"bright-soft", persona:"collector", fullness:"full", livedIn:"tidy", details:["pendant","floor-wear"], humanTraces:["mug"] },
+      params: { scene:"cafe-display", settingType:"commercial", wall:"warm-cream", floor:"polished-concrete", rug:"auto", furniture:"eclectic", windowView:"apartments-trees", colourMood:"warm-wood", camera:"entry-camera", framing:"considered", light:"bright-soft", persona:"collector", fullness:"full", livedIn:"tidy", details:["pendant","floor-wear"], humanTraces:[] },
     },
   ];
   CONFIG.archetypes = ARCHETYPES;
