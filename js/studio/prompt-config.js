@@ -205,6 +205,7 @@
   - Do NOT attach or integrate lighting into the shelf. If a lamp appears in the surrounding room, it must be a separate ordinary room lamp, never part of the shelf.
   - Do NOT show open books. Any book lying on a shelf, sofa, table, or floor must be closed.
   - Books must obey simple physics: vertical books need support from a shelf side, a post, bookends, a heavy object, or a horizontal stack; no unsupported freestanding books.
+  - Books sit spine-out: standing books show their spines to the room, and horizontal stacks show spines along the front edge rather than page edges. One fore-edge-out book is the most that should ever appear.
   - Pendant lights should have a simple shade over the bulb. Do not show bare-bulb pendant lights unless the user explicitly asks for one.
   - Maintain modular steel tube construction — powder-coated steel tubes and flat steel shelves with visible bolt connections
   - Realistic scale relative to surrounding furniture and doorways
