@@ -210,6 +210,7 @@
   - Maintain modular steel tube construction — powder-coated steel tubes and flat steel shelves with visible bolt connections
   - Realistic scale relative to surrounding furniture and doorways
   - Preserve exact metalwork joint style — simple bolt-through connections
+  - The uprights are stacked segments: a slim collar in the frame colour sits at each join, recurring up the leg whether or not a shelf meets it there. Keep them exactly as small and flush as the reference shows — easy to miss, never dropped.
   - Keep the shelf readable: front vertical tubes, legs, shelf edges, bolt points, and tier gaps must remain visible
   - Shelf boards are sawn square: seen from above their ends and corners are sharp right angles, never rounded, radiused, or softened`,
 
