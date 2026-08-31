@@ -76,10 +76,32 @@ export async function patch(tableId, records) {
   return done;
 }
 
+/**
+ * `typecast` is on for creates, and deliberately NOT for patches.
+ *
+ * Airtable's schema API can create a field but cannot change an existing one's
+ * single-select options — verified twice, most recently 2026-08-31, when a PATCH
+ * adding two `Check` values came back "Changing a field's type or number
+ * precision is not currently supported". So a new check name, or a colour Zoho
+ * has that Airtable does not, would otherwise fail the whole batch with
+ * INVALID_MULTIPLE_CHOICE_OPTIONS. With typecast, Airtable adds the option
+ * itself. `framework-ops/src/airtable.js` carries this for the same reason.
+ *
+ * It is safe here because every link field is written as a RECORD ID. Typecast
+ * on a link given a *name* would create a record in the linked table to match
+ * it — which is how an order could quietly mint a product called "Standard
+ * Base". Ids cannot do that. Never pass a link a name.
+ *
+ * Patches stay strict: that surface is settled, and there a coerced value would
+ * hide a mistake rather than absorb a new option.
+ */
 export async function create(tableId, records) {
   const done = [];
   for (let i = 0; i < records.length; i += 10) {
-    const d = await req(tableId, { method: 'POST', body: { records: records.slice(i, i + 10) } });
+    const d = await req(tableId, {
+      method: 'POST',
+      body: { records: records.slice(i, i + 10), typecast: true }
+    });
     done.push(...d.records);
   }
   return done;

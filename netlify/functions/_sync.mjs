@@ -35,6 +35,52 @@ const ERROR = 'Error', WARN = 'Warning', INFO = 'Info';
 const PAYMENT_DRIFT_DAYS = 7;
 const now = () => new Date().toISOString();
 
+/**
+ * The day the sync started creating orders. Invoices dated before it are left
+ * exactly as they are.
+ *
+ * A fixed date, not "today" computed at runtime — a floor that moves with the
+ * clock is not a floor. Ben's call, 2026-08-31: new invoices only, so the first
+ * runs work on orders he recognises rather than materialising a year of history
+ * for jobs finished long ago. The six older paid invoices with no order stay as
+ * Info rows in the log, which is where they have always been.
+ */
+export const CREATE_ORDERS_FROM = '2026-08-31';
+
+/**
+ * The order status a newly created order starts in. Ben's rule, 2026-08-31:
+ * partly or fully paid means the workshop can start, merely sent does not.
+ *
+ * Returns null for anything else — draft and void have no order to be, and a
+ * status Zoho invents later must not quietly become "start building this".
+ */
+export function orderStatusFor(invoiceStatus) {
+  if (invoiceStatus === 'paid' || invoiceStatus === 'partially_paid') return 'To Launch Production';
+  // `viewed` is `sent` plus a read receipt, and `overdue` is `sent` plus time.
+  if (['sent', 'viewed', 'overdue', 'unpaid'].includes(invoiceStatus)) return 'Invoice Sent';
+  return null;
+}
+
+/**
+ * A custom field's real value, not the one Zoho formatted for display.
+ *
+ * Every custom field comes back three times: `cf_delivery_date` is
+ * "04 Sep 2026", `cf_delivery_date_formatted` is the same, and
+ * `cf_delivery_date_unformatted` is "2026-09-04". Only the last is a date
+ * Airtable will take. The same split makes `cf_client_pickup` the STRING
+ * "false" while `cf_client_pickup_unformatted` is the boolean false — so
+ * `=== true` against the plain key can never be true, whichever way the box is
+ * ticked.
+ *
+ * Both of those were live bugs in `seedDelivery` until 2026-08-31: it wrote a
+ * display-format date into a date field, and it could not tick Client Pickup at
+ * all. Read every custom field through here.
+ */
+export function cfv(cf, name) {
+  const raw = cf || {};
+  return raw[`${name}_unformatted`] !== undefined ? raw[`${name}_unformatted`] : raw[name];
+}
+
 /** A lookup field arrives as an array even when it holds one value. */
 const num1 = (v) => (Array.isArray(v) ? v[0] : v);
 
@@ -209,18 +255,143 @@ export function seedDelivery(order, cf) {
     return v !== undefined && v !== null && v !== '';
   };
   const out = {};
-  if (!has('Delivery - Scheduled Date') && cf.cf_delivery_date) {
-    out['Delivery - Scheduled Date'] = String(cf.cf_delivery_date);
-  }
-  const start = hhmmToSeconds(cf.cf_delivery_window_start);
-  const end = hhmmToSeconds(cf.cf_delivery_window_end);
+  const date = cfv(cf, 'cf_delivery_date');
+  if (!has('Delivery - Scheduled Date') && date) out['Delivery - Scheduled Date'] = String(date);
+  const start = hhmmToSeconds(cfv(cf, 'cf_delivery_window_start'));
+  const end = hhmmToSeconds(cfv(cf, 'cf_delivery_window_end'));
   if (!has('Delivery Window Start') && start != null) out['Delivery Window Start'] = start;
   if (!has('Delivery Window End') && end != null) out['Delivery Window End'] = end;
-  if (order['Delivery - Date Set'] !== true && cf.cf_delivery_date_status === 'Confirmed') {
+  if (order['Delivery - Date Set'] !== true && cfv(cf, 'cf_delivery_date_status') === 'Confirmed') {
     out['Delivery - Date Set'] = true;
   }
-  if (order['Client Pickup'] !== true && cf.cf_client_pickup === true) out['Client Pickup'] = true;
+  if (order['Client Pickup'] !== true && cfv(cf, 'cf_client_pickup') === true) out['Client Pickup'] = true;
   return out;
+}
+
+/**
+ * A whole order, from an invoice that has none.
+ *
+ * This is the applet's Step 4 without its Step 5. `airtable_zoho_import.html`
+ * could not know an order's `Order ID` — it is a formula over an autoNumber, so
+ * it does not exist until the row does — which is why the applet emits a paste
+ * block, waits for a person to paste the generated names back in, and only then
+ * can key the line items. Creating through the API returns the record id, so
+ * the order and its lines are written in one movement and that round trip
+ * disappears.
+ *
+ * Everything the invoice can answer is set here, because the blocks that
+ * normally fill an order in later all run off an order this pass has already
+ * read. A record created during the pass is not in that list, so what is not set
+ * now waits a whole cycle.
+ */
+export function orderFieldsFromInvoice(full, m, clientRecId, firstPayment) {
+  const cf = full.custom_field_hash || {};
+  const fields = {
+    'Order Status': orderStatusFor(full.status),
+    'Client Name': [clientRecId],
+    // The invoice date, which is what the applet used for "Order Received" too.
+    'Order Received': String(full.date),
+    'Zoho Invoice': full.invoice_number,
+    'Balance to Pay': zoho.round2(Number(full.balance) || 0)
+  };
+  if (firstPayment) fields['Payment Received'] = firstPayment;
+  const design = cfv(cf, 'cf_design_details') || cfv(cf, 'cf_design_code');
+  if (design) fields['Design Link / Details'] = String(design);
+  const date = cfv(cf, 'cf_delivery_date');
+  if (date) fields['Delivery - Scheduled Date'] = String(date);
+  const start = hhmmToSeconds(cfv(cf, 'cf_delivery_window_start'));
+  const end = hhmmToSeconds(cfv(cf, 'cf_delivery_window_end'));
+  if (start != null) fields['Delivery Window Start'] = start;
+  if (end != null) fields['Delivery Window End'] = end;
+  if (cfv(cf, 'cf_delivery_date_status') === 'Confirmed') fields['Delivery - Date Set'] = true;
+  if (cfv(cf, 'cf_client_pickup') === true) fields['Client Pickup'] = true;
+  // Ex-VAT, like the field it lands in and unlike every other money figure here.
+  if (m.hasDeliveryLine) fields['Delivery - Charged Client (ex VAT)'] = m.deliveryExVat;
+  const etims = cfv(cf, 'cf_etims_invoice_number');
+  if (etims) fields['eTIMS Invoice Number'] = String(etims);
+  return fields;
+}
+
+/**
+ * An invoice's goods, as Orders - Line Items rows.
+ *
+ * Joined on `item_id`, never on the name. The applet had to match by name —
+ * `convertItemName()` is forty lines of substring tests that still map to
+ * "Lamp Mount - Left", a product the catalogue stopped calling that — because a
+ * CSV export has no ids in it. We have them, they survive every rename, and 58
+ * of 59 active products carry theirs. The one that does not is `Custom Item`,
+ * which has no Zoho twin by design.
+ *
+ * A line that matches nothing keeps its Zoho name in `Other Item Name` rather
+ * than being dropped or guessed at. That is the applet's own fallback column,
+ * and a line nobody can price is still a line somebody has to build.
+ *
+ * Delivery never appears: it is a FIELD on the order, not a line on it, so
+ * `money()` has already filtered it out of `m.lines`. The applet excluded it
+ * too, and said how many it had excluded.
+ */
+export function lineFieldsFromInvoice(m, products, orderRecId, factor = 1) {
+  const byZohoId = new Map();
+  for (const p of products) {
+    const id = String(p.fields['Zoho Item ID'] || '').trim();
+    if (id) byZohoId.set(id, p);
+  }
+  return (m.lines || []).map((li) => {
+    const product = byZohoId.get(String(li.item_id || '').trim());
+    const colour = (li.item_custom_fields || []).find((c) => c.api_name === 'cf_color')?.value;
+    const fields = {
+      Order: [orderRecId],
+      Quantity: Number(li.quantity) || 1,
+      // Priced from the invoice on the way in, so the order reconciles on the
+      // very first pass rather than reporting itself short until the next one.
+      'Zoho Unit Rate': zoho.round2(li.rate * factor),
+      'Zoho Line Total': zoho.round2(li.rate * li.quantity * factor)
+    };
+    if (product) fields.Item = [product.id];
+    else fields['Other Item Name'] = stripLegacy(li.name) || 'Custom Item';
+    if (colour) fields.Color = colour;
+    if (li.description) fields.Notes = String(li.description).slice(0, 500);
+    return fields;
+  });
+}
+
+/**
+ * The Base - Clients row for a Zoho customer, or the fields to create one.
+ *
+ * Resolved by `Zoho Contact ID` first, then by name — the id is exact, and the
+ * name is what catches a client somebody typed in before the ids existed. A
+ * name match backfills the id, so the next invoice resolves exactly and the
+ * base stops drifting.
+ *
+ * Names are matched case-insensitively and whitespace-collapsed, because
+ * "Base - Clients has no uniqueness constraint of its own" and a second row for
+ * one person is worse than none: `Order ID` is `Order Code & "_" & Client Name`,
+ * so two of the same person means orders that look interchangeable and are not.
+ */
+export function resolveClient(full, clients) {
+  const wantId = String(full.customer_id || '').trim();
+  const tidy = (v) => String(v || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  const wantName = tidy(full.customer_name);
+  const byId = clients.find((c) => String(c.fields['Zoho Contact ID'] || '').trim() === wantId);
+  if (byId) return { row: byId };
+  const byName = wantName && clients.find((c) => tidy(c.fields.Name) === wantName);
+  // Matched by name only. Hand back the id it is missing so the caller can give
+  // it one — otherwise every future invoice for this person matches by name
+  // again, and a rename would lose them entirely.
+  if (byName) {
+    const held = String(byName.fields['Zoho Contact ID'] || '').trim();
+    return { row: byName, backfillId: held || !wantId ? null : wantId };
+  }
+
+  const cf = full.custom_field_hash || {};
+  const fields = { Name: String(full.customer_name || '').trim(), 'Zoho Contact ID': wantId };
+  const phone = cfv(cf, 'cf_primary_contact_number');
+  const address = cfv(cf, 'cf_delivery_address');
+  const pin = String(full.tax_reg_no || '').trim();
+  if (phone) fields['Primary Phone Number'] = String(phone).trim();
+  if (address) fields.Address = String(address).trim();
+  if (pin) fields['KRA PIN'] = pin;
+  return { create: fields };
 }
 
 /** Whole days between two ISO dates, whichever way round they are. */
@@ -393,6 +564,38 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
 
   }
 
+  // ---- check: one client, one row --------------------------------------
+  // Base - Clients has no uniqueness constraint of its own, and the sync is
+  // about to start creating rows in it. `Order ID` is `Order Code & "_" &
+  // Client Name`, so two rows for one person means orders that look
+  // interchangeable and are not — and a second row can silently take the next
+  // invoice, splitting somebody's history in half.
+  const seenClientId = new Map();
+  const seenClientName = new Map();
+  const tidyName = (v) => String(v || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  for (const c of clients) {
+    const id = String(c.fields['Zoho Contact ID'] || '').trim();
+    if (id) seenClientId.set(id, (seenClientId.get(id) || []).concat(c));
+    const n = tidyName(c.fields.Name);
+    if (n) seenClientName.set(n, (seenClientName.get(n) || []).concat(c));
+  }
+  for (const [id, rows] of seenClientId) {
+    if (rows.length > 1) {
+      add(ERROR, 'client-listed-once', `Zoho contact ${id} is on ${rows.length} client rows`, {
+        detail: `${rows.map((r) => r.fields.Name).join(', ')} all carry the same Zoho Contact ID. One of them will take the next invoice and the others will look like clients who stopped ordering.`
+      });
+    }
+  }
+  for (const [, rows] of seenClientName) {
+    // Only when they are not already reported above, so one fault is one row.
+    const ids = new Set(rows.map((r) => String(r.fields['Zoho Contact ID'] || '').trim()));
+    if (rows.length > 1 && !(ids.size === 1 && !ids.has(''))) {
+      add(ERROR, 'client-listed-once', `${rows[0].fields.Name} is on ${rows.length} client rows`, {
+        detail: 'Two Base - Clients rows share a name. Order ID is built from the client name, so their orders are indistinguishable — merge them and keep the one carrying the Zoho Contact ID.'
+      });
+    }
+  }
+
   // ---- check: every line item belongs to an order ----------------------
   for (const l of lines) {
     if (!(l.fields.Order || []).length) {
@@ -424,7 +627,11 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
   const pinSeeds = new Map();
 
   let scanned = 0;
-  const writes = { orders: [], lines: [], clients: [] };
+  // Creations are kept apart from patches on purpose. A patch is idempotent and
+  // a create is not: replaying one makes a second record. They are applied last,
+  // in their own step, so the ordinary work of a pass cannot be held up by them
+  // and a failure here cannot half-apply a patch.
+  const writes = { orders: [], lines: [], clients: [], creates: [] };
   const projection = [];
 
   for (const { list, full, error } of details) {
@@ -471,11 +678,70 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       // job or a picture frame has no order to be missing, and 17 of the 25 this
       // check was reporting were Custom Projects. Two thirds of a list being
       // things that are fine is how a list stops being read.
-      const workType = full.custom_field_hash?.cf_work_type;
+      const workType = cfv(full.custom_field_hash, 'cf_work_type');
+      const wantStatus = orderStatusFor(full.status);
+
+      // -- create it, when everything about it is unambiguous
+      //
+      // This is what `airtable_zoho_import.html` did by hand: find the invoices
+      // with no order, build the client, the order and its lines, and paste
+      // them in. Four conditions, each of which is somebody's decision rather
+      // than a technicality:
+      //
+      //   Shelving only, because Orders - Pipeline IS the shelving pipeline. A
+      //   window job or a picture frame has no order to be, which is why the
+      //   Info check below has always filtered the same way.
+      //
+      //   Paid, part-paid or sent — never a draft, never a void. A draft is a
+      //   quote somebody is still editing.
+      //
+      //   Dated on or after CREATE_ORDERS_FROM, so a year of finished history
+      //   does not materialise as live orders overnight.
+      //
+      //   And nothing already claiming this invoice number. That is the same
+      //   key `invoice-claimed-once` guards, and it is the whole duplicate
+      //   defence: the applet's marker lives on the Zoho invoice
+      //   (`cf_airtable_order_number`) and this credential has no
+      //   invoices.UPDATE to stamp it, deliberately. The Airtable side is the
+      //   better key anyway — a person cannot clear it by accident.
+      if (workType === 'Shelving' && wantStatus && String(full.date) >= CREATE_ORDERS_FROM) {
+        const resolved = resolveClient(full, clients);
+        // The first payment, fetched now rather than left for the next pass:
+        // an order created without it has a blank `Order Received` month.
+        let firstPayment = null;
+        if (full.last_payment_date) {
+          try { firstPayment = (await io.payments(full.invoice_id))[0]?.date || null; }
+          catch { firstPayment = full.last_payment_date; }
+        }
+        const m = zoho.money(full);
+        // An invoice-level discount is spread across the lines, exactly as it is
+        // for an order that already exists — otherwise a discounted order would
+        // be created reconciling to the wrong total on the very next pass.
+        const gross = (m.lines || []).reduce((n, li) => n + li.rate * li.quantity, 0);
+        const factor = apportionFactor(gross, m.discount);
+        writes.creates.push({
+          invoice: num,
+          customer: full.customer_name,
+          status: wantStatus,
+          client: resolved,
+          order: (clientRecId) => orderFieldsFromInvoice(full, m, clientRecId, firstPayment),
+          lines: (orderRecId) => lineFieldsFromInvoice(m, products, orderRecId, factor),
+          // Plain data, so a read-only pass can show what it would write. The
+          // closures above cannot be previewed: they are waiting on record ids
+          // that do not exist until the write happens.
+          preview: {
+            order: orderFieldsFromInvoice(full, m, '(new client)', firstPayment),
+            lines: lineFieldsFromInvoice(m, products, '(new order)', factor),
+            newClient: resolved.create || null
+          }
+        });
+        continue;
+      }
+
       if (full.status === 'paid' && full.date >= epoch && workType === 'Shelving') {
         add(INFO, 'paid-invoice-no-order', `${num} is paid with no order`, {
           invoice: num,
-          detail: `${full.customer_name}, ${full.date}, ${full.total}. Needs an order, or is a delivery-only invoice.`
+          detail: `${full.customer_name}, ${full.date}, ${full.total}. Predates ${CREATE_ORDERS_FROM}, so the sync leaves it alone — it needs an order by hand, or is a delivery-only invoice.`
         });
       }
       continue;
@@ -828,7 +1094,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     }
     return [...byId.values()];
   };
-  let orderWrites = 0, lineWrites = 0, clientWrites = 0;
+  let orderWrites = 0, lineWrites = 0, clientWrites = 0, ordersCreated = 0;
   if (mode === 'write') {
     const orderPatches = merged(writes.orders);
     if (orderPatches.length) { await patch(TABLES.orders, orderPatches.map(bare)); orderWrites = orderPatches.length; }
@@ -838,6 +1104,52 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     // and this is the same reconciler doing the writing either way.
     const clientPatches = merged(writes.clients);
     if (clientPatches.length) { await patch(TABLES.clients, clientPatches.map(bare)); clientWrites = clientPatches.length; }
+
+    // ---- creations, last and one order at a time -----------------------
+    //
+    // Serial, deliberately. Each order needs its client's record id before it
+    // can be written, and each line needs its order's — so this is three
+    // dependent writes, not a batch. Doing them one order at a time also means
+    // a failure costs exactly one order rather than ten, and the next pass
+    // simply finds that invoice still unclaimed and tries again.
+    //
+    // A client created here is added to the in-memory list straight away, so
+    // two invoices for the same new customer in one pass produce one client
+    // row, not two. That is the duplicate this whole path is most likely to
+    // create, and the cheapest place to stop it.
+    for (const c of writes.creates) {
+      try {
+        let clientRecId = c.client.row?.id;
+        if (c.client.create) {
+          const [made] = await create(TABLES.clients, [{ fields: c.client.create }]);
+          clientRecId = made.id;
+          clients.push({ id: made.id, fields: { ...c.client.create } });
+        } else if (c.client.backfillId) {
+          // Matched by name, so give it the id it was missing and stop it being
+          // a name match forever. Best-effort: the order is the point, and an
+          // id that fails to land is found again by name next time.
+          await patch(TABLES.clients, [{ id: clientRecId, fields: { 'Zoho Contact ID': c.client.backfillId } }])
+            .catch(() => {});
+        }
+        const [order] = await create(TABLES.orders, [{ fields: c.order(clientRecId) }]);
+        const lines = c.lines(order.id);
+        if (lines.length) await create(TABLES.lines, lines.map((fields) => ({ fields })));
+        ordersCreated += 1;
+        add(INFO, 'order-created', `${c.invoice} became an order for ${c.customer}`, {
+          invoice: c.invoice, orderRecIds: [order.id],
+          detail: `Created as ${c.status} with ${lines.length} line${lines.length === 1 ? '' : 's'}`
+            + `${c.client.create ? ', and a new Base - Clients row' : ''}. Check the production document shows it.`
+        });
+      } catch (err) {
+        // Never silent, and never fatal to the rest: the invoice stays
+        // unclaimed, so the next pass tries again rather than leaving a half
+        // order nobody knows about.
+        add(ERROR, 'order-created', `${c.invoice} could not become an order`, {
+          invoice: c.invoice,
+          detail: `${String(err.message).slice(0, 200)} — nothing was left half-written; the next pass will try again.`
+        });
+      }
+    }
   }
 
   const errors = findings.filter((f) => f.severity === ERROR).length;
@@ -847,7 +1159,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     // Whether this pass looked at everything. Only a full pass may close a log
     // row: an incremental one has not seen the invoices it is not reporting on.
     full: isFull,
-    orderWrites, lineWrites, clientWrites, errors, warnings, findings,
+    orderWrites, lineWrites, clientWrites, ordersCreated, errors, warnings, findings,
     zohoCalls: zoho.calls.n - callsAtStart,
     // What a write pass would do, whether or not this one did it.
     pending: writes, projection
@@ -936,6 +1248,9 @@ export async function record(report) {
       Trigger: report.trigger,
       Mode: report.mode === 'write' ? 'Write' : 'Read-only',
       'Invoices Scanned': report.scanned,
+      // The column has existed since the beginning and nothing has ever written
+      // it: order creation was designed for and then not built. It is built now.
+      'Orders Created': report.ordersCreated || 0,
       'Orders Updated': report.orderWrites,
       'Lines Updated': report.lineWrites,
       Errors: report.errors,

@@ -15,6 +15,10 @@ Full design rationale: **https://claude.ai/code/artifact/8b944f4e-b591-44a1-81b5
 The reconciler is the only thing that writes to Airtable. Nothing carries money
 or line items from Airtable back to Zoho.
 
+The reconciler **creates** orders as well as reconciling them — see "An invoice
+becoming an order". That is not an exception to the rule: it is still the one
+writer, still going one way.
+
 The reason is partial failure. If the push wrote both sides, a timeout halfway
 would leave a real, fiscalised invoice with no order. Instead the push does one
 small thing, and the reconciler — which compares *state*, not events — picks up
@@ -82,6 +86,8 @@ old house.
   cosmetic.
 - **`KRA PIN`** on Base - Clients — blanks only, from the PIN Zoho stamped on
   the client's most recent invoice.
+- **Orders - Pipeline, Orders - Line Items and Base - Clients records**, created
+  from an invoice that has none. See "An invoice becoming an order".
 - **`Sync Status`** on Orders - Pipeline — `OK` / `Warning` / `Error` /
   `Held - in production`. The log answers "what is wrong across the board"; this
   answers "can I trust this order", on the order itself, where the workshop and
@@ -587,6 +593,109 @@ invoice at today's rate.
 
 ---
 
+## An invoice becoming an order
+
+Until 2026-08-31 the reconciler never created anything, and the code said so
+flatly without ever saying why. It was not a decision — it was unfinished. The
+proof is `Sync - Runs.Orders Created`, a column that had existed from the
+beginning and that no code had ever written. Somebody built the reporting for
+this and stopped.
+
+The job was being done by hand, by
+`Dropbox/…/order-reconciliation/airtable_zoho_import.html`, in seven steps:
+export both CSVs, find the Zoho invoices with no `CF.Airtable Order Number`,
+tick which to add, paste a Base - Clients block, paste an Orders - Pipeline
+block, **paste the generated Order IDs back into the applet**, paste the line
+items, then check the production document.
+
+**Step 5 is why the applet has seven steps and this has none.** `Order ID` is a
+formula over an autoNumber, so it does not exist until the row does — the applet
+cannot know it, so a person carries it back across. Creating through the API
+returns the record id, so the client, the order and its lines are written in one
+movement and the round trip disappears.
+
+### What has to be true before one is created
+
+Four conditions, each somebody's decision rather than a technicality:
+
+| | |
+|---|---|
+| `cf_work_type` is `Shelving` | Orders - Pipeline **is** the shelving pipeline. A window job or a picture frame has no order to be, which is why `paid-invoice-no-order` has always filtered the same way. The applet had no such filter — its filter was a human ticking boxes. |
+| Paid, part-paid, or sent | Ben's rule, 2026-08-31: paid or part-paid starts as **To Launch Production**, merely sent as **Invoice Sent**. Never a draft — that is a quote somebody is still editing — and never a void. |
+| Dated on or after `CREATE_ORDERS_FROM` | A fixed date in the code, not "today" computed at runtime: a floor that moves with the clock is not a floor. New invoices only, so a year of finished history does not materialise as live orders overnight. |
+| Nothing already claims the invoice number | The whole duplicate defence. |
+
+### The duplicate defence, and the marker we cannot write
+
+The applet's "already imported" marker is `cf_airtable_order_number` **on the
+Zoho invoice**. This credential has no `invoices.UPDATE`, deliberately, so the
+sync cannot stamp it — and should not want to. The Airtable side is the better
+key anyway: an order already carrying that invoice number, which is exactly what
+`invoice-claimed-once` guards. A person cannot clear it by accident, and it is
+read fresh on every pass rather than trusted from a field.
+
+The consequence is that **the applet's marker stops being maintained**. Anything
+still relying on `cf_airtable_order_number` is reading a field that stopped
+growing on 2026-08-31.
+
+Two more places a duplicate could get in, both closed:
+
+- **A client created twice in one pass.** Two invoices for one new customer would
+  otherwise make two Base - Clients rows. A client created during a pass is added
+  to the in-memory list immediately, so the second invoice finds the first.
+- **`client-listed-once`**, a new check: two client rows sharing a `Zoho Contact
+  ID`, or sharing a name. Base - Clients has no uniqueness constraint of its own,
+  and `Order ID` is `Order Code & "_" & Client Name` — so two rows for one person
+  means orders that look interchangeable and are not.
+
+### Matching or creating the customer
+
+By `Zoho Contact ID` first, which is exact. Then by name, collapsed and
+lower-cased — that catches the clients typed in before the ids existed, and a
+name match **backfills the id** so the next invoice resolves exactly and the base
+stops drifting. Only when neither matches is a row created, from what the invoice
+itself carries: name, `cf_primary_contact_number`, `cf_delivery_address`, and the
+KRA PIN from `tax_reg_no`.
+
+### The lines
+
+Joined on `item_id`, never on the name. The applet had to match by name —
+`convertItemName()` is forty lines of substring tests, still mapping to
+`Lamp Mount - Left`, a product the catalogue stopped calling that — because a CSV
+export has no ids in it. We have them, they survive every rename, and 58 of 59
+active products carry theirs. The one that does not is `Custom Item`, which has
+no Zoho twin by design.
+
+A line matching nothing keeps its Zoho name in `Other Item Name` rather than
+being dropped or guessed at — the applet's own fallback column. Delivery never
+appears: it is a field on the order, not a line on it. An invoice-level discount
+is apportioned across the lines on the way in, or a discounted order would be
+created reporting itself short on the very next pass, forever.
+
+### Creations run last, and one order at a time
+
+Serial and after every patch, deliberately. Each order needs its client's record
+id, and each line needs its order's — three dependent writes, not a batch. One at
+a time also means a failure costs exactly one order: nothing is left half
+written, the invoice stays unclaimed, and the next pass simply tries again. Every
+creation writes an `order-created` row saying what was made, and every failure
+writes one saying what was not.
+
+### Two bugs this turned up
+
+`seedDelivery` had been reading custom fields off the wrong key. Zoho returns
+each one three times — `cf_delivery_date` is `"04 Sep 2026"`,
+`cf_delivery_date_formatted` is the same, and `cf_delivery_date_unformatted` is
+`"2026-09-04"`. Only the last is a date Airtable will take. The same split makes
+`cf_client_pickup` the **string** `"false"` while `cf_client_pickup_unformatted`
+is the boolean, so `=== true` against the plain key could never be true whichever
+way the box was ticked.
+
+So the seeding had been writing a display-format date into a date field, and had
+never once been able to tick Client Pickup. Everything now reads through `cfv()`.
+
+---
+
 ## Checks
 
 A finding has to be worth reading. Every one of these earns its place by being
@@ -627,6 +736,8 @@ option waiting for it since the beginning.
 | `line-changed-in-production` | Error | A line changed after `Production Launched` — flagged and **not** applied |
 | `line-totals-match-invoice` | Error | Line totals sum to the invoice goods total, once they carry invoiced prices |
 | `catalogue-prices-agree` | Error | Live Zoho item and live Airtable product prices match |
+| `client-listed-once` | Error | No two Base - Clients rows share a contact id or a name |
+| `order-created` | Info / Error | An invoice became an order, or could not |
 | `line-has-order` | Warning | Every line item belongs to an order |
 | `metadata-drift` | Warning | Airtable records a payment the books have never seen |
 | `metadata-drift` | Info | A payment date corrected by more than a week — applied, and worth a glance |
@@ -865,6 +976,32 @@ times over — but do it in this order.
    whether Zoho accepts `item_custom_fields` on create — if it rejects the
    colour, that is a one-line fix in `_push.mjs`.
 7. Last: `SYNC_SCHEDULE_ENABLED=1`.
+
+### Order creation — live 2026-08-31
+
+Built, tested and run. `INV640441` became **`308_Bastien-Renouil`**: a new
+Base - Clients row, an order at `To Launch Production` carrying the delivery
+date, the ex-VAT delivery charge and the eTIMS number, and three line items in
+Coral joined by `item_id`, totalling 17,000 against a goods total of 17,000. The
+driver's message renders. `Sync - Runs.Orders Created` has a 1 in it for the
+first time.
+
+**Two mislabelled products, found on the way.** Zoho sells `Wide Base`
+(…602030) and `Wide Base (Trimmed)` (…540004) as separate items. Airtable has
+**two active products both named `Wide Base (Trimmed)`**, one pointed at each —
+and the same for `Wide Extension`. The id join is right and the Airtable *name*
+is wrong, so a created line for a plain Wide Base reads "(Trimmed)" to the
+workshop. Both are already Open in `Sync - Log` as `catalogue-prices-agree`
+warnings from the 30 August nightly pass. Renaming the two rows pointed at
+…602030 and …602017 back to `Wide Base` and `Wide Extension` fixes it. Duplicates
+created 2026-08-15.
+
+**One thing not understood.** The full read-only pass on 31 August reported
+`warnings: 0` while those two rows were open and unchanged, and did not advance
+their `Last Seen`. The check itself is sound — run in isolation against the same
+live catalogues it produces exactly those two warnings — so this is unexplained
+rather than diagnosed. The next nightly full pass settles it for free; do not
+spend a 350-call pass on it by hand.
 
 ### Open decisions
 - [ ] Should `VAT Exempt` drive anything? Today it is a flag the order form

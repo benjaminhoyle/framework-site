@@ -7,7 +7,10 @@
 // of invoices.
 
 import assert from 'node:assert/strict';
-import { reconcile, canonicalItem, matchProducts, hhmmToSeconds, seedDelivery, daysApart, unmatchedLines } from '../netlify/functions/_sync.mjs';
+import {
+  reconcile, canonicalItem, matchProducts, hhmmToSeconds, seedDelivery, daysApart, unmatchedLines,
+  orderStatusFor, cfv, orderFieldsFromInvoice, lineFieldsFromInvoice, resolveClient, CREATE_ORDERS_FROM
+} from '../netlify/functions/_sync.mjs';
 
 let passed = 0;
 const test = async (name, fn) => {
@@ -830,6 +833,199 @@ await test('a failed full pass reports no findings but is not a clean sweep', as
   assert.ok(!(failure.full && !failure.failed), 'a failed pass must never close findings');
   const good = { failed: undefined, full: true, findings: [], errors: 0 };
   assert.ok(good.full && !good.failed, 'a real full pass still closes them');
+});
+
+
+// ---- creating an order from an invoice ---------------------------------
+// What airtable_zoho_import.html did by hand, minus its Step 5: the applet
+// could not know an Order ID before the row existed, so a person pasted the
+// generated names back in to key the line items. Creating through the API
+// returns the record id, so that round trip is gone.
+
+await test('a paid Shelving invoice with no order creates one', async () => {
+  const r = await run({
+    clients: [client('c1', '900')],
+    products: [{ ...product('p1', 'Wide Base', 8000), fields: { Name: 'Wide Base', Price: 8000, Status: 'Active', 'Zoho Item ID': 'z1' } }],
+    invoices: [invoice('INV1', [zline('Wide Base', 1, 8000, 'z1')], {
+      customer_id: '900', customer_name: 'Client c1', date: '2026-09-10',
+      status: 'paid', last_payment_date: '2026-09-11'
+    })],
+    payments: { id_INV1: [{ date: '2026-09-11' }] }
+  });
+  assert.equal(r.pending.creates.length, 1);
+  const c = r.pending.creates[0];
+  assert.equal(c.preview.order['Order Status'], 'To Launch Production');
+  assert.equal(c.preview.order['Zoho Invoice'], 'INV1');
+  assert.equal(c.preview.order['Order Received'], '2026-09-10');
+  assert.equal(c.preview.order['Payment Received'], '2026-09-11');
+  assert.equal(c.preview.newClient, null, 'the client already exists, so none is created');
+  assert.equal(c.preview.lines.length, 1);
+  assert.deepEqual(c.preview.lines[0].Item, ['p1'], 'joined on item_id, not on the name');
+});
+
+await test('a sent invoice creates an order the workshop is not told to build', async () => {
+  // Ben's rule: part-paid or paid means To Launch Production, merely sent does
+  // not. A workshop told to build something nobody has paid for is the failure.
+  assert.equal(orderStatusFor('paid'), 'To Launch Production');
+  assert.equal(orderStatusFor('partially_paid'), 'To Launch Production');
+  assert.equal(orderStatusFor('sent'), 'Invoice Sent');
+  assert.equal(orderStatusFor('overdue'), 'Invoice Sent');
+  assert.equal(orderStatusFor('viewed'), 'Invoice Sent');
+  assert.equal(orderStatusFor('draft'), null, 'a draft is a quote somebody is still editing');
+  assert.equal(orderStatusFor('void'), null);
+});
+
+await test('a draft, a void and a non-Shelving invoice create nothing', async () => {
+  const world = (extra) => ({
+    clients: [client('c1', '900')],
+    invoices: [invoice('INV1', [], { customer_id: '900', date: '2026-09-10', ...extra })]
+  });
+  assert.equal((await run(world({ status: 'draft' }))).pending.creates.length, 0);
+  assert.equal((await run(world({ status: 'void' }))).pending.creates.length, 0);
+  // Orders - Pipeline IS the shelving pipeline; a window job has no order to be.
+  assert.equal((await run(world({ custom_field_hash: { cf_work_type: 'Custom Projects' } }))).pending.creates.length, 0);
+});
+
+await test('an invoice older than the start date is left alone', async () => {
+  // A year of finished history must not materialise as live orders overnight.
+  const r = await run({
+    clients: [client('c1', '900')],
+    invoices: [invoice('INV1', [], { customer_id: '900', date: '2025-06-01', status: 'paid' })]
+  });
+  assert.equal(r.pending.creates.length, 0);
+  assert.match(of(r, 'paid-invoice-no-order')[0].detail, new RegExp(CREATE_ORDERS_FROM));
+});
+
+await test('an invoice already claimed by an order creates nothing', async () => {
+  // The whole duplicate defence. The applet's marker lives on the Zoho invoice
+  // and this credential cannot stamp it, so the Airtable side is the key.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    clients: [client('c1', '900')],
+    invoices: [invoice('INV1', [], { customer_id: '900', date: '2026-09-10', status: 'paid' })]
+  });
+  assert.equal(r.pending.creates.length, 0);
+});
+
+await test('an unknown customer is created in Base - Clients, with what the invoice knows', async () => {
+  const r = await run({
+    clients: [],
+    invoices: [invoice('INV1', [], {
+      customer_id: '901', customer_name: 'Bastien Renouil', date: '2026-09-10', status: 'paid',
+      tax_reg_no: 'P051755191T',
+      custom_field_hash: {
+        cf_work_type: 'Shelving',
+        cf_primary_contact_number: '+254 708 760809',
+        cf_delivery_address: 'Lantana Thompson E5, Lavington'
+      }
+    })]
+  });
+  const made = r.pending.creates[0].preview.newClient;
+  assert.equal(made.Name, 'Bastien Renouil');
+  assert.equal(made['Zoho Contact ID'], '901');
+  assert.equal(made['Primary Phone Number'], '+254 708 760809');
+  assert.equal(made.Address, 'Lantana Thompson E5, Lavington');
+  assert.equal(made['KRA PIN'], 'P051755191T');
+});
+
+await test('a client matched only by name is given the id it was missing', async () => {
+  const r = await run({
+    clients: [{ id: 'c9', fields: { Name: '  bastien   renouil ' } }],
+    invoices: [invoice('INV1', [], {
+      customer_id: '901', customer_name: 'Bastien Renouil', date: '2026-09-10', status: 'paid'
+    })]
+  });
+  const { client: resolved } = r.pending.creates[0];
+  assert.equal(resolved.row.id, 'c9', 'matched case- and whitespace-insensitively');
+  assert.equal(resolved.backfillId, '901');
+  assert.equal(resolved.create, undefined, 'a second row for one person is worse than none');
+});
+
+await test('delivery is a field on the order, never a line on it', async () => {
+  const r = await run({
+    clients: [client('c1', '900')],
+    products: [{ id: 'p1', fields: { Name: 'Wide Base', Status: 'Active', 'Zoho Item ID': 'z1' } }],
+    invoices: [invoice('INV1', [
+      zline('Wide Base', 1, 8000, 'z1'),
+      { name: 'Delivery Fees', quantity: 1, rate: 2000, item_total: 1724.14, item_custom_fields: [] }
+    ], { customer_id: '900', date: '2026-09-10', status: 'paid' })]
+  });
+  const c = r.pending.creates[0];
+  assert.equal(c.preview.lines.length, 1, 'the delivery line is not a line item');
+  assert.equal(c.preview.order['Delivery - Charged Client (ex VAT)'], 1724.14);
+});
+
+await test('a line with no catalogue match keeps its name rather than vanishing', async () => {
+  const r = await run({
+    clients: [client('c1', '900')],
+    products: [],
+    invoices: [invoice('INV1', [zline('Laser Cut Decoration', 2, 1500, 'zX')], {
+      customer_id: '900', date: '2026-09-10', status: 'paid'
+    })]
+  });
+  const line = r.pending.creates[0].preview.lines[0];
+  assert.equal(line.Item, undefined);
+  assert.equal(line['Other Item Name'], 'Laser Cut Decoration');
+  assert.equal(line['Zoho Line Total'], 3000);
+});
+
+await test('an invoice discount is spread across the created lines', async () => {
+  // Otherwise a discounted order is created reconciling to the wrong total on
+  // the very next pass, and reports itself short forever.
+  const r = await run({
+    clients: [client('c1', '900')],
+    products: [{ id: 'p1', fields: { Name: 'Wide Base', Status: 'Active', 'Zoho Item ID': 'z1' } }],
+    invoices: [invoice('INV1', [zline('Wide Base', 1, 10000, 'z1')], {
+      customer_id: '900', date: '2026-09-10', status: 'paid', discount_total: 1000
+    })]
+  });
+  assert.equal(r.pending.creates[0].preview.lines[0]['Zoho Line Total'], 9000);
+});
+
+// ---- the display-format trap ------------------------------------------
+await test('a custom field is read unformatted, or a date field gets "04 Sep 2026"', () => {
+  // Both of these were live bugs in seedDelivery until 2026-08-31.
+  const cf = {
+    cf_delivery_date: '04 Sep 2026', cf_delivery_date_unformatted: '2026-09-04',
+    cf_client_pickup: 'false', cf_client_pickup_unformatted: false
+  };
+  assert.equal(cfv(cf, 'cf_delivery_date'), '2026-09-04');
+  assert.equal(cfv(cf, 'cf_client_pickup'), false);
+  assert.equal(cfv({ cf_work_type: 'Shelving' }, 'cf_work_type'), 'Shelving', 'falls back when there is no unformatted twin');
+});
+
+await test('seeding writes the ISO date, and can actually tick Client Pickup', () => {
+  const out = seedDelivery({}, {
+    cf_delivery_date: '04 Sep 2026', cf_delivery_date_unformatted: '2026-09-04',
+    cf_client_pickup: 'true', cf_client_pickup_unformatted: true
+  });
+  assert.equal(out['Delivery - Scheduled Date'], '2026-09-04');
+  assert.equal(out['Client Pickup'], true);
+});
+
+await test('the string "false" never ticks the box', () => {
+  const out = seedDelivery({}, { cf_client_pickup: 'false', cf_client_pickup_unformatted: false });
+  assert.equal(out['Client Pickup'], undefined);
+});
+
+// ---- one client, one row ----------------------------------------------
+await test('two client rows sharing a Zoho contact id is an error', async () => {
+  const r = await run({ clients: [client('c1', '900'), client('c2', '900')] });
+  const f = of(r, 'client-listed-once');
+  assert.equal(f.length, 1);
+  assert.equal(f[0].severity, 'Error');
+});
+
+await test('two client rows sharing a name is an error, said once', async () => {
+  const r = await run({
+    clients: [{ id: 'c1', fields: { Name: 'Jane Doe' } }, { id: 'c2', fields: { Name: 'jane  doe' } }]
+  });
+  assert.equal(of(r, 'client-listed-once').length, 1);
+});
+
+await test('one client with one row is silent', async () => {
+  const r = await run({ clients: [client('c1', '900'), client('c2', '901')] });
+  assert.equal(of(r, 'client-listed-once').length, 0);
 });
 
 console.log(`test-reconcile: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);
