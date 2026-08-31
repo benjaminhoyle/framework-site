@@ -1028,4 +1028,42 @@ await test('one client with one row is silent', async () => {
   assert.equal(of(r, 'client-listed-once').length, 0);
 });
 
+// ---- the label that lied -----------------------------------------------
+await test('a product named differently from its Zoho item is reported as such', async () => {
+  // The Wide Base case, 2026-08-15 to 2026-08-31: the id join stayed right, so
+  // nothing reconciled wrong and 92 orders' worth of plain Wide Bases simply
+  // read as trimmed ones to the workshop.
+  const r = await run({
+    products: [{ id: 'p1', fields: { Name: 'Wide Base (Trimmed)', Price: 8000, Status: 'Active', 'Zoho Item ID': 'z1' } }],
+    items: [{ item_id: 'z1', name: 'Wide Base', rate: 8000, status: 'active' }]
+  });
+  const f = of(r, 'catalogue-prices-agree');
+  assert.equal(f.length, 1, 'one fault, one row - not also "Wide Base has no product"');
+  assert.equal(f[0].severity, 'Warning');
+  assert.match(f[0].event, /Wide Base \(Trimmed\) is Zoho's Wide Base/);
+});
+
+await test('a retired product carrying a consolidated item is left alone', async () => {
+  // Lamp Mount - Left and - Right both point at today's Lamp. Renaming them
+  // would make three products called Lamp and lose which was which.
+  const r = await run({
+    products: [
+      { id: 'p1', fields: { Name: 'Lamp', Price: 4500, Status: 'Active', 'Zoho Item ID': 'z9' } },
+      { id: 'p2', fields: { Name: 'Lamp Mount - Left', Status: 'Retired', 'Zoho Item ID': 'z9' } }
+    ],
+    items: [{ item_id: 'z9', name: 'Lamp', rate: 4500, status: 'active' }]
+  });
+  assert.equal(of(r, 'catalogue-prices-agree').length, 0);
+});
+
+await test('a Zoho item with genuinely no Airtable product is still reported', async () => {
+  const r = await run({
+    products: [],
+    items: [{ item_id: 'z2', name: 'Slim Top Bar', rate: 3500, status: 'active' }]
+  });
+  const f = of(r, 'catalogue-prices-agree');
+  assert.equal(f.length, 1);
+  assert.match(f[0].event, /no active Airtable product/);
+});
+
 console.log(`test-reconcile: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);

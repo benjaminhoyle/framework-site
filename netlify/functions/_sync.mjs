@@ -531,9 +531,51 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
   // ---- check: live catalogue prices agree (full passes only) -----------
   if (zItems) {
     const liveZ = new Map(zItems.filter((i) => i.status === 'active').map((i) => [i.name, i]));
+    const zById = new Map(zItems.map((i) => [String(i.item_id), i]));
     const liveA = products.filter((p) => p.fields.Status === 'Active');
+
+    // -- an active product must be called what Zoho calls the item it points at
+    //
+    // `Zoho Item ID` is the join everything else trusts: prices, the line-total
+    // reconciliation, and now the lines on a created order. The NAME is what a
+    // person reads — on the order, in `Line ID`, and in the message the workshop
+    // builds from. When the two disagree the join stays right and the label
+    // lies, which is the worst shape a fault can take: nothing reconciles wrong,
+    // and the wrong thing gets built.
+    //
+    // That is exactly what happened. Airtable had two active products both
+    // called `Wide Base (Trimmed)` — one pointed at Zoho's `Wide Base`, one at
+    // Zoho's `Wide Base (Trimmed)` — and the same for `Wide Extension`, from
+    // 2026-08-15 until 2026-08-31. Ninety-two orders' worth of plain Wide Bases
+    // read as trimmed ones. The old check below noticed only the symptom, that
+    // `Wide Base` had no Airtable product, which sends somebody looking for a
+    // missing row rather than a misnamed one.
+    //
+    // Active only. `Lamp Mount - Left` and `- Right` are Retired and both point
+    // at today's `Lamp`, which is Zoho having consolidated two items into one —
+    // renaming them would make three products called Lamp and lose which was
+    // which.
+    const claimed = new Set();
     for (const p of liveA) {
-      const z = liveZ.get(p.fields.Name);
+      const zid = String(p.fields['Zoho Item ID'] || '').trim();
+      if (!zid) continue;
+      const zi = zById.get(zid);
+      if (!zi) continue;
+      claimed.add(zi.name);
+      if (zi.name !== p.fields.Name) {
+        add(WARN, 'catalogue-prices-agree', `${p.fields.Name} is Zoho's ${zi.name}`, {
+          detail: `Airtable calls item ${zid} "${p.fields.Name}"; Zoho calls it "${zi.name}". The id is what everything joins on, so prices stay right and the label is what is wrong — rename the Airtable product to match.`
+        });
+      }
+    }
+    for (const p of liveA) {
+      // Id first, name only as a fallback — the same order everything else
+      // joins in. Resolving by name alone made a misnamed product look like a
+      // product with no Zoho item at all, which is the mirror of the symptom
+      // the check above exists to replace: two rows, one fault, neither naming
+      // it.
+      const zid = String(p.fields['Zoho Item ID'] || '').trim();
+      const z = (zid && zById.get(zid)) || liveZ.get(p.fields.Name);
       if (!z) {
         // Its own detail line already said "expected only for catch-alls like
         // Custom Item", and Custom Item is the only one it has ever fired on.
@@ -555,6 +597,10 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     }
     for (const [name] of liveZ) {
       if (isCatchAll(name)) continue;
+      // Already reported, and better, by the name check above: an item held by
+      // a product under the wrong name is not a MISSING product. One fault, one
+      // row — two rows for one thing is how a log stops being read.
+      if (claimed.has(name)) continue;
       if (!liveA.some((p) => p.fields.Name === name)) {
         add(WARN, 'catalogue-prices-agree', `${name} has no active Airtable product`, {
           detail: 'Sellable in Zoho with nowhere to land in Airtable. A sale of it would have no product to attach to.'
