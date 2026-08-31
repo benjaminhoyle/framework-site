@@ -47,6 +47,11 @@ export const finishLabel = (f) => (f ? f.charAt(0).toUpperCase() + f.slice(1) : 
  *
  * Bookends are not instances — they are a count on the design — so they are
  * added separately, in the design's own colour.
+ *
+ * Instances marked `omitted` are skipped: they are pieces the client already
+ * owns, drawn on the design so the shelf reads whole but never charged for.
+ * The builder's own total leaves them out the same way, so an invoice raised
+ * from a code matches the figure the client was shown.
  */
 export function groupDesign(design) {
   if (!design || !Array.isArray(design.instances)) {
@@ -59,7 +64,10 @@ export function groupDesign(design) {
     prev.quantity += n;
     counts.set(key, prev);
   };
-  for (const i of design.instances) bump(i.type, i.finish || design.finish);
+  for (const i of design.instances) {
+    if (i.omitted) continue;
+    bump(i.type, i.finish || design.finish);
+  }
   if (design.bookends > 0) bump('bookend', design.finish, design.bookends);
   // Stable order so two pushes of one design produce identical invoices.
   return [...counts.values()].sort(

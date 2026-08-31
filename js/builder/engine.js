@@ -439,7 +439,13 @@
       // rest", which is what almost every piece is. Nothing about placement
       // depends on it -- it rides along so that a piece keeps its colour through
       // a rebuild, an undo, or a share link.
-      finish: (fields && fields.finish) || null
+      finish: (fields && fields.finish) || null,
+      // Left out of the invoice: a piece the client already owns and is adding
+      // to. It is part of the design, drawn and measured like any other; it
+      // simply is not charged for. Rides along the way a colour does, so it
+      // survives a rebuild, an undo and a share link, and nothing about
+      // placement depends on it.
+      omitted: (fields && fields.omitted) === true
     };
   }
 
@@ -1298,6 +1304,7 @@
         // Only when it has one, so an ordinary design serialises exactly as it
         // did before per-piece colour existed.
         if (instance.finish) spec.finish = instance.finish;
+        if (instance.omitted) spec.omitted = true;
         return spec;
       })
     };
@@ -1347,7 +1354,8 @@
         id: instance.id,
         placement,
         rotationDeg: instance.rotationDeg || 0,
-        finish: instance.finish || null
+        finish: instance.finish || null,
+        omitted: instance.omitted === true
       });
     }
     return state;
@@ -1397,7 +1405,8 @@
               id: original.id,
               placement: candidate.option.placement,
               rotationDeg: candidate.option.rotationDeg,
-              finish: original.finish || null
+              finish: original.finish || null,
+              omitted: original.omitted === true
             }
           );
         } else {
@@ -1411,7 +1420,8 @@
               id: original.id,
               placement: original.placement,
               rotationDeg: original.rotationDeg,
-              finish: original.finish || null
+              finish: original.finish || null,
+              omitted: original.omitted === true
             }
           );
         }
@@ -1447,6 +1457,23 @@
       const next = Object.assign({}, spec);
       if (finishId) next.finish = finishId;
       else delete next.finish;
+      return next;
+    });
+    return rebuild(catalog, state, specs);
+  }
+
+  /**
+   * Leave one piece out of the invoice, or put it back into it.
+   *
+   * Through the same rebuild as a colour, and for the same reason: one way in
+   * means one place for an instance's fields to survive an edit.
+   */
+  function setInstanceOmitted(catalog, state, instanceId, omitted) {
+    const specs = serializeState(state).instances.map((spec) => {
+      if (spec.id !== instanceId) return spec;
+      const next = Object.assign({}, spec);
+      if (omitted) next.omitted = true;
+      else delete next.omitted;
       return next;
     });
     return rebuild(catalog, state, specs);
@@ -1536,6 +1563,7 @@
     rotationKeepsSockets,
     serializeState,
     setInstanceFinish,
+    setInstanceOmitted,
     shelfBounds,
     stacksOf,
     validateAddition,

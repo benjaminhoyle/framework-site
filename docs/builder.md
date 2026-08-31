@@ -297,6 +297,58 @@ themselves. Where the colour has to be named rather than shown — the share ima
 the WhatsApp order — every finish in use is listed, because "Sage" alone would be
 a half-truth about a picture the client can see.
 
+## Pieces the client already has
+
+Somebody who owns two units and wants a third is quoting for one unit, not
+three — but the picture has to show all three or it is not their shelf. So a
+piece can be **omitted from the invoice**, through Omit in the menu that appears
+when you tap it, and everything follows from "in the design, out of the money":
+
+- **Advanced only.** It answers a question asked at a trade counter, never by
+  someone buying a whole shelf, and Advanced is where that person is. Simple
+  rebuilds its design from a spec, so a piece marked there would not survive its
+  next stepper press anyway.
+- **Drawn as a hatched blank.** One pale neutral for every part of it, feet and
+  lamp shade included; the lighting flattened to a fifth, which leaves enough
+  face-to-face difference to keep the shape readable and takes away the
+  material; and fine diagonal bands in screen space over the top. A pale unit
+  on its own was not enough — the shop sells a dark neutral called **Charcoal**,
+  and "the grey ones are not being charged for" is a sentence that can point at
+  the wrong shelf. No finish is striped, so hatching cannot be misread as one,
+  and it is the drawing convention for "shown for reference" besides. The bands
+  are sized from the drawing buffer (about 130 across it), so they read the same
+  in the viewport and in the 1080px share image. Opaque, not blended: a
+  transparent piece shows its own back faces through its front ones, which reads
+  as a fault rather than as a hint. Selecting one still highlights it, or there
+  would be no way to see which piece a menu belongs to.
+- **Whether a piece is a blank is decided in `drawBatches`**, not by its
+  callers. `snapshot()` runs its own pass, deliberately without the selection
+  highlight, and it composed the share image with every piece in full colour
+  until this moved. A blank is a property of the design; the highlight is a
+  property of the interface; only one of them belongs in a picture sent to a
+  client.
+- **Out of the total, and explained once.** The summary says "3 pieces not
+  charged"; the breakdown and the share image carry one small line — *Faded
+  modules are shown for reference only and are not included in the quote* — and
+  the WhatsApp order a count in brackets. It names no modules, because the
+  picture directly above it already says which ones and a client reading
+  "2 x Compact Spacer" has to go and find them first; and no colour, for the
+  Charcoal reason above. A shorter list beside a picture of a whole shelf, with
+  nothing said about the difference, reads as an order that lost half of it.
+- **Managed like per-piece colour**, because it is the same kind of exception:
+  an optional field on the instance, carried through `serializeState` /
+  `deserializeState`, through the rebuild every other edit goes through, and
+  through the share link — where the omitted rows are a list of indices appended
+  after the colour table, so a link written before this existed opens here, and
+  one written with it opens in an older deployment, just charging for
+  everything. The options sheet offers "Charge for N omitted pieces again"
+  beside the colour reset, as one commit, so one undo puts them all back out.
+- **The invoice honours it at the far end too.** `groupDesign()` in
+  `netlify/functions/_push.mjs` skips them, so a draft raised from a code bills
+  the figure the client was shown rather than the shelf they can see. The design
+  code is a hash of the serialised design, so a shelf with a piece omitted and
+  the same shelf without are two codes, never one record that means both.
+
 ## Why it is built this way
 
 Every one of these is a response to a measurement, not a preference.
@@ -385,6 +437,9 @@ Later in July 2026 the pipeline handoff became the vendored contract described
 above, replacing a string-scrape of a generated JS file and a hand-copy of the
 test fixtures; the desktop builder it was ported from was retired; and corner
 units arrived.
+
+Also in August 2026, a piece could be left out of the invoice — see "Pieces the
+client already has" — for clients adding to a shelf they already own.
 
 In August 2026 the control column was taken out of Flexible and Advanced and
 its contents split between the bottom bar and the two floating buttons on the

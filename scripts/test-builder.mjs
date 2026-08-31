@@ -783,6 +783,41 @@ test("a piece keeps a colour of its own through every rebuild", () => {
   assert.ok(!("finish" in engine.serializeState(cleared).instances[1]), "a plain piece serialises with no finish key");
 });
 
+test("a piece left out of the invoice stays in the design", () => {
+  let state = engine.createState(catalog, { finish: "sage" });
+  state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, "standard_base")[0]);
+  state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, "standard_extension")[0]);
+  const [base, extension] = state.instances;
+
+  const omitted = engine.setInstanceOmitted(catalog, state, base.id, true);
+  assert.ok(omitted, "omitting a piece must not make the design illegal");
+  assert.equal(omitted.instances[0].omitted, true);
+  assert.equal(omitted.instances[1].omitted, false, "only the named piece changes");
+  // The whole point: the piece is still holding the extension up.
+  assert.equal(omitted.instances.length, 2);
+  assert.ok(engine.validateState(catalog, omitted).isValid);
+
+  // It has to survive the rebuilds every other edit goes through, or a rotate
+  // after an omit quietly puts the piece back on the bill.
+  const tinted = engine.setInstanceFinish(catalog, omitted, extension.id, "marine");
+  assert.equal(tinted.instances[0].omitted, true, "lost through a recolour");
+  const rotated = engine.rotateInstance(catalog, tinted, base.id, 180) || tinted;
+  assert.equal(rotated.instances[0].omitted, true, "lost through a rotation");
+  const roundTrip = engine.deserializeState(catalog, JSON.parse(JSON.stringify(engine.serializeState(omitted))));
+  assert.equal(roundTrip.instances[0].omitted, true, "lost through serialisation");
+
+  // And the design code has to move with it: the invoice is raised from the
+  // stored design, so two shelves that bill differently cannot share a code.
+  assert.notEqual(engine.designCode(omitted), engine.designCode(state));
+
+  const included = engine.setInstanceOmitted(catalog, omitted, base.id, false);
+  assert.equal(included.instances[0].omitted, false);
+  assert.ok(!("omitted" in engine.serializeState(included).instances[0]),
+    "an ordinary piece serialises with no omitted key");
+  assert.equal(engine.designCode(included), engine.designCode(state),
+    "putting it back has to give the design its own code again");
+});
+
 // ---------------------------------------------------------------------------
 // /api/design — the saved-design store behind framework.co.ke/builder/CODE
 //

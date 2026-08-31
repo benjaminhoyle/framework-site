@@ -251,7 +251,7 @@ window.FrameworkDesignerPresent = (function () {
   /**
    * `content` is everything the image says:
    *   { sizeLabel, totalLabel, totalNote, lines: [{label, quantity, amount}],
-   *     finishName, code, codeHome, dimensions }
+   *     finishName, code, codeHome, dimensions, referenceNote }
    *
    * `dimensions` is optional and already in this canvas's pixels; see
    * drawDimensions.
@@ -299,7 +299,11 @@ window.FrameworkDesignerPresent = (function () {
     // needs to fill it without running past.
     const totalY = HEIGHT - 118;
     const totalRuleY = totalY - 54;
-    drawBreakdown(context, content.lines, y + 20, totalRuleY - 22);
+    // The faded pieces get one line under the list rather than rows in it, and
+    // it takes its room out of the list's band instead of sitting on top of it.
+    const noteY = content.referenceNote ? totalRuleY - 30 : 0;
+    drawBreakdown(context, content.lines, y + 20, (noteY ? noteY - 26 : totalRuleY) - 22);
+    if (noteY) text(context, content.referenceNote, PAD, noteY, { size: 22, weight: 400, color: FAINT });
 
     context.fillStyle = RULE;
     context.fillRect(PAD, totalRuleY, WIDTH - PAD * 2, 1);

@@ -56,6 +56,31 @@ window.FrameworkDesignerRenderer = (function () {
   const PAPER_COLOR = "#fdf3e3";
   const CORD_COLOR = "#4c5254";
 
+  /*
+   * A piece left out of the invoice, drawn as a hatched placeholder.
+   *
+   * Three things at once, and it needs all three. A pale unit on its own is
+   * still a unit in a colour, and the shop sells a dark neutral called
+   * Charcoal -- "the grey ones are not being charged for" is a sentence that
+   * can point at the wrong shelf. Diagonal hatching cannot: it is the drawing
+   * convention for "shown for reference", no finish is striped, and it survives
+   * being described without naming a colour at all.
+   *
+   * - one pale neutral for every role, feet and lamp shade included, so it
+   *   reads as a blank rather than as a unit that happens to be pale,
+   * - the lighting flattened to a fifth, which leaves just enough face-to-face
+   *   difference to keep the shape readable while taking away the material,
+   * - fine diagonal bands in screen space, sized from the drawing buffer so
+   *   they read the same in the viewport and in the 1080px share image.
+   *
+   * Opaque, not blended: a transparent piece shows its own back faces through
+   * its front ones, which reads as a fault rather than as a hint.
+   */
+  const OMITTED_COLOR = "#eef1f1";
+  const OMITTED_LIT = 0.2;
+  // Bands about this many across the image, whatever it is being drawn into.
+  const OMITTED_HATCH_BANDS = 130;
+
   const VERTEX_SHADER = [
     "attribute vec3 aPosition;",
     "attribute vec3 aNormal;",
@@ -72,9 +97,24 @@ window.FrameworkDesignerRenderer = (function () {
   // a shelf top from its front edge without the cost or the shadow-acne risk
   // of anything physically based.
   const FRAGMENT_SHADER = [
+    // gl_FragCoord reaches 1080 in the share image, and a half-precision float
+    // cannot count that high a pixel at a time, which would break the hatch
+    // into blocks. highp where the phone has it, mediump where it does not --
+    // the standard guard, and the shading itself is happy either way.
+    "#ifdef GL_FRAGMENT_PRECISION_HIGH",
+    "precision highp float;",
+    "#else",
     "precision mediump float;",
+    "#endif",
     "uniform vec3 uColor;",
     "uniform float uAlpha;",
+    // 1 for an ordinary piece; a fraction flattens the lighting towards flat
+    // colour. Zero would be flat, and two placeholders standing side by side
+    // would merge into one silhouette.
+    "uniform float uLit;",
+    // 0 for an ordinary piece, otherwise the width in pixels of one diagonal
+    // band pair.
+    "uniform float uHatch;",
     "varying vec3 vNormal;",
     "void main() {",
     "  vec3 n = normalize(vNormal);",
@@ -82,7 +122,15 @@ window.FrameworkDesignerRenderer = (function () {
     "  float rim = max(dot(n, vec3(-0.60, 0.35, 0.25)), 0.0);",
     "  float sky = 0.5 + 0.5 * n.z;",
     "  float light = 0.62 + 0.26 * key + 0.07 * rim + 0.12 * sky;",
-    "  gl_FragColor = vec4(uColor * light, uAlpha);",
+    "  vec3 rgb = uColor * mix(1.0, light, uLit);",
+    "  if (uHatch > 0.0) {",
+    // Diagonal, because every edge in an isometric shelf is horizontal,
+    // vertical or on the isometric diagonal, and a band parallel to an edge
+    // reads as part of the object.
+    "    float band = fract((gl_FragCoord.x + gl_FragCoord.y) / uHatch);",
+    "    rgb *= 0.92 + 0.08 * step(0.5, band);",
+    "  }",
+    "  gl_FragColor = vec4(rgb, uAlpha);",
     "}"
   ].join("\n");
 
@@ -160,6 +208,7 @@ window.FrameworkDesignerRenderer = (function () {
       ghost: null,
       palette: null,
       palettes: new Map(), // per-instance colour overrides, hex pair -> role map
+      mutedColor: hexToRgb(OMITTED_COLOR),
       target: [500, 130, 400],
       halfHeight: 900,
       viewMode: "iso",
@@ -227,7 +276,9 @@ window.FrameworkDesignerRenderer = (function () {
         modelViewProjection: gl.getUniformLocation(program, "uModelViewProjection"),
         normalMatrix: gl.getUniformLocation(program, "uNormalMatrix"),
         color: gl.getUniformLocation(program, "uColor"),
-        alpha: gl.getUniformLocation(program, "uAlpha")
+        alpha: gl.getUniformLocation(program, "uAlpha"),
+        lit: gl.getUniformLocation(program, "uLit"),
+        hatch: gl.getUniformLocation(program, "uHatch")
       }
     };
   }
@@ -539,6 +590,16 @@ window.FrameworkDesignerRenderer = (function () {
     const gl = state.gl;
     const mesh = state.meshProgram;
     const palette = paletteFor(state, instance.palette);
+    /*
+     * Decided here rather than by the callers, which is what keeps the share
+     * image honest: snapshot() draws its own pass, deliberately without the
+     * selection highlight, and used to pass "no override" for everything. A
+     * blank piece is a property of the design, not of the interface, so it has
+     * to survive a pass that drops the interface. An override colour still
+     * wins -- a selected blank is highlighted like anything else, or there
+     * would be no way to see which piece a menu belongs to.
+     */
+    const placeholder = instance.muted === true && !overrideColor;
     const model = modelMatrix(instance, geometry);
     const mvp = multiply(new Float32Array(16), camera.matrix, model);
 
@@ -546,11 +607,16 @@ window.FrameworkDesignerRenderer = (function () {
     gl.uniformMatrix4fv(mesh.uniforms.modelViewProjection, false, mvp);
     gl.uniformMatrix3fv(mesh.uniforms.normalMatrix, false, normalMatrix(instance));
     gl.uniform1f(mesh.uniforms.alpha, alpha);
+    gl.uniform1f(mesh.uniforms.lit, placeholder ? OMITTED_LIT : 1);
+    gl.uniform1f(mesh.uniforms.hatch, placeholder ? Math.max(6, state.width / OMITTED_HATCH_BANDS) : 0);
     gl.enableVertexAttribArray(mesh.attributes.position);
     gl.enableVertexAttribArray(mesh.attributes.normal);
 
     for (const batch of batches) {
-      const color = overrideColor || palette[batch.role] || palette[0];
+      const color = overrideColor
+        || (placeholder ? state.mutedColor : null)
+        || palette[batch.role]
+        || palette[0];
       gl.uniform3fv(mesh.uniforms.color, color);
       gl.bindBuffer(gl.ARRAY_BUFFER, batch.positions);
       gl.vertexAttribPointer(mesh.attributes.position, 3, gl.UNSIGNED_SHORT, false, 0, 0);
@@ -631,6 +697,7 @@ window.FrameworkDesignerRenderer = (function () {
         // Per-instance palettes are derived from this one, so they go with it.
         state.palettes.clear();
         state.ghostColor = hexToRgb(palette.ghost || "#2f8f6f");
+        state.mutedColor = hexToRgb(palette.muted || OMITTED_COLOR);
         state.highlightColor = hexToRgb(palette.highlight || "#f0932b");
         requestFrame(state);
       },

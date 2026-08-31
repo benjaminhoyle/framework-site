@@ -86,6 +86,30 @@ test('grouping is stable, so one design always invoices identically', () => {
   assert.deepEqual(a, b);
 });
 
+test('a piece marked omitted never reaches the invoice', () => {
+  // The client already owns two bases and is buying the extensions that go on
+  // them. They are on the design so the shelf reads whole; charging for them
+  // would be the quietest possible way to overbill somebody.
+  const g = groupDesign({
+    finish: 'sage',
+    instances: [
+      inst('standard_base', { omitted: true }),
+      inst('standard_extension'),
+      inst('standard_extension')
+    ]
+  });
+  assert.equal(g.length, 1);
+  assert.deepEqual(g[0], { moduleId: 'standard_extension', finish: 'sage', quantity: 2 });
+});
+
+test('omitting one of a pair leaves the other on the invoice', () => {
+  const g = groupDesign({
+    finish: 'sage',
+    instances: [inst('standard_base'), inst('standard_base', { id: 'b2', omitted: true })]
+  });
+  assert.deepEqual(g, [{ moduleId: 'standard_base', finish: 'sage', quantity: 1 }]);
+});
+
 test('a design with no instances is refused, not silently empty', () => {
   assert.throws(() => groupDesign({ finish: 'sage' }), /no instances/);
   assert.throws(() => groupDesign(null), /no instances/);

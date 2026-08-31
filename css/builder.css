@@ -807,6 +807,9 @@ a.nd-button {
 .nd-line .nd-qty { color: var(--nd-muted); font-variant-numeric: tabular-nums; }
 .nd-line .nd-amount { font-variant-numeric: tabular-nums; min-width: 5.5em; text-align: right; }
 .nd-line.is-unpriced .nd-amount { color: var(--nd-muted); }
+/* Why the pieces in the picture outnumber the lines above it. Smaller than a
+   line, because it is a footnote to the list rather than an entry in it. */
+.nd-omitted-note { display: block; margin-top: 6px; font-size: .75rem; font-style: italic; }
 
 /* --------------------------------------------------------------- summary -- */
 

@@ -586,6 +586,15 @@ Three rules in `_push.mjs`, each of which would otherwise fail silently:
    when it arrives.
 3. **Price from Zoho, never the contract.** The catalogue is what someone was
    quoted; the invoice is what they are charged.
+4. **Skip the pieces marked `omitted`.** Advanced can leave a piece out of the
+   invoice — the units a client already owns and is adding to. They are in the
+   design, and drawn, so the shelf on the image is the shelf in the room; they
+   are not in the builder's total and must not be in the invoice's, or the
+   client is billed for furniture they already have. Everything that reports a
+   figure — the summary line, the share image, the WhatsApp order, this push —
+   leaves them out of the money and says in one line that some pieces in the
+   picture are there for reference, so nobody reads the shorter list as an order
+   that lost half a shelf.
 
 A price difference from the quote is **surfaced, not blocked**. Reps zero-rate
 deliberately, and a quote from before a price change is a normal thing to

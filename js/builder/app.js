@@ -702,7 +702,11 @@
       highlight: instance.id === ui.selectedId,
       // Null for almost every piece, which is what tells the renderer to use the
       // design's own palette rather than build a second one.
-      palette: instance.finish ? shaderPalette(finishById(instance.finish)) : null
+      palette: instance.finish ? shaderPalette(finishById(instance.finish)) : null,
+      // A piece left out of the invoice is drawn as a flat pale blank, so the
+      // picture says which parts of the shelf are being quoted for without a
+      // caption having to.
+      muted: instance.omitted === true
     };
   }
 
@@ -1482,6 +1486,24 @@
     });
     menu.appendChild(colour);
 
+    // Advanced only. It answers "I already have two of these and want three
+    // more", which is a question asked at the trade counter and never by
+    // somebody buying a whole shelf, and Advanced is where that person is.
+    if (ui.mode === "advanced") {
+      const omit = make("button", instance.omitted ? "is-quiet" : null, instance.omitted ? "Include" : "Omit");
+      omit.type = "button";
+      const label = instance.omitted
+        ? "Put this piece back in the invoice"
+        : "Leave this piece out of the invoice";
+      omit.title = label;
+      omit.setAttribute("aria-label", label);
+      omit.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleOmitted(instance);
+      });
+      menu.appendChild(omit);
+    }
+
     if (canRemove) {
       const remove = make("button", "is-danger", "Remove");
       remove.type = "button";
@@ -1745,6 +1767,22 @@
     commit(next, { keepSelection: true });
   }
 
+  /**
+   * Leave a piece out of the invoice, or put it back.
+   *
+   * The selection is kept, like a colour: the piece stays lit with its menu
+   * open, so the same tap undoes the decision if the pale grey is not what was
+   * wanted.
+   */
+  function toggleOmitted(instance) {
+    const omit = !instance.omitted;
+    if (!commit(engine.setInstanceOmitted(ui.catalog, ui.design, instance.id, omit), { keepSelection: true })) return;
+    const name = moduleLabel(ui.catalog.modules[instance.moduleId]);
+    setHint(omit
+      ? `${name} left out of the invoice — still in the design, not in the total.`
+      : `${name} is back in the invoice.`);
+  }
+
   function swapGroup(role) {
     if (role === "base") return "base";
     if (["extension", "spacer", "hanger", "adapter"].indexOf(role) >= 0) return "shelf";
@@ -1900,10 +1938,22 @@
 
   // ---------------------------------------------------------------- pricing --
 
+  /**
+   * What the design costs, and what it is made of.
+   *
+   * `lines` is what is being charged for. Pieces marked "omit from invoice" --
+   * the ones a client already owns and is adding to -- are counted separately
+   * in `omitted` and never reach the total. They are still part of the design
+   * and still drawn, so every reader of this (the summary, the breakdown, the
+   * share image, the WhatsApp order) says so in its own words rather than
+   * quietly dropping them.
+   */
   function priceBreakdown() {
     const counts = new Map();
+    const omittedCounts = new Map();
     for (const instance of ui.design.instances) {
-      counts.set(instance.moduleId, (counts.get(instance.moduleId) || 0) + 1);
+      const bucket = instance.omitted ? omittedCounts : counts;
+      bucket.set(instance.moduleId, (bucket.get(instance.moduleId) || 0) + 1);
     }
     const lines = [];
     let total = 0;
@@ -1931,8 +1981,32 @@
         lines.push({ label: "Bookend", quantity: ui.design.bookends, amount: bookendPrice * ui.design.bookends });
       }
     }
-    return { lines, total, unpriced };
+    const omitted = Array.from(omittedCounts.keys()).sort().map((id) => ({
+      label: moduleLabel(ui.catalog.modules[id]),
+      quantity: omittedCounts.get(id)
+    }));
+    const omittedCount = omitted.reduce((sum, line) => sum + line.quantity, 0);
+    return { lines, total, unpriced, omitted, omittedCount };
   }
+
+  /** "2 pieces not charged", or null when everything on screen is being sold. */
+  function omittedNote(count) {
+    if (!count) return null;
+    return `${count} piece${count === 1 ? "" : "s"} not charged`;
+  }
+
+  /*
+   * What the faded pieces are, in one sentence, wherever they are shown.
+   *
+   * It names no modules and no colour. Not the modules, because a client
+   * reading "2 x Compact Spacer" against a picture is being asked to find them
+   * before they can read the price; the picture already says which ones. Not
+   * the colour, because the shop sells a dark neutral called Charcoal, and
+   * "the grey ones are free" is a sentence that can point at the wrong shelf.
+   * "Faded" is a property of the drawing, which is what the reader is looking
+   * at.
+   */
+  const REFERENCE_NOTE = "Faded modules are shown for reference only and are not included in the quote.";
 
   /**
    * Width x depth x height, in cm, for the shelf itself. Accessories do not
@@ -1972,9 +2046,10 @@
    * total is made of.
    */
   function renderBreakdown() {
-    const { lines } = priceBreakdown();
-    if (!lines.length) ui.breakdownOpen = false;
-    dom.breakdownToggle.disabled = !lines.length;
+    const { lines, omitted } = priceBreakdown();
+    const rows = lines.length + omitted.length;
+    if (!rows) ui.breakdownOpen = false;
+    dom.breakdownToggle.disabled = !rows;
     dom.breakdownToggle.setAttribute("aria-expanded", String(ui.breakdownOpen));
     dom.breakdown.hidden = !ui.breakdownOpen;
     clear(dom.breakdown);
@@ -1982,12 +2057,14 @@
   }
 
   function updateSummary() {
-    const { total, unpriced } = priceBreakdown();
+    const { total, unpriced, omittedCount } = priceBreakdown();
     dom.total.textContent = formatKsh(total);
     const size = sizeLabel();
     const notes = ["VAT inclusive"];
     if (size) notes.unshift(size);
     if (unpriced) notes.push(`${unpriced} piece${unpriced === 1 ? "" : "s"} quoted separately`);
+    const skipped = omittedNote(omittedCount);
+    if (skipped) notes.push(skipped);
     dom.totalNote.textContent = notes.join(" · ");
 
     renderBreakdown();
@@ -2011,6 +2088,10 @@
       code ? `Design code: ${code}` : null,
       sessionId ? `Session: ${sessionId}` : null,
       `Pieces: ${parts.join(", ")}`,
+      // The picture shows the blanked-out pieces, so the message has to account
+      // for them; leaving them out of both lists would look like an order that
+      // had lost half the shelf.
+      omittedOrderLine(),
       `Colour: ${currentFinish().displayName}`,
       // An order that quietly dropped the pieces painted differently would be
       // built in the wrong colours, so they are spelled out piece by piece.
@@ -2023,6 +2104,19 @@
       // say; the empty strings above are deliberate blank lines in the message.
     ].filter((line) => line !== null).join("\n");
     return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+  }
+
+  /**
+   * The one line about the faded pieces, or null when there are none.
+   *
+   * A count, not a list: the pieces being ordered are the line above, and
+   * naming the others invites them onto the invoice by mistake. The image that
+   * travels with this message is where they can be seen.
+   */
+  function omittedOrderLine() {
+    const { omittedCount } = priceBreakdown();
+    if (!omittedCount) return null;
+    return `(${omittedCount} more piece${omittedCount === 1 ? " is" : "s are"} in the picture for reference only, not in this quote)`;
   }
 
   /** "Except: 2 x Standard Extension in Marine", or null when nothing differs. */
@@ -2098,9 +2192,13 @@
       // the client can see.
       finishName: finishLabel(),
       totalLabel: formatKsh(breakdown.total),
-      totalNote: breakdown.unpriced
-        ? `VAT inclusive · ${breakdown.unpriced} piece${breakdown.unpriced === 1 ? "" : "s"} quoted separately`
-        : "VAT inclusive",
+      totalNote: [
+        "VAT inclusive",
+        breakdown.unpriced
+          ? `${breakdown.unpriced} piece${breakdown.unpriced === 1 ? "" : "s"} quoted separately`
+          : null,
+        omittedNote(breakdown.omittedCount)
+      ].filter(Boolean).join(" · "),
       lines: breakdown.lines.map((line) => ({
         label: line.label,
         quantity: line.quantity,
@@ -2109,6 +2207,9 @@
         // one a client asks about.
         amount: line.amount == null ? null : formatKsh(line.amount / line.quantity)
       })),
+      // One small line under the list instead of rows of its own: the faded
+      // pieces are visible in the picture directly above it.
+      referenceNote: breakdown.omittedCount ? REFERENCE_NOTE : null,
       code: designCode(),
       codeHome: `${DESIGN_LINK_HOME}/`
     };
@@ -2229,7 +2330,12 @@
     const tintIndex = new Map();
     ui.design.instances.forEach((instance, index) => idIndex.set(instance.id, index));
 
-    const rows = ui.design.instances.map((instance) => {
+    // Which rows are left out of the invoice, by index. A list rather than a
+    // field on the row, so the row format is exactly what it was.
+    const omitted = [];
+
+    const rows = ui.design.instances.map((instance, index) => {
+      if (instance.omitted) omitted.push(index);
       if (!typeIndex.has(instance.moduleId)) {
         typeIndex.set(instance.moduleId, types.length);
         types.push(instance.moduleId);
@@ -2255,7 +2361,12 @@
       return row;
     });
     const payload = [1, ui.mode, ui.design.finish, ui.design.bookends || 0, types, rows];
-    if (tints.length) payload.push(tints);
+    // Appended, like the colour table and for the same reason: a link written
+    // before this existed opens here, and one written with it opens in an older
+    // deployment too -- there, every piece is simply charged for. The colour
+    // table goes in even when it is empty, to hold this one's place.
+    if (tints.length || omitted.length) payload.push(tints);
+    if (omitted.length) payload.push(omitted);
     return toBase64Url(JSON.stringify(payload));
   }
 
@@ -2270,6 +2381,7 @@
     if (!Array.isArray(payload) || payload[0] !== 1) throw new Error("unsupported design link");
     const [, mode, finish, bookends, types, rows] = payload;
     const tints = payload[6] || [];
+    const omitted = new Set(payload[7] || []);
     const instances = rows.map((row, index) => ({
       id: `item_${String(index + 1).padStart(3, "0")}`,
       type: types[row[0]],
@@ -2278,7 +2390,8 @@
       placement: row[4]
         ? { method: "socket", on: (row[5] || []).map((support) => `item_${String(support + 1).padStart(3, "0")}`) }
         : { method: "floor" },
-      finish: row[6] ? (tints[row[6] - 1] || null) : null
+      finish: row[6] ? (tints[row[6] - 1] || null) : null,
+      omitted: omitted.has(index)
     }));
     const design = engine.repairCornerGeometry(
       ui.catalog,
@@ -2511,10 +2624,10 @@
   }
 
   function breakdownSection() {
-    const { lines } = priceBreakdown();
+    const { lines, omitted } = priceBreakdown();
     const field = make("div", "nd-field");
     field.appendChild(make("span", "nd-label", "What is in it"));
-    if (!lines.length) {
+    if (!lines.length && !omitted.length) {
       field.appendChild(make("p", "nd-note", "Nothing yet — add a unit to get started."));
       return field;
     }
@@ -2527,6 +2640,9 @@
       list.appendChild(row);
     }
     field.appendChild(list);
+    // Accounted for, not itemised: the list is what is being paid for, and the
+    // pieces that are not are in front of the client already.
+    if (omitted.length) field.appendChild(make("small", "nd-subtext nd-omitted-note", REFERENCE_NOTE));
     return field;
   }
 
@@ -2726,6 +2842,14 @@
           resetColour.addEventListener("click", resetPieceColours);
           actions.appendChild(resetColour);
         }
+        const omitted = ui.design.instances.filter((instance) => instance.omitted).length;
+        if (omitted) {
+          const label = `Charge for ${omitted} omitted piece${omitted === 1 ? "" : "s"} again`;
+          const includeAll = make("button", "nd-button is-small", label);
+          includeAll.type = "button";
+          includeAll.addEventListener("click", resetOmittedPieces);
+          actions.appendChild(includeAll);
+        }
         const reset = make("button", "nd-button is-small", "Start again");
         reset.type = "button";
         reset.disabled = !ui.design.instances.length;
@@ -2747,6 +2871,17 @@
     for (const id of ids) next = engine.setInstanceFinish(ui.catalog, next, id, null) || next;
     commit(next, {});
     setHint(`${ids.length} piece${ids.length === 1 ? "" : "s"} back to ${currentFinish().displayName}.`);
+  }
+
+  /** Put every piece that was left out of the invoice back into it. */
+  function resetOmittedPieces() {
+    const ids = ui.design.instances.filter((instance) => instance.omitted).map((instance) => instance.id);
+    if (!ids.length) return;
+    // One commit, so one undo takes all of them back out again.
+    let next = ui.design;
+    for (const id of ids) next = engine.setInstanceOmitted(ui.catalog, next, id, false) || next;
+    commit(next, {});
+    setHint(`${ids.length} piece${ids.length === 1 ? "" : "s"} back in the invoice.`);
   }
 
   /**
@@ -3357,6 +3492,9 @@
     send.type = "button";
     send.addEventListener("click", async () => {
       if (!ui.design.instances.length) return say("There are no pieces on this design.", true);
+      if (ui.design.instances.every((instance) => instance.omitted)) {
+        return say("Every piece on this design is left out of the invoice, so there is nothing to bill.", true);
+      }
       if (!rep.value) return say("Say who is raising this.", true);
       const first = firstName.value.trim();
       const last = lastName.value.trim();
