@@ -2233,6 +2233,63 @@
     })();
 
     /**
+     * Rotate the grid order once a week, so position stops being confounded with
+     * product performance.
+     *
+     * The catalogue records an impression per tile with its `grid_index`, which
+     * is the only per-product demand signal this business has. With a fixed
+     * order that signal is unreadable: measured over 24 days, tiles in positions
+     * 0-7 were opened 8% of the time and tiles in positions 8-13 were opened
+     * 29% — not because those products are better, but because anyone scrolling
+     * that deep is already committed. Product and position were perfectly
+     * correlated, so no product could be compared with any other.
+     *
+     * Rotating weekly de-correlates them: over a few weeks every product is seen
+     * high and low, and the position effect averages out of the comparison.
+     *
+     * WEEKLY, not per visit, and deterministic:
+     *   - everyone sees the same order within a week, so the shop does not
+     *     reshuffle under a customer comparing two tiles, and a link shared on
+     *     Monday still describes what a friend sees on Tuesday;
+     *   - the seed is the ISO week, so any past week's layout can be
+     *     reconstructed when reading the numbers back.
+     *
+     * Deep links are unaffected — `?config=<id>` resolves by id, never position.
+     * `?gridorder=published` restores the catalogue's own order for debugging.
+     */
+    function isoWeekSeed(now) {
+      var t = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7) + 3); // Thursday of this ISO week
+      var firstThursday = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+      firstThursday.setUTCDate(firstThursday.getUTCDate() - ((firstThursday.getUTCDay() + 6) % 7) + 3);
+      var week = 1 + Math.round((t - firstThursday) / (7 * 86400000));
+      return t.getUTCFullYear() * 100 + week;
+    }
+
+    /** Fisher-Yates driven by mulberry32, so a seed always gives the same order. */
+    function seededShuffle(list, seed) {
+      var a = seed >>> 0;
+      function rand() {
+        a = (a + 0x6D2B79F5) | 0;
+        var x = Math.imul(a ^ (a >>> 15), 1 | a);
+        x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+        return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+      }
+      for (var i = list.length - 1; i > 0; i--) {
+        var j = Math.floor(rand() * (i + 1));
+        var tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+      }
+      return list;
+    }
+
+    function rotateCatalogOrder(list) {
+      try {
+        if (/[?&]gridorder=published\b/.test(window.location.search)) return list;
+      } catch (e) { /* no location in some embeds — rotate anyway */ }
+      return seededShuffle(list, isoWeekSeed(new Date()));
+    }
+
+    /**
      * Load the published catalogue.
      *
      * The page renders the range from `configurations`; this fills it from
@@ -2255,6 +2312,7 @@
           if (!Array.isArray(data.products) || !data.products.length) throw new Error('no products');
           configurations.length = 0;
           Array.prototype.push.apply(configurations, data.products);
+          rotateCatalogOrder(configurations);
           return true;
         })
         .catch(function(error) {
