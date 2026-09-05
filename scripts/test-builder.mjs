@@ -926,6 +926,203 @@ await asyncTest("/api/design refuses a body with no design in it", async () => {
   assert.equal(bad.status, 422);
 });
 
+/*
+ * Evening out the gaps in a run.
+ *
+ * A unit standing in the gap under a bridging span lands where the socket grid
+ * allowed, hard against one side. These check that the gaps can be evened out,
+ * that each unit's stack goes with it, and that the offer is withheld wherever
+ * moving would break something.
+ */
+function gappedRun() {
+  const empty = engine.createState(catalog);
+  const first = engine.applyCandidate(catalog, empty,
+    engine.generateCandidates(catalog, empty, "standard_base", {})[0]);
+  const far = engine.generateCandidates(catalog, first, "standard_base", {})
+    .filter((candidate) => candidate.originWorldMm[0] > 1500)
+    .sort((a, b) => a.originWorldMm[0] - b.originWorldMm[0])[0];
+  assert.ok(far, "a gapped base position exists");
+  return engine.applyCandidate(catalog, first, far);
+}
+
+function withInnerBase(state) {
+  const inner = engine.generateCandidates(catalog, state, "compact_base", {})
+    .filter((candidate) => candidate.originWorldMm[0] > 900 && candidate.originWorldMm[0] < 2200)
+    .sort((a, b) => a.originWorldMm[0] - b.originWorldMm[0])[0];
+  assert.ok(inner, "a base fits inside the gap");
+  return engine.applyCandidate(catalog, state, inner);
+}
+
+/** The gaps between consecutive bases in the one run, left to right. */
+function gapsOf(state) {
+  const runs = engine.spacingRuns(catalog, state);
+  assert.equal(runs.length, 1, "one run");
+  const boxes = runs[0].units.map((unit) => engine.instanceBounds(catalog, unit));
+  return boxes.slice(1).map((box, index) => Math.round(box[0] - boxes[index][3]));
+}
+
+test("uneven gaps in a run are evened out", () => {
+  const design = withInnerBase(gappedRun());
+  const before = gapsOf(design);
+  assert.equal(before.length, 2);
+  assert.notEqual(before[0], before[1], "the test needs them uneven to start with");
+
+  const plan = engine.spacingNormalisation(catalog, design);
+  assert.ok(plan, "there is something to even out");
+  assert.equal(plan.gapsBefore, 2);
+
+  const evened = engine.normaliseSpacing(catalog, design);
+  assert.ok(evened, "and it moves");
+  assert.ok(engine.validateState(catalog, evened).isValid);
+  assert.equal(evened.instances.length, design.instances.length, "nothing is lost in the move");
+
+  const after = gapsOf(evened);
+  assert.ok(Math.abs(after[0] - after[1]) <= 1, `gaps are equal (${after.join(", ")})`);
+
+  // The ends do not move, so the shelf keeps its size.
+  assert.deepEqual(engine.designBounds(catalog, evened).map(Math.round),
+    engine.designBounds(catalog, design).map(Math.round));
+
+  // And it does not offer to do it again.
+  assert.equal(engine.spacingNormalisation(catalog, evened), null);
+});
+
+test("evening out takes each unit's stack with it", () => {
+  let design = withInnerBase(gappedRun());
+  const middle = design.instances[2];
+  for (let level = 0; level < 2; level += 1) {
+    const above = engine.generateCandidates(catalog, design, "compact_extension", {});
+    if (!above.length) break;
+    design = engine.applyCandidate(catalog, design, above[0]);
+  }
+  const stacked = design.instances.filter((instance) =>
+    catalog.modules[instance.moduleId].family === "compact");
+  assert.ok(stacked.length >= 2, "the test needs something standing on it");
+
+  const plan = engine.spacingNormalisation(catalog, design);
+  const move = plan.moves.find((candidate) => candidate.ids.has(middle.id));
+  assert.ok(move, "the middle unit is the one that moves");
+  const evened = engine.normaliseSpacing(catalog, design);
+  assert.ok(evened);
+  for (const instance of stacked) {
+    const after = evened.instances.find((candidate) => candidate.id === instance.id);
+    assert.ok(Math.abs((after.originWorldMm[0] - instance.originWorldMm[0]) - move.offsetMm) <= 1,
+      `${instance.id} moved with its base`);
+  }
+});
+
+test("a run already evenly spaced is left alone", () => {
+  const empty = engine.createState(catalog);
+  let design = engine.applyCandidate(catalog, empty,
+    engine.generateCandidates(catalog, empty, "standard_base", {})[0]);
+  for (let unit = 0; unit < 2; unit += 1) {
+    const butted = engine.generateCandidates(catalog, design, "standard_base", { adjacentBasesOnly: true })
+      .filter((candidate) => candidate.originWorldMm[0] > 0)
+      .sort((a, b) => a.originWorldMm[0] - b.originWorldMm[0])[0];
+    if (!butted) break;
+    design = engine.applyCandidate(catalog, design, butted);
+  }
+  const gaps = gapsOf(design);
+  assert.equal(new Set(gaps).size, 1, "a butted run has one gap size");
+  assert.equal(engine.spacingNormalisation(catalog, design), null);
+});
+
+test("one gap is already one gap size", () => {
+  // Two units have a single gap between them, so there is nothing for it to be
+  // uneven with. The rule is about the number of gap sizes, not the number of
+  // units.
+  assert.equal(engine.spacingNormalisation(catalog, gappedRun()), null);
+});
+
+test("units a shelf rests on move together, or not at all", () => {
+  const design = withInnerBase(gappedRun());
+  const middle = design.instances[2];
+
+  /*
+   * A shelf resting on two units holds them rigidly apart: there is no offset
+   * that moves one and keeps both of its ends. So the gap between them cannot
+   * change -- and it becomes the size the other gaps are evened out TO, because
+   * it is the spacing the design already has and cannot give up.
+   *
+   * This is also what protects a bank of units meant to be touching: a butted
+   * run almost always carries a shelf spanning it.
+   */
+  const spanning = Object.values(catalog.modules)
+    .filter((module) => module.role === "extension")
+    .flatMap((module) => engine.generateCandidates(catalog, design, module.id, {}))
+    .find((candidate) => {
+      const supports = new Set((candidate.consumedSockets || []).map((socket) => socket.instanceId));
+      return supports.has(middle.id) && supports.size > 1;
+    });
+  if (!spanning) return; // nothing reaches across at this spacing; the rule stands
+  const pinned = engine.applyCandidate(catalog, design, spanning);
+
+  const before = gapsOf(pinned);
+  const plan = engine.spacingNormalisation(catalog, pinned);
+  if (!plan) return; // nothing free to move either; refusing is the right answer
+
+  // Whatever moves, the rigidly joined pair keeps the distance between them.
+  const evened = engine.normaliseSpacing(catalog, pinned);
+  assert.ok(evened);
+  assert.ok(engine.validateState(catalog, evened).isValid);
+  const after = gapsOf(evened);
+  const fixedIndex = before.findIndex((gap, index) => index === 0);
+  assert.equal(after[fixedIndex], before[fixedIndex], "the held gap did not change");
+  assert.equal(new Set(after).size, 1, `all gaps now match (${after.join(", ")})`);
+});
+
+test("a held middle moves the free end instead", () => {
+  /*
+   * Three units where a shelf spans the first two: the middle one cannot move,
+   * so the only way to even the gaps out is to bring the far one in. Pinning
+   * the ends and only ever moving the middle -- the first version of this --
+   * refused the whole case.
+   */
+  const empty = engine.createState(catalog);
+  let design = engine.applyCandidate(catalog, empty,
+    engine.generateCandidates(catalog, empty, "compact_base", {})[0]);
+  const near = engine.generateCandidates(catalog, design, "compact_base", {})
+    .filter((candidate) => candidate.originWorldMm[0] > 0)
+    .sort((a, b) => a.originWorldMm[0] - b.originWorldMm[0])[0];
+  design = engine.applyCandidate(catalog, design, near);
+
+  const bridge = Object.values(catalog.modules)
+    .filter((module) => module.role === "extension")
+    .flatMap((module) => engine.generateCandidates(catalog, design, module.id, {}))
+    .find((candidate) => new Set((candidate.consumedSockets || [])
+      .map((socket) => socket.instanceId)).size > 1);
+  if (!bridge) return;
+  design = engine.applyCandidate(catalog, design, bridge);
+
+  const far = engine.generateCandidates(catalog, design, "compact_base", {})
+    .filter((candidate) => candidate.originWorldMm[0] > near.originWorldMm[0])
+    .sort((a, b) => b.originWorldMm[0] - a.originWorldMm[0])[0];
+  if (!far) return;
+  design = engine.applyCandidate(catalog, design, far);
+
+  const before = gapsOf(design);
+  if (new Set(before.map((gap) => Math.round(gap / 5))).size < 2) return;
+
+  const evened = engine.normaliseSpacing(catalog, design);
+  assert.ok(evened, "there is a way to even this out");
+  assert.ok(engine.validateState(catalog, evened).isValid);
+  const after = gapsOf(evened);
+  assert.equal(new Set(after).size, 1, `all gaps match (${after.join(", ")})`);
+  assert.equal(after[0], before[0], "the gap the shelf holds is unchanged");
+});
+
+test("a leg turning a corner is a run of its own", () => {
+  const empty = engine.createState(catalog);
+  const corner = engine.applyCandidate(catalog, empty,
+    engine.generateCandidates(catalog, empty, "corner_base", {})[0]);
+  const turn = engine.generateCandidates(catalog, corner, "standard_base", {})
+    .find((candidate) => (candidate.rotationDeg || 0) % 180 === 90);
+  if (!turn) return;
+  const turned = engine.applyCandidate(catalog, corner, turn);
+  const runs = engine.spacingRuns(catalog, turned);
+  assert.equal(runs.length, 2, "the corner and its turn are two runs");
+});
+
 if (failures) {
   console.error(`\n${failures} failing test${failures === 1 ? "" : "s"}`);
   process.exit(1);

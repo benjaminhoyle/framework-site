@@ -6,3 +6,16 @@ node_modules/
 # Local secrets — never commit.
 .env
 .env.*
+
+# The design lab's generated artifacts. The corpus is reproducible from its
+# seed in seconds and the plain-run set is a cache of the catalogue; neither is
+# worth a megabyte in the history. Verdicts are the one part that is somebody's
+# judgement rather than machine output, so they are NOT ignored.
+data/design-lab/corpus.json
+data/design-lab/plain-runs.json
+data/design-lab/shots.json
+data/design-lab/render-queue/
+data/design-lab/scenes/
+data/design-lab/corpora/
+data/design-lab/verdicts.backup-*.json
+data/design-lab/*.smoke.json

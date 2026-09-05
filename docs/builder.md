@@ -87,6 +87,60 @@ the frame, and placing against those leaves a visible notch in the corner.
 Simple has no corners: it builds one plain run, and a run of corner units is not
 a thing anyone wants.
 
+### Normalising the spacing
+
+A unit standing in the gap under a bridging span lands wherever the socket grid
+allowed, which is hard against one side of the gap. It reads as a mistake rather
+than a decision, and it is the same mistake in every design that has one — so
+the fix is one action in the options sheet, **Normalise spacing**, and not
+something to be hunted for piece by piece. It appears only when there is
+something to even out.
+
+The rule is simply that the gaps between the base units of a run should all be
+the same size. Each unit's stack moves with it.
+
+**What that size is depends on what is already fixed.** A shelf resting on two
+units holds them rigidly apart: there is no offset that moves one and keeps both
+ends of the shelf where they are. So a gap inside such a set cannot change — and
+where one exists it *is* the answer, because it is the spacing the design
+already has and cannot give up. Only when nothing is held is the size free, and
+then it is chosen to keep the run's overall width so the shelf does not change
+size.
+
+That distinction is the whole reason the ends are not simply pinned. Two
+different designs, both wrong in the same way:
+
+| | gaps before | after | what moved |
+|---|---|---|---|
+| unit free in a bridged gap | 30, 119 | 75, 75 | the middle unit, ends held by the span over them |
+| unit held by a shelf, free one at the end | 85, 262 | 85, 85 | the far unit, pulled in to match the held gap |
+
+An earlier version pinned the ends and only ever moved the middle. It handled
+the first case and refused the second outright, because there the middle is the
+one that cannot move.
+
+Three more things it has to get right, each of which it got wrong first:
+
+- **Runs, not the whole design.** A leg turning a corner is its own run: bases
+  are grouped by orientation and by overlapping across the line they lie on.
+- **Units, not stacks.** A stack includes whatever stands on it, and the span
+  bridging two towers belongs to *both* of their stacks — so measured that way
+  each tower reaches past the unit in the gap, neither counts as being to one
+  side of it, and the very design this exists for reported no neighbours at all.
+  What is in the air above a gap is the validator's business.
+- **Rigid sets move whole or not at all.** Where the arithmetic would give two
+  units in one set different offsets, there is no solution that keeps the shelf
+  across them, and nothing is offered. This is also what protects a bank of
+  units meant to be touching: a butted run almost always carries a shelf
+  spanning it.
+
+Evening the gaps deliberately takes units off the socket grid. The whole
+assembly is revalidated afterwards like every other edit, and an illegal result
+is refused rather than applied.
+
+`scripts/normalise-maybes.mjs` runs the same engine call over the designs that
+survived review in the design lab; see `docs/design-lab.md`.
+
 ### Switching down to Simple
 
 Simple can only express a plain run, so entering it rebuilds the shelf from the

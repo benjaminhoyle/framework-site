@@ -38,6 +38,35 @@ configs (which are this repo's test fixtures — do not copy them in by hand).
   contract is newer. That check is the only thing standing between a Rhino edit
   and a deployed page whose geometry disagrees with its own catalog.
 
+## /design-lab
+
+A bench tool, not a page: `scripts/generate-designs.mjs` grows hundreds of legal
+shelf configurations through the builder's own placement engine, and
+`design-lab.html` draws them with the builder's own renderer for a quick
+keep/maybe/reject pass with notes. `docs/design-lab.md` is the full account.
+
+- **It is 404'd in `netlify.toml`**, along with `data/design-lab/*`. The corpus
+  is unreviewed machine output and the bench needs a local server that can write
+  the verdicts file.
+- **Do not add a `?v=` to it.** The bump script guards `/builder` against a
+  half-stale CDN; this page is served from disk with `no-store`.
+- **`studio.html` is the only bench page**: judge a shelf, choose its angles, and
+  the renders run live in a queue at the foot of the page — then each finished
+  render is put into a room. **Browse** shows everything it has produced. It
+  replaced `design-lab.html` and `shot-lab.html`.
+- **One key: `SITE_LOGIN_KEY` in `.env`.** The dev server proxies `/api/ai-*` to
+  the live functions and supplies the header itself, so the studio does not ask
+  for a key on localhost. The provider key stays a Netlify env var and never
+  reaches a browser.
+- **Scene images cost money.** The studio caps them per sitting (25 by default)
+  and the cap is in the bar. `--view viewport` is the only view that honours a
+  camera JSON; anything else silently renders a preset instead.
+
+```bash
+node scripts/generate-designs.mjs --count 300 --seed 11
+npm run dev   # http://127.0.0.1:8770/design-lab.html
+```
+
 ## Analytics and the event lake
 
 `js/site.js` emits checkpoint events to `/api/track` (Netlify Blobs); the ops

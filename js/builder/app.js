@@ -1774,6 +1774,20 @@
    * open, so the same tap undoes the decision if the pale grey is not what was
    * wanted.
    */
+  /**
+   * Even out the gaps between the units in a run, each unit's stack moving with
+   * it. The ends stay put, so the shelf keeps its overall size.
+   */
+  function normaliseSpacing() {
+    const plan = engine.spacingNormalisation(ui.catalog, ui.design);
+    if (!commit(engine.normaliseSpacing(ui.catalog, ui.design), {})) {
+      setHint("The spacing here cannot be evened out.", true);
+      return;
+    }
+    const moved = plan ? plan.moves.length : 0;
+    setHint(`Spacing evened out — ${moved} unit${moved === 1 ? "" : "s"} moved.`);
+  }
+
   function toggleOmitted(instance) {
     const omit = !instance.omitted;
     if (!commit(engine.setInstanceOmitted(ui.catalog, ui.design, instance.id, omit), { keepSelection: true })) return;
@@ -2850,6 +2864,28 @@
           includeAll.addEventListener("click", resetOmittedPieces);
           actions.appendChild(includeAll);
         }
+        /*
+         * Even out the gaps in a run.
+         *
+         * A unit standing in the gap under a bridging span lands wherever the
+         * socket grid allowed, which is hard against one side and reads as a
+         * mistake rather than a decision. This is the design-wide answer to it
+         * rather than a per-piece one: the fault is a property of the run, the
+         * fix moves whichever units are free to move, and there is nothing to
+         * hunt for. Offered only when there is something to even out -- the
+         * engine decides that, and says how many sizes it would collapse.
+         */
+        const spacing = engine.spacingNormalisation(ui.catalog, ui.design);
+        if (spacing) {
+          const label = `Even out the ${spacing.gapsBefore} gap sizes`;
+          const normalise = make("button", "nd-button is-small", "Normalise spacing");
+          normalise.type = "button";
+          normalise.title = label;
+          normalise.setAttribute("aria-label", label);
+          normalise.addEventListener("click", normaliseSpacing);
+          actions.appendChild(normalise);
+        }
+
         const reset = make("button", "nd-button is-small", "Start again");
         reset.type = "button";
         reset.disabled = !ui.design.instances.length;

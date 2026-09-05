@@ -1432,6 +1432,220 @@
     return validateState(catalog, repaired).isValid ? repaired : state;
   }
 
+  /**
+   * The runs of base units: bases lying along the same line, in order.
+   *
+   * Same orientation and overlapping across the line, so a leg turning a corner
+   * is a run of its own rather than a stray neighbour of the run it turns off.
+   */
+  function spacingRuns(catalog, state) {
+    const bases = state.instances.filter((instance) => moduleFor(catalog, instance.moduleId).role === "base");
+    const runs = [];
+
+    for (const instance of bases) {
+      const axis = frameOf(instance.rotationDeg).runAxis;
+      const across = axis === 0 ? 1 : 0;
+      const box = instanceBounds(catalog, instance);
+      const run = runs.find((candidate) => candidate.axis === axis && candidate.units.some((member) => {
+        const theirs = instanceBounds(catalog, member);
+        return Math.min(box[across + 3], theirs[across + 3]) - Math.max(box[across], theirs[across]) > TOLERANCE_MM;
+      }));
+      if (run) run.units.push(instance);
+      else runs.push({ axis, across, units: [instance] });
+    }
+
+    for (const run of runs) {
+      run.units.sort((a, b) => instanceBounds(catalog, a)[run.axis] - instanceBounds(catalog, b)[run.axis]);
+    }
+    return runs;
+  }
+
+  /**
+   * How the gaps in this design would even out -- or null when there is nothing
+   * to even out, or when the pieces that would have to move cannot.
+   *
+   * The case it exists for: a unit standing in the gap under a bridging span.
+   * The gap is whatever interval the span needed, so the unit inside it lands
+   * wherever the socket grid allowed, which is hard against one side and reads
+   * as a mistake rather than a decision. Three units with two unequal gaps is
+   * the same fault as a run of five with four of them.
+   *
+   * The ends do not move, so the design keeps its overall size and only the
+   * spacing inside it changes.
+   *
+   * Evening the gaps deliberately takes those clusters off the socket grid.
+   * That is only safe where nothing is joined across one: if a piece reaches
+   * from a cluster that has to move to anything outside it, there is no offset
+   * that keeps both of its ends, and null comes back instead.
+   */
+  /**
+   * Which units are rigidly joined to which.
+   *
+   * Two units are rigid when a piece rests on both: there is no offset that
+   * moves one and keeps both ends of that piece where they are. A rigid set
+   * moves as one thing or not at all, and the gaps inside it cannot change.
+   */
+  function rigidGroups(state, units) {
+    const groupOf = new Map(units.map((unit, index) => [unit.id, index]));
+    const stacks = units.map((unit) => stackInstanceIds(state, unit.id));
+
+    for (const instance of state.instances) {
+      const touched = [];
+      for (let index = 0; index < units.length; index += 1) {
+        const inStack = (instance.consumedSockets || [])
+          .some((socket) => stacks[index].has(socket.instanceId));
+        if (inStack) touched.push(index);
+      }
+      if (touched.length < 2) continue;
+      const keep = Math.min(...touched.map((index) => groupOf.get(units[index].id)));
+      for (const index of touched) {
+        const from = groupOf.get(units[index].id);
+        for (const unit of units) {
+          if (groupOf.get(unit.id) === from) groupOf.set(unit.id, keep);
+        }
+      }
+    }
+    return groupOf;
+  }
+
+  function commonest(values) {
+    const counts = new Map();
+    for (const value of values) {
+      const key = Math.round(value / 5);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    let best = null;
+    let bestCount = 0;
+    for (const [key, count] of counts) {
+      if (count > bestCount) {
+        bestCount = count;
+        best = key;
+      }
+    }
+    return best === null ? null : best * 5;
+  }
+
+  /**
+   * How the gaps in this design would even out -- or null when there is
+   * nothing to even out, or when the units that would have to move cannot.
+   *
+   * The case it exists for: a unit standing in the gap under a bridging span.
+   * The gap is whatever interval the span needed, so the unit inside it lands
+   * wherever the socket grid allowed, which is hard against one side and reads
+   * as a mistake rather than a decision.
+   *
+   * The rule is the one that generalises it: make the gaps between the units of
+   * a run all the same size. What that size is depends on what is already
+   * fixed. A shelf resting on two units holds them rigidly apart, so a gap
+   * inside such a set cannot change -- and where one exists it *is* the answer,
+   * because the remaining gaps should match the spacing the design already has.
+   * Only when nothing is fixed is the size free, and then it is chosen to keep
+   * the run's overall width, so the shelf does not change size.
+   *
+   * That difference is the whole reason the ends are not simply pinned: where
+   * the middle of a run is held by a shelf, the unit free to move is an end
+   * one, and moving it is the only way to even anything out.
+   *
+   * Evening the gaps deliberately takes units off the socket grid. The whole
+   * assembly is revalidated afterwards like every other edit.
+   */
+  function spacingNormalisation(catalog, state) {
+    for (const run of spacingRuns(catalog, state)) {
+      const { units, axis } = run;
+      if (units.length < 2) continue;
+      const boxes = units.map((unit) => instanceBounds(catalog, unit));
+      const groupOf = rigidGroups(state, units);
+
+      const gaps = [];
+      for (let index = 1; index < units.length; index += 1) {
+        gaps.push(boxes[index][axis] - boxes[index - 1][axis + 3]);
+      }
+      // Rounded to 5mm, so a millimetre of float noise is not a second size.
+      const sizes = new Set(gaps.map((gap) => Math.round(gap / 5)));
+      if (sizes.size < 2) continue;
+
+      const fixed = gaps.filter((gap, index) =>
+        groupOf.get(units[index].id) === groupOf.get(units[index + 1].id));
+      const free = gaps.length - fixed.length;
+      if (!free) continue;
+
+      let target;
+      if (fixed.length) {
+        // Match the spacing the design already has and cannot change.
+        target = commonest(fixed);
+      } else {
+        const span = boxes[boxes.length - 1][axis + 3] - boxes[0][axis];
+        const occupied = boxes.reduce((total, box) => total + (box[axis + 3] - box[axis]), 0);
+        target = (span - occupied) / gaps.length;
+      }
+      if (target < -TOLERANCE_MM) continue;
+
+      // Walk the run, advancing by the gap that cannot change inside a rigid
+      // set and by the target between them. Units in one set keep their
+      // spacing by construction; that they also keep a single offset is
+      // checked below, because a target that disagrees with a fixed gap would
+      // otherwise pull one apart.
+      const offsets = new Map();
+      let cursor = boxes[0][axis];
+      for (let index = 0; index < units.length; index += 1) {
+        offsets.set(units[index].id, rounded(cursor - boxes[index][axis]));
+        const width = boxes[index][axis + 3] - boxes[index][axis];
+        const sameSet = index + 1 < units.length &&
+          groupOf.get(units[index].id) === groupOf.get(units[index + 1].id);
+        cursor += width + (sameSet ? gaps[index] : target);
+      }
+
+      const byGroup = new Map();
+      let torn = false;
+      for (const unit of units) {
+        const group = groupOf.get(unit.id);
+        const offset = offsets.get(unit.id);
+        if (!byGroup.has(group)) byGroup.set(group, offset);
+        else if (Math.abs(byGroup.get(group) - offset) > TOLERANCE_MM) torn = true;
+      }
+      if (torn) continue;
+
+      const moves = [];
+      for (const [group, offset] of byGroup) {
+        if (Math.abs(offset) <= TOLERANCE_MM) continue;
+        const ids = new Set();
+        for (const unit of units) {
+          if (groupOf.get(unit.id) !== group) continue;
+          for (const id of stackInstanceIds(state, unit.id)) ids.add(id);
+        }
+        moves.push({ ids, offsetMm: offset });
+      }
+      if (!moves.length) continue;
+      return { axis, moves, gapMm: rounded(target), gapsBefore: sizes.size };
+    }
+    return null;
+  }
+
+  /**
+   * Even out the gaps between the units in a run, moving each unit's stack with
+   * it. Null when there is nothing to even out, or when the result would be
+   * illegal -- the whole assembly is revalidated, like every other edit.
+   */
+  function normaliseSpacing(catalog, state) {
+    const plan = spacingNormalisation(catalog, state);
+    if (!plan) return null;
+    const offsetOf = new Map();
+    for (const move of plan.moves) {
+      for (const id of move.ids) offsetOf.set(id, move.offsetMm);
+    }
+    const specs = serializeState(state).instances.map((spec) => {
+      if (!offsetOf.has(spec.id)) return spec;
+      const origin = spec.originWorldMm.slice();
+      origin[plan.axis] = rounded(origin[plan.axis] + offsetOf.get(spec.id));
+      const moved = Object.assign({}, spec, { originWorldMm: origin });
+      // A base that has moved is no longer "the one butted up against that
+      // other one", and its placement should not go on saying so.
+      if (spec.placement && spec.placement.method === "floor") moved.placement = { method: "floor" };
+      return moved;
+    });
+    return rebuild(catalog, state, specs);
+  }
+
   function removeInstance(catalog, state, instanceId) {
     const specs = serializeState(state).instances.filter((spec) => spec.id !== instanceId);
     return rebuild(catalog, state, specs);
@@ -1555,6 +1769,7 @@
     localPivot,
     moduleFor,
     moduleHasDistinctRotation,
+    normaliseSpacing,
     normalizeCatalog,
     removeInstance,
     repairCornerGeometry,
@@ -1565,6 +1780,9 @@
     setInstanceFinish,
     setInstanceOmitted,
     shelfBounds,
+    spacingNormalisation,
+    spacingRuns,
+    stackBounds,
     stacksOf,
     validateAddition,
     validateState

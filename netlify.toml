@@ -136,6 +136,22 @@
   status = 404
   force = true
 
+# The design lab is a bench tool: it runs against the local dev server, reads a
+# generated corpus and writes verdicts to a file only that server can write.
+# Nothing about it is meant to be reachable from the internet, and the corpus is
+# unreviewed machine output -- exactly what should not be found on the site.
+[[redirects]]
+  from = "/studio.html"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/data/design-lab/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
 # --- WS1 event lake collector (Netlify Functions + Blobs) ---
 # track.js / export.js declare their own routes via `export const config.path`
 # (/api/track, /api/export), so no redirects are needed here.
