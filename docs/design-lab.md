@@ -700,6 +700,54 @@ more. The generator can compose shapes no current image model will hold, and the
 answer there is to know which ones they are before spending on them, not to
 write a longer prompt.
 
+### The three things a close look notices, and what saying them was worth
+
+The shape is not the only thing that drifts. Audited across fifteen scenes on
+three axes the product is actually recognised by:
+
+| axis | mean | visibly wrong | was it in the prompt? |
+|---|---|---|---|
+| **two-tone** — steel darker than board | 2.40 | **86%** | **nowhere, ever** |
+| **collars** — stacked leg segments | 2.80 | **80%** | one line, mid-list |
+| square sawn corners | 3.80 | 20% | one line, mid-list |
+| overall hue | 4.00 | 0% | yes |
+
+Overall colour never fails. It is the **split** that collapses: every finish in
+the catalogue is two colours — `marine` is steel `#143F68` carrying MDF
+`#82AAD0`, a 4.4x difference in tone — and the shared prompt says "steel frame
+colour and powder-coat finish must match the reference precisely", in the
+singular. Nothing had ever told the model there were two.
+
+The render is not at fault. Sampling `1VDXVZA-ym42` directly: dark frame pixels
+at luminance 0.165, board faces at 0.42-0.54, a 2.7x split against the 2.0x the
+catalogue intends. The reference shows it clearly; the model flattens it anyway.
+
+`materials()` in `js/design-lab/design-words.js` now names both hexes, which is
+the darker, how much darker in tone, and that board edges take the board colour
+— then restates the collars and the square corners at the end, where they are
+read last.
+
+**What it was worth, honestly.** Matched pairs, same shot and same room:
+
+| axis | before | after |
+|---|---|---|
+| two-tone | 2.57 | 2.86 (+0.29) |
+| collars | 2.73 | 3.07 (+0.34) |
+| square corners | 3.74 | 3.71 (-0.02) |
+
+Both the missing instructions moved in the right direction and neither is
+fixed — two-tone is still visibly wrong in about four scenes in five. This is
+nothing like the geometry result, where naming the shape took matched cases from
+2.72 to 3.58. Saying a thing out loud is enough when the model's error is *not
+knowing*; it is not enough when the error is a rendering habit — painting a
+photoreal object under room light pulls frame and board toward each other, and
+one more sentence does not stop it.
+
+Worth trying next, in order of expected value: a two-image call putting a
+close crop of the frame-to-board junction beside the full render, so the
+contrast is shown rather than described; or accepting it and catching failures
+with the audit instead, which is cheap enough to run on every scene.
+
 ### The reference image is the render, whole
 
 That image is the geometry master — the prompt's VIEWPOINT LOCK tells the model

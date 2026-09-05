@@ -146,6 +146,69 @@ window.FrameworkDesignWords = (function () {
     return spans;
   }
 
+  /**
+   * How dark one colour is against another, as a number you can say out loud.
+   *
+   * WCAG relative luminance, because "clearly darker" is the instruction the
+   * model already ignores and "about three times darker in tone" is one it can
+   * check itself against.
+   */
+  function toneRatio(darkHex, lightHex) {
+    const channel = (value) => {
+      const c = value / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const luminance = (hex) => {
+      const clean = String(hex || "").replace("#", "");
+      if (clean.length !== 6) return null;
+      const [r, g, b] = [0, 2, 4].map((at) => parseInt(clean.slice(at, at + 2), 16));
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+    const dark = luminance(darkHex);
+    const light = luminance(lightHex);
+    if (dark == null || light == null) return null;
+    return (light + 0.05) / (dark + 0.05);
+  }
+
+  /**
+   * What the shelf is made of, and the fact nobody ever wrote down.
+   *
+   * Every finish in the catalogue is TWO colours — a dark steel frame carrying
+   * lighter MDF boards — and the shared prompt says "steel frame colour and
+   * powder-coat finish must match the reference precisely", in the singular. So
+   * nothing has ever told the model there are two. Audited across fifteen
+   * scenes the two-tone split was gone or muddied in 86% of them, the worst
+   * score on the board and the only one whose instruction did not exist.
+   *
+   * The collars are the second: they ARE in the shared prompt, and were still
+   * lost in 80%, which is what a single line buried mid-list does. Said again
+   * here, at the end, with the hexes beside them.
+   */
+  function materials(catalog, finishId) {
+    const finishes = (catalog && catalog.finishes) || [];
+    const finish = finishes.find((entry) => entry.id === finishId) || finishes[0];
+    if (!finish || !finish.steelHex || !finish.mdfHex) return [];
+
+    const ratio = toneRatio(finish.steelHex, finish.mdfHex);
+    const howMuch = ratio
+      ? ` The frame reads about ${ratio.toFixed(1)}× darker in tone than the boards — not a shade darker, obviously darker.`
+      : "";
+
+    return [
+      `- MATERIALS. This product is TWO-TONE and that is how it is recognised. The finish is ${finish.displayName}:`,
+      `    - the STEEL FRAME — every upright post, leg, foot and horizontal tube — is ${finish.steelHex}, the DARK colour.`,
+      `    - the BOARD FACES — the flat shelf surfaces the frame carries — are ${finish.mdfHex}, the LIGHT colour.`,
+      "  Do not flatten the two into one colour, do not paint the boards the frame's colour, and never invert them.",
+      `  The frame is ALWAYS the darker of the two.${howMuch}`,
+      "  Board edges are the board colour, not the frame colour.",
+      "- The uprights are STACKED SEGMENTS, not smooth continuous poles: a slim collar in the frame colour sits",
+      "  at every join, recurring up each leg whether or not a shelf meets it there. They are small and easy to",
+      "  miss — reproduce them anyway; without them this reads as generic tube shelving.",
+      "- The boards are sawn square. Their ends and corners are sharp right angles — never rounded, radiused or",
+      "  softened, and never bullnosed."
+    ];
+  }
+
   function describeSkyline(runs) {
     if (runs.length < 2) return null;
     const lines = runs.map((run) => `    - a section ${cm(run.widthMm)} cm wide standing ${cm(run.topMm)} cm tall`);
@@ -219,19 +282,25 @@ window.FrameworkDesignWords = (function () {
       lines.push("  beneath it empty, and do not run legs, panels or extra shelves down to the floor to support it.");
     }
 
+    for (const line of materials(catalog, settings.finish || state.finish)) lines.push(line);
+
     if (settings.omitFigure !== false) {
       lines.push("- The grey untextured human figure in the reference is a measuring aid for scale only.");
       lines.push("  Do not reproduce it, or any person, mannequin or silhouette, in the output.");
     }
 
     lines.push("");
-    lines.push("BEFORE RETURNING THE IMAGE, trace the outline of the shelf you have drawn and compare it to the");
-    lines.push("steps listed above. If it has become a plain rectangle, if the tall and low sections have moved");
-    lines.push("or changed proportion, if separate sections have merged, or if any part has become a different");
-    lines.push("piece of furniture, redraw it correctly. The room may be anything you like; the shelf may not.");
+    lines.push("BEFORE RETURNING THE IMAGE, check the shelf you have drawn against this list:");
+    lines.push("  1. Trace its outline. Is it still the stepped shape above, or has it become a plain rectangle?");
+    lines.push("  2. Are the tall and low sections in the same places, in the same proportions?");
+    lines.push("  3. Have separate sections merged, or has any part become a different piece of furniture?");
+    lines.push("  4. Is the steel frame still clearly DARKER than the board faces, or have they flattened to one colour?");
+    lines.push("  5. Are the collars still there at the joins up each leg?");
+    lines.push("  6. Are the board corners still sharp right angles rather than rounded?");
+    lines.push("If any answer is wrong, redraw it. The room may be anything you like; the shelf may not.");
 
     return lines.filter((line) => line !== null).join("\n");
   }
 
-  return { build, skyline, footprint };
+  return { build, skyline, footprint, materials, toneRatio };
 })();

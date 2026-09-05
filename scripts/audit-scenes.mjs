@@ -42,6 +42,9 @@ const API = process.env.STUDIO_ORIGIN || "http://127.0.0.1:8770";
  */
 const AUDIT_PX = 1024;
 
+/** One audit is two images and a page of rubric; a minute is generous. */
+const CALL_TIMEOUT_MS = 150_000;
+
 const RUBRIC = `You are auditing an image pipeline for a modular steel shelving company.
 
 IMAGE A is a clean 3D render of a shelf: the exact product, on a white background, with a grey untextured human figure beside it for scale.
@@ -60,7 +63,11 @@ Respond with ONLY a JSON object, no markdown fence:
   "viewpoint": <0-5: same camera height and horizontal angle around the shelf? 5 = identical vantage. 0 = shot from somewhere else entirely>,
   "colour": <0-5: same frame colour and finish? 5 = identical hue and sheen>,
   "material": <0-5: still powder-coated steel tube with flat shelves and visible bolts? 5 = identical construction>,
+  "two_tone": <0-5: in IMAGE A the steel frame (tubes, posts, legs) is clearly DARKER than the flat board faces. Is that same two-tone contrast present in IMAGE B? 5 = same clear dark-frame/light-board split. 0 = flattened to a single colour, or inverted>,
+  "collars": <0-5: the uprights in IMAGE A are stacked segments with a slim collar at each join, recurring up the leg. Are they still there in IMAGE B? 5 = present and correct. 0 = smooth continuous poles, joins gone>,
+  "square_corners": <0-5: board ends and corners in IMAGE A are sawn square — sharp right angles. In IMAGE B? 5 = still sharp and square. 0 = rounded, radiused or softened>,
   "faults": [<short strings: concrete structural differences, e.g. "gained a 5th tier", "wings are symmetric but reference is asymmetric", "tubes thickened", "boards now wooden">],
+  "craft_note": "<one short sentence on the material/finish differences specifically, or 'faithful'>",
   "nairobi_real": <0-5: does this read as a real occupied Nairobi room? 5 = convincingly real and specific. 0 = generic showroom or render>,
   "beige_nowhere": <0-5: how much is this the generic beige/greige AI interior with no specificity? 0 = not at all, richly specific. 5 = entirely generic beige>,
   "shelf_is_subject": <true|false: is the shelf clearly visible, well lit, unobstructed>,
@@ -104,10 +111,13 @@ async function audit(referencePath, generatedPath) {
     { inlineData: { mimeType: "image/jpeg", data: fs.readFileSync(b).toString("base64") } },
   ];
 
+  // A hung call must not hang the run. Without this a single stalled request
+  // stopped a sixteen-scene audit for half an hour with nothing to show for it.
   const response = await fetch(`${API}/api/ai`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ action: "text", provider: "gemini", partsOrText }),
+    signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
   });
   const raw = await response.text();
   fs.rmSync(tmp, { recursive: true, force: true });
@@ -129,6 +139,21 @@ export function fidelityScore(verdict) {
   ).toFixed(2));
 }
 
+/**
+ * The three the product is actually recognised by, close up.
+ *
+ * Two-tone is the one nothing ever said out loud: every finish in the catalogue
+ * is a dark steel frame carrying lighter MDF boards (marine is #143F68 against
+ * #82AAD0), and a prompt that says "the steel frame colour must match" in the
+ * singular invites the model to flatten both into one.
+ */
+export function craftScore(verdict) {
+  const parts = [verdict.two_tone, verdict.collars, verdict.square_corners]
+    .filter((value) => typeof value === "number");
+  if (!parts.length) return null;
+  return Number((parts.reduce((sum, value) => sum + value, 0) / parts.length).toFixed(2));
+}
+
 /** And one for "is it still somewhere real", which fidelity must not buy. */
 export function placeScore(verdict) {
   return Number((((verdict.nairobi_real + (5 - verdict.beige_nowhere)) / 2)).toFixed(2));
@@ -136,7 +161,12 @@ export function placeScore(verdict) {
 
 export async function auditPair(referencePath, generatedPath) {
   const verdict = await audit(referencePath, generatedPath);
-  return { ...verdict, fidelity: fidelityScore(verdict), place: placeScore(verdict) };
+  return {
+    ...verdict,
+    fidelity: fidelityScore(verdict),
+    craft: craftScore(verdict),
+    place: placeScore(verdict)
+  };
 }
 
 async function main() {
@@ -162,23 +192,27 @@ async function main() {
     try {
       const verdict = await auditPair(reference, generated);
       results.push({ id: row.id, preset: row.preset, ...verdict });
+      process.stderr.write(`  fid ${verdict.fidelity} craft ${verdict.craft} place ${verdict.place}\n`);
+      // Written as they arrive: an audit is cheap but not instant, and losing
+      // fifteen good verdicts to a sixteenth bad one is a waste of the wait.
+      if (out) fs.writeFileSync(path.isAbsolute(out) ? out : j(ROOT, out), JSON.stringify(results, null, 1));
     } catch (error) {
       console.error(`  ${row.id}: ${error.message}`);
     }
   }
 
   console.log("");
-  console.log("id                                        fid  place tiers  silh view col mat  problem");
+  console.log("id                                        fid craft place  2tone collar sqcnr  craft note");
   for (const r of results) {
     console.log(
-      `${r.id.slice(0, 40).padEnd(40)}  ${String(r.fidelity).padStart(4)}  ${String(r.place).padStart(4)}  ` +
-      `${r.tiers_a}->${r.tiers_b}`.padEnd(6) +
-      `  ${r.silhouette}    ${r.viewpoint}    ${r.colour}   ${r.material}    ${r.one_line}`);
+      `${r.id.slice(0, 40).padEnd(40)}  ${String(r.fidelity).padStart(4)} ${String(r.craft).padStart(4)} ${String(r.place).padStart(4)}   ` +
+      `${String(r.two_tone).padStart(4)}  ${String(r.collars).padStart(5)}  ${String(r.square_corners).padStart(4)}   ${String(r.craft_note || r.one_line).slice(0, 62)}`);
   }
   if (results.length) {
-    const mean = (key) => (results.reduce((sum, r) => sum + r[key], 0) / results.length).toFixed(2);
+    const mean = (key) => (results.reduce((sum, r) => sum + (r[key] || 0), 0) / results.length).toFixed(2);
     console.log("");
-    console.log(`mean fidelity ${mean("fidelity")} · mean place ${mean("place")} · ${results.length} scenes`);
+    console.log(`mean fidelity ${mean("fidelity")} · craft ${mean("craft")} · place ${mean("place")} · ${results.length} scenes`);
+    console.log(`  two-tone ${mean("two_tone")} · collars ${mean("collars")} · square corners ${mean("square_corners")}`);
     const faults = results.flatMap((r) => r.faults || []);
     if (faults.length) {
       console.log("\nfaults seen:");

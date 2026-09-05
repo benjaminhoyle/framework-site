@@ -439,7 +439,11 @@ window.FrameworkStudio = (function () {
     if (design) {
       try {
         const state = engine.deserializeState(ui.catalog, design);
-        structure = words ? words.build(engine, ui.catalog, state) : "";
+        // The shot's finish, not the design's: the planner rolls a colour per
+        // angle, and the render was made in that one.
+        structure = words
+          ? words.build(engine, ui.catalog, state, { finish: shotRow.finish })
+          : "";
         const bounds = engine.designBounds(ui.catalog, state);
         if (bounds) scale = { status: "set", shelfH: Math.round(bounds[5] / 10) };
       } catch (error) {

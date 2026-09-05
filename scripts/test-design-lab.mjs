@@ -776,6 +776,41 @@ test("the words never claim a board count or a board height", () => {
   }
 });
 
+test("the two-tone finish is stated, with the frame always the darker half", () => {
+  const words = loadDesignWords();
+  // Every finish in the catalogue is a dark steel frame carrying lighter MDF,
+  // and the shared prompt says "the steel frame colour must match" in the
+  // singular — so nothing ever told the model there were two. Audited over
+  // fifteen scenes the split was gone or muddied in 86% of them, the worst
+  // score on the board and the only one whose instruction did not exist.
+  for (const finish of catalog.finishes) {
+    const block = words.materials(catalog, finish.id).join("\n");
+    assert.ok(block.includes(finish.steelHex), `${finish.id} names its steel hex`);
+    assert.ok(block.includes(finish.mdfHex), `${finish.id} names its board hex`);
+    assert.ok(block.includes("TWO-TONE"), `${finish.id} says the product is two-tone`);
+
+    // The direction must never come out backwards, whatever the palette.
+    const ratio = words.toneRatio(finish.steelHex, finish.mdfHex);
+    assert.ok(ratio > 1,
+      `${finish.id}: steel ${finish.steelHex} must be darker than board ${finish.mdfHex} (ratio ${ratio})`);
+  }
+});
+
+test("the collars and the square corners are said again where they survive", () => {
+  const words = loadDesignWords();
+  // Both are in the shared prompt already and both were still being lost —
+  // collars in 80% of scenes — which is what one line buried mid-list does.
+  const text = words.build(engine, catalog,
+    buildPlainRun(catalog, { family: "slim", width: 2, levels: 2 }), { finish: "marine" });
+  assert.ok(text.includes("STACKED SEGMENTS"), "the collars are restated");
+  assert.ok(text.includes("sawn square"), "and so are the square corners");
+  // They have to land after the room, which here means after everything else.
+  assert.ok(text.indexOf("STACKED SEGMENTS") > text.indexOf("ONE freestanding"),
+    "the material notes come after the shape, at the end where they are read last");
+  assert.ok(/steel frame still clearly DARKER/.test(text),
+    "and the closing check asks about the two-tone split by name");
+});
+
 test("a shelf standing in one place is not told to keep gaps open", () => {
   const words = loadDesignWords();
   const design = buildPlainRun(catalog, { family: "slim", width: 1, levels: 2 });
