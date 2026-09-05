@@ -5,7 +5,8 @@
   "description": "Framework Designs static site + Netlify Functions (WS1 event lake collector).",
   "scripts": {
     "test": "node scripts/test-whatsapp-links.js && node scripts/test-track-emitter.js && node scripts/test-builder.mjs && node scripts/test-design-lab.mjs && node scripts/test-builder-entry-links.mjs && node scripts/test-catalog-build.mjs && node scripts/test-auth.mjs && node scripts/test-sync.mjs && node scripts/test-reconcile.mjs && node scripts/test-push.mjs",
-    "dev": "node scripts/dev-builder.mjs"
+    "dev": "node scripts/dev-builder.mjs",
+    "studio": "bash scripts/studio.sh"
   },
   "dependencies": {
     "@netlify/blobs": "^8.1.0"

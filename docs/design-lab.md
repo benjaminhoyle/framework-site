@@ -366,8 +366,17 @@ is put into a room, and the result jumps the queue to be looked at while it is
 fresh.
 
 ```bash
-npm run dev   # then http://127.0.0.1:8770/studio.html
+npm run studio   # starts the server if it is down, then opens the page
 ```
+
+It refuses to move off port 8770 rather than drifting to 8771 and leaving you on
+a page whose `/api/ai-*` proxy points somewhere else, and it warns up front when
+`SITE_LOGIN_KEY` or the sibling pipeline checkout is missing — a missing key
+looks like an authorisation bug and a missing pipeline looks like the renders
+being broken, and neither is worth debugging twice.
+
+`npm run dev` still starts the server on its own if you would rather open the
+page yourself.
 
 **Browse** in the header is the other half of it: everything the flow has
 produced, as Shelves, Views, Renders and Scenes — the pipeline's own order. The

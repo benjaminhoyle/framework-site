@@ -63,9 +63,16 @@ keep/maybe/reject pass with notes. `docs/design-lab.md` is the full account.
   camera JSON; anything else silently renders a preset instead.
 
 ```bash
-node scripts/generate-designs.mjs --count 300 --seed 11
-npm run dev   # http://127.0.0.1:8770/design-lab.html
+npm run studio   # starts the dev server if it is down, opens /studio.html
+npm run dev      # the server on its own, if you want the page yourself
+node scripts/generate-designs.mjs --count 300 --seed 11   # more shelves
+node scripts/audit-scenes.mjs                             # score scenes vs their renders
 ```
+
+`npm run studio` checks the three things that make the bench fail in ways that
+look like other problems — the server, `SITE_LOGIN_KEY` in `.env`, and the
+sibling pipeline checkout — and says which is missing instead of leaving you on
+a page that cannot reach its own API. It will not drift off port 8770.
 
 ## Analytics and the event lake
 
