@@ -111,7 +111,7 @@
                 var badge = document.createElement('div');
                 badge.className = 'fa-badge';
                 badge.innerHTML = 'tier: ' + result.tier + '  (' + (result.why || '') + ')\n'
-                    + ['full', 'lite', 'still', 'photo'].map(function (name) {
+                    + ['full', 'lite', 'calm', 'still', 'photo'].map(function (name) {
                         return '<a href="?bench=1&tier=' + name + '">' + name + '</a>';
                     }).join('  ');
                 document.body.appendChild(badge);

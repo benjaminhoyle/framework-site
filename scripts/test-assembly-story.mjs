@@ -255,6 +255,38 @@ for (const { file, script } of derived) {
   }
 }
 
+/*
+ * Reduced motion must still tell the whole story.
+ *
+ * The calm tier cuts the camera rather than moving it, which is a different
+ * sampling path -- easy to get subtly wrong, and wrong in a way nobody sees
+ * unless they have the setting on. So it is walked end to end like the others,
+ * and checked for the property that makes it worth having: every shot the
+ * moving camera would travel through is still shown.
+ */
+{
+  const shots = new Set();
+  let finite = true;
+  for (let step = 0; step <= 1000; step += 1) {
+    const moment = engine.sample(keys, step / 1000, true);
+    if (moment.focus.some((n) => !Number.isFinite(n))) finite = false;
+    shots.add(moment.focus.join(","));
+  }
+  check("every calm frame is finite", finite);
+  // Against the *distinct* framings, not the key count: a hold is two camera
+  // keys with the same box, and cutting from a shot to itself is not a shot.
+  const framings = new Set(keys.cameras.map((key) => key.focus.join(",")));
+  check("calm cuts, never interpolates", shots.size === framings.size,
+    `${shots.size} framings shown, ${framings.size} in the story`
+    + " — more means it is blending between them, fewer means a shot is skipped");
+
+  const calmEnd = engine.sample(keys, 1, true);
+  for (const id of Object.keys(calmEnd.pieces)) {
+    check(`${id} still lands in calm`, !calmEnd.pieces[id].hidden
+      && calmEnd.pieces[id].off.every((n) => Math.abs(n) < 0.01));
+  }
+}
+
 if (failures) {
   console.error(`\n${failures} assembly-story check${failures === 1 ? "" : "s"} failed`);
   process.exit(1);

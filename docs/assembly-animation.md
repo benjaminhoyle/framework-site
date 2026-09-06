@@ -389,10 +389,30 @@ Four tiers, chosen at load and overridable with `?tier=`:
 |---|---|---|
 | `full` | default | live 3D, pixel ratio up to 2, antialiased |
 | `lite` | ≤4 cores or ≤4 GB, or 3G | live 3D at 1×, no antialiasing, capped at 30fps |
-| `still` | `prefers-reduced-motion` | the same story as a stack of stills, drawn once by the same renderer at load — so it cannot drift from the animation the way a folder of exported PNGs would |
+| `calm` | `prefers-reduced-motion` | the whole story, with the camera **cutting** between shots instead of travelling between them |
+| `still` | `?tier=still` only | the same story as a stack of stills, drawn once by the same renderer at load — so it cannot drift from the animation the way a folder of exported PNGs would |
 | `photo` | Save-Data, 2G, or no WebGL | the story as words and this shelf's own product photographs |
 
-The order of those checks is deliberate and is not the order of severity:
+**`prefers-reduced-motion` asks for less movement, not for no page.** The first
+version sent it to the stills, and that was too blunt — it is a common setting
+on iPhones, turned on for battery or for the OS's own parallax and then
+forgotten, so a large share of exactly the visitors this page is for were being
+handed a stack of pictures. (Caught the only way it could be: the site's owner
+has it on, opened the page on his own phone, and saw the static version.)
+
+What actually causes trouble is whole-field movement — the camera dollying and
+panning under someone who did not ask it to. A cut does not; film cuts
+constantly and nobody is made ill by it. And a piece sliding into place inside a
+still frame is small-area motion the viewer is driving themselves, at their own
+speed, which is what scrolling any page already does.
+
+So `calm` keeps every one of the eight shots the moving camera would travel
+through and simply cuts to each. It is a stricter reading of the preference than
+it looks: the thing the setting is actually about is gone, and what remains is
+the content. `?tier=still` is still there for anyone who wants the older, more
+conservative behaviour.
+
+The order of the remaining checks is deliberate and is not the order of severity:
 connection is asked **before** capability, because the still tier renders its
 pictures locally and therefore still pulls 96 KB of geometry. That is a fine
 trade for someone who dislikes motion and a bad one for someone on metered 2G,

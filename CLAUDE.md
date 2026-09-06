@@ -84,7 +84,11 @@ what has and has not been tested.
 - **It is served at `/assembly`, but linked from nowhere and `noindex`.** It is
   deployed so it can be opened on a real phone and inside Instagram's browser;
   where it belongs in the site's navigation is still open. `?bench=1` shows the
-  tier badge, and `?tier=` forces one.
+  tier badge, and `?tier=` forces one (`full|lite|calm|still|photo`).
+- **`prefers-reduced-motion` gets `calm`, not stills.** The camera cuts between
+  shots instead of moving; the story is whole. It is a common setting on
+  iPhones, so this is what a lot of real visitors see — check it with
+  `?tier=calm` before changing the camera keys.
 - **The geometry is generated, the direction is authored.**
   `scripts/bake-assembly-story.mjs` runs a saved `/builder` design through the
   placement engine and writes `js/assembly/curator-shelf.js`. Do not edit that

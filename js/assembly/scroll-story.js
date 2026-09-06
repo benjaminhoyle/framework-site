@@ -54,6 +54,7 @@ window.FrameworkAssembly = (function () {
      *
      *   full    live 3D, device pixel ratio up to 2, antialiased
      *   lite    live 3D at 1x with no antialiasing, capped at 30fps
+     *   calm    live 3D, but the camera cuts between shots instead of moving
      *   still   the story as a stack of stills, drawn once by the same renderer
      *   photo   the story as words and the shelf's own product photographs
      *
@@ -83,8 +84,29 @@ window.FrameworkAssembly = (function () {
 
         if (!hasWebGL()) return { tier: 'photo', why: 'no WebGL context' };
 
+        /*
+         * prefers-reduced-motion asks for less movement, not for no page.
+         *
+         * The first version of this sent it to the stills, and that is too
+         * blunt: the setting is common on iPhones -- people turn it on for
+         * battery, or for the parallax in the OS, and forget -- so a large share
+         * of exactly the visitors this page is for were getting a stack of
+         * pictures.
+         *
+         * What actually causes trouble is whole-field movement: the camera
+         * dollying and panning under someone who did not ask it to. A cut does
+         * not; film cuts constantly and nobody is made ill by it. And a piece
+         * sliding into place inside a still frame is small-area motion the
+         * viewer is driving themselves, at their own speed, which is the same
+         * thing scrolling any page does.
+         *
+         * So `calm` keeps the whole story and takes away the camera move: every
+         * shot the animation would have travelled through is still shown, it is
+         * simply cut to. `?tier=still` remains for anyone who wants the older,
+         * more conservative behaviour.
+         */
         var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (reduced) return { tier: 'still', why: 'prefers-reduced-motion' };
+        if (reduced) return { tier: 'calm', why: 'prefers-reduced-motion' };
 
         var cores = navigator.hardwareConcurrency || 0;
         var memory = navigator.deviceMemory || 0;
@@ -210,11 +232,20 @@ window.FrameworkAssembly = (function () {
         return out;
     }
 
-    function sample(keys, p) {
+    /**
+     * The state of the story at one point on the timeline.
+     *
+     * `calm` cuts the camera instead of moving it: the shot changes at the
+     * midpoint between two camera keys rather than travelling between them. The
+     * pieces still move, because they are objects inside a still frame rather
+     * than the frame itself.
+     */
+    function sample(keys, p, calm) {
         var found = bracket(keys, p);
         var t = easeInOutCubic(found.t);
         var shot = bracket(keys.cameras || keys, p);
         var ct = easeInOutCubic(shot.t);
+        var cut = calm ? (ct < 0.5 ? shot.a : shot.b) : null;
         var pieces = {};
         Object.keys(found.a.pieces).forEach(function (id) {
             var from = found.a.pieces[id];
@@ -231,8 +262,8 @@ window.FrameworkAssembly = (function () {
             };
         });
         return {
-            focus: blendFocus(shot.a.focus, shot.b.focus, ct),
-            padding: lerp(shot.a.padding, shot.b.padding, ct),
+            focus: cut ? cut.focus : blendFocus(shot.a.focus, shot.b.focus, ct),
+            padding: cut ? cut.padding : lerp(shot.a.padding, shot.b.padding, ct),
             pieces: pieces
         };
     }
@@ -479,6 +510,7 @@ window.FrameworkAssembly = (function () {
         var track = options.track;
         var stage = options.stage;
         var lite = options.tier === 'lite';
+        var calm = options.tier === 'calm';
 
         var keys = fillCameras(resolveKeys(story));
         var overlay = buildOverlay(stage, story);
@@ -534,7 +566,7 @@ window.FrameworkAssembly = (function () {
 
             function apply(p) {
                 progress = p;
-                moment = sample(keys, p);
+                moment = sample(keys, p, calm);
                 renderer.setInstances(instancesFor(story, moment));
                 renderer.fit(moment.focus, moment.padding);
                 paintCaptions(overlay, p);
