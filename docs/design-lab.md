@@ -748,6 +748,49 @@ close crop of the frame-to-board junction beside the full render, so the
 contrast is shown rather than described; or accepting it and catching failures
 with the audit instead, which is cheap enough to run on every scene.
 
+### Adjacent units merging into one surface
+
+A different failure from the silhouette, and it survived fixing that one. Three
+bases butted together at 3 cm centres are three separate boards on three
+separate pairs of posts; the model paints one continuous surface across all of
+them. The shared prompt could not prevent it — "same number of tiers, same
+proportions, same spacing" is as true of one long fitted shelf as of three units
+bolted side by side.
+
+The junctions are exactly derivable: instances sitting at the same height whose
+spans nearly touch. `seams()` finds them and the prompt names how many there
+are, how far apart they sit, and what has to be drawn — boards stopping and
+starting, a doubled pair of uprights at each meeting, no widening a board to
+close the gap. Only small gaps count; a metre of clear floor between two stacks
+is the footprint's business and is already described there.
+
+Measured on the same rubric across both cohorts (13 scenes generated before the
+fix, 22 after):
+
+| axis | before | after | |
+|---|---|---|---|
+| **separate units** | 3.38 · 38% wrong | **4.41 · 9% wrong** | +1.02 |
+| two-tone | 2.15 · 76% wrong | **4.32 · 18% wrong** | +2.16 |
+| square corners | 3.92 · 23% wrong | 4.64 · 4% wrong | +0.71 |
+| silhouette | 3.15 · 53% wrong | 3.55 · 40% wrong | +0.39 |
+| **collars** | 2.69 · 61% wrong | 2.82 · 54% wrong | +0.13 |
+| craft | 3.04 | **4.05** | +1.01 |
+| fidelity | 3.62 | 3.98 | +0.35 |
+| place | 4.15 | 4.30 | +0.14 |
+
+**Read the two-tone row with care.** The cohorts are not matched — the second is
+different shelves at different angles in different rooms — and an earlier
+*matched-pair* test of the materials block alone measured only +0.29 on that
+axis. Both numbers are real; the truth is between them. One plausible reason the
+larger one is larger: the seam block describes posts and boards as distinct
+things that meet, and a model drawing them as distinct things is already
+part-way to drawing them in distinct colours. That is a hypothesis, not a
+finding.
+
+**The collars are the one thing that has not moved.** Still wrong in over half.
+They are named in the shared prompt and named again here, and neither helps
+much, which is what a 15 mm detail at room distance is always going to do.
+
 ### The reference image is the render, whole
 
 That image is the geometry master — the prompt's VIEWPOINT LOCK tells the model

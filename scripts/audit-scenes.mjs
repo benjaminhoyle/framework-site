@@ -66,6 +66,7 @@ Respond with ONLY a JSON object, no markdown fence:
   "two_tone": <0-5: in IMAGE A the steel frame (tubes, posts, legs) is clearly DARKER than the flat board faces. Is that same two-tone contrast present in IMAGE B? 5 = same clear dark-frame/light-board split. 0 = flattened to a single colour, or inverted>,
   "collars": <0-5: the uprights in IMAGE A are stacked segments with a slim collar at each join, recurring up the leg. Are they still there in IMAGE B? 5 = present and correct. 0 = smooth continuous poles, joins gone>,
   "square_corners": <0-5: board ends and corners in IMAGE A are sawn square — sharp right angles. In IMAGE B? 5 = still sharp and square. 0 = rounded, radiused or softened>,
+  "separate_units": <0-5: where two units stand side by side at the same height in IMAGE A, their shelf boards STOP and START AGAIN — separate boards, a visible break, a doubled pair of posts at the meeting. Is that still true in IMAGE B? 5 = every junction still reads as two units. 0 = one continuous surface runs across, the units merged into a single wider bay. Answer 5 if IMAGE A has no side-by-side junction at all>,
   "faults": [<short strings: concrete structural differences, e.g. "gained a 5th tier", "wings are symmetric but reference is asymmetric", "tubes thickened", "boards now wooden">],
   "craft_note": "<one short sentence on the material/finish differences specifically, or 'faithful'>",
   "nairobi_real": <0-5: does this read as a real occupied Nairobi room? 5 = convincingly real and specific. 0 = generic showroom or render>,
@@ -148,7 +149,7 @@ export function fidelityScore(verdict) {
  * singular invites the model to flatten both into one.
  */
 export function craftScore(verdict) {
-  const parts = [verdict.two_tone, verdict.collars, verdict.square_corners]
+  const parts = [verdict.two_tone, verdict.collars, verdict.square_corners, verdict.separate_units]
     .filter((value) => typeof value === "number");
   if (!parts.length) return null;
   return Number((parts.reduce((sum, value) => sum + value, 0) / parts.length).toFixed(2));
@@ -202,17 +203,18 @@ async function main() {
   }
 
   console.log("");
-  console.log("id                                        fid craft place  2tone collar sqcnr  craft note");
+  console.log("id                                     fid craft place 2tone collar sqcnr split  note");
   for (const r of results) {
     console.log(
-      `${r.id.slice(0, 40).padEnd(40)}  ${String(r.fidelity).padStart(4)} ${String(r.craft).padStart(4)} ${String(r.place).padStart(4)}   ` +
-      `${String(r.two_tone).padStart(4)}  ${String(r.collars).padStart(5)}  ${String(r.square_corners).padStart(4)}   ${String(r.craft_note || r.one_line).slice(0, 62)}`);
+      `${r.id.slice(0, 37).padEnd(37)} ${String(r.fidelity).padStart(4)} ${String(r.craft).padStart(4)} ${String(r.place).padStart(4)} ` +
+      `${String(r.two_tone).padStart(4)} ${String(r.collars).padStart(5)} ${String(r.square_corners).padStart(4)} ${String(r.separate_units).padStart(4)}   ` +
+      `${String(r.craft_note || r.one_line).slice(0, 52)}`);
   }
   if (results.length) {
     const mean = (key) => (results.reduce((sum, r) => sum + (r[key] || 0), 0) / results.length).toFixed(2);
     console.log("");
     console.log(`mean fidelity ${mean("fidelity")} · craft ${mean("craft")} · place ${mean("place")} · ${results.length} scenes`);
-    console.log(`  two-tone ${mean("two_tone")} · collars ${mean("collars")} · square corners ${mean("square_corners")}`);
+    console.log(`  two-tone ${mean("two_tone")} · collars ${mean("collars")} · square corners ${mean("square_corners")} · separate units ${mean("separate_units")}`);
     const faults = results.flatMap((r) => r.faults || []);
     if (faults.length) {
       console.log("\nfaults seen:");
