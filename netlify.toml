@@ -150,6 +150,30 @@
   from = "/data/design-lab/*"
   to = "/404.html"
   status = 404
+
+# The assembly story is a prototype: a scroll-driven animation of The Curator's
+# Shelf, being scoped rather than shipped. Its page, and the frames the bench
+# captures from it, stay off the public site until there is a decision about
+# where on the site it belongs. Delete these two blocks to publish it.
+[[redirects]]
+  from = "/assembly-lab.html"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/data/assembly-frames/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+# The story's inputs: a captured /builder design and the copy file that goes out
+# for editing and comes back. Working files, not site content.
+[[redirects]]
+  from = "/data/assembly/*"
+  to = "/404.html"
+  status = 404
+  force = true
   force = true
 
 # --- WS1 event lake collector (Netlify Functions + Blobs) ---

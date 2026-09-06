@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>How it goes together | Framework — prototype</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="/images/global/fwk-icon-lg.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
+    <link rel="stylesheet" href="/css/assembly.css">
+
+    <!--
+      The heaviest requests on the page are the module bundles, and none of them
+      can start until a script has parsed. Preloading them here overlaps the
+      download with the parse, which is most of the difference between "the
+      shelf is there when you arrive" and "the shelf appears after you have
+      already started scrolling" on a slow connection.
+
+      Only the six modules this shelf is made of -- about 96KB gzipped between
+      them. The list must stay in step with js/assembly/curator-shelf.js;
+      scripts/test-assembly-story.mjs fails if it drifts.
+    -->
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_base.json">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_adapter.json">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/slim_extension.json">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_booster.json">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_extension.json">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_extension.json">
+</head>
+
+<body>
+    <section class="fa-intro">
+        <p class="fa-kicker" data-copy="page.kicker">How it works</p>
+        <h1 data-copy="page.title">Seven pieces, one joint, no tools.</h1>
+        <p data-copy="page.intro1">Framework shelving is not a set of sizes. It is a small number of steel modules that all
+            meet each other the same way — so a shelf can start at one metre and end up at four,
+            years later, without anything being thrown away.</p>
+        <p data-copy="page.intro2">This is The Curator’s Shelf, built the way it is actually built.
+            Scroll to put it together.</p>
+        <p class="fa-hint" data-copy="page.hint">Scroll</p>
+    </section>
+
+    <!--
+      The track is the scroll distance; the stage is the one screen that stays
+      put while it passes. Nothing between <body> and .fa-stage may carry a
+      transform, filter, perspective or will-change: any of them turns an
+      ancestor into a containing block and `position: sticky` silently stops
+      working. This is the single most common way a page like this breaks.
+    -->
+    <div class="fa-track" id="assembly-track">
+        <div class="fa-stage" id="assembly-stage">
+            <canvas class="fa-canvas" id="assembly-canvas" aria-hidden="true"></canvas>
+            <noscript>
+                <div class="fa-caption" style="opacity:1;transform:none">
+                    <h2 data-copy="page.noscriptTitle">Seven pieces, one joint.</h2>
+                    <p data-copy="page.noscriptBody">A base stands on the floor; every piece above it drops on over a 30&nbsp;mm pin,
+                        and a 20&nbsp;mm booster is what makes the shelves uneven. Turn on JavaScript
+                        to watch it happen.</p>
+                </div>
+            </noscript>
+        </div>
+    </div>
+
+    <section class="fa-outro">
+        <p class="fa-kicker" data-copy="page.outroKicker">Your turn</p>
+        <p data-copy="page.outroBody">Build one in the browser and it prices itself as you go.</p>
+        <p><a class="fa-cta" href="/builder" data-copy="page.cta">Open the shelf designer</a></p>
+    </section>
+
+    <script src="/js/builder/geometry.js"></script>
+    <script src="/js/builder/renderer.js"></script>
+    <script src="/js/assembly/curator-shelf.js"></script>
+    <script src="/js/assembly/story.js"></script>
+    <script src="/js/assembly/scroll-story.js"></script>
+    <script>
+        window.FrameworkAssembly.start({
+            track: '#assembly-track',
+            stage: '#assembly-stage',
+            canvas: '#assembly-canvas',
+            onReady: function (result) {
+                // Bench handle: FrameworkAssembly.debug.seek(0.55) jumps to a
+                // frame without a gesture. Read-only, nothing on the page uses it.
+                window.FrameworkAssembly.debug = result;
+                // Bench only. `?tier=full|lite|still|none` forces a tier, and the
+                // badge says which one is running and what decided it — because
+                // "it looked fine on my laptop" is exactly the failure this page
+                // has to be tested against.
+                var badge = document.createElement('div');
+                badge.className = 'fa-badge';
+                badge.innerHTML = 'tier: ' + result.tier + '  (' + (result.why || '') + ')\n'
+                    + ['full', 'lite', 'still', 'none'].map(function (name) {
+                        return '<a href="?tier=' + name + '">' + name + '</a>';
+                    }).join('  ');
+                document.body.appendChild(badge);
+            }
+        }).catch(function (error) {
+            console.error('assembly:', error);
+        });
+    </script>
+</body>
+
+</html>

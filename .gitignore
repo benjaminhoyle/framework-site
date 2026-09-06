@@ -19,3 +19,8 @@ data/design-lab/scenes/
 data/design-lab/corpora/
 data/design-lab/verdicts.backup-*.json
 data/design-lab/*.smoke.json
+
+# Frames captured from the assembly story bench (/assembly-lab, ?tier=…). They
+# are a way of looking at a scroll animation without scrolling it, reproducible
+# in seconds from the story file, and nothing on the site reads them.
+data/assembly-frames/

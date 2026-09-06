@@ -471,6 +471,39 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  /*
+   * Frame capture for the assembly story bench.
+   *
+   * POST a data: URL, get a file under data/assembly-frames/. It exists because
+   * a WebGL canvas cannot be screenshotted from outside the page -- the context
+   * is created without preserveDrawingBuffer, so its pixels are gone by the time
+   * anything else looks. The page reads them back itself with renderer.snapshot()
+   * and posts them here, which is also exactly what the still tier does, so
+   * capturing a frame exercises the fallback path rather than a copy of it.
+   *
+   * Dev only: scripts/ is 404'd on the site and this server never runs there.
+   */
+  if (url.pathname === "/api/assembly-frame" && request.method === "POST") {
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    const body = Buffer.concat(chunks).toString();
+    const match = /^data:image\/(png|webp|jpeg);base64,(.+)$/s.exec(body.trim());
+    if (!match) {
+      response.writeHead(400, { "content-type": "application/json" });
+      response.end(JSON.stringify({ ok: false, error: "expected a data: URL body" }));
+      return;
+    }
+    const name = (url.searchParams.get("name") || "frame").replace(/[^a-zA-Z0-9_.-]/g, "");
+    const dir = path.join(ROOT, "data", "assembly-frames");
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, `${name}.${match[1]}`);
+    fs.writeFileSync(file, Buffer.from(match[2], "base64"));
+    console.log(`wrote ${path.relative(ROOT, file)} (${Math.round(match[2].length * 0.75 / 1024)}KB)`);
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ ok: true, file: path.relative(ROOT, file) }));
+    return;
+  }
+
   if (url.pathname === "/api/zoho-push") {
     const chunks = [];
     for await (const chunk of request) chunks.push(chunk);

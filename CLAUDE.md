@@ -74,6 +74,34 @@ look like other problems — the server, `SITE_LOGIN_KEY` in `.env`, and the
 sibling pipeline checkout — and says which is missing instead of leaving you on
 a page that cannot reach its own API. It will not drift off port 8770.
 
+## /assembly-lab — the scroll animation
+
+A prototype, not a page: The Curator's Shelf assembling itself as you scroll,
+drawn by `/builder`'s own renderer. `docs/assembly-animation.md` is the full
+account — feasibility, the camera, the layout rules that are not optional, and
+what has and has not been tested.
+
+- **It is 404'd in `netlify.toml`** until there is a decision about where on the
+  site it belongs. Delete the two redirect blocks to publish it.
+- **The geometry is generated, the direction is authored.**
+  `scripts/bake-assembly-story.mjs` runs a saved `/builder` design through the
+  placement engine and writes `js/assembly/curator-shelf.js`. Do not edit that
+  file; re-run the bake after `make site` in the pipeline, alongside the builder
+  assets. `js/assembly/story.js` holds the camera, timing and copy.
+- **The words come out as a text file and go back in**:
+  `node scripts/assembly-copy.mjs`, then `--apply <file>`. Strings live in the
+  `COPY` block of `story.js` and on `data-copy` attributes in the page.
+- **No `?v=`.** The bump script guards `/builder` against a half-stale CDN; this
+  page is not served publicly.
+
+```bash
+npm run dev     # http://127.0.0.1:8770/assembly-lab.html  (?tier=lite|still|photo)
+```
+
+`scripts/test-assembly-story.mjs` samples the timeline a thousand times over,
+because the failures that matter here are silent: a NaN in a focus box draws a
+blank screen halfway down a page rather than throwing.
+
 ## Analytics and the event lake
 
 `js/site.js` emits checkpoint events to `/api/track` (Netlify Blobs); the ops

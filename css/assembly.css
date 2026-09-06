@@ -1,0 +1,339 @@
+/*
+ * The scroll-driven assembly story.
+ *
+ * Three rules hold this layout together, and every one of them is a response to
+ * something that breaks in Instagram's in-app browser rather than to taste:
+ *
+ *  - The stage is `position: sticky` inside a tall track. No fixed positioning,
+ *    no scroll hijacking, no transformed ancestors -- a `transform`, `filter` or
+ *    `will-change` anywhere above a sticky element silently turns it into a
+ *    containing block and the stage scrolls away.
+ *  - Heights are `svh` with a `vh` fallback. The in-app browser's chrome grows
+ *    and shrinks as you scroll; `100vh` there is the *large* viewport, so a
+ *    100vh stage is taller than the visible area and the caption sits under
+ *    Instagram's own toolbar.
+ *  - Nothing animates on a timer. Everything is a pure function of scroll
+ *    position, so a fling, a rubber-band and a jump to an anchor all land on a
+ *    coherent frame rather than on whatever an in-flight transition thought.
+ */
+
+:root {
+    --ink: #1b1f1e;
+    --muted: #6a7370;
+    --faint: #9aa5a1;
+    --rule: #e4e8e6;
+    --paper: #ffffff;
+    --accent: #2f6f52;
+}
+
+* { box-sizing: border-box; }
+
+html {
+    /* The story is scrubbed, never scrolled to. Smooth scrolling would put the
+       browser's own animation between the wheel and the frame. */
+    scroll-behavior: auto;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Red Hat Display', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    /* Guards the sticky stage against an ancestor that establishes a containing
+       block. Nothing above .fa-track may grow a transform. */
+    overflow-x: hidden;
+}
+
+/* ---------------------------------------------------------------- furniture */
+
+.fa-intro,
+.fa-outro {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 18vh 24px;
+}
+
+.fa-intro h1 {
+    font-size: clamp(34px, 7vw, 60px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    margin: 0 0 18px;
+}
+
+.fa-intro p,
+.fa-outro p {
+    color: var(--muted);
+    font-size: clamp(17px, 2.4vw, 20px);
+    margin: 0 0 16px;
+}
+
+.fa-kicker {
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 700;
+    margin: 0 0 12px;
+}
+
+.fa-hint {
+    margin-top: 40px;
+    color: var(--faint);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fa-hint::after {
+    content: "";
+    width: 1px;
+    height: 34px;
+    background: linear-gradient(var(--faint), transparent);
+}
+
+.fa-cta {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 14px 26px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* -------------------------------------------------------- track and stage */
+
+/*
+ * The track is the scroll distance the story is spread over; the stage is the
+ * one viewport-sized frame that stays put while it passes. Progress is
+ * (scrolled past the top of the track) / (track height - stage height), so the
+ * story starts exactly when the stage locks and ends exactly when it unlocks.
+ */
+.fa-track {
+    position: relative;
+    height: var(--fa-track-height, 560vh);
+}
+
+.fa-stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    overflow: hidden;
+    background: var(--paper);
+}
+
+.fa-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* The canvas never receives the gesture: scrolling over it must scroll the
+       page, on every platform, without a touch handler being involved. */
+    touch-action: pan-y;
+}
+
+.fa-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.fa-pins {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* ------------------------------------------------------------- annotations */
+
+.fa-caption {
+    position: absolute;
+    left: 32px;
+    bottom: 40px;
+    width: min(400px, calc(100% - 64px));
+    padding: 22px 24px;
+    background: rgba(255, 255, 255, 0.86);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    opacity: 0;
+    /* Composited, and driven straight from scroll -- no transition, so a fast
+       fling cannot leave a card half-faded behind the frame it belongs to. */
+    transform: translate3d(0, 12px, 0);
+    will-change: opacity, transform;
+}
+
+.fa-caption h2 {
+    font-size: clamp(20px, 3.2vw, 26px);
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+    font-weight: 700;
+}
+
+.fa-caption p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15.5px;
+    line-height: 1.5;
+}
+
+.fa-pin-label {
+    position: absolute;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    transform: translate3d(-50%, -50%, 0);
+    opacity: 0;
+    will-change: opacity, transform;
+}
+
+/* ------------------------------------------------------------ progress rail */
+
+.fa-rail {
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.fa-rail span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--rule);
+}
+
+.fa-rail span.is-on { background: var(--ink); }
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 760px) {
+    /*
+     * On a phone the caption is not an overlay, it is the bottom of the screen.
+     *
+     * A 360px card floating over a portrait viewport covers the lower third of
+     * the model, and the lower third is where the shelf's feet, its lowest
+     * joint and most of its width are. So the canvas gives up that band
+     * instead: the model gets the top, the words get the bottom, and neither is
+     * ever on top of the other.
+     *
+     * The band is measured at load from the tallest caption in the story (see
+     * scroll-story.js) rather than guessed, because the copy changes and a
+     * guessed height is either wasted space or a clipped last line.
+     */
+    .fa-canvas {
+        height: calc(100% - var(--fa-caption-band, 200px));
+    }
+
+    .fa-caption {
+        left: 16px;
+        right: 16px;
+        width: auto;
+        /* Clears Instagram's bottom toolbar, which overlaps the small viewport
+           on iOS without ever being reported to the page. */
+        bottom: max(20px, env(safe-area-inset-bottom, 0px) + 14px);
+        padding: 18px 18px;
+        background: var(--paper);
+        border-color: transparent;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+
+    /*
+     * The rail moves off the model's right edge and lies along the bottom of
+     * the canvas band instead. On a phone the right edge is where a pin label
+     * ends up once it has been flipped inward, and two small things fighting
+     * over the same 20px reads as a bug.
+     */
+    .fa-rail {
+        top: auto;
+        right: auto;
+        left: 50%;
+        bottom: calc(var(--fa-caption-band, 200px) + 12px);
+        transform: translateX(-50%);
+        flex-direction: row;
+        gap: 7px;
+    }
+    .fa-intro, .fa-outro { padding: 14vh 20px; }
+}
+
+/* ----------------------------------------------------- the stepped fallback */
+
+/*
+ * What a device gets when it should not be asked to animate: reduced motion,
+ * Save-Data, a 2G connection, or no WebGL at all. Same story, told as stills.
+ * The stills are produced by the same renderer at load (see scroll-story.js),
+ * so they cannot drift from the animation the way a folder of exported PNGs
+ * would.
+ */
+.fa-steps {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 24px 12vh;
+}
+
+.fa-step {
+    padding: 40px 0;
+    border-top: 1px solid var(--rule);
+}
+
+.fa-step:first-child { border-top: 0; }
+
+.fa-step img,
+.fa-step .fa-step-blank {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #f6f8f7;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.fa-step h2 {
+    font-size: clamp(21px, 3.6vw, 27px);
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+}
+
+.fa-step p {
+    margin: 0;
+    color: var(--muted);
+}
+
+/* ------------------------------------------------------------------ badge */
+
+/* Bench only: says which tier is running and why, because "it looks fine on my
+   laptop" is exactly the failure this page has to be tested against. */
+.fa-badge {
+    position: fixed;
+    left: 12px;
+    top: 12px;
+    z-index: 50;
+    font: 600 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: rgba(27, 31, 30, 0.86);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 7px;
+    letter-spacing: 0.02em;
+    white-space: pre;
+}
+
+.fa-badge a { color: #9ad8bb; text-decoration: none; }

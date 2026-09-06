@@ -1,0 +1,160 @@
+==============================================================================
+  THE CURATOR'S SHELF — every word in the assembly animation
+==============================================================================
+
+  Edit the text. Leave the [square-bracket] lines exactly as they are:
+  they are how each piece of text finds its way back to the right place.
+
+  - a line that is exactly [some.id] starts a block
+  - everything under it, until the next such line, is that block's text
+  - wrap lines however you like; they are re-joined into one paragraph
+  - lines starting with # are notes to you and are ignored
+  - delete a block entirely and that text simply stays as it is
+  - &nbsp; is a space that will not break across two lines. Leave it where
+    it is or write a normal space; both work.
+
+  Send the edited file back and it goes in with:
+      node scripts/assembly-copy.mjs --apply <file>
+
+------------------------------------------------------------------------------
+  ON-PAGE TEXT — before and after the animation
+------------------------------------------------------------------------------
+
+# small label above the headline
+[page.kicker]
+How it works
+
+# the headline
+[page.title]
+Seven pieces, one joint, no tools.
+
+[page.intro1]
+Framework shelving is not a set of sizes. It is a small number of steel modules that all meet each other the same way — so a shelf can start at one metre and end up at four, years later, without anything being thrown away.
+
+[page.intro2]
+This is The Curator’s Shelf, built the way it is actually built. Scroll to put it together.
+
+# sits under the intro with a downward rule; keep it very short
+[page.hint]
+Scroll
+
+# only ever seen with JavaScript turned off
+[page.noscriptTitle]
+Seven pieces, one joint.
+
+# same
+[page.noscriptBody]
+A base stands on the floor; every piece above it drops on over a 30&nbsp;mm pin, and a 20&nbsp;mm booster is what makes the shelves uneven. Turn on JavaScript to watch it happen.
+
+# small label after the animation
+[page.outroKicker]
+Your turn
+
+[page.outroBody]
+Build one in the browser and it prices itself as you go.
+
+# the button. Keep it to a few words
+[page.cta]
+Open the shelf designer
+
+------------------------------------------------------------------------------
+  CAPTIONS — the cards that appear as you scroll
+------------------------------------------------------------------------------
+
+  Two lines each: a title and a body. The title is set large, so it wants
+  to be one short sentence. The body runs to about four lines on a phone;
+  much past that and the picture above it starts giving up room.
+
+# 0%–18% of the scroll
+[caption.base.title]
+It starts with one base.
+
+[caption.base.body]
+A wide steel frame on the floor, 1,420 mm across. Everything above it stands on this, and nothing is fixed to the wall.
+
+# 20%–35% of the scroll
+[caption.adapter.title]
+The next tier just drops on.
+
+[caption.adapter.body]
+Same width, no fixings — and it changes what is possible above it. The base offers two places to stand. The adapter on top of it offers three.
+
+# 38%–61% of the scroll
+[caption.joint.title]
+A 30 mm pin. No tools.
+
+[caption.joint.body]
+Every leg ends in a spigot that drops into the tube below it. That is the whole joint, on every piece in the system. It comes apart the same way, which is why a shelf can move house with you.
+
+# 65%–80% of the scroll
+[caption.stagger.title]
+This is where it stops being a grid.
+
+[caption.stagger.body]
+A short unit on the left. On the right, no unit at all — a booster: a 20 mm column that lifts one post half a storey and leaves the space under it open.
+
+# 81%–91% of the scroll
+[caption.bridge.title]
+One shelf, two different supports.
+
+[caption.bridge.body]
+The long shelf lands on the short unit at one end and on the raised post at the other. Uneven pockets underneath, one straight line on top.
+
+# 92%–100% of the scroll
+[caption.cap.title]
+Close it off at the top.
+
+[caption.cap.body]
+Full width again, 1,630 mm up. That is The Curator’s Shelf — seven pieces, six of them different, Ksh 36,500 in Coral.
+
+------------------------------------------------------------------------------
+  PIN LABELS — the small dark tags pointing at the model
+------------------------------------------------------------------------------
+
+  These sit on the drawing itself, so they have to be very short — two or
+  three words. A long one crowds the thing it is pointing at.
+
+# 5%–17% of the scroll
+[pin.socket]
+socket
+
+# 23%–34% of the scroll
+[pin.drop]
+1,420 mm, one drop
+
+# 41%–60% of the scroll
+[pin.spigot]
+30 mm pin
+
+# 76%–85% of the scroll
+[pin.booster]
+a 20 mm column
+
+# 86%–95% of the scroll
+[pin.onShelf]
+on a shelf
+
+# 86%–95% of the scroll
+[pin.onPost]
+on a post
+
+------------------------------------------------------------------------------
+  IMAGE DESCRIPTIONS — read aloud by screen readers, and shown if a
+  photograph fails to load. Only used in the no-WebGL fallback.
+------------------------------------------------------------------------------
+
+[alt.base]
+A steel leg meeting the floor beside the lowest shelf board.
+
+[alt.joint]
+A leg held just above the one below it, showing the pin and the tube it drops into.
+
+[alt.stagger]
+The finished shelf, empty, showing the uneven pockets.
+
+[alt.bridge]
+The finished shelf seen from an angle.
+
+[alt.cap]
+The finished shelf holding books, bowls and small figures.
+
