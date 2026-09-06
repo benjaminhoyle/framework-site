@@ -811,6 +811,42 @@ test("the collars and the square corners are said again where they survive", () 
     "and the closing check asks about the two-tone split by name");
 });
 
+test("units butted side by side are called out as separate boards", () => {
+  const words = loadDesignWords();
+  // The failure this answers is not the silhouette: the outline can be right
+  // and the shelf still wrong, because three bases at 3 cm centres are three
+  // boards on three pairs of posts and the model paints one continuous surface.
+  const run = buildPlainRun(catalog, { family: "standard", width: 3, levels: 1 });
+  const boxes = run.instances.map((instance) => ({
+    instance,
+    module: catalog.modules[instance.moduleId],
+    box: engine.instanceBounds(catalog, instance)
+  }));
+  const junctions = words.seams(boxes);
+  const floorUnits = run.instances.filter((i) => catalog.modules[i.moduleId].role === "base").length;
+  if (floorUnits > 1) {
+    assert.ok(junctions.length >= floorUnits - 1,
+      `${floorUnits} bases side by side make at least ${floorUnits - 1} junctions, found ${junctions.length}`);
+    const text = words.build(engine, catalog, run, { finish: "sage" });
+    assert.ok(text.includes("SEPARATE UNITS, TOUCHING"), "and the prompt says so");
+    assert.ok(text.includes("STOP AND"), "naming the break in the boards");
+  }
+
+  // A lamp overlapping its neighbour is not a junction between two boards.
+  const withLamp = buildPlainRun(catalog, { family: "broad", width: 2, levels: 2, lamp: true });
+  const lampBoxes = withLamp.instances.map((instance) => ({
+    instance,
+    module: catalog.modules[instance.moduleId],
+    box: engine.instanceBounds(catalog, instance)
+  }));
+  for (const entry of lampBoxes) {
+    if (entry.module.role !== "lamp") continue;
+    assert.ok(!words.seams(lampBoxes).some((j) => Math.abs(j.heightMm - entry.box[2]) < 1 &&
+      lampBoxes.filter((o) => o.module.role === "lamp").length === lampBoxes.length),
+      "a lamp is never counted as a board junction");
+  }
+});
+
 test("a shelf standing in one place is not told to keep gaps open", () => {
   const words = loadDesignWords();
   const design = buildPlainRun(catalog, { family: "slim", width: 1, levels: 2 });

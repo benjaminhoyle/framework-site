@@ -54,6 +54,7 @@ window.FrameworkDesignWords = (function () {
   function boxesOf(engine, catalog, state) {
     return state.instances.map((instance) => ({
       instance,
+      module: (catalog.modules || {})[instance.moduleId] || null,
       box: engine.instanceBounds(catalog, instance)
     }));
   }
@@ -209,6 +210,43 @@ window.FrameworkDesignWords = (function () {
     ];
   }
 
+  /**
+   * Where two units stand side by side at the same height.
+   *
+   * This is a different failure from the skyline. The outline can be right and
+   * the shelf still wrong: three bases butted together at 3 cm centres are
+   * three separate boards on three separate pairs of posts, and the model
+   * paints one continuous surface across all of them. "Merged three stepped
+   * modular units into a single double-bay shelf" and "eliminated structural
+   * gaps between modules" were both this.
+   *
+   * Only small gaps count. A metre of clear floor between two stacks is the
+   * footprint's business and is already described there; what is invisible to
+   * the model is the 3 cm break it reads as a seam worth smoothing away.
+   */
+  const JUNCTION_MAX_MM = 250;
+
+  function seams(boxes) {
+    const levels = new Map();
+    for (const entry of boxes) {
+      // A lamp is not a board and its overlap is not a junction.
+      const role = (entry.module || {}).role;
+      if (role === "lamp") continue;
+      const key = Math.round(entry.box[2] / 50) * 50;
+      if (!levels.has(key)) levels.set(key, []);
+      levels.get(key).push(entry.box);
+    }
+    const found = [];
+    for (const [heightMm, spans] of levels) {
+      const sorted = spans.slice().sort((a, b) => a[0] - b[0]);
+      for (let i = 1; i < sorted.length; i += 1) {
+        const gap = sorted[i][0] - sorted[i - 1][3];
+        if (gap >= 0 && gap <= JUNCTION_MAX_MM) found.push({ heightMm, gapMm: gap });
+      }
+    }
+    return found;
+  }
+
   function describeSkyline(runs) {
     if (runs.length < 2) return null;
     const lines = runs.map((run) => `    - a section ${cm(run.widthMm)} cm wide standing ${cm(run.topMm)} cm tall`);
@@ -272,6 +310,22 @@ window.FrameworkDesignWords = (function () {
       lines.push("  together into one solid unit or fill the gaps with anything structural.");
     }
 
+    const junctions = seams(boxes);
+    if (junctions.length) {
+      const widest = Math.max(...junctions.map((j) => j.gapMm));
+      const narrowest = Math.min(...junctions.map((j) => j.gapMm));
+      const gapWords = widest === narrowest
+        ? `about ${Math.max(1, cm(widest))} cm`
+        : `${Math.max(1, cm(narrowest))}–${cm(widest)} cm`;
+      lines.push(`- SEPARATE UNITS, TOUCHING. This shelf has ${junctions.length} ${junctions.length === 1 ? "junction" : "junctions"} where two units stand`);
+      lines.push(`  side by side at the same height, ${gapWords} apart. At each one the shelf boards STOP AND`);
+      lines.push("  START AGAIN: they are separate boards on separate units, each carried on its own pair of");
+      lines.push("  posts, and there is a visible vertical break and a doubled pair of uprights where they meet.");
+      lines.push("  Do NOT run one continuous board across a junction, do NOT widen a board to close the gap,");
+      lines.push("  and do NOT merge two units into a single wider bay. The breaks are the modularity — this is");
+      lines.push("  a system of repeated units bolted side by side, not one long fitted shelf.");
+    }
+
     const spans = bridges(engine, catalog, state, boxes);
     if (spans.length && sections.length > 1) {
       const lowest = Math.min(...spans.map((span) => span.underMm));
@@ -294,13 +348,14 @@ window.FrameworkDesignWords = (function () {
     lines.push("  1. Trace its outline. Is it still the stepped shape above, or has it become a plain rectangle?");
     lines.push("  2. Are the tall and low sections in the same places, in the same proportions?");
     lines.push("  3. Have separate sections merged, or has any part become a different piece of furniture?");
-    lines.push("  4. Is the steel frame still clearly DARKER than the board faces, or have they flattened to one colour?");
-    lines.push("  5. Are the collars still there at the joins up each leg?");
-    lines.push("  6. Are the board corners still sharp right angles rather than rounded?");
+    lines.push("  4. At every junction, do the boards stop and start again with two posts, or has one board run through?");
+    lines.push("  5. Is the steel frame still clearly DARKER than the board faces, or have they flattened to one colour?");
+    lines.push("  6. Are the collars still there at the joins up each leg?");
+    lines.push("  7. Are the board corners still sharp right angles rather than rounded?");
     lines.push("If any answer is wrong, redraw it. The room may be anything you like; the shelf may not.");
 
     return lines.filter((line) => line !== null).join("\n");
   }
 
-  return { build, skyline, footprint, materials, toneRatio };
+  return { build, skyline, footprint, seams, materials, toneRatio };
 })();
