@@ -41,6 +41,15 @@
   to = "/builder.html"
   status = 200
 
+# The assembly story. Reachable and noindex, but linked from nowhere: it is
+# deployed so it can be opened on a real phone, and inside Instagram's browser,
+# which is the one thing that cannot be checked from a desktop. Where it belongs
+# in the site's navigation is still an open question.
+[[redirects]]
+  from = "/assembly"
+  to = "/assembly-lab.html"
+  status = 200
+
 # The two private studios. Clean URLs like the rest; the pages themselves are
 # noindex and do nothing until js/gate.js has a key /api/auth accepts.
 [[redirects]]
@@ -151,16 +160,9 @@
   to = "/404.html"
   status = 404
 
-# The assembly story is a prototype: a scroll-driven animation of The Curator's
-# Shelf, being scoped rather than shipped. Its page, and the frames the bench
-# captures from it, stay off the public site until there is a decision about
-# where on the site it belongs. Delete these two blocks to publish it.
-[[redirects]]
-  from = "/assembly-lab.html"
-  to = "/404.html"
-  status = 404
-  force = true
-
+# The assembly story's bench output. The page itself is served -- see the
+# /assembly rewrite above -- but the frames captured from it are throwaway
+# machine output that nothing on the site reads.
 [[redirects]]
   from = "/data/assembly-frames/*"
   to = "/404.html"

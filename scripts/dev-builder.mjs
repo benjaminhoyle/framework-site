@@ -212,7 +212,8 @@ function fakePush(body) {
 // no toml parser here and this is the only pair that matters for the builder.
 const REWRITES = [
   [/^\/builder(\/[0-9A-Za-z]{0,7})?\/?$/, "/builder.html"],
-  [/^\/new-designer(\/[0-9A-Za-z]{0,7})?\/?$/, "/builder.html"] // the old address
+  [/^\/new-designer(\/[0-9A-Za-z]{0,7})?\/?$/, "/builder.html"], // the old address
+  [/^\/assembly\/?$/, "/assembly-lab.html"]
 ];
 
 // --- the gated endpoints, proxied ------------------------------------------

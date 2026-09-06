@@ -50,34 +50,34 @@
      */
     var COPY = {
         base: {
-            title: 'It starts with one base.',
-            body: 'A wide steel frame on the floor, 1,420 mm across. Everything above it stands on this, and nothing is fixed to the wall.'
+            title: 'It starts with the base',
+            body: 'A simple two-tier unit with adjustable feet, which let it sit firmly on any surface. Use it as it is, or add on extensions for more storage.'
         },
         adapter: {
-            title: 'The next tier just drops on.',
-            body: 'Same width, no fixings — and it changes what is possible above it. The base offers two places to stand. The adapter on top of it offers three.'
+            title: 'The next level just drops on.',
+            body: 'We’ve done the hard work of fabricating perfectly interlocking parts. All you need to do is stack them together.'
         },
         joint: {
-            title: 'A 30 mm pin. No tools.',
-            body: 'Every leg ends in a spigot that drops into the tube below it. That is the whole joint, on every piece in the system. It comes apart the same way, which is why a shelf can move house with you.'
+            title: 'A simple joint',
+            body: 'Connecting two joints is as easy as sliding the 16mm rod from above into the 20mm tube below. That’s it.'
         },
         stagger: {
-            title: 'This is where it stops being a grid.',
-            body: 'A short unit on the left. On the right, no unit at all — a booster: a 20 mm column that lifts one post half a storey and leaves the space under it open.'
+            title: 'This is where you can get creative.',
+            body: 'We’re all for a simple, stacked shelf. But if you want something more distinctive, our system is for you.'
         },
         bridge: {
-            title: 'One shelf, two different supports.',
-            body: 'The long shelf lands on the short unit at one end and on the raised post at the other. Uneven pockets underneath, one straight line on top.'
+            title: 'One shelf, many possibilities.',
+            body: 'You can start with a small shelf then add onto it as your needs change.'
         },
         cap: {
             title: 'Close it off at the top.',
-            body: 'Full width again, 1,630 mm up. That is The Curator’s Shelf — seven pieces, six of them different, Ksh 36,500 in Coral.'
+            body: 'The design shown goes for Ksh 36,500 in Coral.'
         },
         pins: {
             socket: 'socket',
-            drop: '1,420 mm, one drop',
-            spigot: '30 mm pin',
-            booster: 'a 20 mm column',
+            drop: 'Units slide together',
+            spigot: '16mm pin',
+            booster: 'a 20 mm post',
             onShelf: 'on a shelf',
             onPost: 'on a post'
         },

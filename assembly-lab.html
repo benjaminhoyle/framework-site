@@ -4,8 +4,21 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>How it goes together | Framework — prototype</title>
+    <title>How it works | Framework</title>
+    <!--
+      Reachable but not indexed and not linked: this page exists so it can be
+      opened on a real phone. The link does get sent to people on WhatsApp
+      though, so it needs a preview worth looking at.
+    -->
     <meta name="robots" content="noindex, nofollow">
+    <meta name="description"
+        content="One unique shelf, made of a few standard parts. Scroll to watch a Framework shelf assemble itself.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="One unique shelf, made of a few standard parts">
+    <meta property="og:description"
+        content="Scroll to see how a Framework shelf comes together — one base, and a joint that repeats.">
+    <meta property="og:image"
+        content="https://www.framework.co.ke/images/shelving/configs/asymmetric-display-populated.jpg">
     <meta name="theme-color" content="#ffffff">
     <link rel="icon" href="/images/global/fwk-icon-lg.png">
 
@@ -37,12 +50,9 @@
 <body>
     <section class="fa-intro">
         <p class="fa-kicker" data-copy="page.kicker">How it works</p>
-        <h1 data-copy="page.title">Seven pieces, one joint, no tools.</h1>
-        <p data-copy="page.intro1">Framework shelving is not a set of sizes. It is a small number of steel modules that all
-            meet each other the same way — so a shelf can start at one metre and end up at four,
-            years later, without anything being thrown away.</p>
-        <p data-copy="page.intro2">This is The Curator’s Shelf, built the way it is actually built.
-            Scroll to put it together.</p>
+        <h1 data-copy="page.title">One unique shelf, made of a few standard parts.</h1>
+        <p data-copy="page.intro1">All of Framework’s shelves are made up of individual modules, which are assembled into unique designs.</p>
+        <p data-copy="page.intro2">Scroll to see how a shelf comes together</p>
         <p class="fa-hint" data-copy="page.hint">Scroll</p>
     </section>
 
@@ -59,9 +69,7 @@
             <noscript>
                 <div class="fa-caption" style="opacity:1;transform:none">
                     <h2 data-copy="page.noscriptTitle">Seven pieces, one joint.</h2>
-                    <p data-copy="page.noscriptBody">A base stands on the floor; every piece above it drops on over a 30&nbsp;mm pin,
-                        and a 20&nbsp;mm booster is what makes the shelves uneven. Turn on JavaScript
-                        to watch it happen.</p>
+                    <p data-copy="page.noscriptBody">Start with a base unit on the ground, then stack additional units above it to build out your shelf.</p>
                 </div>
             </noscript>
         </div>
@@ -87,18 +95,27 @@
                 // Bench handle: FrameworkAssembly.debug.seek(0.55) jumps to a
                 // frame without a gesture. Read-only, nothing on the page uses it.
                 window.FrameworkAssembly.debug = result;
-                // Bench only. `?tier=full|lite|still|none` forces a tier, and the
-                // badge says which one is running and what decided it — because
-                // "it looked fine on my laptop" is exactly the failure this page
-                // has to be tested against.
+
+                /*
+                 * The tier badge, on localhost or on ?bench=1.
+                 *
+                 * Not on the page a visitor gets: it is a developer's readout,
+                 * and it sits over the model. But it stays reachable on the
+                 * deployed URL, because "which tier did it pick, and why" is the
+                 * one question worth asking on a real phone, and a real phone is
+                 * exactly where a console is hardest to get at.
+                 */
+                var bench = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)
+                    || /[?&]bench=1/.test(window.location.search);
+                if (!bench) return;
                 var badge = document.createElement('div');
                 badge.className = 'fa-badge';
                 badge.innerHTML = 'tier: ' + result.tier + '  (' + (result.why || '') + ')\n'
-                    + ['full', 'lite', 'still', 'none'].map(function (name) {
-                        return '<a href="?tier=' + name + '">' + name + '</a>';
+                    + ['full', 'lite', 'still', 'photo'].map(function (name) {
+                        return '<a href="?bench=1&tier=' + name + '">' + name + '</a>';
                     }).join('  ');
                 document.body.appendChild(badge);
-            }
+            },
         }).catch(function (error) {
             console.error('assembly:', error);
         });

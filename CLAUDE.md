@@ -81,8 +81,10 @@ drawn by `/builder`'s own renderer. `docs/assembly-animation.md` is the full
 account — feasibility, the camera, the layout rules that are not optional, and
 what has and has not been tested.
 
-- **It is 404'd in `netlify.toml`** until there is a decision about where on the
-  site it belongs. Delete the two redirect blocks to publish it.
+- **It is served at `/assembly`, but linked from nowhere and `noindex`.** It is
+  deployed so it can be opened on a real phone and inside Instagram's browser;
+  where it belongs in the site's navigation is still open. `?bench=1` shows the
+  tier badge, and `?tier=` forces one.
 - **The geometry is generated, the direction is authored.**
   `scripts/bake-assembly-story.mjs` runs a saved `/builder` design through the
   placement engine and writes `js/assembly/curator-shelf.js`. Do not edit that
@@ -95,7 +97,7 @@ what has and has not been tested.
   page is not served publicly.
 
 ```bash
-npm run dev     # http://127.0.0.1:8770/assembly-lab.html  (?tier=lite|still|photo)
+npm run dev     # http://127.0.0.1:8770/assembly  (?bench=1, ?tier=lite|still|photo)
 ```
 
 `scripts/test-assembly-story.mjs` samples the timeline a thousand times over,

@@ -26,13 +26,13 @@ How it works
 
 # the headline
 [page.title]
-Seven pieces, one joint, no tools.
+One unique shelf, made of a few standard parts.
 
 [page.intro1]
-Framework shelving is not a set of sizes. It is a small number of steel modules that all meet each other the same way — so a shelf can start at one metre and end up at four, years later, without anything being thrown away.
+All of Framework’s shelves are made up of individual modules, which are assembled into unique designs.
 
 [page.intro2]
-This is The Curator’s Shelf, built the way it is actually built. Scroll to put it together.
+Scroll to see how a shelf comes together
 
 # sits under the intro with a downward rule; keep it very short
 [page.hint]
@@ -44,7 +44,7 @@ Seven pieces, one joint.
 
 # same
 [page.noscriptBody]
-A base stands on the floor; every piece above it drops on over a 30&nbsp;mm pin, and a 20&nbsp;mm booster is what makes the shelves uneven. Turn on JavaScript to watch it happen.
+Start with a base unit on the ground, then stack additional units above it to build out your shelf.
 
 # small label after the animation
 [page.outroKicker]
@@ -67,45 +67,45 @@ Open the shelf designer
 
 # 0%–18% of the scroll
 [caption.base.title]
-It starts with one base.
+It starts with the base
 
 [caption.base.body]
-A wide steel frame on the floor, 1,420 mm across. Everything above it stands on this, and nothing is fixed to the wall.
+A simple two-tier unit with adjustable feet, which let it sit firmly on any surface. Use it as it is, or add on extensions for more storage.
 
 # 20%–35% of the scroll
 [caption.adapter.title]
-The next tier just drops on.
+The next level just drops on.
 
 [caption.adapter.body]
-Same width, no fixings — and it changes what is possible above it. The base offers two places to stand. The adapter on top of it offers three.
+We’ve done the hard work of fabricating perfectly interlocking parts. All you need to do is stack them together.
 
 # 38%–61% of the scroll
 [caption.joint.title]
-A 30 mm pin. No tools.
+A simple joint
 
 [caption.joint.body]
-Every leg ends in a spigot that drops into the tube below it. That is the whole joint, on every piece in the system. It comes apart the same way, which is why a shelf can move house with you.
+Connecting two joints is as easy as sliding the 16mm rod from above into the 20mm tube below. That’s it.
 
 # 65%–80% of the scroll
 [caption.stagger.title]
-This is where it stops being a grid.
+This is where you can get creative.
 
 [caption.stagger.body]
-A short unit on the left. On the right, no unit at all — a booster: a 20 mm column that lifts one post half a storey and leaves the space under it open.
+We’re all for a simple, stacked shelf. But if you want something more distinctive, our system is for you.
 
 # 81%–91% of the scroll
 [caption.bridge.title]
-One shelf, two different supports.
+One shelf, many possibilities.
 
 [caption.bridge.body]
-The long shelf lands on the short unit at one end and on the raised post at the other. Uneven pockets underneath, one straight line on top.
+You can start with a small shelf then add onto it as your needs change.
 
 # 92%–100% of the scroll
 [caption.cap.title]
 Close it off at the top.
 
 [caption.cap.body]
-Full width again, 1,630 mm up. That is The Curator’s Shelf — seven pieces, six of them different, Ksh 36,500 in Coral.
+The design shown goes for Ksh 36,500 in Coral.
 
 ------------------------------------------------------------------------------
   PIN LABELS — the small dark tags pointing at the model
@@ -120,15 +120,15 @@ socket
 
 # 23%–34% of the scroll
 [pin.drop]
-1,420 mm, one drop
+Units slide together
 
 # 41%–60% of the scroll
 [pin.spigot]
-30 mm pin
+16mm pin
 
 # 76%–85% of the scroll
 [pin.booster]
-a 20 mm column
+a 20 mm post
 
 # 86%–95% of the scroll
 [pin.onShelf]

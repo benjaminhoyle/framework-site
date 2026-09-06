@@ -4,11 +4,15 @@ A scroll-driven animation of a Framework shelf assembling itself: the Apple
 product-page idea, where the scrollbar is the transport control and the product
 takes itself apart as you go.
 
-**Verdict: feasible, cheaper than the alternatives, and already prototyped.**
-`/assembly-lab.html` is a working end-to-end mockup of The Curator's Shelf,
-running on the builder's own renderer and the builder's own geometry. It is
-404'd on the public site (`netlify.toml`) until there is a decision about where
-it belongs.
+**Verdict: feasible, cheaper than the alternatives, and built.** `/assembly` is
+The Curator's Shelf assembling itself, running on the builder's own renderer and
+the builder's own geometry.
+
+It is **deployed but not linked and not indexed** — reachable so it can be
+opened on a real phone, and inside Instagram's browser, which is the one thing
+that cannot be checked from a desktop. Where it belongs in the site's navigation
+is still open; `how.html` is currently a redirect to an Instagram reel and is
+the obvious slot. Add `?bench=1` to the URL for the tier badge.
 
 ```bash
 npm run dev     # then http://127.0.0.1:8770/assembly-lab.html
@@ -226,7 +230,7 @@ hard to say in a photograph and easy to show in a move.
 | scroll | beat |
 |---|---|
 | 0–18% | one wide base on the floor |
-| 20–35% | the adapter drops on. *The base offers two places to stand; the adapter offers three* — this is the piece that makes the asymmetry possible, and it is verifiable in the sockets |
+| 20–35% | the adapter drops on. It is the piece that makes the asymmetry possible: the base offers two places to stand and the adapter offers three, which is verifiable in the sockets |
 | 40–64% | a 6× dolly into one leg, a **hold 90 mm open**, then the pin closes |
 | 64–80% | a short unit on the left, then a bare 20 mm booster on the right |
 | 80–90% | the second booster, then one shelf bridging two different supports |
@@ -238,13 +242,19 @@ different answers to the same problem — which nobody can see if they come down
 as a chord. Each piece starts while the one before it is still falling and lands
 after it: close enough to be one movement, far enough apart to be two decisions.
 Within a tier the shelf unit goes first and the booster second, so the booster
-arrives as the odd one out into a gap the eye has already noticed, which is the
-moment the caption is talking about.
+arrives as the odd one out, into a gap the eye has already noticed.
+
+The copy above is the shape of the beats, not the words on the page: those are
+edited separately (§10) and change more often than the timing does. The
+measurements the captions quote — a ⌀16 mm rod into a ⌀20 mm tube, with a ⌀24 mm
+shoulder above it — are what the module geometry actually draws, and worth
+re-checking against `assets/shelving/modules/*.json` if the copy ever changes
+them.
 
 The joint chapter is the one that needed the most work, and the reason is worth
 recording: **this joint is concealed once it is closed.** A close-up of the
 finished shelf shows a post with a seam in it and explains nothing. Held 90 mm
-open it explains itself — a collar on the base, a narrower pin beneath the
+open it explains itself — a ⌀20 mm tube on the base, a ⌀16 mm rod beneath the
 adapter, air in between. Which is why the descent is split either side of a
 hold rather than run straight through.
 
