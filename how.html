@@ -1,7 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <meta http-equiv="refresh" content="0; URL=https://www.instagram.com/reel/DIbBO5noZwE/?utm_source=ig_web_button_share_sheet&igsh=MzRlODBiNWFlZA==" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>How a Framework shelf works | Framework Designs</title>
+    <!--
+      The system page. The assembly story is the hero: The Curator's Shelf
+      putting itself together as you scroll, drawn live by /builder's own
+      renderer from the same scripts and the same story file as /assembly.
+      Nothing here is copied from that page; it loads the same files and gives
+      them its own track, stage and canvas. Under it, three short sections on
+      what modular means, how a shelf grows, and what it is made of, then the
+      colours page and the two doors: the range, and the designer.
+
+      This address used to be a redirect to an Instagram reel
+      (https://www.instagram.com/reel/DIbBO5noZwE/). Nothing on the site or in
+      the marketing and ops repos linked to it for that.
+
+      Layout rule from docs/assembly-animation.md: nothing between <body> and
+      .fa-stage may carry a transform, filter, perspective or will-change, or
+      the sticky stage silently stops sticking. The site header js/site.js
+      injects is a sibling of <main>, not an ancestor, so it is safe.
+    -->
+    <meta name="description"
+        content="Our shelves are modular: separate parts that stack together. Scroll to watch one assemble itself, then see the colours, the range, or design your own.">
+    <link rel="canonical" href="https://www.framework.co.ke/how">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.framework.co.ke/how">
+    <meta property="og:title" content="How a Framework shelf works">
+    <meta property="og:description" content="One shelf, made of parts that stack together. Scroll and it puts itself together.">
+    <meta property="og:image" content="https://www.framework.co.ke/images/shelving/configs/asymmetric-display-populated.jpg">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="/images/global/fwk-icon-lg.png">
+    <!-- === TRACKING === -->
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1492649948884685');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1492649948884685&ev=PageView&noscript=1"/></noscript>
+    <!-- End Meta Pixel Code -->
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16875113878"></script>
     <script>
@@ -28,28 +76,136 @@
         gtag('js', new Date());
         gtag('config', 'G-HXHT6KGZT3');
     </script>
-    <!-- Meta Pixel Code -->
-    <script>
-    !function(f,b,e,v,n,t,s)
-    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)}(window, document,'script',
-    'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '1492649948884685');
-    fbq('track', 'PageView');
-    </script>
-    <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=1492649948884685&ev=PageView&noscript=1"/></noscript>
-    <!-- End Meta Pixel Code -->
-    <title>Redirecting..</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
+    <!-- styles.css carries the header and footer that js/site.js injects;
+         assembly.css is the story's own stylesheet, shared with /assembly. -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/assembly.css">
+    <link rel="stylesheet" href="/css/how.css">
+    <!--
+      Not deferred, on purpose: site.js registers its load listener here, before
+      the page's own one at the foot of the body, so by the time the page asks
+      the story to re-measure its track the header has already been put in.
+    -->
+    <script src="/js/site.js"></script>
+
+    <!-- The six module bundles this shelf is made of, the same list as
+         /assembly. scripts/test-assembly-story.mjs guards that page's list;
+         this one is kept in step with it by hand. -->
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_base.json">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_adapter.json">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/slim_extension.json">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_booster.json">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_extension.json">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_extension.json">
 </head>
+
 <body>
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NNSS73RJ" height="0" width="0"
             style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
+
+    <main class="hw">
+        <section class="fa-intro hw-intro">
+            <p class="fa-kicker">How it works</p>
+            <h1>One shelf, made of parts that stack together.</h1>
+            <p>Our shelves are modular, which means they are made of separate parts that stack together. This one is The Curator's Shelf: seven parts and one joint, repeated.</p>
+            <p class="fa-hint">Scroll</p>
+        </section>
+
+        <div class="fa-track" id="assembly-track">
+            <div class="fa-stage" id="assembly-stage">
+                <canvas class="fa-canvas" id="assembly-canvas" aria-hidden="true"></canvas>
+                <noscript>
+                    <div class="fa-caption" style="opacity:1;transform:none;visibility:visible">
+                        <h2>Seven parts, one joint.</h2>
+                        <p>A base on the floor, then units stacked above it. Each one slides onto a pin on the one below.</p>
+                    </div>
+                </noscript>
+            </div>
+        </div>
+
+        <section class="hw-section">
+            <img src="/images/studio/details/shelf-10-joint.jpg"
+                alt="A sage steel post held just above the one below it, with the pin about to drop into the tube."
+                width="1200" height="900" loading="lazy">
+            <h2>Modular means separate parts.</h2>
+            <p>A unit is a steel frame with its boards. Units stack at the posts: a pin under the one above slides into a tube on the one below. No tools, no screws.</p>
+        </section>
+
+        <section class="hw-section">
+            <img src="/images/shelving/configs/stepped-display-emptied.jpg"
+                alt="A low three-tier marine shelf with a tall stack standing on one end of it."
+                width="1400" height="1400" loading="lazy">
+            <h2>Start with one unit. Add to it later.</h2>
+            <p>A base unit stands on its own. When you need more, the next unit slides onto it, in the same colour or a new one. Units from Ksh 6,500/-.</p>
+        </section>
+
+        <section class="hw-section">
+            <img src="/images/studio/details/shelf-12-foot.jpg"
+                alt="The adjustable foot of a sage steel post, resting on a stone floor."
+                width="1200" height="900" loading="lazy">
+            <h2>Steel, painted in Nairobi.</h2>
+            <p>The frame is all steel and the surface is a painted wood composite. Every base unit has adjustable feet, so it stands level on any floor. Made in our Dagoretti Corner workshop, and delivered assembled within Nairobi.</p>
+        </section>
+
+        <a class="hw-colours" href="/colours">
+            <span class="hw-swatches" aria-hidden="true">
+                <i style="--steel:#143F68;--board:#82AAD0"></i>
+                <i style="--steel:#6F986A;--board:#B3D4BE"></i>
+                <i style="--steel:#171E20;--board:#94A4B0"></i>
+                <i style="--steel:#C8554B;--board:#F29A8C"></i>
+            </span>
+            <span><b>Four colours.</b> Marine, Sage, Charcoal and Coral, each on a real shelf, and the add-ons.</span>
+        </a>
+
+        <section class="hw-doors" aria-label="Where next">
+            <a class="hw-door" href="/shelving.html">
+                <b>See the range</b>
+                <span>Popular configurations with prices. Units from Ksh 6,500/-.</span>
+            </a>
+            <a class="hw-door hw-door-dark" href="/builder">
+                <b>Design your own</b>
+                <span>Build one in the browser and it prices itself as you go.</span>
+            </a>
+        </section>
+    </main>
+
+    <!-- The same files /assembly loads, in the same order. Nothing is copied. -->
+    <script src="/js/builder/geometry.js"></script>
+    <script src="/js/builder/renderer.js"></script>
+    <script src="/js/assembly/curator-shelf.js"></script>
+    <script src="/js/assembly/story.js"></script>
+    <script src="/js/assembly/scroll-story.js"></script>
+    <script>
+        window.FrameworkAssembly.start({
+            track: '#assembly-track',
+            stage: '#assembly-stage',
+            canvas: '#assembly-canvas',
+            onReady: function (result) {
+                // Bench handle, read-only: FrameworkAssembly.debug.seek(0.5).
+                window.FrameworkAssembly.debug = result;
+            }
+        }).catch(function (error) {
+            console.error('assembly:', error);
+        });
+
+        /*
+         * js/site.js puts the site header in at window.load, which moves the
+         * track down by the header's height after the story may already have
+         * measured where it starts. The story re-measures on resize, so ask it
+         * to. site.js registered its load listener first (it is in the head),
+         * so the header is in place by the time this runs.
+         */
+        window.addEventListener('load', function () {
+            window.dispatchEvent(new Event('resize'));
+        });
+    </script>
 </body>
+
 </html>

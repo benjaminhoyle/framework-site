@@ -1,0 +1,146 @@
+/*
+ * /how: the system page.
+ *
+ * The assembly story is the hero and css/assembly.css lays it out; this file
+ * only adds what sits around it: the three sections under the animation, the
+ * colours link, and the two doors at the end. It loads after css/styles.css,
+ * whose header and footer js/site.js injects, and takes back the body padding
+ * that stylesheet adds for the older pages.
+ *
+ * One rule carried over from docs/assembly-animation.md: nothing above the
+ * sticky stage may carry a transform, filter, perspective or will-change.
+ * Nothing here does.
+ */
+
+body {
+    padding: 0;
+    height: auto;
+    min-height: 0;
+}
+
+/* ----------------------------------------------------------------- intro */
+
+/* Shorter than the story's own intro: the animation is the point of this page
+   and should be one small scroll away, not a screen away. */
+.hw-intro {
+    padding: 8vh 24px 6vh;
+}
+
+/* ---------------------------------------------------------------- sections */
+
+.hw-section {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 64px 24px 0;
+}
+
+.hw-section img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 12px;
+    background: #f6f8f7;
+    margin-bottom: 18px;
+}
+
+.hw-section h2 {
+    font-size: clamp(24px, 4.4vw, 32px);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    font-weight: 700;
+    margin: 0 0 10px;
+}
+
+.hw-section p {
+    color: var(--muted);
+    font-size: clamp(17px, 2.4vw, 19px);
+    margin: 0;
+}
+
+/* --------------------------------------------------------------- colours */
+
+.hw-colours {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: 720px;
+    margin: 64px auto 0;
+    padding: 18px 20px;
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 16px;
+    line-height: 1.45;
+}
+
+.hw-colours b { color: var(--ink); }
+
+.hw-colours:hover,
+.hw-colours:focus { border-color: var(--accent); }
+
+/* The four swatches, steel on the left and board on the right, from the
+   builder's own palette. */
+.hw-swatches {
+    display: flex;
+    gap: 6px;
+    flex: none;
+}
+
+.hw-swatches i {
+    display: block;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, var(--steel) 50%, var(--board) 50%);
+}
+
+/* ----------------------------------------------------------------- doors */
+
+.hw-doors {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 64px 24px 96px;
+    display: grid;
+    gap: 14px;
+}
+
+.hw-door {
+    display: block;
+    padding: 22px 24px;
+    border-radius: 14px;
+    background: #f6f8f7;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.hw-door b {
+    display: block;
+    font-size: 22px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.hw-door span {
+    display: block;
+    color: var(--muted);
+    font-size: 15.5px;
+    line-height: 1.45;
+}
+
+.hw-door-dark { background: var(--ink); color: #fff; }
+.hw-door-dark span { color: rgba(255, 255, 255, 0.72); }
+
+.hw-door:hover, .hw-door:focus { background: #eef2f0; }
+.hw-door-dark:hover, .hw-door-dark:focus { background: #000; }
+
+@media (min-width: 700px) {
+    .hw-doors { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 760px) {
+    .hw-section { padding-top: 48px; }
+    .hw-colours { margin-top: 48px; }
+    .hw-doors { padding-top: 48px; padding-bottom: 72px; }
+}
