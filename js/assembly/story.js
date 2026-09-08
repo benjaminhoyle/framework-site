@@ -50,36 +50,36 @@
      */
     var COPY = {
         base: {
-            title: 'It starts with the base',
-            body: 'A simple two-tier unit with adjustable feet, which let it sit firmly on any surface. Use it as it is, or add on extensions for more storage.'
+            title: 'It starts with a base.',
+            body: 'A two-tier unit on adjustable feet, so it stands level on any floor. Use it as it is, or add to it later.'
         },
         adapter: {
-            title: 'The next level just drops on.',
-            body: 'We’ve done the hard work of fabricating perfectly interlocking parts. All you need to do is stack them together.'
+            title: 'The next unit drops on.',
+            body: 'Each post ends in a socket. The unit above has a pin under each leg. Line them up and lower it on. No tools.'
         },
         joint: {
-            title: 'A simple joint',
-            body: 'Connecting two joints is as easy as sliding the 16mm rod from above into the 20mm tube below. That’s it.'
+            title: 'One joint, repeated.',
+            body: 'A 16 mm pin slides into a 20 mm tube and stops on the shoulder. Every joint in the shelf is this one.'
         },
         stagger: {
-            title: 'This is where you can get creative.',
-            body: 'We’re all for a simple, stacked shelf. But if you want something more distinctive, our system is for you.'
+            title: 'Not every tier needs a full unit.',
+            body: 'Here a short unit lands on the left and a bare post on the right. Two standard parts, two different heights.'
         },
         bridge: {
-            title: 'One shelf, many possibilities.',
-            body: 'You can start with a small shelf then add onto it as your needs change.'
+            title: 'One shelf, two supports.',
+            body: 'The long shelf rests on the unit at one end and on the post at the other. That is where the uneven pockets come from.'
         },
         cap: {
-            title: 'Close it off at the top.',
-            body: 'The design shown goes for Ksh 36,500 in Coral.'
+            title: 'A full-width shelf closes it off.',
+            body: 'As shown: The Curator\'s Shelf, Ksh 36,500/- in Coral. Units from Ksh 6,500/-.'
         },
         pins: {
             socket: 'socket',
-            drop: 'Units slide together',
-            spigot: '16mm pin',
-            booster: 'a 20 mm post',
-            onShelf: 'on a shelf',
-            onPost: 'on a post'
+            drop: 'drops on',
+            spigot: '16 mm pin',
+            booster: 'a bare post',
+            onShelf: 'on the unit',
+            onPost: 'on the post'
         },
         alt: {
             base: 'A steel leg meeting the floor beside the lowest shelf board.',

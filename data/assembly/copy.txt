@@ -26,13 +26,13 @@ How it works
 
 # the headline
 [page.title]
-One unique shelf, made of a few standard parts.
+One shelf, made of parts that stack together.
 
 [page.intro1]
-All of Framework’s shelves are made up of individual modules, which are assembled into unique designs.
+Our shelves are modular, which means they are made of separate parts that stack together. This one is The Curator's Shelf: seven parts and one joint, repeated.
 
 [page.intro2]
-Scroll to see how a shelf comes together
+Scroll to see it come together.
 
 # sits under the intro with a downward rule; keep it very short
 [page.hint]
@@ -40,11 +40,11 @@ Scroll
 
 # only ever seen with JavaScript turned off
 [page.noscriptTitle]
-Seven pieces, one joint.
+Seven parts, one joint.
 
 # same
 [page.noscriptBody]
-Start with a base unit on the ground, then stack additional units above it to build out your shelf.
+A base on the floor, then units stacked above it. Each one slides onto a pin on the one below.
 
 # small label after the animation
 [page.outroKicker]
@@ -67,45 +67,45 @@ Open the shelf designer
 
 # 0%–18% of the scroll
 [caption.base.title]
-It starts with the base
+It starts with a base.
 
 [caption.base.body]
-A simple two-tier unit with adjustable feet, which let it sit firmly on any surface. Use it as it is, or add on extensions for more storage.
+A two-tier unit on adjustable feet, so it stands level on any floor. Use it as it is, or add to it later.
 
 # 20%–35% of the scroll
 [caption.adapter.title]
-The next level just drops on.
+The next unit drops on.
 
 [caption.adapter.body]
-We’ve done the hard work of fabricating perfectly interlocking parts. All you need to do is stack them together.
+Each post ends in a socket. The unit above has a pin under each leg. Line them up and lower it on. No tools.
 
 # 38%–61% of the scroll
 [caption.joint.title]
-A simple joint
+One joint, repeated.
 
 [caption.joint.body]
-Connecting two joints is as easy as sliding the 16mm rod from above into the 20mm tube below. That’s it.
+A 16 mm pin slides into a 20 mm tube and stops on the shoulder. Every joint in the shelf is this one.
 
 # 65%–80% of the scroll
 [caption.stagger.title]
-This is where you can get creative.
+Not every tier needs a full unit.
 
 [caption.stagger.body]
-We’re all for a simple, stacked shelf. But if you want something more distinctive, our system is for you.
+Here a short unit lands on the left and a bare post on the right. Two standard parts, two different heights.
 
 # 81%–91% of the scroll
 [caption.bridge.title]
-One shelf, many possibilities.
+One shelf, two supports.
 
 [caption.bridge.body]
-You can start with a small shelf then add onto it as your needs change.
+The long shelf rests on the unit at one end and on the post at the other. That is where the uneven pockets come from.
 
 # 92%–100% of the scroll
 [caption.cap.title]
-Close it off at the top.
+A full-width shelf closes it off.
 
 [caption.cap.body]
-The design shown goes for Ksh 36,500 in Coral.
+As shown: The Curator's Shelf, Ksh 36,500/- in Coral. Units from Ksh 6,500/-.
 
 ------------------------------------------------------------------------------
   PIN LABELS — the small dark tags pointing at the model
@@ -120,23 +120,23 @@ socket
 
 # 23%–34% of the scroll
 [pin.drop]
-Units slide together
+drops on
 
 # 41%–60% of the scroll
 [pin.spigot]
-16mm pin
+16 mm pin
 
 # 76%–85% of the scroll
 [pin.booster]
-a 20 mm post
+a bare post
 
 # 86%–95% of the scroll
 [pin.onShelf]
-on a shelf
+on the unit
 
 # 86%–95% of the scroll
 [pin.onPost]
-on a post
+on the post
 
 ------------------------------------------------------------------------------
   IMAGE DESCRIPTIONS — read aloud by screen readers, and shown if a
