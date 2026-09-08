@@ -505,6 +505,9 @@ ${BOOKS_STRICT}
     residential: ["living-room","study-nook","library-wall","wall-niche","bedroom-corner","bedroom-wardrobe","kids-room","nursery","kitchen-dining","entryway","covered-terrace"],
     commercial: ["office-commercial","cafe-display","retail-boutique","creative-studio"],
   };
+  // brief.js takes CONFIG alone, so the draw tables ride on it too.
+  CONFIG.pools = POOLS;
+  CONFIG.roomGroups = ROOM_GROUPS;
 
   // Defaults are what a fresh session starts with before you press a preset,
   // Suggest details or manual controls.
