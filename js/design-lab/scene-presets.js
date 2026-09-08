@@ -3,13 +3,13 @@
  *
  * The studio flow needs somewhere to send a finished render, and "randomise
  * every parameter" is how you get a mustard wall under a moody night light with
- * a cowhide rug — each choice defensible, the room impossible. So the scenes
+ * a cowhide rug: each choice defensible, the room impossible. So the scenes
  * are curated combinations with names, and the flow cycles through them.
  *
  * Each one is an **archetype plus a shot**. The seven archetypes in
  * js/studio/prompt-config.js already carry a written paragraph describing a
- * real Nairobi place — a Kilimani new-build, an older Westlands flat, a Karen
- * garden house — and that paragraph is what makes a scene coherent. What varies
+ * real Nairobi place (a Kilimani new-build, an older Westlands flat, a Karen
+ * garden house) and that paragraph is what makes a scene coherent. What varies
  * on top is the photographic side: which room, what light, who lives there, how
  * full the shelf is. Varying the place itself would mean writing seven more
  * paragraphs badly.
@@ -110,7 +110,7 @@ window.FrameworkScenePresets = (function () {
    * Cycle rather than shuffle.
    *
    * Thirty scenes and a random draw each time gives you the same café twice
-   * before you have seen Karen at all — the birthday problem, and it is what
+   * before you have seen Karen at all: the birthday problem, and it is what
    * "randomised" always feels like in practice. Walking the list in order and
    * starting again at the top spreads them by construction, and the offset
    * means two sessions do not open with the same picture.
@@ -140,5 +140,20 @@ window.FrameworkScenePresets = (function () {
     });
   }
 
-  return { PRESETS, byId, cycle, paramsFor };
+  /**
+   * A scene drawn from a brief, or from no brief at all.
+   *
+   * Random and directed are one path: an empty brief is random mode, and a
+   * brief that pins the room and the persona still draws the light, the
+   * traces and the details from the same pools. `batch` is the object
+   * js/studio/brief.js mutates to keep a batch from repeating itself; keep it
+   * for the length of a batch and pass a fresh {} to start another.
+   */
+  function resolve(brief, config, batch) {
+    const briefs = window.FrameworkBrief;
+    if (!briefs) throw new Error("js/studio/brief.js must be loaded before a scene can be drawn");
+    return briefs.resolve(brief || briefs.emptyBrief(), config, batch || {});
+  }
+
+  return { PRESETS, byId, cycle, paramsFor, resolve };
 })();

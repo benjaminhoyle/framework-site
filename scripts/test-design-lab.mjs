@@ -551,10 +551,116 @@ function loadSceneModules() {
   browserRequire(path.join(ROOT, "js/studio/prompt-config.js"));
   browserRequire(path.join(ROOT, "js/studio/scale.js"));
   browserRequire(path.join(ROOT, "js/studio/scene-prompt.js"));
+  browserRequire(path.join(ROOT, "js/studio/brief.js"));
   browserRequire(path.join(ROOT, "js/design-lab/scene-presets.js"));
   sceneModules = global.window;
   return sceneModules;
 }
+
+/** A brief as the studio would parse it from framework-marketing/briefs. */
+const KIDS_ROOM_BRIEF = {
+  name: "kids-room-grows",
+  scene: "kids-room",
+  persona: "parent",
+  fullness: "full",
+  light: "daylight",
+  mood: "bright, well kept, real",
+  must: ["picture books in English and French, spines out", "one wooden toy on a low shelf"],
+  avoid: ["tote bag", "phone charging"],
+  pin: ["scene", "persona", "fullness"],
+  formats: ["4:5", "1:1"],
+  count: 6,
+  body: "A family that arrived in Nairobi within the year, two children under eight."
+};
+
+/** Deterministic randomness, so a failing draw can be reproduced. */
+function seeded(seed) {
+  const next = mulberry32(seed);
+  return () => next();
+}
+
+test("an empty brief is random mode, and every draw names things that exist", () => {
+  const browser = loadSceneModules();
+  const { CONFIG } = browser.PROMPT_CONFIG;
+  const presets = browser.FrameworkScenePresets;
+  const groupOf = {
+    scene: "scenes", light: "light", persona: "persona", fullness: "fullness",
+    livedIn: "livedIn", camera: "camera", framing: "framing", colourMood: "colourMood",
+    wall: "walls", floor: "floors", rug: "rugs", furniture: "furniture", windowView: "windowView"
+  };
+  const batch = { random: seeded(7) };
+  const lights = new Set();
+  const rooms = new Set();
+  for (let n = 0; n < 40; n += 1) {
+    const { params } = presets.resolve(null, CONFIG, batch);
+    assert.equal(params.shotType, "use");
+    assert.ok((CONFIG.archetypes || []).some((entry) => entry.id === params.archetype), `${params.archetype} is a place`);
+    for (const [key, group] of Object.entries(groupOf)) {
+      assert.ok((CONFIG[group] || []).some((option) => option.id === params[key]), `${key}=${params[key]} is an option`);
+    }
+    for (const id of params.humanTraces) {
+      const trace = CONFIG.humanTraces.find((option) => option.id === id);
+      assert.ok(trace, `${id} is a trace`);
+      assert.ok(!trace.rooms || trace.rooms.includes(params.scene), `${id} belongs in a ${params.scene}`);
+    }
+    for (const id of params.details) {
+      const detail = CONFIG.details.find((option) => option.id === id);
+      assert.ok(detail, `${id} is a detail`);
+      assert.ok(!detail.rooms || detail.rooms.includes(params.scene), `${id} belongs in a ${params.scene}`);
+    }
+    const prompt = browser.FrameworkScenePrompt.build(CONFIG, params, { aspect: "4:3" });
+    assert.ok(prompt.includes("THE PLACE"), "a random scene still describes a place");
+    lights.add(params.light);
+    rooms.add(params.scene);
+  }
+  assert.ok(lights.size >= 4, `forty draws use ${lights.size} lights`);
+  assert.ok(rooms.size >= 6, `forty draws use ${rooms.size} rooms`);
+});
+
+test("a brief pins what it says and draws the rest, without repeating a trace", () => {
+  const browser = loadSceneModules();
+  const { CONFIG } = browser.PROMPT_CONFIG;
+  const batch = { random: seeded(11) };
+  const daylight = new Set(CONFIG.light.filter((option) => option.daylight).map((option) => option.id));
+  const seenTraces = [];
+  const lights = new Set();
+  for (let n = 0; n < 12; n += 1) {
+    const { params, must, avoid } = browser.FrameworkBrief.resolve(KIDS_ROOM_BRIEF, CONFIG, batch);
+    assert.equal(params.scene, "kids-room");
+    assert.equal(params.persona, "parent");
+    assert.equal(params.fullness, "full");
+    assert.equal(params.livedIn, "well-kept", "the mood word names the register");
+    assert.ok(daylight.has(params.light), `${params.light} is daylight`);
+    assert.ok(!params.humanTraces.includes("tote-bag") && !params.humanTraces.includes("phone-cable"), "avoid is honoured");
+    assert.equal(must.length, 2);
+    assert.deepEqual(avoid, ["tote bag", "phone charging"]);
+    seenTraces.push(...params.humanTraces);
+    lights.add(params.light);
+  }
+  // The kids-room trace pool is larger than a dozen images draw, so nothing
+  // should have come round twice.
+  assert.equal(new Set(seenTraces).size, seenTraces.length, `traces drawn once each: ${seenTraces.join(", ")}`);
+  assert.ok(lights.size >= 2, "the light still varies under a pinned brief");
+});
+
+test("when books are the point the shelf is full and open books may rest on a surface", () => {
+  const browser = loadSceneModules();
+  const { CONFIG } = browser.PROMPT_CONFIG;
+  const { params } = browser.FrameworkBrief.resolve(
+    Object.assign({}, KIDS_ROOM_BRIEF, { fullness: "light", pin: ["scene", "persona"] }), CONFIG, { random: seeded(3) });
+  const prompt = browser.FrameworkScenePrompt.build(CONFIG, params, { aspect: "1:1" });
+  assert.ok(prompt.includes("Books may be open only if resting on a surface"), "the books rule relaxed");
+  assert.ok(!prompt.includes("Do NOT show open books"), "the strict rule is gone");
+  assert.ok(prompt.includes("every tier carrying something"), "fill is full");
+  assert.ok(prompt.includes("picture books in English and French"), "the must is on the shelf");
+  assert.ok(prompt.includes("one wooden toy on a low shelf"), "the second must is on the shelf");
+  assert.ok(/DO NOT include:.*tote bag, phone charging/.test(prompt), "avoid joins the negative prompt");
+  assert.ok(prompt.includes("WHO LIVES HERE"), "the story is in the place");
+
+  const strict = browser.FrameworkScenePrompt.build(CONFIG,
+    Object.assign({}, params, { persona: "minimalist", must: [] }), { aspect: "1:1" });
+  assert.ok(strict.includes("Do NOT show open books"), "a minimalist keeps the strict rule");
+});
 
 test("every scene preset names things that exist", () => {
   const browser = loadSceneModules();
