@@ -41,6 +41,25 @@
   to = "/builder.html"
   status = 200
 
+# The two pages that explain the system. /how carries the assembly story as its
+# hero and is the landing for "build your own"; /colours is the link sent in a
+# WhatsApp reply when someone asks what colours there are.
+[[redirects]]
+  from = "/how"
+  to = "/how.html"
+  status = 200
+
+[[redirects]]
+  from = "/colours"
+  to = "/colours.html"
+  status = 200
+
+# The American spelling, typed by hand.
+[[redirects]]
+  from = "/colors"
+  to = "/colours"
+  status = 301
+
 # The assembly story. Reachable and noindex, but linked from nowhere: it is
 # deployed so it can be opened on a real phone, and inside Instagram's browser,
 # which is the one thing that cannot be checked from a desktop. Where it belongs
