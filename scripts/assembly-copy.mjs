@@ -79,7 +79,7 @@ function render(story, page) {
 
   out.push(
     "=".repeat(78),
-    "  THE CURATOR'S SHELF — every word in the assembly animation",
+    "  THE CURATOR'S SHELF: every word in the assembly animation",
     "=".repeat(78),
     "",
     "  Edit the text. Leave the [square-bracket] lines exactly as they are:",
@@ -97,7 +97,7 @@ function render(story, page) {
     "      node scripts/assembly-copy.mjs --apply <file>",
     "",
     RULE,
-    "  ON-PAGE TEXT — before and after the animation",
+    "  ON-PAGE TEXT: before and after the animation",
     RULE,
     ""
   );
@@ -114,7 +114,7 @@ function render(story, page) {
 
   out.push(
     RULE,
-    "  CAPTIONS — the cards that appear as you scroll",
+    "  CAPTIONS: the cards that appear as you scroll",
     RULE,
     "",
     "  Two lines each: a title and a body. The title is set large, so it wants",
@@ -130,10 +130,10 @@ function render(story, page) {
 
   out.push(
     RULE,
-    "  PIN LABELS — the small dark tags pointing at the model",
+    "  PIN LABELS: the small dark tags pointing at the model",
     RULE,
     "",
-    "  These sit on the drawing itself, so they have to be very short — two or",
+    "  These sit on the drawing itself, so they have to be very short, two or",
     "  three words. A long one crowds the thing it is pointing at.",
     ""
   );
@@ -144,7 +144,7 @@ function render(story, page) {
 
   out.push(
     RULE,
-    "  IMAGE DESCRIPTIONS — read aloud by screen readers, and shown if a",
+    "  IMAGE DESCRIPTIONS: read aloud by screen readers, and shown if a",
     "  photograph fails to load. Only used in the no-WebGL fallback.",
     RULE,
     ""
@@ -257,7 +257,7 @@ function apply(file) {
    */
   if (edited.size && !changed.length && skipped.length) {
     console.error("\nNothing could be applied. The ids in this file no longer match "
-      + "anything in js/assembly/story.js or assembly-lab.html — most likely one of them "
+      + "anything in js/assembly/story.js or assembly-lab.html; most likely one of them "
       + "has been restructured since. Re-export a fresh copy file and move the edits across.");
     process.exit(1);
   }
@@ -278,5 +278,5 @@ if (applyAt >= 0) {
   const text = render(loadStory(), readPage(fs.readFileSync(PAGE, "utf8")));
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, text);
-  console.log(`${path.relative(ROOT, out)} — ${text.split("\n").filter((l) => /^\[/.test(l)).length} blocks`);
+  console.log(`${path.relative(ROOT, out)}: ${text.split("\n").filter((l) => /^\[/.test(l)).length} blocks`);
 }

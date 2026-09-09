@@ -1,5 +1,5 @@
 ==============================================================================
-  THE CURATOR'S SHELF — every word in the assembly animation
+  THE CURATOR'S SHELF: every word in the assembly animation
 ==============================================================================
 
   Edit the text. Leave the [square-bracket] lines exactly as they are:
@@ -17,7 +17,7 @@
       node scripts/assembly-copy.mjs --apply <file>
 
 ------------------------------------------------------------------------------
-  ON-PAGE TEXT — before and after the animation
+  ON-PAGE TEXT: before and after the animation
 ------------------------------------------------------------------------------
 
 # small label above the headline
@@ -58,7 +58,7 @@ Build one in the browser and it prices itself as you go.
 Open the shelf designer
 
 ------------------------------------------------------------------------------
-  CAPTIONS — the cards that appear as you scroll
+  CAPTIONS: the cards that appear as you scroll
 ------------------------------------------------------------------------------
 
   Two lines each: a title and a body. The title is set large, so it wants
@@ -108,10 +108,10 @@ A full-width shelf closes it off.
 As shown: The Curator's Shelf, Ksh 36,500/- in Coral. Units from Ksh 6,500/-.
 
 ------------------------------------------------------------------------------
-  PIN LABELS — the small dark tags pointing at the model
+  PIN LABELS: the small dark tags pointing at the model
 ------------------------------------------------------------------------------
 
-  These sit on the drawing itself, so they have to be very short — two or
+  These sit on the drawing itself, so they have to be very short, two or
   three words. A long one crowds the thing it is pointing at.
 
 # 5%–17% of the scroll
@@ -139,7 +139,7 @@ on the unit
 on the post
 
 ------------------------------------------------------------------------------
-  IMAGE DESCRIPTIONS — read aloud by screen readers, and shown if a
+  IMAGE DESCRIPTIONS: read aloud by screen readers, and shown if a
   photograph fails to load. Only used in the no-WebGL fallback.
 ------------------------------------------------------------------------------
 
