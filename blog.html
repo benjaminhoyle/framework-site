@@ -2,6 +2,51 @@
 <html lang="en">
 
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Framework Journal | Framework Designs</title>
+    <!--
+      The blog index. The cards between the blog-index markers are static HTML
+      written by scripts/publish-blog.mjs, newest first, so a crawler and an
+      answer engine read the list without running any script. It replaced
+      js/blog-loader.js, which fetched every post and built the list in the
+      browser (2026-09-09).
+    -->
+    <meta name="description"
+        content="Notes from Framework Designs' Dagoretti Corner workshop: modular steel shelving, Nairobi homes, and how a shelf grows.">
+    <link rel="canonical" href="https://www.framework.co.ke/blog.html">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.framework.co.ke/blog.html">
+    <meta property="og:title" content="Framework Journal">
+    <meta property="og:description" content="Notes from our Dagoretti Corner workshop: modular steel shelving, Nairobi homes, and how a shelf grows.">
+    <meta property="og:image" content="https://www.framework.co.ke/images/shelving/configs/asymmetric-display-populated.jpg">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="/images/global/fwk-icon-lg.png">
+    <!-- === TRACKING === -->
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1492649948884685');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1492649948884685&ev=PageView&noscript=1"/></noscript>
+    <!-- End Meta Pixel Code -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16875113878"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'AW-16875113878');
+    </script>
     <!-- Google Tag Manager -->
     <script>(function (w, d, s, l, i) {
             w[l] = w[l] || []; w[l].push({
@@ -20,15 +65,15 @@
         gtag('js', new Date());
         gtag('config', 'G-HXHT6KGZT3');
     </script>
-    <script src="js/image-loading.js"></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Framework Blog | Steel Shelving and Design Insights</title>
-    <meta name="description"
-        content="Stay updated with the latest trends in steel furniture design, storage solutions, and interior design insights from Framework Designs in Nairobi, Kenya.">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/blog.css">
-    <link rel="canonical" href="https://www.framework.co.ke/blog.html">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
+    <!-- styles.css carries the header and footer that js/site.js injects. -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/blog.css">
+    <script src="/js/site.js" defer></script>
 </head>
 
 <body>
@@ -36,43 +81,27 @@
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NNSS73RJ" height="0" width="0"
             style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
-    <!-- Header will be added by site.js -->
 
     <main class="blog-container">
         <div class="blog-header">
             <h1>Framework Journal</h1>
-            <p>Insights on steel furniture design, storage solutions, and interior inspiration for Kenyan homes and
-                businesses.</p>
+            <p>Notes from our Dagoretti Corner workshop: modular steel shelving, Nairobi homes, and how a shelf grows.</p>
         </div>
 
         <div class="blog-grid">
-            <!-- Blog posts will be loaded dynamically by blog-loader.js -->
-            <!-- The loading indicator will be dynamically inserted by the script -->
+<!-- blog-index:start -->
+<article class="blog-card">
+    <a class="blog-card-image-link" href="/blog/modularity-for-kenya.html"><img src="/images/shelving/shelf%20(03).jpg" alt="" class="blog-card-image" loading="lazy"></a>
+    <div class="blog-card-content">
+        <div class="blog-card-date"><time datetime="2025-04-02">2 April 2025</time></div>
+        <h2 class="blog-card-title"><a href="/blog/modularity-for-kenya.html">Modular Furniture in Kenya: The Perfect Balance Between Quality and Customization</a></h2>
+        <p class="blog-card-excerpt">In a market dominated by mass-produced store offerings and traditional craftsmen, Framework Designs is pioneering a new approach to furniture that combines the best of both worlds.</p>
+        <a href="/blog/modularity-for-kenya.html" class="blog-card-link">Read more</a>
+    </div>
+</article>
+<!-- blog-index:end -->
         </div>
     </main>
-
-    <script src="js/site.js"></script>
-    <script src="js/blog-loader.js"></script>
-
-    <style>
-        /* Add these styles to handle loading states and messages */
-        .loading-indicator {
-            text-align: center;
-            padding: 30px;
-            color: #666;
-            font-style: italic;
-        }
-
-        .no-posts {
-            text-align: center;
-            padding: 40px;
-            background: #f5f5f5;
-            border-radius: 8px;
-            color: #666;
-            grid-column: 1 / -1;
-            /* Span all columns */
-        }
-    </style>
 </body>
 
 </html>

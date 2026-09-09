@@ -1,6 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>{{title}} | Framework Designs</title>
+    <!--
+      The blog post template. scripts/publish-blog.mjs fills the double-brace tokens
+      from a Markdown draft in ../framework-marketing/log/blog-drafts/ and
+      writes blog/<slug>.html. Posts are not edited by hand; edit the draft and
+      publish again.
+
+      Why <base href="/">: js/site.js writes the header links as index.html,
+      shelving.html and so on, relative to the page. Under /blog/ those resolve
+      to /blog/index.html and 404. The base element makes every relative URL
+      in the page resolve from the site root, which is what the header needs.
+      Everything this template writes itself is root-absolute anyway, and a
+      post carries no in-page anchors, so nothing else is affected.
+
+      The tracking block, the fonts and the header and footer are the same as
+      /how and /colours get. The WhatsApp ask at the foot carries a prefilled
+      message per AGENTS.md, with the same data-fwk-handoff and
+      trackContactConversion pair as the header, so a reader who writes to us
+      from a post is counted like any other.
+    -->
+    <base href="/">
+    <meta name="description" content="{{description}}">
+    <link rel="canonical" href="{{canonical}}">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{canonical}}">
+    <meta property="og:title" content="{{title}}">
+    <meta property="og:description" content="{{description}}">
+    <meta property="og:image" content="{{og_image}}">
+    <meta property="og:site_name" content="Framework Designs">
+    <meta property="article:published_time" content="{{date_iso}}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="/images/global/fwk-icon-lg.png">
+    <script type="application/ld+json">{{jsonld}}</script>
+    <!-- === TRACKING === -->
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1492649948884685');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1492649948884685&ev=PageView&noscript=1"/></noscript>
+    <!-- End Meta Pixel Code -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16875113878"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'AW-16875113878');
+    </script>
+    <!-- Google Tag Manager -->
+    <script>(function (w, d, s, l, i) {
+            w[l] = w[l] || []; w[l].push({
+                'gtm.start':
+                    new Date().getTime(), event: 'gtm.js'
+            }); var f = d.getElementsByTagName(s)[0],
+                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', 'GTM-NNSS73RJ');</script>
+    <!-- End Google Tag Manager -->
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-HXHT6KGZT3"></script>
     <script>
@@ -9,107 +81,56 @@
         gtag('js', new Date());
         gtag('config', 'G-HXHT6KGZT3');
     </script>
-    <script src="../js/image-loading.js"></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post Title | Framework Blog</title>
-    <meta name="description" content="Your meta description here. Keep it between 150-160 characters for optimal SEO.">
-    <link rel="stylesheet" href="../css/styles.css">
-    <link rel="stylesheet" href="../css/blog.css">
-    <link rel="canonical" href="https://www.framework.co.ke/blog/post-slug.html">
 
-    <!-- Open Graph tags for social sharing -->
-    <meta property="og:title" content="Post Title | Framework Blog">
-    <meta property="og:description" content="Your meta description here.">
-    <meta property="og:image" content="https://www.framework.co.ke/images/blog/post-image.jpg">
-    <meta property="og:url" content="https://www.framework.co.ke/blog/post-slug.html">
-    <meta property="og:type" content="article">
-    <meta property="og:site_name" content="Framework Designs">
-    <meta property="og:featured" content="false"><!-- Set to "true" for featured posts -->
-    
-    <!-- Twitter Card tags -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Post Title | Framework Blog">
-    <meta name="twitter:description" content="Your meta description here.">
-    <meta name="twitter:image" content="https://www.framework.co.ke/images/blog/post-image.jpg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
+    <!-- styles.css carries the header and footer that js/site.js injects. -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/blog.css">
+    <script src="/js/site.js" defer></script>
 </head>
 
 <body>
-    <!-- Header will be added by site.js -->
-    
-    <article class="blog-post">
-        <header class="blog-post-header">
-            <h1 class="blog-post-title">Your Blog Post Title</h1>
-            <div class="blog-post-meta">
-                <div class="blog-post-author">
-                    <img src="../images/author-avatar.jpg" alt="Author Name" class="blog-post-author-avatar">
-                    <span>Author Name</span>
-                </div>
-                <time class="blog-post-date" datetime="2025-03-27">March 27, 2025</time>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NNSS73RJ" height="0" width="0"
+            style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <main>
+        <article class="blog-post">
+            <header class="blog-post-header">
+                <p class="blog-post-kicker"><a href="/blog.html">Framework Journal</a></p>
+                <h1 class="blog-post-title">{{title}}</h1>
+                <p class="blog-post-meta">
+                    <span class="blog-post-author">Framework Designs, Nairobi</span>
+                    <time class="blog-post-date" datetime="{{date_iso}}">{{date_text}}</time>
+                </p>
+{{#hero}}
+                <figure class="blog-post-hero">
+                    <img src="{{hero_src}}" alt="{{hero_alt}}" loading="eager" fetchpriority="high">
+                    <figcaption>{{hero_caption}}</figcaption>
+                </figure>
+{{/hero}}
+            </header>
+
+            <div class="blog-post-content">
+{{content}}
             </div>
-            <img src="../images/blog/featured-image.jpg" alt="Featured image description" class="blog-post-featured-image">
-        </header>
-        
-        <div class="blog-post-content">
-            <p>Introduction paragraph goes here. Explain what the article is about and why it matters to your audience. This should hook the reader and make them want to continue reading.</p>
-            
-            <h2>First Section Heading</h2>
-            <p>Content for your first section. Elaborate on your main points here with clear explanations and examples relevant to your Kenyan audience, particularly focusing on steel furniture and design.</p>
-            
-            <div class="image-container">
-                <img src="../images/blog/section-image-1.jpg" alt="Image description" class="blog-image">
-                <p class="image-caption">Caption explaining what's shown in the image and why it's relevant.</p>
-            </div>
-            
-            <h2>Second Section Heading</h2>
-            <p>Continue with your second major point or section. Break up long paragraphs for better readability.</p>
-            <p>Use concrete examples that resonate with your audience in Nairobi and other parts of Kenya.</p>
-            
-            <h3>Subsection Heading</h3>
-            <p>If needed, divide your sections into smaller, more focused subsections for clarity.</p>
-            <ul>
-                <li>Consider using bullet points for lists of information</li>
-                <li>They make content more scannable and digestible</li>
-                <li>Especially useful for product features or benefits</li>
-            </ul>
-            
-            <h2>Third Section Heading</h2>
-            <p>Develop your third main point here. Remember to include keywords related to steel furniture, shelving, and Kenyan interior design naturally throughout your content.</p>
-            
-            <div class="image-container">
-                <img src="../images/blog/section-image-2.jpg" alt="Image description" class="blog-image">
-                <p class="image-caption">Another helpful caption that adds context to the image shown.</p>
-            </div>
-            
-            <h2>Conclusion</h2>
-            <p>Summarize the key points of your article. Remind readers of the main takeaways and why they matter.</p>
-            <p>Consider ending with a call-to-action, such as inviting readers to contact Framework Designs for a consultation, visit your showroom, or check out specific products mentioned in the article.</p>
-        </div>
-        
-        <div class="blog-post-tags">
-            <a href="../blog.html?tag=design" class="blog-post-tag">Design</a>
-            <a href="../blog.html?tag=furniture" class="blog-post-tag">Furniture</a>
-            <a href="../blog.html?tag=steel" class="blog-post-tag">Steel</a>
-            <a href="../blog.html?tag=kenya" class="blog-post-tag">Kenya</a>
-        </div>
-        
-        <section class="blog-post-related">
-            <h3>Related Articles</h3>
-            <div class="related-posts">
-                <a href="another-post-slug.html" class="related-post">
-                    <img src="../images/blog/related-post-1-thumb.jpg" alt="Related article title" class="related-post-image">
-                    <h4 class="related-post-title">Title of a Related Article</h4>
-                </a>
-                <a href="yet-another-post-slug.html" class="related-post">
-                    <img src="../images/blog/related-post-2-thumb.jpg" alt="Related article title" class="related-post-image">
-                    <h4 class="related-post-title">Another Related Article Title</h4>
-                </a>
-            </div>
-        </section>
-        
-        <a href="../blog.html" class="back-to-blog">Back to Blog</a>
-    </article>
-    
-    <script src="../js/site.js"></script>
+
+            <aside class="blog-post-ask" aria-label="Get in touch">
+                <p>Kindly share what the shelf is for, and we'll revert back with design ideas and a price.</p>
+                <a class="blog-post-whatsapp" href="{{whatsapp_href}}" target="_blank" rel="noopener noreferrer"
+                    data-fwk-handoff="blog"
+                    onclick="trackContactConversion('', {link_target:'blog_whatsapp', content_name:'{{slug}}'});">Message us on WhatsApp</a>
+                <p class="blog-post-ask-more">Or see <a href="/how">how a Framework shelf works</a>, the
+                    <a href="/colours">four colours</a>, and <a href="/shelving.html">the range</a>. Units from Ksh 6,500/-.</p>
+            </aside>
+
+            <a href="/blog.html" class="back-to-blog">All posts</a>
+        </article>
+    </main>
 </body>
+
 </html>

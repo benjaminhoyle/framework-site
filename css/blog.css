@@ -339,3 +339,99 @@
         font-size: 2em;
     }
 }
+/* Post template, 2026-09-09: the kicker, the hero figure, figures in the body,
+   the WhatsApp ask at the foot. Written by scripts/publish-blog.mjs. */
+.blog-post-kicker {
+    font-size: 0.85em;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #777;
+    margin-bottom: 12px;
+}
+
+.blog-post-kicker a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.blog-post-meta .blog-post-author {
+    color: #555;
+}
+
+.blog-post-hero {
+    margin: 10px 0 30px;
+}
+
+.blog-post-hero img,
+.blog-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.blog-post-hero figcaption,
+.blog-figure figcaption {
+    color: #666;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+
+.blog-figure {
+    margin: 30px 0;
+}
+
+.blog-post-content blockquote {
+    margin: 0 0 20px;
+    padding-left: 18px;
+    border-left: 3px solid #e0e0e0;
+    color: #555;
+}
+
+.blog-post-ask {
+    margin-top: 40px;
+    padding: 24px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    line-height: 1.6;
+}
+
+.blog-post-ask p {
+    margin: 0 0 14px;
+    color: #333;
+}
+
+.blog-post-ask .blog-post-ask-more {
+    margin: 14px 0 0;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.blog-post-ask-more a {
+    color: #4a6c8a;
+}
+
+.blog-post-whatsapp {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #25d366;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.blog-post-whatsapp:hover {
+    background-color: #1ebe5a;
+}
+
+/* Index cards are static HTML written by scripts/publish-blog.mjs. */
+.blog-card-image-link {
+    display: block;
+}
+
+.blog-card-title a {
+    color: inherit;
+    text-decoration: none;
+}
