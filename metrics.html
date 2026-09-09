@@ -119,6 +119,10 @@
     .adsub { font-size:11.5px; color:var(--muted); margin-top:1px; }
     .lead { color:var(--ink); font-weight:600; }
     .zero { color:var(--muted); }
+    /* The two 30-day sales cells carry a second, muted number: the same sales
+       cut by the day the sale closed rather than the day the conversation
+       started. See the note at the cell renderer. */
+    .bysale { display:block; font-size:11px; color:var(--muted); font-weight:400; margin-top:1px; }
     /* Ad / campaign / ad set names are long; keep the row scannable and put the
        full text in the title attribute rather than wrapping the table out of shape. */
     td.text { text-align:left; color:var(--dim); max-width:150px; overflow:hidden;
@@ -958,7 +962,10 @@
     var MEASURES = ['spend30','spendLife','convosMeta30','ourConversations','sales','sales30','revenue','revenue30',
       // Qualified counts sum; the RATE is recomputed from them in aggregate(),
       // never averaged across ads.
-      'qualified','qualified30','ourConversations30'];
+      'qualified','qualified30','ourConversations30',
+      // The 30-day sales cut by sale date (see the cell renderer). Summed here
+      // so the ad-set and campaign rollups carry them like every other count.
+      'salesBySaleDate30','revenueBySaleDate30'];
 
     // One window at a time, chosen explicitly — rather than 30-day spend sitting
     // next to lifetime revenue in the same row, which reads as a ratio and isn't
@@ -1013,7 +1020,7 @@
         (a.flags||[]).forEach(function (f) { if (g.flags.indexOf(f) < 0) g.flags.push(f); });
       });
       order.forEach(function (g) {
-        ['spend30','spendLife','revenue','revenue30'].forEach(function (f) { g[f] = Math.round(g[f]*100)/100; });
+        ['spend30','spendLife','revenue','revenue30','revenueBySaleDate30'].forEach(function (f) { g[f] = Math.round(g[f]*100)/100; });
         // Recomputed from the summed parts, never averaged — and each ratio keeps
         // both of its sides inside one window.
         g.costPerConvo30   = g.convosMeta30     ? Math.round(g.spend30/g.convosMeta30*100)/100     : null;
@@ -1214,8 +1221,8 @@
         spend30: 'Meta spend in the last 30 days.',
         spendLife: 'Everything this ad has ever spent.',
         revenue: 'All-time revenue from orders on conversations attributed here.',
-        revenue30: 'Revenue from conversations that started in the last 30 days. Sales close slowly, so this lags spend.',
-        sales30: 'Sales from conversations that started in the last 30 days.'
+        revenue30: 'Revenue from conversations that started in the last 30 days. Sales close slowly, so this lags spend. The second number is revenue from sales that CLOSED in the last 30 days, whatever the age of the conversation.',
+        sales30: 'Sales from conversations that started in the last 30 days. The second number counts sales by the day they closed instead, so a sale that lands this month on an older conversation appears there and not here.'
       };
       HINTS[w.convos] = w.hint.convos;
       HINTS[w.cpc] = w.hint.cpc;
@@ -1246,9 +1253,18 @@
           if (c.x) { var t = p[c.k] || '—'; return '<td class="text" title="' + esc(t) + '">' + esc(t) + '</td>'; }
           if (c.k === 'flags') return '<td>' + flagCell(p.flags || []) + '</td>';
           var v = p[c.k];
-          var cls = 'num' + (c.lead ? ' lead' : '') + ((v == null || v === 0) ? ' zero' : '');
+          // In the 30-day view the two sales columns carry a second number: the
+          // same sales windowed by the day the sale CLOSED rather than the day
+          // the conversation started. `sales30` drops a sale as soon as its
+          // conversation ages past 30 days, however recently it paid, and about
+          // half of recent sales close more than a month after the conversation
+          // began (research/sales-completeness.md). The first number is
+          // unchanged and still what the row sorts on; the second is context.
+          var bs = c.k === 'sales30' ? p.salesBySaleDate30 : c.k === 'revenue30' ? p.revenueBySaleDate30 : null;
+          var tail = (bs != null ? '<span class="bysale">' + (c.m ? kes(bs) : num(bs)) + ' by sale date</span>' : '') + '</td>';
+          var cls = 'num' + (c.lead ? ' lead' : '') + ((v == null || v === 0) && !(bs > 0) ? ' zero' : '');
           return '<td class="' + cls + '">' +
-            (v == null ? '—' : c.m ? kes(v) : c.p ? v + '%' : num(v)) + '</td>';
+            (v == null ? '—' : c.m ? kes(v) : c.p ? v + '%' : num(v)) + tail;
         }).join('') + '</tr>';
       }).join('');
 
