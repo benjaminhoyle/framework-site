@@ -1,5 +1,11 @@
 # The private tools, and the gate in front of them
 
+> What this is: what the four gated pages (scene-studio, catalog-studio,
+> catalog.html, metrics.html) do, what the login gate protects, and what the
+> two image studios share.
+> When to read it: before changing the gate, adding an endpoint, or touching
+> shared studio code; for routing and redirects check netlify.toml directly.
+
 Four pages on this site are not for the public:
 
 | Page | What it does |
