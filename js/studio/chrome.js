@@ -61,6 +61,7 @@
 
   /** Every private page, in the order a person moves through them. */
   const PAGES = [
+    {href: "/marketing",      label: "Marketing"},
     {href: "/builder",        label: "3D Builder"},
     {href: "/scene-studio",   label: "Scene Studio"},
     {href: "/catalog-studio", label: "Catalog Studio"},
