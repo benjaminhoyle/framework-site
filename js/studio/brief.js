@@ -8,10 +8,12 @@
  * An empty brief is random mode, so random and directed are one path.
  *
  * The draw is sequential, the way a person would do it: choose the place,
- * then the room in it, then who uses the room, then the light, then what they
- * left lying about. A trace or a detail only comes from the pool for that
- * room, so an office never draws a cot, and nothing is drawn twice in one
- * batch while the room's pool still has something unused in it.
+ * then the room in it, then who uses the room and what they keep on the
+ * shelf, then the light, then what they left lying about. A trace or a
+ * detail only comes from the pool for that room, so an office never draws a
+ * cot, and nothing is drawn twice in one batch while the room's pool still
+ * has something unused in it. Shelf contents go one further: no two images
+ * in a batch carry the same set.
  *
  *   FrameworkBrief.resolve(brief, CONFIG, batch) -> { params, must, avoid }
  *
@@ -39,7 +41,11 @@ window.FrameworkBrief = (function () {
     any: () => true
   };
 
-  /** Mood words that name a register. Anything else in `mood` is passed through as words. */
+  /**
+   * Mood words that name a register. A named register is a weight on the
+   * draw, not a fix, unless `livedIn` is pinned. Anything else in `mood` is
+   * passed through as words.
+   */
   const MOOD_REGISTERS = [
     [/well[ -]kept|cared for|looked after/, "well-kept"],
     [/lived[ -]in/, "lived-in"],
@@ -108,6 +114,8 @@ window.FrameworkBrief = (function () {
     const b = Object.assign(emptyBrief(), brief || {});
     const memory = batch || {};
     memory.used = memory.used || { humanTraces: [], details: [] };
+    memory.used.contents = memory.used.contents || [];
+    memory.sets = memory.sets || { contents: [] };
     memory.drawn = memory.drawn || {};
     memory.pinned = memory.pinned || {};
     memory.count = (memory.count || 0) + 1;
@@ -128,11 +136,28 @@ window.FrameworkBrief = (function () {
       memory.drawn[key] = memory.drawn[key] || {};
       memory.drawn[key][id] = (memory.drawn[key][id] || 0) + 1;
     }
-    /** Fixed by the brief, held by the pin, or drawn. */
-    function settle(key, draw) {
+    /**
+     * The named option carries as much weight as all the others together.
+     * Applied after the batch's spread, so the lean survives it: the option
+     * leads every draw and never owns one.
+     */
+    function lean(id, entries) {
+      if (!id) return entries;
+      const rest = entries.filter((entry) => entry.id !== id).reduce((sum, entry) => sum + entry.weight, 0);
+      const own = entries.find((entry) => entry.id === id);
+      const leaned = entries.filter((entry) => entry.id !== id);
+      leaned.push({ id, weight: Math.max(own ? own.weight : 0, rest || 1) });
+      return leaned;
+    }
+    /**
+     * Fixed by the brief, held by the pin, or drawn. `after` reshapes the
+     * weights once the batch's spread has been applied.
+     */
+    function settle(key, draw, after) {
       if (b[key] && optionExists(CONFIG, key, b[key])) return b[key];
       if (pin.has(key) && memory.pinned[key]) return memory.pinned[key];
-      const picked = pickWeighted(random, spread(key, draw()));
+      const spreadOut = spread(key, draw());
+      const picked = pickWeighted(random, after ? after(spreadOut) : spreadOut);
       const id = picked ? picked.id : null;
       if (id) remember(key, id);
       if (id && pin.has(key)) memory.pinned[key] = id;
@@ -154,21 +179,72 @@ window.FrameworkBrief = (function () {
       : (CONFIG.scenes || []).map((option) => ({ id: option.id, weight: 1 }))) || "living-room";
     const settingType = commercial.includes(scene) ? "commercial" : "residential";
 
-    // 3. Who uses it, and how full they keep the shelf.
+    // 3. Who uses it, how full they keep the shelf, and what is on it.
     const personaMap = (POOLS.personaByScene || {})[scene] || (POOLS.personaByScene || {}).default;
     const persona = settle("persona", () => entriesOf(personaMap, CONFIG.persona)) || "auto";
     const fullness = settle("fullness", () => entriesOf(null, CONFIG.fullness)) || "moderate";
+    const countOf = (map) => Number((pickWeighted(random, entriesOf(map || { 1: 1 })) || { id: 1 }).id);
+    const contents = drawContents(persona, countOf(POOLS.contentsCount || { 2: 30, 3: 45, 4: 25 }));
+
+    /**
+     * What this person keeps on the shelf: the persona's `always` items, plus
+     * `howMany` drawn from the rest of its pool. Each item is used once per
+     * batch while the pool lasts, and a set that the batch has already drawn
+     * is rolled again, so twelve pictures of a parent's shelf are twelve
+     * different shelves. The brief's `avoid` words apply here too.
+     */
+    function drawContents(personaId, howMany) {
+      const option = (CONFIG.persona || []).find((entry) => entry.id === personaId);
+      const pool = (option && option.pool) || [];
+      if (!pool.length) return [];
+      const key = (id) => `${personaId}/${id}`;
+      const always = pool.filter((item) => item.always && !matchesAvoid(item, avoidWords)).map((item) => item.id);
+      const candidates = pool.filter((item) => !item.always && !matchesAvoid(item, avoidWords));
+      const wanted = Math.min(howMany, candidates.length);
+      let chosen = [];
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        const before = memory.used.contents.slice();
+        chosen = [];
+        for (let n = 0; n < wanted; n += 1) {
+          const open = candidates.filter((item) => !chosen.includes(item.id));
+          let fresh = open.filter((item) => !memory.used.contents.includes(key(item.id)));
+          // The batch has used this persona's whole pool: start it again.
+          if (!fresh.length && open.length) {
+            memory.used.contents = memory.used.contents.filter((used) => !open.some((item) => key(item.id) === used));
+            fresh = open;
+          }
+          const picked = pickWeighted(random, fresh.map((item) => ({ id: item.id, weight: item.weight || 1 })));
+          if (!picked) break;
+          chosen.push(picked.id);
+          memory.used.contents.push(key(picked.id));
+        }
+        const set = `${personaId}:${[...always, ...chosen].slice().sort().join("|")}`;
+        if (!memory.sets.contents.includes(set)) {
+          memory.sets.contents.push(set);
+          break;
+        }
+        // Seen already: give the items back and roll again.
+        memory.used.contents = before;
+      }
+      return [...always, ...chosen];
+    }
 
     // 4. The light: the brief's range, over the place's own distribution.
     const range = LIGHT_RANGES[String(b.light || "").toLowerCase()] || LIGHT_RANGES.any;
     const light = settle("light", () => entriesOf(pools.light, CONFIG.light)
       .filter((entry) => range((CONFIG.light || []).find((option) => option.id === entry.id) || {}))) || "soft-cloudy";
 
-    // 5. The register. A mood word can name it; otherwise it is drawn.
+    // 5. The register. A mood word that names one (well kept, lived in, tidy,
+    // settled, messy) leans the draw on it: after the batch's spread, that
+    // register carries as much weight as all the others together, so it comes
+    // up in about half the pictures and the rest still vary. Pinning `livedIn`
+    // holds it instead.
     const moodText = normalise(b.mood);
     const named = MOOD_REGISTERS.find(([pattern]) => pattern.test(moodText));
-    if (named && !b.livedIn) b.livedIn = named[1];
-    const livedIn = settle("livedIn", () => entriesOf(pools.livedIn, CONFIG.livedIn)) || "lived-in";
+    const register = named ? named[1] : null;
+    if (register && pin.has("livedIn") && !b.livedIn) b.livedIn = register;
+    const livedIn = settle("livedIn", () => entriesOf(pools.livedIn, CONFIG.livedIn),
+      (entries) => lean(register, entries)) || "lived-in";
 
     // 6. The camera.
     const camera = settle("camera", () => entriesOf(null, CONFIG.camera)) || "entry-camera";
@@ -199,7 +275,6 @@ window.FrameworkBrief = (function () {
       }
       return chosen;
     }
-    const countOf = (map) => Number((pickWeighted(random, entriesOf(map || { 1: 1 })) || { id: 1 }).id);
     const humanTraces = drawSome("humanTraces", CONFIG.humanTraces || [], countOf(pools.traceCount || POOLS.traceCount));
     const allowDingy = random() < (POOLS.dingyChance == null ? 0.35 : POOLS.dingyChance);
     const details = drawSome("details", CONFIG.details || [], countOf(pools.detailCount || POOLS.detailCount),
@@ -213,7 +288,7 @@ window.FrameworkBrief = (function () {
       scene,
       archetype: archetypeId,
       persona, fullness, livedIn, camera, framing, light,
-      details, humanTraces,
+      contents, details, humanTraces,
       customNotes: "",
       must,
       avoid: asList(b.avoid),

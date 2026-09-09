@@ -21,9 +21,10 @@
 //
 // The archetypes at the end keep their narrative paragraph and their fixed
 // place (walls, floor, rug, furniture, window). What they no longer fix is
-// the light, the human traces and the grounding details: those are drawn per
-// image from weighted pools, because a fixed list is how every picture of the
-// Karen house came out at golden hour with a tote bag by the wall.
+// the light, the human traces, the grounding details and what the persona
+// keeps on the shelf: those are drawn per image from weighted pools, because
+// a fixed list is how every picture of the Karen house came out at golden
+// hour with a tote bag by the wall.
 
 (() => {
   // ───────────────────────────────────────────────────────────── INVARIANTS ──
@@ -237,14 +238,113 @@ ${BOOKS_STRICT}
       { id: "evening-lamps", label: "Evening lamps", weight: 5, daylight: false, prompt: "LIGHT: Warm artificial light from fixtures and lamps. Mixed with dim dusk. Cozy." },
       { id: "night", label: "Night", weight: 1, daylight: false, prompt: "LIGHT: Room lighting only. Warm pools of light, dark corners. No natural light." },
     ],
+    // Who uses the shelf. `pool` is what they keep on it: candidate items with
+    // weights, from which brief.js draws two to four per image with the batch
+    // memory, so no two images in a batch carry the same set. An item marked
+    // `always` is on every shelf of that persona: books for the reader and
+    // the parent, plants for the plant parent. `contents` is the line used
+    // when nothing was drawn (a preset, or a persona chosen by hand). A fixed
+    // list is how a framed print and storage boxes came out in eleven of
+    // twelve pictures.
     persona: [
       { id: "auto", label: "None / Auto", contents: "" },
-      { id: "reader", label: "The Reader", books: true, contents: "books stacked horizontally and vertically, a small framed print, perhaps a separate reading lamp nearby but not mounted on the shelf" },
-      { id: "collector", label: "The Collector", contents: "travel souvenirs, ceramics, a small sculpture, a vintage clock, decorative objects" },
-      { id: "minimalist", label: "The Minimalist", contents: "three deliberately placed objects: one vase, one succulent, one stack of books. Generous space." },
-      { id: "parent", label: "The Parent", books: true, contents: "children's picture books, a stuffed toy, a framed print, colourful storage boxes" },
-      { id: "creative", label: "The Creative", contents: "art supplies, sketchbooks, ink bottles, reference books, a camera" },
-      { id: "plant-parent", label: "Plant Parent", contents: "multiple small potted plants, propagation jars, one trailing plant with hanging vines" },
+      { id: "reader", label: "The Reader", books: true,
+        contents: "books stacked horizontally and vertically, spines out, and a few of the reader's own things",
+        pool: [
+          { id: "books", always: true, prompt: "books stacked horizontally and vertically, spines out" },
+          { id: "print", weight: 2, prompt: "a small framed print" },
+          { id: "reading-lamp", weight: 2, prompt: "a separate reading lamp nearby, not mounted on the shelf" },
+          { id: "soapstone-bookend", weight: 3, prompt: "a Kisii soapstone bookend holding a row upright" },
+          { id: "magazines", weight: 2, prompt: "a stack of magazines" },
+          { id: "small-plant", weight: 3, prompt: "a small potted plant" },
+          { id: "atlas", weight: 2, prompt: "an atlas and a dictionary lying flat" },
+          { id: "candle", weight: 2, prompt: "a candle in a glass" },
+          { id: "radio", weight: 1, prompt: "a small radio" },
+          { id: "papers-basket", weight: 2, prompt: "a woven basket of papers" },
+          { id: "photo", weight: 2, prompt: "a photograph in a frame" },
+          { id: "pen-mug", weight: 1, prompt: "a mug used as a pen pot" },
+          { id: "bowl", weight: 2, prompt: "a ceramic bowl holding odds and ends" },
+        ] },
+      { id: "collector", label: "The Collector",
+        contents: "collected objects: ceramics, carvings, a few things brought back from travels",
+        pool: [
+          { id: "soapstone", weight: 3, prompt: "Kisii soapstone carvings" },
+          { id: "ceramics", weight: 3, prompt: "a few pieces of hand-thrown ceramics" },
+          { id: "sculpture", weight: 2, prompt: "a small wooden sculpture" },
+          { id: "clock", weight: 2, prompt: "a vintage clock" },
+          { id: "records", weight: 2, prompt: "a row of vinyl records" },
+          { id: "brass-tray", weight: 2, prompt: "a brass tray with small objects on it" },
+          { id: "beaded-gourd", weight: 1, prompt: "a beaded gourd" },
+          { id: "art-books", weight: 2, prompt: "a stack of art books" },
+          { id: "dried-grasses", weight: 2, prompt: "a glass vase of dried grasses" },
+          { id: "postcards", weight: 1, prompt: "framed postcards" },
+          { id: "binoculars", weight: 1, prompt: "a pair of binoculars" },
+          { id: "sisal-basket", weight: 2, prompt: "a woven sisal basket" },
+        ] },
+      { id: "minimalist", label: "The Minimalist",
+        contents: "a few deliberately placed objects: one vase, one plant, one stack of books, with generous space",
+        note: "Generous space between them",
+        pool: [
+          { id: "vase", weight: 3, prompt: "one vase" },
+          { id: "succulent", weight: 3, prompt: "one succulent in a plain pot" },
+          { id: "book-stack", weight: 3, prompt: "one stack of three books" },
+          { id: "bowl", weight: 2, prompt: "a single ceramic bowl" },
+          { id: "sculpture", weight: 1, prompt: "one small sculpture" },
+          { id: "candle", weight: 1, prompt: "one candle" },
+          { id: "photo", weight: 2, prompt: "one framed photograph" },
+          { id: "box", weight: 1, prompt: "one wooden box" },
+          { id: "trailing-plant", weight: 1, prompt: "one trailing plant in a pale pot" },
+          { id: "stone", weight: 1, prompt: "one smooth river stone" },
+        ] },
+      { id: "parent", label: "The Parent", books: true,
+        contents: "children's picture books, spines out, and a few of the child's things",
+        pool: [
+          { id: "books", always: true, prompt: "children's picture books, spines out" },
+          { id: "stuffed-toy", weight: 2, prompt: "a stuffed toy" },
+          { id: "print", weight: 1, prompt: "a framed print" },
+          { id: "storage-boxes", weight: 2, prompt: "colourful storage boxes" },
+          { id: "toy-basket", weight: 3, prompt: "a woven basket of small toys" },
+          { id: "wooden-blocks", weight: 2, prompt: "a wooden train or a few wooden blocks" },
+          { id: "crayon-jar", weight: 2, prompt: "a jar of crayons and pencils" },
+          { id: "own-drawing", weight: 2, prompt: "the child's own drawing propped on a shelf" },
+          { id: "toy-animals", weight: 2, prompt: "a row of small toy animals" },
+          { id: "puzzle", weight: 2, prompt: "a jigsaw puzzle box" },
+          { id: "globe", weight: 1, prompt: "a small globe" },
+          { id: "blanket", weight: 2, prompt: "a soft blanket folded on a low tier" },
+          { id: "family-photo", weight: 1, prompt: "a family photograph in a frame" },
+        ] },
+      { id: "creative", label: "The Creative",
+        contents: "art supplies, sketchbooks and reference books",
+        pool: [
+          { id: "sketchbooks", weight: 3, prompt: "sketchbooks stacked flat" },
+          { id: "brush-jars", weight: 3, prompt: "jars of brushes and pencils" },
+          { id: "ink", weight: 2, prompt: "ink bottles" },
+          { id: "reference-books", weight: 2, prompt: "reference books" },
+          { id: "camera", weight: 2, prompt: "a film camera" },
+          { id: "paper-rolls", weight: 2, prompt: "rolls of paper standing in a tin" },
+          { id: "maquette", weight: 1, prompt: "a small clay maquette" },
+          { id: "paint-box", weight: 2, prompt: "a box of paints" },
+          { id: "cutting-mat", weight: 1, prompt: "a cutting mat and a steel ruler" },
+          { id: "speaker", weight: 1, prompt: "a portable speaker" },
+          { id: "tin-plant", weight: 1, prompt: "a plant in a tin" },
+          { id: "swatches", weight: 1, prompt: "a board of colour swatches leaning on the shelf" },
+        ] },
+      { id: "plant-parent", label: "Plant Parent",
+        contents: "small potted plants in mismatched pots, one of them trailing",
+        pool: [
+          { id: "plants", always: true, prompt: "small potted plants in mismatched pots" },
+          { id: "propagation", weight: 3, prompt: "propagation jars with cuttings in water" },
+          { id: "trailing", weight: 3, prompt: "one trailing plant with hanging vines" },
+          { id: "mister", weight: 1, prompt: "a brass mister" },
+          { id: "empty-pots", weight: 2, prompt: "terracotta pots stacked empty" },
+          { id: "garden-books", weight: 2, prompt: "a few gardening books" },
+          { id: "cactus", weight: 2, prompt: "a cactus in a tin" },
+          { id: "fern", weight: 2, prompt: "a ceramic planter with a fern" },
+          { id: "seeds", weight: 1, prompt: "a bowl of seed packets" },
+          { id: "basket-plant", weight: 2, prompt: "a woven basket holding a large plant" },
+          { id: "secateurs", weight: 1, prompt: "a small pair of secateurs" },
+          { id: "potting-mix", weight: 1, prompt: "a bag of potting mix folded over" },
+        ] },
     ],
     // Weighted toward moderate and full: a shelf nobody has put anything on
     // is the other way a picture reads as a render.
@@ -377,10 +477,14 @@ ${BOOKS_STRICT}
       "retail-boutique": { collector: 4, auto: 2, minimalist: 1 },
       "creative-studio": { creative: 6, collector: 1, auto: 1 },
     },
-    // How many traces and details a scene gets. Zero traces is a real outcome:
-    // a well kept room often has none on show.
+    // How many traces, details and shelf contents a scene gets. Zero traces is
+    // a real outcome: a well kept room often has none on show. Details lean to
+    // two, with three in one picture in five: one Nairobi marker in a white
+    // box read less dingy and also less Nairobi. Dingy details stay gated by
+    // dingyChance below whatever the count.
     traceCount: { 0: 25, 1: 45, 2: 30 },
-    detailCount: { 1: 55, 2: 45 },
+    detailCount: { 1: 30, 2: 50, 3: 20 },
+    contentsCount: { 2: 30, 3: 45, 4: 25 },
     // Chance that a dingy detail is allowed into the draw at all, on top of
     // its own low weight. Two independent throttles, because one was not
     // enough to stop a scuff appearing in most pictures.

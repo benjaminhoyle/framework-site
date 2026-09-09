@@ -626,12 +626,13 @@ test("a brief pins what it says and draws the rest, without repeating a trace", 
   const daylight = new Set(CONFIG.light.filter((option) => option.daylight).map((option) => option.id));
   const seenTraces = [];
   const lights = new Set();
+  const registers = {};
   for (let n = 0; n < 12; n += 1) {
     const { params, must, avoid } = browser.FrameworkBrief.resolve(KIDS_ROOM_BRIEF, CONFIG, batch);
     assert.equal(params.scene, "kids-room");
     assert.equal(params.persona, "parent");
     assert.equal(params.fullness, "full");
-    assert.equal(params.livedIn, "well-kept", "the mood word names the register");
+    registers[params.livedIn] = (registers[params.livedIn] || 0) + 1;
     assert.ok(daylight.has(params.light), `${params.light} is daylight`);
     assert.ok(!params.humanTraces.includes("tote-bag") && !params.humanTraces.includes("phone-cable"), "avoid is honoured");
     assert.equal(must.length, 2);
@@ -643,6 +644,47 @@ test("a brief pins what it says and draws the rest, without repeating a trace", 
   // should have come round twice.
   assert.equal(new Set(seenTraces).size, seenTraces.length, `traces drawn once each: ${seenTraces.join(", ")}`);
   assert.ok(lights.size >= 2, "the light still varies under a pinned brief");
+  // "well kept" in the mood is a weight on that register, not a fix: it is
+  // the most drawn, and it is not the only one drawn.
+  const most = Object.entries(registers).sort((a, b) => b[1] - a[1])[0][0];
+  assert.equal(most, "well-kept", `the named register leads the draw: ${JSON.stringify(registers)}`);
+  assert.ok(Object.keys(registers).length >= 2, `the register still varies: ${JSON.stringify(registers)}`);
+
+  // Pinned, the mood word holds the register for the batch.
+  const held = { random: seeded(11) };
+  for (let n = 0; n < 6; n += 1) {
+    const pinned = Object.assign({}, KIDS_ROOM_BRIEF, { pin: [...KIDS_ROOM_BRIEF.pin, "livedIn"] });
+    assert.equal(browser.FrameworkBrief.resolve(pinned, CONFIG, held).params.livedIn, "well-kept", "pinned livedIn is held");
+  }
+});
+
+test("a persona's shelf contents come from its pool, and six draws never repeat a set", () => {
+  const browser = loadSceneModules();
+  const { CONFIG } = browser.PROMPT_CONFIG;
+  const pool = CONFIG.persona.find((option) => option.id === "parent").pool;
+  const batch = { random: seeded(5) };
+  const sets = [];
+  for (let n = 0; n < 6; n += 1) {
+    const { params } = browser.FrameworkBrief.resolve(KIDS_ROOM_BRIEF, CONFIG, batch);
+    assert.equal(params.persona, "parent");
+    assert.ok(params.contents.includes("books"), "books are always on a parent's shelf");
+    for (const id of params.contents) assert.ok(pool.some((item) => item.id === id), `${id} is in the parent's pool`);
+    const drawn = params.contents.filter((id) => id !== "books");
+    assert.ok(drawn.length >= 2 && drawn.length <= 4, `${drawn.length} items drawn beside the books`);
+    assert.equal(new Set(params.contents).size, params.contents.length, "nothing twice on one shelf");
+    const prompt = browser.FrameworkScenePrompt.build(CONFIG, params, { aspect: "1:1" });
+    assert.ok(prompt.includes("Contents: children's picture books, spines out"), "the books lead the contents line");
+    for (const id of drawn) assert.ok(prompt.includes(pool.find((item) => item.id === id).prompt), `${id} is in the prompt`);
+    sets.push(params.contents.slice().sort().join("|"));
+  }
+  assert.equal(new Set(sets).size, sets.length, `six different sets: ${sets.join(" / ")}`);
+
+  // Without a draw the persona still has a line, and it is not the old list.
+  const plain = browser.FrameworkScenePrompt.build(CONFIG,
+    Object.assign({}, browser.FrameworkBrief.resolve(KIDS_ROOM_BRIEF, CONFIG, { random: seeded(1) }).params, { contents: undefined }),
+    { aspect: "1:1" });
+  assert.ok(plain.includes("Contents: children's picture books, spines out, and a few of the child's things"), "the fallback line");
+  assert.ok(!plain.includes("colourful storage boxes"), "the fixed list is gone");
 });
 
 test("when books are the point the shelf is full and open books may rest on a surface", () => {

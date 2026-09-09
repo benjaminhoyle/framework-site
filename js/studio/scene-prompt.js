@@ -69,7 +69,11 @@ window.FrameworkScenePrompt = (function () {
     const scn=CONFIG.scenes.find(s=>s.id===p.scene)?.prompt||"";
     const wallP=gp("walls",p.wall),floorP=gp("floors",p.floor),rugP=gp("rugs",p.rug);
     const furnP=gp("furniture",p.furniture),winP=gp("windowView",p.windowView),moodP=gp("colourMood",p.colourMood);
-    const contents=per&&per.contents?per.contents:"items appropriate for the room type";
+    // The contents brief.js drew from the persona's pool, as words; the
+    // persona's own line when nothing was drawn (a preset, or a hand choice).
+    const drawn=per&&per.pool&&Array.isArray(p.contents)?p.contents.map(id=>per.pool.find(item=>item.id===id)?.prompt).filter(Boolean):[];
+    const contentsLine=drawn.length?drawn.join(", ")+(per.note?`. ${per.note}`:""):(per&&per.contents?per.contents:"");
+    const contents=contentsLine||"items appropriate for the room type";
     // A shelf whose books are the point is a full shelf, whatever was drawn,
     // unless it was already packed.
     const fillId=booksArePoint&&!["full","packed"].includes(p.fullness)?"full":p.fullness;

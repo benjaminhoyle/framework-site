@@ -78,7 +78,7 @@ Respond with ONLY a JSON object, no markdown fence:
   "tiers_b": <integer: how many horizontal shelf boards on the shelf in IMAGE B>,
   "uprights_a": <integer: how many vertical posts/legs visible in IMAGE A>,
   "uprights_b": <integer: how many vertical posts/legs visible in IMAGE B>,
-  "silhouette": <0-5: would IMAGE B's shelf outline trace onto IMAGE A's? 5 = same asymmetry, same widths, same heights, same steps. 0 = a different piece of furniture>,
+  "silhouette": <0-5: would IMAGE B's shelf outline trace onto IMAGE A's? 5 = same asymmetry, same widths, same heights, same steps. 0 = a different piece of furniture. Posts standing above the top board where IMAGE A has none are a fail-level fault: score 2 or lower and name it in faults>,
   "viewpoint": <0-5: same camera height and horizontal angle around the shelf? 5 = identical vantage. 0 = shot from somewhere else entirely>,
   "colour": <0-5: same frame colour and finish? 5 = identical hue and sheen>,
   "material": <0-5: still powder-coated steel tube with flat shelves and visible bolts? 5 = identical construction>,
