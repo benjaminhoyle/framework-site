@@ -72,30 +72,24 @@
       .item .lbl { min-width:0; }
     }
 
-    /* The story board: a row per story, a marker in the column of its stage. */
-    .tablewrap { overflow-x:auto; }
-    table { border-collapse:collapse; width:100%; font-size:13px; }
-    th, td { text-align:left; padding:9px 12px; vertical-align:top; }
-    thead th { color:var(--muted); font-weight:500; font-size:11.5px; text-transform:uppercase;
-      letter-spacing:.04em; border-bottom:1px solid var(--line); white-space:nowrap; }
-    tbody tr { border-bottom:1px solid var(--line-soft); }
-    tbody tr:last-child { border-bottom:0; }
-    td.story { min-width:200px; }
-    td.story .nm { font-weight:600; }
-    td.story .sub { font-size:11.5px; color:var(--muted); margin-top:1px; }
-    th.stg, td.stg { text-align:center; width:44px; padding-left:4px; padding-right:4px; }
-    th.stg .stg-name { display:block; font-size:10px; letter-spacing:.03em; color:var(--muted); }
-    td.stg { color:var(--line); }
-    td.stg.here { color:var(--mark); font-size:16px; line-height:1; }
-    td.stg.declared { color:var(--warning); font-size:14px; line-height:1; }
-    td.standing { min-width:220px; }
-    td.standing .status { color:var(--ink); }
-    td.standing .counts { color:var(--dim); font-size:12px; margin-top:2px; }
-    td.standing .has { margin-top:4px; display:flex; gap:5px; flex-wrap:wrap; }
+    /* The stories: each sits on the rung of its stage, under the rung's own
+       items and a thin rule, so a story moving down the ladder moves down the
+       page. The hollow marker in the warning colour is story.md's own word
+       when it differs from what the files support. */
+    .stories { margin-top:10px; padding-top:10px; border-top:1px solid var(--line-soft);
+      display:grid; grid-template-columns:1fr; gap:10px; }
+    .stories.alone { margin-top:0; padding-top:0; border-top:0; }
+    .story { font-size:13px; }
+    .story .nm { font-weight:600; }
+    .story .declared { color:var(--warning); font-weight:400; font-size:12px; margin-left:8px; white-space:nowrap; }
+    .story .sub { font-size:11.5px; color:var(--muted); }
+    .story .status { color:var(--ink); }
+    .story .counts { color:var(--dim); font-size:12px; margin-top:2px; }
+    .story .has { margin-top:4px; display:flex; gap:5px; flex-wrap:wrap; }
+    .story .flags { margin-top:6px; }
     .chip { font-size:10.5px; padding:1.5px 7px; border-radius:5px; border:1px solid var(--line);
       color:var(--dim); white-space:nowrap; }
     .chip.made { color:var(--good); border-color:rgba(12,163,12,.35); }
-    @media (max-width:860px) { th.stg .stg-name { display:none; } }
 
     /* Decisions, sessions, doors: lists. */
     .list { margin:0; padding:0; list-style:none; }
@@ -107,6 +101,10 @@
     .session .cmd { font-family:ui-monospace,Menlo,monospace; font-weight:600; }
     .session .purpose { color:var(--dim); font-size:12px; margin:2px 0 8px; }
     .session .last { font-size:12px; }
+    /* The session that comes first, in the accent colour. */
+    .session.next { border-color:var(--mark); }
+    .session .next-tag { color:var(--mark); font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+      font-weight:500; font-size:11.5px; margin-left:8px; }
     @media (max-width:860px) { .sessions { grid-template-columns:1fr 1fr; } }
     @media (max-width:520px) { .sessions { grid-template-columns:1fr; } }
     .doors li { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
@@ -221,13 +219,19 @@
         ? '<span style="color:' + col + '">&#9679; Generated ' + esc(ago(gen)) + '</span><span class="muted"> &middot; ' + esc(fmt(gen)) + '</span>'
         : '<span class="muted">No generated time in this snapshot</span>';
 
-      show(standing() + ladder() + stories() + decisions() + sessions() + doors() + structure() + files() + measures() + extras());
+      show(standing() + ladder() + decisions() + sessions() + doors() + structure() + files() + extras());
     }
 
     // ---------- the standing line ----------
     function standing() {
       var home = obj(D.home), st = obj(D.steward), spend = obj(st.spendMonth);
       var parts = [];
+      // What waits on Ben, and which session comes first: the pick-up line,
+      // from `next`, with the count falling back to the decisions list itself.
+      var nx = obj(D.next);
+      var waiting = has(nx.decisions) ? Number(nx.decisions) : arr(D.decisions).length;
+      parts.push('<a href="#decisions"><b>' + esc(waiting) + ' decision' + (waiting === 1 ? '' : 's') + ' waiting</b></a>'
+        + (has(nx.session) ? '; next: <span class="mono">' + esc(nx.session) + '</span>' : ''));
       var from = [];
       if (has(home.commit)) from.push('commit <span class="mono">' + esc(String(home.commit).slice(0, 10)) + '</span>');
       if (has(home.branch)) from.push('on <span class="mono">' + esc(home.branch) + '</span>');
@@ -261,11 +265,13 @@
               var bits = [];
               var at = r.at || r.ranAt || r.when || r.date;
               if (has(at)) bits.push(when(at, 'dim'));
-              if (has(r.ok)) bits.push('<span class="' + (r.ok ? 'muted' : 'warn') + '">' + (r.ok ? 'ok' : 'failed') + '</span>');
+              // The builder's word for the run: a dry run is a dry run, never "failed".
+              if (has(r.result)) bits.push('<span class="' + (r.result === 'failed' ? 'warn' : 'muted') + '">' + esc(r.result) + '</span>');
+              else if (has(r.ok)) bits.push('<span class="' + (r.ok || r.dryRun ? 'muted' : 'warn') + '">' + (r.dryRun ? 'dry run' : r.ok ? 'ok' : 'failed') + '</span>');
               if (has(r.usd)) bits.push('<span class="muted">$' + esc(Number(r.usd).toFixed(2)) + '</span>');
               if (has(r.note)) bits.push(esc(r.note));
               Object.keys(r).forEach(function (k) {
-                if (['at','ranAt','when','date','ok','usd','note'].indexOf(k) >= 0) return;
+                if (['at','ranAt','when','date','ok','usd','note','result','dryRun'].indexOf(k) >= 0) return;
                 if (r[k] !== null && typeof r[k] === 'object') return;
                 bits.push('<span class="muted">' + esc(k) + '</span> ' + esc(r[k]));
               });
@@ -280,16 +286,25 @@
     function ladder() {
       var given = {};
       arr(D.ladder).forEach(function (s) { s = obj(s); if (has(s.stage)) given[Number(s.stage)] = s; });
+      // Each story sits on the rung of the stage the files put it at; one with
+      // no stage, or a stage off the ladder, is listed after the seven rungs.
+      var byStage = {}, off = [];
+      arr(D.stories).map(obj).forEach(function (s) {
+        var n = Number(s.stage);
+        if (has(s.stage) && n >= 1 && n <= 7) (byStage[n] = byStage[n] || []).push(s);
+        else off.push(s);
+      });
       var rows = STAGES.map(function (pair) {
         var s = obj(given[pair[0]]);
-        var items = arr(s.items), flags = arr(s.flags);
+        var items = arr(s.items), flags = arr(s.flags), mine = arr(byStage[pair[0]]);
         return '<div class="rung">'
           + '<div><span class="num">' + pair[0] + '</span><span class="name">' + esc(s.name || pair[1]) + '</span></div>'
           + '<div>' + (has(s.owner) ? '<div class="who">' + esc(s.owner) + '</div>' : '')
             + (has(s.cadence) ? '<div class="when-cadence">' + esc(s.cadence) + '</div>' : '')
             + (!has(s.owner) && !has(s.cadence) ? '<div class="when-cadence">nothing on record</div>' : '') + '</div>'
-          + '<div>' + (items.length ? '<ul class="items">' + items.map(item).join('') + '</ul>' : '<div class="empty">Nothing on record for this stage.</div>')
+          + '<div>' + (items.length ? '<ul class="items">' + items.map(item).join('') + '</ul>' : (mine.length ? '' : '<div class="empty">Nothing on record for this stage.</div>'))
             + (flags.length ? '<div class="flags">' + flags.map(function (f) { return '<span class="flag">' + esc(typeof f === 'string' ? f : (f && (f.text || f.message)) || JSON.stringify(f)) + '</span>'; }).join('') + '</div>' : '')
+            + (mine.length ? '<div class="stories' + (items.length || flags.length ? '' : ' alone') + '">' + mine.map(story).join('') + '</div>' : '')
           + '</div></div>';
       });
       // Anything the snapshot put on the ladder outside 1 to 7 is still shown.
@@ -300,9 +315,50 @@
         rows.push('<div class="rung"><div><span class="num">' + esc(has(s.stage) ? s.stage : '?') + '</span><span class="name">' + esc(s.name || '') + '</span></div>'
           + '<div class="who">' + esc(s.owner || '') + '</div><div>' + (arr(s.items).length ? '<ul class="items">' + arr(s.items).map(item).join('') + '</ul>' : '') + '</div></div>');
       });
-      return '<section><div class="sec-head"><h2>The ladder</h2><span class="sec-note">seven stages in a loop; a story enters at 3 and moves down; 7 feeds 1</span></div>'
+      if (off.length) {
+        rows.push('<div class="rung"><div><span class="num">?</span><span class="name">Off the ladder</span></div>'
+          + '<div class="when-cadence">a stage this page has no rung for</div>'
+          + '<div><div class="stories alone">' + off.map(story).join('') + '</div></div></div>');
+      }
+      var count = arr(D.stories).length;
+      return '<section><div class="sec-head"><h2>The ladder</h2><span class="sec-note">seven stages in a loop; a story enters at 3 and moves down; 7 feeds 1'
+        + (count ? '' : '; no stories yet, the first /strategy names the quarter\'s') + '</span></div>'
         + '<div class="card pad"><div class="ladder">' + rows.join('') + '</div></div></section>';
     }
+
+    // One story, on its rung: the name, where it is aimed, its status, what
+    // the studio holds for it, what is in its folder, and its own flags.
+    function story(s) {
+      var c = obj(s.counts), f = obj(s.files);
+      var sub = [s.segment, s.room, s.configuration].filter(has).map(esc).join(' &middot; ');
+      var stage = Number(s.stage);
+      var declared = has(s.stageDeclared) ? Number(s.stageDeclared) : stage;
+      // Hollow, in the warning colour: story.md's own word, when it differs.
+      var mark = !isNaN(declared) && declared !== stage
+        ? ' <span class="declared" title="story.md says stage ' + esc(declared) + '; the files put it at ' + esc(stage) + '">&#9675; story.md says ' + esc(declared) + '</span>' : '';
+      var counts = [];
+      var sc = [];
+      if (has(c.scenesKept) && (stage >= 4 || Number(c.scenesKept) > 0)) sc.push(c.scenesKept + ' kept');
+      if (has(c.scenesRejected) && (stage >= 4 || Number(c.scenesRejected) > 0)) sc.push(c.scenesRejected + ' rejected');
+      if (has(c.scenesUnjudged) && (stage >= 4 || Number(c.scenesUnjudged) > 0)) sc.push(c.scenesUnjudged + ' unjudged');
+      if (has(c.designsKept) && (stage >= 4 || Number(c.designsKept) > 0)) counts.push(n(c.designsKept, 'design') + ' kept');
+      if (sc.length) counts.push('scenes: ' + sc.join(', '));
+      var chips = [];
+      if (c.blogDraft) chips.push('<span class="chip made">blog draft</span>');
+      if (c.video) chips.push('<span class="chip made">video</span>');
+      if (s.namedInAds) chips.push('<span class="chip made">in ads</span>');
+      var present = Object.keys(f).filter(function (k) { return f[k]; });
+      if (present.length) chips.push('<span class="chip">' + present.map(esc).join(' &middot; ') + '</span>');
+      var flags = arr(s.flags);
+      return '<div class="story"><div class="nm">' + esc(s.name || s.slug || '(unnamed)') + mark + '</div>'
+        + (sub ? '<div class="sub">' + sub + '</div>' : '')
+        + (has(s.status) ? '<div class="status">' + esc(s.status) + '</div>' : '<div class="muted">no status</div>')
+        + (counts.length ? '<div class="counts">' + counts.join(' &middot; ') + '</div>' : '')
+        + (chips.length ? '<div class="has">' + chips.join('') + '</div>' : '')
+        + (flags.length ? '<div class="flags">' + flags.map(function (x) { return '<span class="flag">' + esc(x) + '</span>'; }).join('') + '</div>' : '')
+        + '</div>';
+    }
+    function n(count, word) { var c = Number(count) || 0; return c + ' ' + word + (c === 1 ? '' : 's'); }
     function item(it) {
       it = obj(it);
       var val = has(it.value) ? esc(it.value) : '<span class="muted">(none)</span>';
@@ -323,63 +379,10 @@
         + (isLocal(h) ? ' <span class="local">local</span>' : '');
     }
 
-    // ---------- the stories ----------
-    function stories() {
-      var list = arr(D.stories).map(obj);
-      var head = '<tr><th>Story</th>' + STAGES.map(function (p) {
-        return '<th class="stg">' + p[0] + '<span class="stg-name">' + esc(p[1]) + '</span></th>';
-      }).join('') + '<th>Standing</th></tr>';
-      var body = list.map(function (s) {
-        var c = obj(s.counts), f = obj(s.files);
-        var sub = [s.segment, s.room, s.configuration].filter(has).map(esc).join(' &middot; ');
-        var stage = Number(s.stage);
-        // Where the files put it, and (hollow, in the warning colour) where
-        // story.md says it is, when the two disagree.
-        var declared = has(s.stageDeclared) ? Number(s.stageDeclared) : stage;
-        var cells = STAGES.map(function (p) {
-          if (p[0] === stage) return '<td class="stg here" title="stage ' + p[0] + ', ' + esc(p[1]) + '">&#9679;</td>';
-          if (p[0] === declared) return '<td class="stg declared" title="story.md says stage ' + p[0] + '">&#9675;</td>';
-          return '<td class="stg">&middot;</td>';
-        }).join('');
-        var flags = arr(s.flags);
-        var counts = [];
-        if (has(c.designsKept)) counts.push(n(c.designsKept, 'design') + ' kept');
-        var sc = [];
-        if (has(c.scenesKept)) sc.push(c.scenesKept + ' kept');
-        if (has(c.scenesRejected)) sc.push(c.scenesRejected + ' rejected');
-        if (has(c.scenesUnjudged)) sc.push(c.scenesUnjudged + ' unjudged');
-        if (sc.length) counts.push('scenes: ' + sc.join(', '));
-        var chips = [];
-        if (c.blogDraft) chips.push('<span class="chip made">blog draft</span>');
-        if (c.video) chips.push('<span class="chip made">video</span>');
-        if (s.namedInAds) chips.push('<span class="chip made">in ads</span>');
-        var present = Object.keys(f).filter(function (k) { return f[k]; });
-        if (present.length) chips.push('<span class="chip">' + present.map(esc).join(' &middot; ') + '</span>');
-        return '<tr><td class="story"><div class="nm">' + esc(s.name || s.slug || '(unnamed)') + '</div>'
-          + (sub ? '<div class="sub">' + sub + '</div>' : '')
-          + (has(s.slug) && s.slug !== s.name ? '<div class="sub mono">' + esc(s.slug) + '</div>' : '') + '</td>'
-          + cells
-          + '<td class="standing">' + (has(s.status) ? '<div class="status">' + esc(s.status) + '</div>' : '<div class="muted">no status</div>')
-          + (counts.length ? '<div class="counts">' + counts.join(' &middot; ') + '</div>' : '')
-          + (chips.length ? '<div class="has">' + chips.join('') + '</div>' : '')
-          + (flags.length ? '<div class="flags">' + flags.map(function (x) { return '<span class="flag">' + esc(x) + '</span>'; }).join('') + '</div>' : '')
-          + (has(s.updatedAt) ? '<div class="counts">updated ' + when(s.updatedAt) + '</div>' : '')
-          + (!isNaN(stage) && (stage < 1 || stage > 7) ? '<div class="warn" style="font-size:12px">stage ' + esc(s.stage) + ' is off the ladder</div>' : '')
-          + (isNaN(stage) ? '<div class="counts">no stage</div>' : '')
-          + '</td></tr>';
-      }).join('');
-      return '<section><div class="sec-head"><h2>The stories</h2><span class="sec-note">one row each; the marker is the stage it has reached</span></div>'
-        + '<div class="card">' + (list.length
-          ? '<div class="tablewrap"><table><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>'
-          : '<div class="pad empty">No stories yet. The first /strategy names the quarter\'s stories.</div>')
-        + '</div></section>';
-    }
-    function n(count, word) { var c = Number(count) || 0; return c + ' ' + word + (c === 1 ? '' : 's'); }
-
     // ---------- decisions ----------
     function decisions() {
       var list = arr(D.decisions);
-      return '<section><div class="sec-head"><h2>Decisions waiting on Ben</h2><span class="sec-note">DECISIONS.md, one line each</span></div>'
+      return '<section id="decisions"><div class="sec-head"><h2>Decisions waiting on Ben</h2><span class="sec-note">DECISIONS.md, one line each</span></div>'
         + '<div class="card pad">' + (list.length ? '<ul class="list">' + list.map(function (d) {
             if (typeof d === 'string') return '<li>' + esc(d) + '</li>';
             d = obj(d);
@@ -390,11 +393,13 @@
     // ---------- sessions ----------
     function sessions() {
       var given = obj(D.sessions);
+      var nextCmd = has(obj(D.next).session) ? String(obj(D.next).session).replace(/^\//, '') : null;
       var cards = SESSIONS.map(function (pair) {
         var s = obj(given[pair[0]]);
         var dry = Array.isArray(s.dryRun) ? s.dryRun : (s.dryRun ? [true] : []);
         var last = has(s.last) ? 'last run ' + when(s.last, 'dim') : '<span class="muted">not yet run with Ben</span>';
-        return '<div class="session"><div class="cmd">/' + pair[0] + '</div><div class="purpose">' + esc(pair[1]) + '</div>'
+        var isNext = nextCmd === pair[0];
+        return '<div class="session' + (isNext ? ' next' : '') + '"><div class="cmd">/' + pair[0] + (isNext ? '<span class="next-tag">next</span>' : '') + '</div><div class="purpose">' + esc(pair[1]) + '</div>'
           + '<div class="last">' + last + '</div>'
           + (has(s.file) ? '<div class="last muted mono">' + esc(s.file) + '</div>' : '')
           + dry.map(function (d) { return '<div class="last muted">dry run' + (d === true ? '' : ' <span class="mono">' + esc(d) + '</span>') + '</div>'; }).join('')
@@ -453,8 +458,12 @@
 
     // ---------- anything the snapshot carries beyond the contract ----------
     // The builder may add a field before this page learns to draw it. Rather
-    // than hide it, each one is here behind a fold, as it is.
-    var KNOWN = ['schema','generatedAt','home','structure','ladder','stories','steward','decisions','sessions','doors','files','measures'];
+    // than hide it, each one is here behind a fold, as it is. The keys named
+    // here are drawn already, or already on the ladder (the measures on rung
+    // 7, the studio totals on rung 4, the pages and ad changes on rung 5), so
+    // they are neither rendered again nor listed.
+    var KNOWN = ['schema','generatedAt','home','structure','ladder','stories','steward','decisions','sessions','doors','files','measures',
+      'next','studio','batches','videos','pages','undocumentedAdChanges'];
     function extras() {
       var keys = Object.keys(D).filter(function (k) { return KNOWN.indexOf(k) < 0; });
       if (!keys.length) return '';
@@ -471,22 +480,6 @@
       });
       return '<section><div class="sec-head"><h2>Also in the snapshot</h2><span class="sec-note">fields this page has no place for yet, as they are</span></div>'
         + '<div class="card pad">' + out.join('') + '</div></section>';
-    }
-
-    // ---------- measures ----------
-    function measures() {
-      if (!has(D.measures)) return '';
-      var m = obj(D.measures);
-      var keys = Object.keys(m);
-      var rows = keys.map(function (k) {
-        var v = m[k];
-        var shown = v !== null && typeof v === 'object' ? '<span class="mono">' + esc(JSON.stringify(v)) + '</span>'
-          : typeof v === 'number' ? esc(v.toLocaleString('en-US'))
-          : /^\d{4}-\d{2}-\d{2}T/.test(String(v)) ? when(v, 'dim') : esc(String(v));
-        return '<dt>' + esc(k) + '</dt><dd>' + shown + '</dd>';
-      });
-      return '<section><div class="sec-head"><h2>Measures</h2><span class="sec-note">what the snapshot carried</span></div>'
-        + '<div class="card pad">' + (rows.length ? '<dl class="kv">' + rows.join('') + '</dl>' : '<div class="empty">None.</div>') + '</div></section>';
     }
   })();
   </script>
