@@ -55,8 +55,10 @@ keep/maybe/reject pass with notes. `docs/design-lab.md` is the full account.
   half-stale CDN; this page is served from disk with `no-store`.
 - **`studio.html` is the only bench page**: judge a shelf, choose its angles, and
   the renders run live in a queue at the foot of the page — then each finished
-  render is put into a room. **Browse** shows everything it has produced. It
-  replaced `design-lab.html` and `shot-lab.html`.
+  render is put into a room. Each section (shelves, views, scenes) opens on a
+  grid with the verdicts on the cell; flow is a mode inside a section; a reject
+  takes a one-line note; a brief from `../framework-marketing/briefs/` can be
+  chosen in the header. It replaced `design-lab.html` and `shot-lab.html`.
 - **One key: `SITE_LOGIN_KEY` in `.env`.** The dev server proxies `/api/ai-*` to
   the live functions and supplies the header itself, so the studio does not ask
   for a key on localhost. The provider key stays a Netlify env var and never
