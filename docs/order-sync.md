@@ -1,5 +1,19 @@
 # Order sync — Zoho Books ↔ Airtable
 
+> What this is: how Zoho Books invoices and the Airtable order pipeline stay in
+> sync, one writer at a time, and how a paid invoice becomes an order
+> automatically.
+> When to read it: before touching sync or push code, or when an order or
+> invoice looks wrong and you need to know which system owns the fact in
+> question.
+
+**In short:**
+1. The push endpoint creates a Zoho draft invoice from a design; it never writes Airtable.
+2. The reconciler is the only thing that writes Airtable, comparing state each pass, not events.
+3. Money, prices and line items come from Zoho; production status, delivery scheduling and VAT exempt status come from Airtable.
+4. Delivery date, phone, address and KRA PIN are seeded from Zoho once, then owned by Airtable; a correction to an existing fact is written to both live records.
+5. The Zoho API budget of 2,000 calls a day is why passes run hourly and incremental, with one nightly full pass to catch deleted invoices.
+
 Raising a Zoho invoice from a design code, and keeping the Airtable order
 pipeline true to the books without anyone retyping a line item. Replaces the
 CSV-and-paste applet at
