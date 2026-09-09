@@ -93,6 +93,10 @@ body {
 .co-tile img {
     display: block;
     width: 100%;
+    /* The width and height attributes on the <img> are only there for the
+       aspect ratio; without this the height attribute wins as a presentational
+       hint and the picture is drawn 1,400px tall. */
+    height: auto;
     aspect-ratio: 1 / 1;
     object-fit: cover;
     border-radius: 12px;
@@ -144,6 +148,10 @@ body {
 .co-grow img {
     display: block;
     width: 100%;
+    /* The width and height attributes on the <img> are only there for the
+       aspect ratio; without this the height attribute wins as a presentational
+       hint and the picture is drawn 1,400px tall. */
+    height: auto;
     aspect-ratio: 4 / 3;
     object-fit: cover;
     border-radius: 12px;
@@ -171,6 +179,10 @@ body {
 .co-addon img {
     display: block;
     width: 100%;
+    /* The width and height attributes on the <img> are only there for the
+       aspect ratio; without this the height attribute wins as a presentational
+       hint and the picture is drawn 1,400px tall. */
+    height: auto;
     aspect-ratio: 1 / 1;
     object-fit: cover;
     border-radius: 10px;
