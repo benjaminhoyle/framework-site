@@ -274,6 +274,9 @@ ok(/em dash/.test(many) && /"seamless"/.test(many) && /"effortless"/.test(many) 
     ok(!html.includes("—"), `${f} carries no em dash`);
     ok(html.includes('<base href="/">'), `${f} carries the base element site.js's header links need under /blog/`);
     ok(html.includes("/js/site.js"), `${f} loads site.js`);
+    // styles.css hides every header:not(.loaded) until site.js marks the one it
+    // injects; a <header> inside a post is invisible and laid out as flex.
+    ok(!/<header[\s>]/.test(html), `${f} has no <header> element of its own`);
     if (f !== "template.html") {
       ok(/<h1 class="blog-post-title">/.test(html) && /<time class="blog-post-date" datetime="\d{4}-\d{2}-\d{2}"/.test(html), `${f} has the title and date the index reads`);
       ok(/<link rel="canonical" href="https:\/\/www\.framework\.co\.ke\/blog\/[a-z0-9-]+\.html">/.test(html), `${f} has a canonical`);
