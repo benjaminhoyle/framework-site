@@ -359,11 +359,14 @@ towers with real air between them and nothing over it still count as two.
 
 ## The studio: one page
 
-`studio.html`, served by the dev server, and the **only** bench page. Judge a
-shelf, and its four angles arrive immediately; choose the ones worth having and
-the renders start while you move on to the next shelf. When a render finishes it
-is put into a room, and the result jumps the queue to be looked at while it is
-fresh.
+`studio.html`, served by the dev server, and the **only** bench page. Three
+sections in the pipeline's own order, **Shelves**, **Views** and **Scenes**,
+each opening on a grid of everything at that stage with the verdicts on the
+cell: keep, maybe or reject a shelf; render or turn down a view; keep or reject
+a scene. Yes to a shelf plans its four angles into Views; Render sends a view to
+the queue at the foot of the page; a finished render is put into a room and
+waits in Scenes. Nothing moves you between sections on its own. The gates are
+where you look.
 
 ```bash
 npm run studio   # starts the server if it is down, then opens the page
@@ -371,33 +374,60 @@ npm run studio   # starts the server if it is down, then opens the page
 
 It refuses to move off port 8770 rather than drifting to 8771 and leaving you on
 a page whose `/api/ai-*` proxy points somewhere else, and it warns up front when
-`SITE_LOGIN_KEY` or the sibling pipeline checkout is missing — a missing key
+`SITE_LOGIN_KEY` or the sibling pipeline checkout is missing: a missing key
 looks like an authorisation bug and a missing pipeline looks like the renders
 being broken, and neither is worth debugging twice.
 
 `npm run dev` still starts the server on its own if you would rather open the
 page yourself.
 
-**Browse** in the header is the other half of it: everything the flow has
-produced, as Shelves, Views, Renders and Scenes — the pipeline's own order. The
-flow only ever shows the next thing; this is for going back.
+### Flow: one at a time, inside a section
 
-### Walking the flow without answering it
+**Flow** in the header walks the open section's unjudged rows one at a time,
+large, with the keys: → yes, ← no, ↑ maybe (or Again, on a scene), ↓ skip.
+It is a view on the grid, not a stage of its own: the same verdicts, written the
+same way, and a section tab always opens on its grid again. There is no flow
+that combines the sections; the one there was mixed a shelf, an angle and a
+paid-for scene into one queue, and judging at a gate means seeing the gate.
 
-Every other control writes something down, so there was no way to look at the
-previous shelf, or the angle before this one, without deciding about it or
-reloading the page. Skip came closest and is still a decision of a kind: it
-moves on, and only forwards.
+`[` and `]`, and the two arrows either side of the counter, walk without
+deciding: a shelf walked back to is exactly as unjudged as it was. Not arrow
+keys, deliberately: every arrow on this page writes something down, and one
+that sometimes did not would be the surprise. Where the flow had got to is kept
+per section, so looking at Scenes and coming back does not lose your place.
 
-So `[` and `]`, and the two arrows either side of the counter. They change
-nothing at all — a shelf walked back to is exactly as unjudged as it was, an
-angle walked back to has not been queued, a scene walked back to is still
-waiting for its verdict. Not arrow keys, deliberately: every arrow on this page
-writes something down, and one that sometimes did not would be the surprise.
+### Rejecting with a note
 
-Shelves wrap around; angles clamp inside the shelf they belong to, because
-falling off the end of them into the next shelf is not navigation, it is losing
-your place.
+Every judgeable cell carries one line, *why not…*, and the flow card the same
+field larger. Whichever verdict is pressed reads it, so a note can go with a yes,
+and Enter in the field is the no: type the reason, press the key, the picture
+leaves the grid. Rejected rows (reject, skip, again, and an audit fail) are out
+of a grid until **show N rejected** above it brings them back greyed. Notes go
+through the same stores as the verdicts, appended, later line wins; a
+re-judging that brings no note keeps the one on record.
+
+### A brief, or none
+
+The one control that is not a verdict: **brief**, in the header, a select of
+the files in `../framework-marketing/briefs` with *none* first, and `?brief=`
+in the address to open on one. A brief pins some of what a scene draws and
+leaves the rest to `js/studio/brief.js`, which remembers for the sitting what
+it has already drawn so twelve pictures do not land on the same light; none is
+random mode, and if that module is missing the presets carry on as before. The
+brief's `count` asks that many rooms of every kept render, under the same cap;
+`formats` rotate the aspect. The dev server serves them (`/api/briefs`,
+`/api/brief?name=`) through a forty-line front-matter parser in
+`scripts/lib/briefs.mjs`, and `scripts/generate-designs.mjs --brief <name>`
+reads the same file's `design` block as constraints on the shelves it grows.
+
+### The audit's score on the cell
+
+`scripts/audit-scenes.mjs` can write `fidelity: { score, verdict, issues }` onto a
+scene by posting only `{ id, fidelity }` to `/api/design-lab/scenes`, which
+merges onto the row on record rather than replacing it (`scripts/lib/lab-store.mjs`).
+The grid shows the score in the corner of the picture, sorts the passers first,
+and hides a `fail` with the rejected. A whole row written later by the page
+keeps the fidelity it did not bring.
 
 ### One picture, large, with its family under it
 
@@ -447,16 +477,16 @@ queue, so pressing both buttons queues both.
 
 ### Pushing one thing through by hand
 
-The flow is the fast path and assumes you want the next question. Each Browse
-tab also carries the button that moves one of its rows on to the next tab, for
-the shelf you want to fix now, or the render that deserves a second room.
+The verdicts are the fast path. Each section also carries the button that
+moves one of its rows on by hand, for the shelf you want to fix now, or the
+render that deserves a second room.
 
-| Tab | Button | What it does |
+| Section | Button | What it does |
 |---|---|---|
 | Shelves | **Edit code** | Replaces the shelf from a pasted /builder link |
-| Shelves | **Create views** | Plans its four angles and opens the Views tab |
+| Shelves | **Create views** | Plans its four angles and opens Views |
 | Views | **Render** | Sends that one angle to the render queue |
-| Renders | **Put in a room** | Generates a scene from that finished render |
+| Views (rendered) | **Put in a room** | Generates a scene from that finished render, or as many as the brief asks |
 
 **Editing happens in /builder, not here.** Open the shelf, move a piece, copy
 the address back, press Replace. /builder is the one place that knows what a
@@ -517,11 +547,12 @@ variable and never reaches a browser or a laptop; that is what moving the
 studios off laptops was for, and putting a copy in a local `.env` would undo
 it.
 
-→ yes · ← no · ↓ skip, and ↑ for **Again** on a scene; `[` and `]` walk back and
-forward without deciding anything. The keys answer whatever the flow is showing,
-so they do nothing while Browse is open — an arrow pressed there used to judge
-the shelf behind the gallery, which nobody could see. Two bars at the foot of
-the page: renders (with Pause) and scenes (with the budget).
+→ yes · ← no · ↓ skip, ↑ maybe, or **Again** on a scene; `[` and `]` walk back
+and forward without deciding anything. The keys answer whatever the flow is
+showing, so they do nothing in a grid: an arrow pressed there used to judge the
+shelf behind the gallery, which nobody could see. Two bars at the foot of the
+page: renders (with Pause) and scenes (with the budget, and the brief and its
+count when one is loaded).
 
 **The key is asked for lazily.** Judging, angles and rendering are local and
 free; only the image model is gated, so putting a password in front of the whole
