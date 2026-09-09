@@ -81,6 +81,14 @@
   to = "/catalog-studio.html"
   status = 200
 
+# The marketing console: the read-only view of the framework-marketing folder,
+# gated like the studios and fed by the ops publish step through
+# /api/marketing-data.
+[[redirects]]
+  from = "/marketing"
+  to = "/marketing.html"
+  status = 200
+
 # They were called /scene-generator and /catalog-generator for one afternoon.
 [[redirects]]
   from = "/scene-generator"

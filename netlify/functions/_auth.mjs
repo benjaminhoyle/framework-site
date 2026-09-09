@@ -12,8 +12,9 @@
 //   SITE_EXPORT_KEY  the key the ops runner sends. Nobody types it, so it is
 //                    long and random. It opens everything the login key opens,
 //                    plus the endpoints no browser calls: the raw event-lake
-//                    export, and the two push endpoints that overwrite what the
-//                    gated pages display.
+//                    export, and the three push endpoints that overwrite what
+//                    the gated pages display (/api/dashboard-data,
+//                    /api/catalog-data, and a PUT to /api/marketing-data).
 //
 // Per-person accounts would not be proportionate for three people. What matters
 // is that the decision is enforced in exactly one place, so a new endpoint

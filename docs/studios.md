@@ -1,12 +1,12 @@
 # The private tools, and the gate in front of them
 
-> What this is: what the four gated pages (scene-studio, catalog-studio,
-> catalog.html, metrics.html) do, what the login gate protects, and what the
-> two image studios share.
+> What this is: what the five gated pages (scene-studio, catalog-studio,
+> catalog.html, metrics.html, marketing) do, what the login gate protects, and
+> what the two image studios share.
 > When to read it: before changing the gate, adding an endpoint, or touching
 > shared studio code; for routing and redirects check netlify.toml directly.
 
-Four pages on this site are not for the public:
+Five pages on this site are not for the public:
 
 | Page | What it does |
 |---|---|
@@ -14,6 +14,7 @@ Four pages on this site are not for the public:
 | `/catalog-studio` | builds a product image set and its package JSON |
 | `/catalog.html` | the catalogue manager: edit, toggle, publish |
 | `/metrics.html` | the funnel monitor |
+| `/marketing` | the marketing console: the framework-marketing folder, read-only, as the ops publish step last sent it |
 
 They moved here (the first two, from a `image-generator` repo that ran on
 laptops) on 9 August 2026.
@@ -49,9 +50,10 @@ netlify/functions/_auth.mjs  ──►  the one place a request is accepted or r
 ```
 
 - **Two secrets, by audience.** `SITE_LOGIN_KEY` is the password a person types
-  to open all four pages; `SITE_EXPORT_KEY` is the long one the ops runner
-  sends, and it opens those same pages *plus* the three endpoints no browser
-  calls — `/api/export`, `/api/dashboard-data`, `/api/catalog-data`. Guessing
+  to open all five pages; `SITE_EXPORT_KEY` is the long one the ops runner
+  sends, and it opens those same pages *plus* the endpoints no browser
+  calls — `/api/export`, `/api/dashboard-data`, `/api/catalog-data`, and a PUT
+  to `/api/marketing-data` (whose GET is a page call). Guessing
   the typed password therefore does not hand over the raw event lake or the
   ability to overwrite what the dashboard shows. Per-person accounts would still
   not be proportionate at three people.
@@ -66,7 +68,7 @@ netlify/functions/_auth.mjs  ──►  the one place a request is accepted or r
 - **Asked for once per browser**, then remembered. `FrameworkGate.signOut()`
   forgets it.
 
-Both studios also `noindex`, and all four are disallowed in `robots.txt`.
+Both studios also `noindex`, and all five pages are disallowed in `robots.txt`.
 
 ## What is where
 
@@ -237,7 +239,7 @@ existing job and multiply the spend.
 
 | Variable | For |
 |---|---|
-| `SITE_LOGIN_KEY` | the typed password for all four pages |
+| `SITE_LOGIN_KEY` | the typed password for all five pages |
 | `SITE_EXPORT_KEY` | the ops runner's key: those pages, plus the machine-only endpoints. Accepted everywhere on its own if `SITE_LOGIN_KEY` is unset |
 | `GEMINI_API_KEY` | image generation |
 | `OPENAI_API_KEY` | image generation, when the provider is switched to OpenAI |

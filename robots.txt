@@ -9,5 +9,7 @@ Disallow: /scene-studio
 Disallow: /catalog-studio
 Disallow: /scene-studio.html
 Disallow: /catalog-studio.html
+Disallow: /marketing
+Disallow: /marketing.html
 
 Sitemap: https://www.framework.co.ke/sitemap.xml
