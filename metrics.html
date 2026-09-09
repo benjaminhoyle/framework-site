@@ -314,7 +314,7 @@
         '<span style="color:' + col + '">● ' + lbl + '</span>' +
         '<span style="color:var(--muted)"> · ' + gen.toLocaleString() + '</span>';
 
-      var h = alerts() + dailyChart() + adTable() + openerTable() + audienceTable() + funnels() + trend() + footerPanels();
+      var h = alerts() + dailyChart() + scaledChart() + adTable() + openerTable() + audienceTable() + funnels() + trend() + footerPanels();
       show(h);
       wire();
     }
@@ -953,6 +953,62 @@
           '" width="100%" preserveAspectRatio="xMinYMin meet">' + svg.join('') + '</svg></div>' +
           (notes.length ? '<div class="daily-note">' + notes.join('<br>') + '</div>' : '') +
         '</div></section>';
+    }
+
+    // ---------- Scaled Total by order month (the number the quarter is judged on) ----------
+    // Ben's own chart, from the Valid Orders view in Airtable: each paid line is
+    // worth its price as a fraction of a Standard Extension's, so a month reads
+    // "this many standard extensions' worth of revenue". The strategy sets the
+    // target: no month under 75, one month over 110, without raising spend. One
+    // row, twelve calendar months, the floor as a line; no controls, because
+    // there is nothing to choose. The current month is drawn hollow: it is a
+    // partial figure, not a drop.
+    function scaledChart() {
+      var all = D.scaledByMonth; if (!all || !all.length) return '';
+      var ms = all.slice(-12), n = ms.length;
+      var live = D.live || {}, T = live.scaledTarget || { floor: 75, peak: 110 };
+      var W = DGEO.W, L = DGEO.L, PW = W - 8, col = PW / n, H = 150, band = { y: 22, h: 96 };
+      var barW = Math.min(46, col - 14);
+      var xOf = function (i) { return L + col * i + (col - barW) / 2; };
+      // The scale holds the target's peak and the tallest month, to the next ten,
+      // with room for the figure printed above each bar. niceMax would round 110
+      // up to 200 and flatten every month into the bottom half.
+      var max = Math.ceil(Math.max.apply(null, ms.map(function (m) { return m.scaledTotal || 0; }).concat([T.peak])) * 1.12 / 10) * 10;
+      var yOf = function (v) { return band.y + band.h - (v / max) * band.h; };
+      var svg = [];
+      svg.push('<line x1="' + L + '" y1="' + (band.y + band.h) + '" x2="' + (L + PW) + '" y2="' + (band.y + band.h) + '" class="colsep"/>');
+      // The floor first, so every bar is read against it.
+      svg.push('<line x1="' + L + '" y1="' + yOf(T.floor) + '" x2="' + (L + PW) + '" y2="' + yOf(T.floor) +
+               '" stroke="var(--warning)" stroke-width="1" stroke-dasharray="4 3"/>');
+      svg.push('<text class="lg" x="' + (L + PW) + '" y="' + (yOf(T.floor) - 4) + '" text-anchor="end" fill="var(--warning)">floor ' + T.floor + '</text>');
+      ms.forEach(function (m, i) {
+        var v = m.scaledTotal || 0, last = i === n - 1, h = (v / max) * band.h;
+        var title = esc(fmtMonth(m.month)) + ': ' + esc(fmtScaled(v)) + (m.orders ? ' from ' + m.orders + ' order' + (m.orders === 1 ? '' : 's') : '') + (last ? ' so far' : '');
+        if (v > 0) {
+          svg.push('<path d="' + barPath(xOf(i), yOf(v), barW, h, 4) + '" fill="var(--good)"' + (last ? ' fill-opacity=".45"' : '') + '><title>' + title + '</title></path>');
+          svg.push('<text x="' + (xOf(i) + barW / 2) + '" y="' + (yOf(v) - 5) + '" text-anchor="middle" fill="' + (last ? 'var(--dim)' : 'var(--ink)') + '">' + esc(fmtScaled(v)) + '</text>');
+        } else {
+          svg.push('<line x1="' + xOf(i) + '" y1="' + (band.y + band.h) + '" x2="' + (xOf(i) + barW) + '" y2="' + (band.y + band.h) + '" stroke="var(--line)" stroke-width="2"><title>' + title + '</title></line>');
+        }
+        svg.push('<text x="' + (xOf(i) + barW / 2) + '" y="' + (H - 6) + '" text-anchor="middle"' + (last ? ' fill="var(--dim)"' : '') + '>' + esc(fmtMonth(m.month)) + '</text>');
+      });
+      // No "peak N" beside the label as the rows above have: the figure is on
+      // every bar, and "peak" here would read as the target's peak.
+      svg.push('<g class="hdr"><text class="rl" x="' + L + '" y="' + (band.y - 8) + '">Scaled Total</text></g>');
+      var note = 'One unit is a Standard Extension’s revenue, ex VAT; a line counts as its price over that, times quantity, less discount. ' +
+        'Filed under the month the order was paid, from the <b>Valid Orders (for chart)</b> view in Airtable. ' +
+        'The target is no month under ' + T.floor + ' and one month over ' + T.peak + ', without raising spend.' +
+        (n && live.scaledProjectedThisMonth != null ? ' This month is in progress: ' + esc(fmtScaled(live.scaledThisMonth)) + ' so far, on pace for about ' + esc(fmtScaled(live.scaledProjectedThisMonth)) + ' by Airtable’s own projection.' : '');
+      return '<section><div class="sec-head"><h2>Scaled Total by order month</h2>' +
+        '<span class="sec-note">the number the quarter is judged on · last ' + n + ' months</span></div>' +
+        '<div class="card pad"><div class="chartwrap"><svg viewBox="0 0 ' + W + ' ' + H +
+        '" width="100%" preserveAspectRatio="xMinYMin meet">' + svg.join('') + '</svg></div>' +
+        '<div class="daily-note">' + note + '</div></div></section>';
+    }
+    function fmtScaled(v) { return (Math.round((Number(v) || 0) * 10) / 10).toLocaleString('en-US', { maximumFractionDigits: 1 }); }
+    function fmtMonth(ym) {
+      var m = String(ym || '').match(/^(\d{4})-(\d{2})$/);
+      return m ? MON[Number(m[2]) - 1] + ' ' + m[1].slice(2) : String(ym || '');
     }
 
     // ---------- per-ad economics (the decision surface) ----------
