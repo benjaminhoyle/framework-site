@@ -141,7 +141,7 @@ const quiet = () => {};
   ok(html.includes('data-fwk-handoff="blog"') && html.includes("trackContactConversion('', {link_target:'blog_whatsapp'"), "the handoff is tracked like the header's");
   ok(html.includes("Kindly share what the shelf is for, and we&#39;ll") || html.includes("Kindly share what the shelf is for, and we'll"), "the house ask line");
   ok(html.includes('"@type":"BlogPosting"') && html.includes('"datePublished":"2026-09-09"'), "BlogPosting JSON-LD");
-  ok(!html.includes("—"), "no em dash in the page");
+  ok(!html.includes("\u2014"), "no em dash in the page");
 
   const index = fs.readFileSync(path.join(root, "blog.html"), "utf8");
   ok(index.includes('<h2 class="blog-card-title"><a href="/blog/a-shelf-for-a-rented-flat.html">A shelf for a rented flat &amp; a move</a></h2>'), "the card is in the index");
@@ -208,8 +208,8 @@ function refusalsFor(text, name = "2026-09-09-refused.md") {
 const body = goodDraft();
 const withLine = (line) => body.replace("## What does a unit cost?", `${line}\n\n## What does a unit cost?`);
 
-ok(/em dash \(line \d+\)/.test(refusalsFor(withLine("Steel frame — Nairobi-made."))), "refuses an em dash in the copy, naming the line");
-ok(/em dash \(line \d+\)/.test(refusalsFor(body.replace("<!-- Ben:", "<!-- Ben —"))), "refuses an em dash even inside a comment");
+ok(/em dash \(line \d+\)/.test(refusalsFor(withLine("Steel frame \u2014 Nairobi-made."))), "refuses an em dash in the copy, naming the line");
+ok(/em dash \(line \d+\)/.test(refusalsFor(body.replace("<!-- Ben:", "<!-- Ben \u2014"))), "refuses an em dash even inside a comment");
 ok(/en dash used as a dash/.test(refusalsFor(withLine("Steel frame – Nairobi-made."))), "refuses a spaced en dash");
 ok(/"TCC"/.test(refusalsFor(withLine("ETR invoice and TCC provided."))), "refuses TCC");
 ok(/"built to your measurements"/.test(refusalsFor(withLine("Built to your measurements."))), "refuses the measurements line");
@@ -232,7 +232,7 @@ ok(/no title/.test(refusalsFor(body.replace("# A shelf for a rented flat & a mov
 ok(/a second single-# heading/.test(refusalsFor(withLine("# Another title"))), "refuses a second # heading");
 
 // Several problems are all named at once, so one run is enough to fix them.
-const many = refusalsFor(withLine("Effortless — and seamless!"));
+const many = refusalsFor(withLine("Effortless \u2014 and seamless!"));
 ok(/em dash/.test(many) && /"seamless"/.test(many) && /"effortless"/.test(many) && /exclamation/.test(many), "every refusal is listed, not just the first");
 
 // --- Warnings, not refusals ----------------------------------------------------
@@ -271,7 +271,7 @@ ok(/em dash/.test(many) && /"seamless"/.test(many) && /"effortless"/.test(many) 
   const dir = path.join(ROOT, "blog");
   for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".html"))) {
     const html = fs.readFileSync(path.join(dir, f), "utf8");
-    ok(!html.includes("—"), `${f} carries no em dash`);
+    ok(!html.includes("\u2014"), `${f} carries no em dash`);
     ok(html.includes('<base href="/">'), `${f} carries the base element site.js's header links need under /blog/`);
     ok(html.includes("/js/site.js"), `${f} loads site.js`);
     // styles.css hides every header:not(.loaded) until site.js marks the one it
@@ -300,7 +300,7 @@ ok(/em dash/.test(many) && /"seamless"/.test(many) && /"effortless"/.test(many) 
   const out = execFileSync("node", [SCRIPT, draft, "--dry-run", "--root", root], { encoding: "utf8" });
   ok(out.includes("would write blog/cli.html"), "CLI dry run says what it would write");
   ok(!fs.existsSync(path.join(root, "blog", "cli.html")), "CLI dry run writes nothing");
-  const bad = writeDraft(root, "2026-09-09-bad.md", withLine("Seamless — really!"));
+  const bad = writeDraft(root, "2026-09-09-bad.md", withLine("Seamless \u2014 really!"));
   let status = 0; let stderr = "";
   try { execFileSync("node", [SCRIPT, bad, "--root", root], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }); }
   catch (e) { status = e.status; stderr = String(e.stderr); }
