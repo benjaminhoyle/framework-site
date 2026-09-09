@@ -1,5 +1,8 @@
 # framework-site — notes for agents
 
+> Marketing strategy, audiences, briefs and the voice guide live in
+> `../framework-marketing`; the studio loads its briefs from there.
+
 The public site (framework.co.ke), its Netlify functions, and the two gated
 dashboards. `AGENTS.md` holds the catalog and WhatsApp-CTA rules — read it
 before touching either; they are not repeated here.
