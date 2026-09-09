@@ -4,7 +4,8 @@
  *
  * The studio makes one scene at a time off the back of a keypress. Comparing
  * two prompt configs needs a dozen of each from the same reference with the
- * draws recorded, and that is a script, not a page:
+ * draws recorded, and that is a script, not a page. This is a comparison
+ * harness, not a production path: scenes that are used come from the studio.
  *
  *   node scripts/scene-batch.mjs --reference render.png --out batches/new \
  *        --brief ../framework-marketing/briefs/kids-room-grows.md --count 12

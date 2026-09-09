@@ -769,8 +769,8 @@ test("a finished scene job is read out of the envelope it arrives in", () => {
  * ai-background copies an image into the result only while its base64 is under
  * four megabytes (INLINE_IMAGE_BASE64_LIMIT); above that the picture is in
  * Blobs and the result carries a `url` to it and nothing else. A scene at the
- * size the studio asks for is always above it, so this is not the unusual case
- * — it is every scene, and reading only the envelope failed every one of them.
+ * size the studio asks for is always above it, so this is not the unusual case:
+ * it is every scene, and reading only the envelope failed every one of them.
  */
 test("a scene too big to travel in its own envelope is found where it is kept", () => {
   const { firstImage, imageUrl } = loadSceneJobs();
@@ -803,7 +803,7 @@ test("a scene too big to travel in its own envelope is found where it is kept", 
  * It exists because an audit of ten generated scenes found one fault wearing
  * different hats: the model normalises an asymmetric, multi-module, stepped
  * shelf into the rectangular bookcase it expects. The same shot scored 4.2 in a
- * café and 2.2 in a bedroom — given a bedroom, a low module became a bedside
+ * café and 2.2 in a bedroom: given a bedroom, a low module became a bedside
  * table. Saying the shape out loud, from the design rather than from the
  * picture, took the matched cases from 2.72 to 3.58.
  *
@@ -846,7 +846,7 @@ test("a stepped shelf is described as stepping, in the right order", () => {
       "a level-topped shelf is not described as stepped");
   }
   assert.ok(text.includes("ONE freestanding piece of furniture"),
-    "every shelf is said to be one object — that is the bedside-table fix");
+    "every shelf is said to be one object: that is the bedside-table fix");
   assert.ok(text.includes("measuring aid for scale only"),
     "and the grey figure in every render is disowned");
 });
@@ -870,7 +870,7 @@ test("the outline is read off the geometry, not guessed", () => {
 test("the words never claim a board count or a board height", () => {
   const words = loadDesignWords();
   // Coincident boards where modules meet make both unreliable to derive, and a
-  // confidently wrong "there must be exactly 8 shelves" is worse than silence —
+  // confidently wrong "there must be exactly 8 shelves" is worse than silence:
   // the reference image carries those, this carries what the image loses.
   for (const spec of [
     { family: "slim", width: 1, levels: 1 },
@@ -888,7 +888,7 @@ test("the two-tone finish is stated, with the frame always the darker half", () 
   const words = loadDesignWords();
   // Every finish in the catalogue is a dark steel frame carrying lighter MDF,
   // and the shared prompt says "the steel frame colour must match" in the
-  // singular — so nothing ever told the model there were two. Audited over
+  // singular, so nothing ever told the model there were two. Audited over
   // fifteen scenes the split was gone or muddied in 86% of them, the worst
   // score on the board and the only one whose instruction did not exist.
   for (const finish of catalog.finishes) {
@@ -906,8 +906,8 @@ test("the two-tone finish is stated, with the frame always the darker half", () 
 
 test("the collars and the square corners are said again where they survive", () => {
   const words = loadDesignWords();
-  // Both are in the shared prompt already and both were still being lost —
-  // collars in 80% of scenes — which is what one line buried mid-list does.
+  // Both are in the shared prompt already and both were still being lost,
+  // collars in 80% of scenes, which is what one line buried mid-list does.
   const text = words.build(engine, catalog,
     buildPlainRun(catalog, { family: "slim", width: 2, levels: 2 }), { finish: "marine" });
   assert.ok(text.includes("STACKED SEGMENTS"), "the collars are restated");

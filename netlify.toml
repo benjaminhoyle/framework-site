@@ -1,10 +1,10 @@
-# Netlify configuration — framework.co.ke
+# Netlify configuration for framework.co.ke
 # Static site: plain HTML/JS with in-browser Babel (JSX compiled at runtime).
 # No build step; published straight from the repo root.
 
 [build]
   publish = "."
-  # (no build command — nothing to compile)
+  # (no build command: nothing to compile)
 
 # --- Legacy shelf-builder entry points -------------------------------------
 # A URL fragment is never sent to Netlify, so these must remain rewrites. Each
@@ -203,6 +203,6 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# --- Later phases (DO NOT enable yet — no handlers exist) ---
+# --- Later phases (DO NOT enable yet: no handlers exist) ---
 # /d/:code       → design short-code resolver (Phase 2)
 # /shelf/:slug   → catalog slug pages (Phase 2)

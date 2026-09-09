@@ -72,6 +72,8 @@ npm run studio   # starts the dev server if it is down, opens /studio.html
 npm run dev      # the server on its own, if you want the page yourself
 node scripts/generate-designs.mjs --count 300 --seed 11   # more shelves
 node scripts/audit-scenes.mjs                             # score scenes vs their renders
+node scripts/audit-batch.mjs --dir <folder>               # count what a batch of scenes keeps repeating
+node scripts/scene-batch.mjs --reference <render> --out <dir> --brief <file>   # a comparison harness for prompt configs, not a production path
 ```
 
 `npm run studio` checks the three things that make the bench fail in ways that

@@ -278,7 +278,7 @@ for (const { file, script } of derived) {
   const framings = new Set(keys.cameras.map((key) => key.focus.join(",")));
   check("calm cuts, never interpolates", shots.size === framings.size,
     `${shots.size} framings shown, ${framings.size} in the story`
-    + " — more means it is blending between them, fewer means a shot is skipped");
+    + ": more means it is blending between them, fewer means a shot is skipped");
 
   const calmEnd = engine.sample(keys, 1, true);
   for (const id of Object.keys(calmEnd.pieces)) {
@@ -291,5 +291,5 @@ if (failures) {
   console.error(`\n${failures} assembly-story check${failures === 1 ? "" : "s"} failed`);
   process.exit(1);
 }
-console.log(`assembly story ok — ${story.keys.length} keys (${keys.cameras.length} camera), ${story.pieces.length} pieces`
+console.log(`assembly story ok: ${story.keys.length} keys (${keys.cameras.length} camera), ${story.pieces.length} pieces`
   + ` over ${bundles.size} bundles, ${story.captions.length} captions, ${story.pins.length} pins`);

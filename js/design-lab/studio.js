@@ -1624,11 +1624,6 @@ window.FrameworkStudio = (function () {
     return [];
   }
 
-  /** The verdict that is a no, for whatever kind of row this is. */
-  function rejectIdFor(row) {
-    return (VERDICTS[row.kind].find((entry) => entry[3] === "reject") || [])[0] || null;
-  }
-
   function cell(row) {
     const tone = row.tone || row.verdict;
     const box = make("div", `dl-cell${tone ? ` is-${tone}` : ""}`);
@@ -1674,19 +1669,13 @@ window.FrameworkStudio = (function () {
     if (!(row.kind === "view" && ["rendered", "rendering", "queued"].includes(row.state))) {
       /*
        * One line for why not, where the no is. Whichever verdict is pressed
-       * reads it, so a note can go with a yes too, and Enter in it is the no:
-       * type the reason, press the key, the picture leaves the grid.
+       * reads it, so a note can go with a yes too. Enter in it does nothing:
+       * a note typed on a picture meant for a keep must not make it vanish.
        */
       const why = make("input", "dl-cell-why");
       why.type = "text";
       why.placeholder = "why not…";
       why.value = row.note || "";
-      why.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter") return;
-        event.preventDefault();
-        const no = rejectIdFor(row);
-        if (no) judge(row, no, why.value.trim());
-      });
       box.appendChild(why);
       box.appendChild(verdictButtons(row, { note: () => why.value.trim() }));
     }

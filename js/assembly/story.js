@@ -128,7 +128,7 @@
      *
      * Per axis matters more than it looks. fit() sizes the view to whichever of
      * the box's two screen dimensions needs more room, so on a portrait phone a
-     * box's *width* sets the zoom and its height is padded out — a 300mm cube
+     * box's *width* sets the zoom and its height is padded out: a 300mm cube
      * ends up framed as though it were 470mm tall, and the subject sits small in
      * the middle of a lot of nothing. Thinning the box along the axis that has
      * nothing to show (here depth: this joint is on the front face, and there is
