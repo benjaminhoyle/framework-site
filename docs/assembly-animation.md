@@ -1,5 +1,12 @@
 # The assembly animation — feasibility, and how one is built
 
+> What this is: the feasibility case and build reference for the
+> scroll-driven assembly animation at /assembly, covering the camera, layout
+> rules, and how a story is built and edited.
+> When to read it: before changing the camera, layout, or tier logic, or to
+> check section 12 for what is still untested; the shipped verdict alone is
+> in the opening lines.
+
 A scroll-driven animation of a Framework shelf assembling itself: the Apple
 product-page idea, where the scrollbar is the transport control and the product
 takes itself apart as you go.
