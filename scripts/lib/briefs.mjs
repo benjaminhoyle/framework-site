@@ -1,10 +1,17 @@
 /**
- * Creative briefs, read from ../framework-marketing/briefs/*.md.
+ * Creative briefs, read from ../framework-marketing: `briefs/*.md`, and the
+ * `brief.md` inside each story folder under `stories/<slug>/`.
  *
  * A brief is Markdown with a front-matter block: which room, who lives there,
  * what must and must not appear, how many pictures, and a `design` block the
  * generator reads as constraints. The studio loads one by name and the
  * generator takes one as `--brief`; random mode is no brief.
+ *
+ * A brief in `briefs/` is named by its file; a story's brief is named by the
+ * story's slug, which is its folder. Both answer to the same `name`, so the
+ * studio's select and `--brief` do not care which kind they were given. The
+ * stories are the home a brief moves into once it belongs to one (the first
+ * did on 2026-09-09); `briefs/` keeps the format and anything not yet a story.
  *
  * The front matter is a small subset of YAML, and only that subset is read:
  *
@@ -29,6 +36,59 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".
 /** Where the briefs live: next door, unless told otherwise. */
 export const BRIEFS_DIR = process.env.FRAMEWORK_BRIEFS_DIR
   || path.resolve(ROOT, "..", "framework-marketing", "briefs");
+
+/** Where the stories live: beside the briefs, one folder per story. */
+export const STORIES_DIR = process.env.FRAMEWORK_STORIES_DIR
+  || path.resolve(BRIEFS_DIR, "..", "stories");
+
+/**
+ * The stories folder that goes with a briefs folder. A folder named
+ * explicitly (the tests do this) is only that folder, unless its stories are
+ * named too; the default location brings its stories along.
+ */
+function storiesFor(dir, stories) {
+  if (stories !== undefined) return stories || null;
+  return dir ? null : STORIES_DIR;
+}
+
+/** One listing entry from a parsed brief, or null when it is not one. */
+function entryFor(parsed, name, file, absolute) {
+  // README.md and the like carry no front matter and are not briefs.
+  if (!Object.keys(parsed.data).length) return null;
+  const safe = safeName(name);
+  if (!safe) return null;
+  return {
+    name: safe,
+    file,
+    path: absolute,
+    story: parsed.data.story || "",
+    segment: parsed.data.segment || "",
+    scene: parsed.data.scene || "",
+    count: Number(parsed.data.count) || 0
+  };
+}
+
+function readParsed(file) {
+  try {
+    return parseFrontMatter(fs.readFileSync(file, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+/** The story folders under `root` that hold a brief.md, by slug. */
+function storyBriefs(root) {
+  if (!root || !fs.existsSync(root)) return [];
+  const found = [];
+  for (const slug of fs.readdirSync(root).sort()) {
+    const file = path.join(root, slug, "brief.md");
+    if (!fs.existsSync(file)) continue;
+    const parsed = readParsed(file);
+    const entry = parsed && entryFor(parsed, slug, path.join("stories", slug, "brief.md"), file);
+    if (entry) found.push(entry);
+  }
+  return found;
+}
 
 /** A brief's name is its file name, and only these characters. */
 export function safeName(name) {
@@ -160,31 +220,26 @@ export function parseFrontMatter(text) {
   return { data, body: source.slice(match[0].length).trim() };
 }
 
-/** The brief files on offer, by name, with the line or two a list wants. */
-export function listBriefs(dir) {
+/**
+ * The briefs on offer, by name, with the line or two a list wants: the files
+ * in the briefs folder, then each story's brief under its slug. A story whose
+ * slug collides with a file in `briefs/` is listed once, as the file.
+ */
+export function listBriefs(dir, stories) {
   const folder = dir || BRIEFS_DIR;
-  if (!fs.existsSync(folder)) return [];
   const briefs = [];
-  for (const file of fs.readdirSync(folder).sort()) {
-    if (!file.endsWith(".md")) continue;
-    let parsed;
-    try {
-      parsed = parseFrontMatter(fs.readFileSync(path.join(folder, file), "utf8"));
-    } catch {
-      continue;
+  if (fs.existsSync(folder)) {
+    for (const file of fs.readdirSync(folder).sort()) {
+      if (!file.endsWith(".md")) continue;
+      const absolute = path.join(folder, file);
+      const parsed = readParsed(absolute);
+      const entry = parsed && entryFor(parsed, parsed.data.name || file.replace(/\.md$/, ""), file, absolute);
+      if (entry) briefs.push(entry);
     }
-    // README.md and the like carry no front matter and are not briefs.
-    if (!Object.keys(parsed.data).length) continue;
-    const name = safeName(parsed.data.name || file.replace(/\.md$/, ""));
-    if (!name) continue;
-    briefs.push({
-      name,
-      file,
-      story: parsed.data.story || "",
-      segment: parsed.data.segment || "",
-      scene: parsed.data.scene || "",
-      count: Number(parsed.data.count) || 0
-    });
+  }
+  const taken = new Set(briefs.map((entry) => entry.name));
+  for (const entry of storyBriefs(storiesFor(dir, stories))) {
+    if (!taken.has(entry.name)) briefs.push(entry);
   }
   return briefs;
 }
@@ -193,27 +248,32 @@ export function listBriefs(dir) {
  * One brief by name: its front matter as fields, plus `body` (the paragraph
  * under it) and `file`. Null when there is no such brief.
  *
- * The name is the file name; a brief whose `name:` disagrees with its file is
- * found by either, since the file is what a person sees and the field is what
- * the record keeps.
+ * The name is the file name, or the story's slug. A brief in `briefs/` whose
+ * `name:` disagrees with its file is found by either, since the file is what
+ * a person sees and the field is what the record keeps; a story's brief
+ * answers to its slug only, because the folder is the story's one address.
  */
-export function loadBrief(name, dir) {
+export function loadBrief(name, dir, stories) {
   const folder = dir || BRIEFS_DIR;
+  const root = storiesFor(dir, stories);
   const wanted = safeName(name);
-  if (!wanted || !fs.existsSync(folder)) return null;
-  const direct = path.join(folder, `${wanted}.md`);
-  let file = fs.existsSync(direct) ? direct : null;
-  if (!file) {
-    const listed = listBriefs(folder).find((entry) => entry.name === wanted);
-    file = listed ? path.join(folder, listed.file) : null;
+  if (!wanted) return null;
+  const candidates = [
+    { file: path.join(folder, `${wanted}.md`), shown: `${wanted}.md` },
+    { file: root ? path.join(root, wanted, "brief.md") : "", shown: path.join("stories", wanted, "brief.md") }
+  ];
+  let found = candidates.find((candidate) => candidate.file && fs.existsSync(candidate.file));
+  if (!found) {
+    const listed = listBriefs(dir, stories).find((entry) => entry.name === wanted);
+    found = listed ? { file: listed.path, shown: listed.file } : null;
   }
-  if (!file) return null;
-  const parsed = parseFrontMatter(fs.readFileSync(file, "utf8"));
-  if (!Object.keys(parsed.data).length) return null;
+  if (!found) return null;
+  const parsed = readParsed(found.file);
+  if (!parsed || !Object.keys(parsed.data).length) return null;
   return Object.assign({}, parsed.data, {
     name: safeName(parsed.data.name) || wanted,
     body: parsed.body,
-    file: path.basename(file)
+    file: found.shown
   });
 }
 

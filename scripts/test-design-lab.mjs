@@ -1104,6 +1104,40 @@ test("briefs are listed and loaded from a folder, README and all", () => {
   }
 });
 
+test("a story's brief is listed and loaded by the story's slug", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "briefs-"));
+  const stories = fs.mkdtempSync(path.join(os.tmpdir(), "stories-"));
+  try {
+    fs.writeFileSync(path.join(dir, "reading-wall.md"), "---\nname: reading-wall\nstory: Books\nscene: library-wall\n---\nA wall.\n");
+    fs.mkdirSync(path.join(stories, "a-childs-room-that-grows"));
+    fs.writeFileSync(path.join(stories, "a-childs-room-that-grows", "brief.md"), BRIEF_EXAMPLE);
+    fs.mkdirSync(path.join(stories, "no-brief-yet"));
+    fs.writeFileSync(path.join(stories, "no-brief-yet", "story.md"), "---\nname: Later\n---\nNot yet.\n");
+    // The same slug as a file in briefs/: listed once, as the file.
+    fs.mkdirSync(path.join(stories, "reading-wall"));
+    fs.writeFileSync(path.join(stories, "reading-wall", "brief.md"), "---\nname: reading-wall\nstory: Twice\nscene: office\n---\nAgain.\n");
+
+    const listed = listBriefs(dir, stories);
+    assert.deepEqual(listed.map((entry) => entry.name), ["reading-wall", "a-childs-room-that-grows"],
+      "the story's brief is named by its slug, a story without one is skipped, a collision lists once");
+    assert.equal(listed[1].file, path.join("stories", "a-childs-room-that-grows", "brief.md"));
+    assert.equal(listed[1].count, 6);
+
+    const brief = loadBrief("a-childs-room-that-grows", dir, stories);
+    assert.equal(brief.scene, "kids-room", "loaded by slug, though its name: field says kids-room-grows");
+    assert.equal(brief.file, path.join("stories", "a-childs-room-that-grows", "brief.md"));
+    assert.equal(loadBrief("kids-room-grows", dir, stories), null, "the slug is the address, not the name: field inside");
+    assert.equal(loadBrief("reading-wall", dir, stories).scene, "library-wall", "the file wins a collision");
+    assert.equal(loadBrief("no-brief-yet", dir, stories), null);
+    assert.equal(loadBrief("../../a-childs-room-that-grows", dir, stories).file,
+      path.join("stories", "a-childs-room-that-grows", "brief.md"), "a slug is a folder name and nothing else: the dots are stripped, nothing escapes");
+    assert.deepEqual(listBriefs(dir).map((entry) => entry.name), ["reading-wall"], "a folder named alone is only that folder");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(stories, { recursive: true, force: true });
+  }
+});
+
 test("a corpus grown under a brief keeps to its design block", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "briefs-"));
   const out = path.join(os.tmpdir(), `design-lab-brief-test-${process.pid}.json`);

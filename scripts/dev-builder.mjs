@@ -16,6 +16,9 @@
  *     Netlify Blobs would be
  *   - fakes /api/zoho-push over invented clients, so the staff order form can be
  *     worked on without Zoho credentials or a live draft invoice per attempt
+ *   - answers /api/marketing-data by running ../framework-ops's state builder,
+ *     so /marketing reads the marketing folder as it is rather than as last
+ *     published
  *
  * The function is loaded from source with its Blobs import stripped, the same
  * way scripts/test-builder.mjs does it, so this exercises the shipped handler
@@ -217,7 +220,8 @@ const REWRITES = [
   [/^\/new-designer(\/[0-9A-Za-z]{0,7})?\/?$/, "/builder.html"], // the old address
   [/^\/assembly\/?$/, "/assembly-lab.html"],
   [/^\/how\/?$/, "/how.html"],
-  [/^\/colours\/?$/, "/colours.html"]
+  [/^\/colours\/?$/, "/colours.html"],
+  [/^\/marketing\/?$/, "/marketing.html"]
 ];
 
 // --- the gated endpoints, proxied ------------------------------------------
@@ -466,6 +470,52 @@ function pumpRenders() {
     renders.running = null;
     pumpRenders();
   });
+}
+
+// --- the marketing console's state -----------------------------------------
+
+const OPS = path.resolve(ROOT, "..", "framework-ops");
+const STATE_SCRIPT = path.join(OPS, "src", "marketing-state.js");
+const STATE_FILE = path.join(OPS, "data", "marketing-state.json");
+const NO_STATE = JSON.stringify({ ok: false, error: "no_data_yet" });
+
+/** Run the state builder and take its stdout, or say why that did not work. */
+function runStateBuilder() {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [STATE_SCRIPT, "--json"],
+      { cwd: OPS, stdio: ["ignore", "pipe", "pipe"], timeout: 90000 });
+    let out = "";
+    let err = "";
+    child.stdout.on("data", (chunk) => { out += chunk.toString(); });
+    child.stderr.on("data", (chunk) => { err += chunk.toString().slice(0, 2000); });
+    child.on("error", (error) => resolve({ error: error.message }));
+    child.on("close", (code) => {
+      if (code !== 0) return resolve({ error: err.trim().slice(-600) || `exit ${code}` });
+      try {
+        JSON.parse(out);
+        resolve({ json: out });
+      } catch (error) {
+        resolve({ error: `stdout is not JSON: ${error.message}` });
+      }
+    });
+  });
+}
+
+/** The console's state as `{ status, body }`: live, from the file, or absent. */
+async function marketingState() {
+  const pinned = process.env.FRAMEWORK_MARKETING_STATE;
+  if (pinned) {
+    if (fs.existsSync(pinned)) return { status: 200, body: fs.readFileSync(pinned, "utf8") };
+    return { status: 404, body: NO_STATE };
+  }
+  const fromFile = () => (fs.existsSync(STATE_FILE)
+    ? { status: 200, body: fs.readFileSync(STATE_FILE, "utf8") }
+    : null);
+  if (!fs.existsSync(STATE_SCRIPT)) return fromFile() || { status: 404, body: NO_STATE };
+  const built = await runStateBuilder();
+  if (built.json) return { status: 200, body: built.json };
+  console.error(`marketing-state.js failed: ${built.error}`);
+  return fromFile() || { status: 500, body: JSON.stringify({ ok: false, error: `marketing-state.js failed: ${built.error}` }) };
 }
 
 const server = http.createServer(async (request, response) => {
@@ -807,8 +857,31 @@ const server = http.createServer(async (request, response) => {
   }
 
   /*
-   * Creative briefs: files in ../framework-marketing/briefs, listed and read
-   * here so the studio can offer them and open one by name. Read from disk on
+   * The marketing console's snapshot, built on the spot.
+   *
+   * On the site /api/marketing-data serves whatever the ops publish step last
+   * PUT there. Here the state builder in ../framework-ops is run for each
+   * request and its stdout is the body, so /marketing shows the folder as it
+   * is at this moment without a publish. Without the script, the last file it
+   * wrote is served; without either, the same 404 the function gives before
+   * the first publish, so the page's "nothing published yet" is exercised too.
+   *
+   * FRAMEWORK_MARKETING_STATE=<file.json> serves that file instead, for
+   * working on the page against a state the builder does not produce yet.
+   * Dev only: nothing here is deployed, and the runner publishes for real.
+   */
+  if (url.pathname === "/api/marketing-data" && request.method === "GET") {
+    const { status, body } = await marketingState();
+    console.log(`GET /api/marketing-data -> ${status} (${body.length} bytes)`);
+    response.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
+    response.end(body);
+    return;
+  }
+
+  /*
+   * Creative briefs: files in ../framework-marketing/briefs and the brief in
+   * each story folder, listed and read here so the studio can offer them and
+   * open one by name. Read from disk on
    * every request rather than cached, because a brief is edited in a text
    * editor while the studio is open, and the next scene should use what was
    * just saved. Dev only, like everything else in the lab.
