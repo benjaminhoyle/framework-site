@@ -30,6 +30,8 @@ import { spawn } from "node:child_process";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { listBriefs, loadBrief, safeName } from "./lib/briefs.mjs";
+import { readStore, mergeRow, isPartialRow } from "./lib/lab-store.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = Number(process.argv[2] || 8770);
@@ -213,7 +215,9 @@ function fakePush(body) {
 const REWRITES = [
   [/^\/builder(\/[0-9A-Za-z]{0,7})?\/?$/, "/builder.html"],
   [/^\/new-designer(\/[0-9A-Za-z]{0,7})?\/?$/, "/builder.html"], // the old address
-  [/^\/assembly\/?$/, "/assembly-lab.html"]
+  [/^\/assembly\/?$/, "/assembly-lab.html"],
+  [/^\/how\/?$/, "/how.html"],
+  [/^\/colours\/?$/, "/colours.html"]
 ];
 
 // --- the gated endpoints, proxied ------------------------------------------
@@ -221,7 +225,7 @@ const REWRITES = [
 /*
  * The image model, the scene record and the auth check all live in Netlify
  * functions, so none of them exist on this server. Left to itself the studio's
- * scene leg would 404 locally — and it did, behind a password prompt that made
+ * scene leg would 404 locally, and it did, behind a password prompt that made
  * it look like an authorisation problem.
  *
  * So these are forwarded to the deployed site with the site key attached here,
@@ -317,7 +321,7 @@ const renders = { paused: false, waiting: [], running: null, done: [], failed: [
  * A small JPEG of one render, cut once and kept beside it.
  *
  * Asynchronous on purpose: sips takes a moment, and doing it with spawnSync
- * blocked the whole server for the duration — a gallery asking for seventeen
+ * blocked the whole server for the duration: a gallery asking for seventeen
  * thumbnails got them strictly one at a time behind a stalled event loop, which
  * looked exactly like the images being broken.
  */
@@ -525,7 +529,7 @@ const server = http.createServer(async (request, response) => {
    * The design lab's verdicts. Local only, and deliberately so: the lab is a
    * bench tool, the corpus it reviews is a generated file rather than anything
    * a customer can reach, and the verdicts are the one part of it worth not
-   * losing. Netlify has no counterpart — nothing here is deployed.
+   * losing. Netlify has no counterpart: nothing here is deployed.
    *
    * Append-only, one JSON object per line, and each line carries the design it
    * judges. Both of those are scar tissue. A verdict keyed only by a
@@ -540,7 +544,7 @@ const server = http.createServer(async (request, response) => {
    *
    * Blender is a heavyweight local process, so the browser cannot start one:
    * the dev server runs them, one at a time, and the page asks it what is
-   * happening. One at a time because a render already saturates the machine —
+   * happening. One at a time because a render already saturates the machine;
    * two in parallel is the same throughput with twice the memory and no
    * progress to show for either.
    *
@@ -587,7 +591,7 @@ const server = http.createServer(async (request, response) => {
    *
    * `&thumb=1` gets a small JPEG instead of the render. A gallery of a hundred
    * shots asking for the real thing is 300MB of 1800px PNG, which the browser
-   * spends a minute not decoding — the pictures were there all along, just
+   * spends a minute not decoding: the pictures were there all along, just
    * still on their way. Thumbnails are cut once with sips and kept beside the
    * render; without sips the full image is served and the page is merely slow
    * rather than broken.
@@ -617,7 +621,7 @@ const server = http.createServer(async (request, response) => {
   /*
    * Grow more shelves, on demand.
    *
-   * A corpus runs out — that is what working through one means — and a page
+   * A corpus runs out, that is what working through one means, and a page
    * that answers "everything has been judged" and stops is a dead end with a
    * generator sitting one directory away. The seed is the clock so a fresh run
    * is genuinely fresh, and designs already judged are skipped by identity
@@ -631,11 +635,14 @@ const server = http.createServer(async (request, response) => {
     const count = Math.max(1, Math.min(400, Math.round(Number(wanted.count) || 60)));
     const seed = Math.round(Number(wanted.seed) || (Date.now() % 100000));
     const out = "data/design-lab/corpus.json";
+    // Under a brief, its design block constrains what is grown.
+    const brief = safeName(wanted.brief);
 
-    console.log(`generating ${count} designs at seed ${seed}…`);
+    console.log(`generating ${count} designs at seed ${seed}${brief ? ` for the brief ${brief}` : ""}…`);
     const child = spawn(process.execPath, [
       path.join(ROOT, "scripts/generate-designs.mjs"),
-      "--count", String(count), "--seed", String(seed), "--out", out
+      "--count", String(count), "--seed", String(seed), "--out", out,
+      ...(brief ? ["--brief", brief] : [])
     ], { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] });
 
     let noise = "";
@@ -659,7 +666,7 @@ const server = http.createServer(async (request, response) => {
    *
    * The studio flow reaches a design, you say yes, and its four angles have to
    * exist a moment later. Planned here rather than in the page so there is one
-   * implementation of where a camera goes — the same one scripts/plan-shots.mjs
+   * implementation of where a camera goes: the same one scripts/plan-shots.mjs
    * uses for a whole corpus.
    */
   if (url.pathname === "/api/design-lab/plan" && request.method === "POST") {
@@ -683,8 +690,8 @@ const server = http.createServer(async (request, response) => {
   /*
    * A pasted design code, back into a shelf.
    *
-   * The studio's "edit this shelf" is a round trip through /builder — open the
-   * shelf, move a piece, copy the address back — and what comes back is a
+   * The studio's "edit this shelf" is a round trip through /builder: open the
+   * shelf, move a piece, copy the address back; what comes back is a
    * builder link. Decoded here rather than in the page for the same reason the
    * angles are planned here: /builder's own link format has one reader on this
    * side of the fence (scripts/lib/design-lab.mjs) and a second one written out
@@ -706,7 +713,7 @@ const server = http.createServer(async (request, response) => {
 
       /*
        * A shelf pasted in by hand has not been through the generator's rules,
-       * so it is checked here — and reported rather than refused. The bench is
+       * so it is checked here, and reported rather than refused. The bench is
        * where somebody deliberately tries the thing the rules forbid; being
        * told which rule it breaks is the useful answer, being stopped is not.
        */
@@ -764,7 +771,7 @@ const server = http.createServer(async (request, response) => {
        * `&thumb=1`, for the same reason the renders have one: a scene is a
        * 2400px JPEG near three megabytes, and a strip of a dozen of them under
        * one picture is thirty megabytes the browser spends a minute not
-       * decoding — which looks exactly like the pictures being broken.
+       * decoding, which looks exactly like the pictures being broken.
        */
       if (url.searchParams.get("thumb")) {
         const thumb = await cutThumbnail(file, path.join(dir, `${id}.thumb.jpg`));
@@ -799,6 +806,31 @@ const server = http.createServer(async (request, response) => {
     }
   }
 
+  /*
+   * Creative briefs: files in ../framework-marketing/briefs, listed and read
+   * here so the studio can offer them and open one by name. Read from disk on
+   * every request rather than cached, because a brief is edited in a text
+   * editor while the studio is open, and the next scene should use what was
+   * just saved. Dev only, like everything else in the lab.
+   */
+  if (url.pathname === "/api/briefs" && request.method === "GET") {
+    response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    response.end(JSON.stringify({ ok: true, briefs: listBriefs() }));
+    return;
+  }
+  if (url.pathname === "/api/brief" && request.method === "GET") {
+    const name = safeName(url.searchParams.get("name"));
+    const brief = name ? loadBrief(name) : null;
+    if (!brief) {
+      response.writeHead(404, { "content-type": "application/json", "cache-control": "no-store" });
+      response.end(JSON.stringify({ ok: false, error: `no brief named ${name || "(blank)"}` }));
+      return;
+    }
+    response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    response.end(JSON.stringify({ ok: true, brief }));
+    return;
+  }
+
   // Three records, the same shape: what was judged of the designs, of the
   // camera angles planned for them, and of the scenes they were put into.
   const labStore = /^\/api\/design-lab\/(verdicts|shots|scenes)$/.exec(url.pathname);
@@ -806,19 +838,8 @@ const server = http.createServer(async (request, response) => {
     const file = path.join(ROOT, `data/design-lab/${labStore[1]}.jsonl`);
 
     if (request.method === "GET") {
-      const verdicts = {};
-      if (fs.existsSync(file)) {
-        for (const line of fs.readFileSync(file, "utf8").split("\n")) {
-          if (!line.trim()) continue;
-          try {
-            const row = JSON.parse(line);
-            const key = row.fingerprint || row.id;
-          if (key) verdicts[key] = row;
-          } catch { /* a half-written last line; the rest still counts */ }
-        }
-      }
       response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
-      response.end(JSON.stringify(verdicts));
+      response.end(JSON.stringify(readStore(file)));
       return;
     }
 
@@ -830,12 +851,24 @@ const server = http.createServer(async (request, response) => {
         // A design is keyed by its identity, a shot by its own id. Demanding a
         // fingerprint of both rejected every shot verdict with a 400 that the
         // page did not look at, so an afternoon of choosing angles went nowhere.
-        if (!row.fingerprint && !row.id) throw new Error("a verdict needs a fingerprint or an id");
+        const key = row.fingerprint || row.id;
+        if (!key) throw new Error("a verdict needs a fingerprint or an id");
+        /*
+         * A row that is only an addition, such as the audit's `{ id, fidelity }`,
+         * is laid over what is on record for that key rather than replacing it;
+         * and a whole row keeps a fidelity block it did not bring. Reading the
+         * store for that costs a few milliseconds on the scenes file and is
+         * skipped for the others, which only ever take whole rows.
+         */
+        const partial = isPartialRow(row);
+        const current = partial || labStore[1] === "scenes" ? readStore(file)[key] : null;
+        if (partial && !current) throw new Error(`nothing on record for ${key} to add to`);
+        const written = mergeRow(current, row);
         fs.mkdirSync(path.dirname(file), { recursive: true });
-        fs.appendFileSync(file, JSON.stringify(row) + "\n");
-        console.log(`POST ${url.pathname} -> ${row.code} ${row.verdict || "(note)"}`);
+        fs.appendFileSync(file, JSON.stringify(written) + "\n");
+        console.log(`POST ${url.pathname} -> ${written.code || key} ${partial ? "(merged)" : written.verdict || "(note)"}`);
         response.writeHead(200, { "content-type": "application/json" });
-        response.end('{"ok":true}');
+        response.end(JSON.stringify({ ok: true, merged: partial }));
       } catch (error) {
         response.writeHead(400, { "content-type": "application/json" });
         response.end(JSON.stringify({ ok: false, error: String(error.message) }));

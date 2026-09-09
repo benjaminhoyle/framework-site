@@ -110,17 +110,56 @@
     .dl-card { grid-template-columns: 1fr; }
   }
 
-  /* --- the studio flow --- */
-  .dl-actions-two { grid-template-columns: repeat(2, 1fr); }
-  .dl-verdict-render.is-on, .dl-verdict-render:hover { background: var(--keep); border-color: var(--keep); color: #fff; }
-  .dl-verdict-skip:hover { background: var(--reject); border-color: var(--reject); color: #fff; }
+  /* --- the flow card's verdicts: as many columns as there are answers --- */
+  .dl-actions-2 { grid-template-columns: repeat(2, 1fr); }
+  .dl-actions-3 { grid-template-columns: repeat(3, 1fr); }
+  .dl-actions-4 { grid-template-columns: repeat(4, 1fr); }
+  .dl-verdict-keep:hover { background: var(--keep); border-color: var(--keep); color: #fff; }
+  .dl-verdict-maybe:hover { background: var(--maybe); border-color: var(--maybe); color: #fff; }
+  .dl-verdict-reject:hover { background: var(--reject); border-color: var(--reject); color: #fff; }
   .dl-verdict:hover small { color: rgba(255,255,255,0.75); }
+
+  /* --- the same verdicts, small, on a grid cell --- */
+  .dl-cell-verdicts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .dl-cell-btn.dl-tone-keep:hover:not(:disabled), .dl-cell-btn.dl-tone-keep.is-on { background: var(--keep); border-color: var(--keep); color: #fff; }
+  .dl-cell-btn.dl-tone-maybe:hover:not(:disabled), .dl-cell-btn.dl-tone-maybe.is-on { background: var(--maybe); border-color: var(--maybe); color: #fff; }
+  .dl-cell-btn.dl-tone-reject:hover:not(:disabled), .dl-cell-btn.dl-tone-reject.is-on { background: var(--reject); border-color: var(--reject); color: #fff; }
+  /* one line for why not, read by whichever verdict is pressed */
+  .dl-cell-why {
+    font: inherit; font-size: 12px; width: 100%; padding: 4px 6px; margin-top: 4px;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink);
+  }
+  .dl-cell-why::placeholder { color: #b3bab6; }
+  .dl-cell.is-skip, .dl-cell.is-again, .dl-cell.is-fail { border-top-color: var(--reject); opacity: 0.55; }
+  .dl-cell.is-reject:hover, .dl-cell.is-skip:hover, .dl-cell.is-again:hover, .dl-cell.is-fail:hover { opacity: 1; }
+  /* the audit's score, small, in the corner of the picture */
+  .dl-cell-open { position: relative; }
+  .dl-badge {
+    position: absolute; top: 6px; right: 6px; font-size: 11px; line-height: 1;
+    padding: 4px 6px; border-radius: 999px; background: rgba(29, 35, 33, 0.72); color: #fff;
+  }
+  .dl-badge.is-pass { background: var(--keep); }
+  .dl-badge.is-fail { background: var(--reject); }
+  /* bringing the rejected back into a grid, greyed */
+  .dl-show-rejected {
+    font: inherit; font-size: 12px; background: none; border: 0; padding: 0;
+    color: var(--muted); cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+  }
+  .dl-show-rejected.is-on { color: var(--ink); }
+  .dl-grid-head { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 10px; }
   .dl-warn { margin: 0; font-size: 12px; color: var(--reject); }
   .dl-hint { margin: 0; font-size: 12px; color: var(--muted); }
   #dl-status { font-size: 12px; color: var(--muted); min-height: 16px; }
-  #dl-view-toggle {
+  #dl-mode {
     font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 999px;
     border: 1px solid var(--line); background: #fff; color: var(--muted); cursor: pointer;
+  }
+  #dl-mode.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
+  /* the one control a brief adds: which file, or none */
+  .dl-brief { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .dl-brief select {
+    font: inherit; font-size: 12px; padding: 4px 6px; max-width: 180px;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink);
   }
   .dl-done { text-align: center; padding: 60px 20px; }
   .dl-done .dl-hint { margin-top: 10px; }
@@ -138,7 +177,6 @@
   .dl-tabs { justify-content: center; margin-bottom: 18px; }
   .dl-browse .dl-cell { cursor: default; }
   .dl-browse .dl-open { font-size: 11px; }
-  #dl-stage-name { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
 
   /* the queue lives at the foot of the page, out of the way until it matters */
   #dl-queue {
@@ -260,11 +298,12 @@
 <header>
   <div class="dl-top">
     <h1>Studio</h1>
-    <span id="dl-stage-name">judging shelves</span>
+    <div id="dl-sections" class="dl-bar"></div>
     <span id="dl-tally">loading…</span>
     <div class="dl-controls">
       <span id="dl-status"></span>
-      <button id="dl-view-toggle" type="button">Browse</button>
+      <label class="dl-brief">brief <select id="dl-brief"><option value="">none</option></select></label>
+      <button id="dl-mode" type="button">Flow</button>
     </div>
   </div>
 </header>
@@ -298,6 +337,7 @@
 <script src="/js/studio/scale.js"></script>
 <script src="/js/studio/prompt-config.js"></script>
 <script src="/js/studio/scene-prompt.js"></script>
+<script src="/js/studio/brief.js"></script>
 <script src="/js/design-lab/design-words.js"></script>
 <script src="/js/design-lab/scene-presets.js"></script>
 <script src="/js/design-lab/scene-jobs.js"></script>
@@ -317,10 +357,12 @@
       'Run <code>npm run dev</code> and open ' +
       '<a href="http://127.0.0.1:8770/studio.html">127.0.0.1:8770/studio.html</a>.</p>';
   } else {
-    // ?corpus= so a second run can be reviewed without renaming files.
-    var corpus = new URLSearchParams(location.search).get('corpus')
-      || '/data/design-lab/corpus.json';
-    window.FrameworkStudio.boot(corpus);
+    // ?corpus= so a second run can be reviewed without renaming files, and
+    // ?brief= to open on a brief from ../framework-marketing/briefs.
+    var query = new URLSearchParams(location.search);
+    window.FrameworkStudio.boot(query.get('corpus') || '/data/design-lab/corpus.json', {
+      brief: query.get('brief') || ''
+    });
   }
 </script>
 </body>

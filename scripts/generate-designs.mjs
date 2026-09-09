@@ -4,15 +4,20 @@
  *
  *   node scripts/generate-designs.mjs --count 200
  *   node scripts/generate-designs.mjs --count 500 --seed 7 --out data/design-lab/corpus.json
+ *   node scripts/generate-designs.mjs --count 60 --brief kids-room-grows
+ *
+ * `--brief <name>` reads ../framework-marketing/briefs/<name>.md and takes its
+ * `design` block (height_mm_max, width_mm: [min, max], colours, and the like)
+ * as constraints on top of everything below. Random is the default.
  *
  * Designs are grown piece by piece through the builder's own placement engine,
- * with Advanced's rules — every module, and the gapped base spacing that
- * bridging spans need — so what comes out is buildable and opens in /builder.
+ * with Advanced's rules (every module, and the gapped base spacing that
+ * bridging spans need), so what comes out is buildable and opens in /builder.
  *
  * Four things are excluded, in this order, because each is cheaper than the
  * next: anything that leaves the envelope, anything with fewer than two base
  * units, anything the simplified designer could already have made, and anything
- * the corpus already holds — including the same shelf turned or mirrored.
+ * the corpus already holds, including the same shelf turned or mirrored.
  *
  * The generator is deliberately not clever about what looks good. It is a
  * source of legal variety; judgement happens at review.
@@ -28,6 +33,7 @@ import {
 } from "./lib/design-lab.mjs";
 import { placementViolation, repair, violations, DEFAULTS as RULE_DEFAULTS } from "./lib/design-rules.mjs";
 import { compose } from "./lib/design-motifs.mjs";
+import { loadBrief, designConstraints } from "./lib/briefs.mjs";
 
 /*
  * A wall's worth of shelf, under a low ceiling.
@@ -36,8 +42,8 @@ import { compose } from "./lib/design-motifs.mjs";
  * Depth: a corner turn is about 1.24m front to back for a standard unit, so at
  * 1m only the shortest trimmed cut could complete one and corners were being
  * excluded by arithmetic rather than by judgement. Width: a real design from
- * the builder — two towers, an adapter bridging their inner posts, boosters
- * staggering the storeys above — measures 3266mm, and at 3000 the generator
+ * the builder (two towers, an adapter bridging their inner posts, boosters
+ * staggering the storeys above) measures 3266mm, and at 3000 the generator
  * could not have produced it even in principle.
  */
 const DEFAULT_ENVELOPE = { widthMm: 3600, heightMm: 1900, depthMm: 1300 };
@@ -46,7 +52,7 @@ const DEFAULT_ENVELOPE = { widthMm: 3600, heightMm: 1900, depthMm: 1300 };
  * A design's recipe: the handful of dials that decide what kind of shelf this
  * one is going to be, rolled once per design and then held. Rolling them per
  * design rather than per piece is what stops the corpus converging on one
- * average shelf — a run of tall narrow towers and a run of long low benches
+ * average shelf: a run of tall narrow towers and a run of long low benches
  * both come out of the same loop.
  */
 function rollRecipe(random, envelope) {
@@ -90,8 +96,8 @@ function modulesByRole(catalog) {
 
 /**
  * Apply a candidate only if the result still fits. Measuring after the fact is
- * the only honest test — a piece's contribution to the outside dimensions
- * depends on what it landed on — and states are cloned on every add, so the
+ * the only honest test (a piece's contribution to the outside dimensions
+ * depends on what it landed on), and states are cloned on every add, so the
  * rejected branch costs nothing but the clone.
  */
 function tryApply(catalog, state, candidate, envelope, fields, rules) {
@@ -114,8 +120,8 @@ function tryApply(catalog, state, candidate, envelope, fields, rules) {
  * Place the bases. Gapped intervals are the ones Advanced adds over Standard,
  * so which of them a design uses is the difference between a solid bank of
  * units and a run with air in it; `gapAppetite` is that dial. Which candidates
- * count as gapped is asked of the engine — the adjacent-only set is exactly the
- * spacing Standard would have offered — rather than recomputed from intervals
+ * count as gapped is asked of the engine (the adjacent-only set is exactly the
+ * spacing Standard would have offered) rather than recomputed from intervals
  * here, where it would drift.
  */
 function placeBases(catalog, random, recipe, families) {
@@ -244,8 +250,9 @@ function narrowestBaseMm(catalog, families) {
   return narrowest;
 }
 
-function generateOne(catalog, random, envelope, finish, byRole, families, rules) {
+function generateOne(catalog, random, envelope, finish, byRole, families, rules, floor) {
   const recipe = rollRecipe(random, envelope);
+  aimAbove(recipe.envelope, floor);
   recipe.finish = finish;
   recipe.rules = rules;
   const chosen = shuffled(random, families).slice(0, recipe.familyCount);
@@ -270,23 +277,52 @@ function generateOne(catalog, random, envelope, finish, byRole, families, rules)
 /**
  * A design built out of motifs rather than out of random legal moves.
  *
- * The envelope is still rolled per design, and for the same reason — a corpus
- * where every shelf is 3m wide is a corpus of one idea — but everything inside
+ * The envelope is still rolled per design, and for the same reason (a corpus
+ * where every shelf is 3m wide is a corpus of one idea), but everything inside
  * it is a deliberate gesture rather than a walk. Which motifs were actually
  * used is kept on the record, so the review can be asked later which gestures
  * are worth making.
  */
-function composeOne(catalog, random, envelope, finish, rules) {
-  const width = Math.round(envelope.widthMm * (0.45 + random() * 0.55));
-  const height = Math.round(envelope.heightMm * (0.35 + random() * 0.65));
-  const state = compose(catalog, random, {
-    widthMm: width,
-    heightMm: height,
+function composeOne(catalog, random, envelope, finish, rules, floor) {
+  const target = {
+    widthMm: Math.round(envelope.widthMm * (0.45 + random() * 0.55)),
+    heightMm: Math.round(envelope.heightMm * (0.35 + random() * 0.65)),
     depthMm: envelope.depthMm
-  }, finish, rules);
+  };
+  aimAbove(target, floor);
+  const state = compose(catalog, random, target, finish, rules);
   const repaired = repair(catalog, state, rules);
   repaired.motifs = state.motifs;
   return repaired;
+}
+
+/**
+ * A brief can ask for a shelf no narrower or lower than so much. A target
+ * rolled below that would spend the attempt on a design the brief refuses,
+ * so the roll is lifted to the floor first. The ceiling is the envelope's.
+ */
+function aimAbove(target, floor) {
+  if (!floor) return;
+  if (floor.widthMinMm) target.widthMm = Math.max(target.widthMm, floor.widthMinMm);
+  if (floor.heightMinMm) target.heightMm = Math.max(target.heightMm, floor.heightMinMm);
+}
+
+/**
+ * What a brief's design block refuses, over and above the rules. The width is
+ * the shelf's longer side on the floor, because a corner design's run along
+ * the wall is whichever leg is longer; the height leaves the lamp out, as the
+ * quoted size does.
+ */
+function briefRejection(catalog, state, constraints) {
+  if (!constraints) return null;
+  const size = shelfDimensions(catalog, state);
+  const alongWall = Math.max(size.widthMm, size.depthMm);
+  if (constraints.widthMinMm && alongWall < constraints.widthMinMm) return "brief:too-narrow";
+  if (constraints.widthMaxMm && alongWall > constraints.widthMaxMm) return "brief:too-wide";
+  if (constraints.heightMinMm && size.heightMm < constraints.heightMinMm) return "brief:too-low";
+  if (constraints.heightMaxMm && size.heightMm > constraints.heightMaxMm) return "brief:too-tall";
+  if (constraints.piecesMax && state.instances.length > constraints.piecesMax) return "brief:too-many-pieces";
+  return null;
 }
 
 // --------------------------------------------------------------------- rules
@@ -346,8 +382,31 @@ function parseArgs(argv) {
     else if (flag === "--mixed-trim") { args.consistentTrim = false; }
     else if (flag === "--allow-clumps") { args.mustBeConnected = false; }
     else if (flag === "--random-walk") { args.motifs = false; }
+    else if (flag === "--brief") { args.brief = value; i += 1; }
   }
   return args;
+}
+
+/**
+ * A brief's `design` block, as constraints on top of the rules: the envelope
+ * shrinks to its maxima, its minima refuse what falls short, and its colours
+ * are drawn per design. Random stays the default; this only runs for --brief.
+ */
+function briefFor(args, catalog) {
+  if (!args.brief) return null;
+  const brief = loadBrief(args.brief);
+  if (!brief) {
+    console.error(`no brief named ${args.brief} in ../framework-marketing/briefs`);
+    process.exit(1);
+  }
+  const finishIds = (catalog.finishes || []).map((finish) => finish.id);
+  const constraints = designConstraints(brief, finishIds);
+  const asked = brief.design && (brief.design.colours || brief.design.colors || brief.design.finishes);
+  if (asked && !constraints.colours) {
+    console.error(`the brief ${brief.name} names colours the catalogue does not have (${[].concat(asked).join(", ")}); it has ${finishIds.join(", ")}`);
+    process.exit(1);
+  }
+  return { name: brief.name, constraints };
 }
 
 /**
@@ -373,11 +432,22 @@ function plainRunCache(catalog) {
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const catalog = loadCatalog();
+  const brief = briefFor(args, catalog);
+  const constraints = brief ? brief.constraints : null;
   const envelope = {
     widthMm: args.widthMm || DEFAULT_ENVELOPE.widthMm,
     heightMm: args.heightMm || DEFAULT_ENVELOPE.heightMm,
     depthMm: args.depthMm || DEFAULT_ENVELOPE.depthMm
   };
+  if (constraints) {
+    if (constraints.widthMaxMm) envelope.widthMm = Math.min(envelope.widthMm, constraints.widthMaxMm);
+    if (constraints.heightMaxMm) envelope.heightMm = Math.min(envelope.heightMm, constraints.heightMaxMm);
+    if (constraints.depthMaxMm) envelope.depthMm = Math.min(envelope.depthMm, constraints.depthMaxMm);
+    if (constraints.piecesMin) args.minPieces = Math.max(args.minPieces, constraints.piecesMin);
+    process.stderr.write(`brief ${brief.name}: ${JSON.stringify(constraints)}\n`);
+  }
+  // One colour for the corpus, or the brief's few, drawn per design.
+  const finishes = constraints && constraints.colours ? constraints.colours : [args.finish];
 
   process.stderr.write("building the plain-run exclusion set... ");
   const plainRuns = plainRunCache(catalog);
@@ -406,15 +476,17 @@ function main() {
   while (designs.length < args.count && attempts < maxAttempts) {
     attempts += 1;
     let state = null;
+    const finish = finishes.length === 1 ? finishes[0] : pick(random, finishes);
     try {
       state = args.motifs
-        ? composeOne(catalog, random, envelope, args.finish, rules)
-        : generateOne(catalog, random, envelope, args.finish, byRole, families, rules);
+        ? composeOne(catalog, random, envelope, finish, rules, constraints)
+        : generateOne(catalog, random, envelope, finish, byRole, families, rules, constraints);
     } catch (error) {
       rejected.threw = (rejected.threw || 0) + 1;
       continue;
     }
-    const reason = rejectionOf(catalog, state, envelope, plainRuns, seen, args.minPieces, rules);
+    const reason = rejectionOf(catalog, state, envelope, plainRuns, seen, args.minPieces, rules)
+      || briefRejection(catalog, state, constraints);
     if (reason) {
       rejected[reason] = (rejected[reason] || 0) + 1;
       continue;
@@ -447,7 +519,11 @@ function main() {
     schema: "framework-design-corpus@1",
     generatedAt: new Date().toISOString(),
     seed: args.seed,
-    finish: args.finish,
+    // One colour for the whole corpus, or null when a brief drew from several.
+    finish: finishes.length === 1 ? finishes[0] : null,
+    finishes,
+    brief: brief ? brief.name : null,
+    briefDesign: constraints,
     minPieces: args.minPieces,
     generator: args.motifs ? "motifs" : "random-walk",
     rules,
@@ -465,7 +541,8 @@ function main() {
    * three hundred reviewed designs with it.
    */
   const stamp = ((catalog.contract && catalog.contract.contentHash) || "nocontract").slice(0, 8);
-  const archive = path.join(ROOT, "data/design-lab/corpora", `seed${args.seed}-${stamp}.json`);
+  const archive = path.join(ROOT, "data/design-lab/corpora",
+    `seed${args.seed}-${stamp}${brief ? `-${brief.name}` : ""}.json`);
   fs.mkdirSync(path.dirname(archive), { recursive: true });
   fs.copyFileSync(outPath, archive);
 

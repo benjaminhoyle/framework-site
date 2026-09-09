@@ -28,6 +28,8 @@ import {
 } from "./lib/design-lab.mjs";
 import { placementViolation, repair, violations, middleSocketIds, clumps, longEdgeOf, longEdgeHangs } from "./lib/design-rules.mjs";
 import { planShotsFor } from "./lib/shot-plan.mjs";
+import { parseFrontMatter, designConstraints, listBriefs, loadBrief } from "./lib/briefs.mjs";
+import { readStore, isPartialRow, mergeRow } from "./lib/lab-store.mjs";
 import { createRequire as createBrowserRequire } from "node:module";
 
 const catalog = loadCatalog();
@@ -976,6 +978,166 @@ test("the scene cycle walks the list instead of drawing at random", () => {
   assert.equal(new Set(seen).size, presets.PRESETS.length,
     "a full turn of the cycle shows every scene exactly once");
   assert.equal(cycle.next().id, seen[0], "and then starts again");
+});
+
+// ----------------------------------------------------------------- briefs ---
+
+/*
+ * The example from framework-marketing/briefs/README.md, as it is written
+ * there, comments and all. If the format in the README and the parser here
+ * drift apart, this is where it shows.
+ */
+const BRIEF_EXAMPLE = `---
+name: kids-room-grows
+segment: expat parents
+story: A low, wide shelf in a child's room that grows as the child does
+scene: kids-room                 # a scene id from prompt-config
+persona: parent                  # shelf contents, or leave blank for the pools
+fullness: full
+light: daylight                  # daylight | any | evening
+mood: bright, well kept, real
+must:                            # two or three signals drawn from the story
+  - picture books in English and French, spines out
+  - one wooden toy on a low shelf
+avoid:
+  - tote bag
+  - phone charging
+pin: [scene, persona, fullness]  # everything else varies per image
+formats: ["4:5", "1:1"]
+count: 6
+design:
+  height_mm_max: 1200
+  width_mm: [1400, 2400]
+  colours: [sage, coral]
+---
+One paragraph in words, for the prompt and for whoever reads this later: who
+lives here, what the room is like, why this configuration.
+`;
+
+test("a brief's front matter reads as the README shows it", () => {
+  const { data, body } = parseFrontMatter(BRIEF_EXAMPLE);
+  assert.equal(data.name, "kids-room-grows");
+  assert.equal(data.scene, "kids-room", "a trailing comment is not part of the value");
+  assert.equal(data.mood, "bright, well kept, real", "a comma in a plain value is not a list");
+  assert.deepEqual(data.must, ["picture books in English and French, spines out", "one wooden toy on a low shelf"]);
+  assert.deepEqual(data.avoid, ["tote bag", "phone charging"]);
+  assert.deepEqual(data.pin, ["scene", "persona", "fullness"], "a flow list, with its comment dropped");
+  assert.deepEqual(data.formats, ["4:5", "1:1"], "quoted items lose their quotes");
+  assert.equal(data.count, 6, "a number is a number");
+  assert.deepEqual(data.design, { height_mm_max: 1200, width_mm: [1400, 2400], colours: ["sage", "coral"] });
+  assert.ok(body.startsWith("One paragraph in words"), "the body is what follows the block");
+  assert.ok(!body.includes("---"), "and carries no fence");
+  assert.deepEqual(parseFrontMatter("# Just a README\n\nwords").data, {}, "a file without a block has no fields");
+});
+
+test("a brief's design block becomes the generator's constraints", () => {
+  const { data } = parseFrontMatter(BRIEF_EXAMPLE);
+  const constraints = designConstraints(data, ["marine", "sage", "charcoal", "coral"]);
+  assert.deepEqual(constraints, { widthMinMm: 1400, widthMaxMm: 2400, heightMaxMm: 1200, colours: ["sage", "coral"] });
+  assert.deepEqual(designConstraints({ design: { colours: ["sage", "teal"] } }, ["sage"]).colours, ["sage"],
+    "a colour the catalogue does not have is dropped");
+  assert.deepEqual(designConstraints({ design: { colours: ["teal"] } }, ["sage"]), {},
+    "and a list of only those is no constraint at all");
+  assert.deepEqual(designConstraints({ design: { width_mm_max: 1800, max_height_mm: 900 } }, null),
+    { widthMaxMm: 1800, heightMaxMm: 900 }, "either spelling of a bound is read");
+  assert.deepEqual(designConstraints({}, null), {}, "no design block asks nothing");
+});
+
+test("briefs are listed and loaded from a folder, README and all", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "briefs-"));
+  try {
+    fs.writeFileSync(path.join(dir, "README.md"), "# Creative briefs\n\nOne file per configuration.\n");
+    fs.writeFileSync(path.join(dir, "kids-room-grows.md"), BRIEF_EXAMPLE);
+    fs.writeFileSync(path.join(dir, "reading-wall.md"), "---\nname: reading-wall\nstory: Books\nscene: library-wall\n---\nA wall.\n");
+    const listed = listBriefs(dir);
+    assert.deepEqual(listed.map((entry) => entry.name), ["kids-room-grows", "reading-wall"], "the README is not a brief");
+    assert.equal(listed[0].count, 6);
+    const brief = loadBrief("kids-room-grows", dir);
+    assert.equal(brief.scene, "kids-room");
+    assert.equal(brief.body.split("\n")[0], "One paragraph in words, for the prompt and for whoever reads this later: who");
+    assert.equal(loadBrief("../etc/passwd", dir), null, "a name is a file name and nothing else");
+    assert.equal(loadBrief("nothing-here", dir), null);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a corpus grown under a brief keeps to its design block", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "briefs-"));
+  const out = path.join(os.tmpdir(), `design-lab-brief-test-${process.pid}.json`);
+  try {
+    fs.writeFileSync(path.join(dir, "low-and-wide.md"), [
+      "---", "name: low-and-wide", "story: A low wide shelf", "scene: kids-room",
+      "design:", "  height_mm_max: 1200", "  width_mm: [1400, 2400]", "  colours: [sage, coral]", "---", "Low.", ""
+    ].join("\n"));
+    execFileSync(process.execPath, [
+      path.join(ROOT, "scripts/generate-designs.mjs"),
+      "--count", "12", "--seed", "7", "--out", out, "--brief", "low-and-wide"
+    ], { stdio: "pipe", env: Object.assign({}, process.env, { FRAMEWORK_BRIEFS_DIR: dir }) });
+    const corpus = JSON.parse(fs.readFileSync(out, "utf8"));
+    assert.equal(corpus.brief, "low-and-wide", "the corpus says which brief grew it");
+    assert.equal(corpus.finish, null, "no single colour when the brief names two");
+    assert.deepEqual(corpus.finishes, ["sage", "coral"]);
+    assert.equal(corpus.envelopeMm.heightMm, 1200, "the envelope shrinks to the brief's ceiling");
+    assert.equal(corpus.designs.length, 12);
+    for (const record of corpus.designs) {
+      const state = engine.deserializeState(catalog, record.design);
+      const size = shelfDimensions(catalog, state);
+      const where = `design ${record.code}`;
+      assert.ok(size.heightMm <= 1200, `${where} is no taller than the brief allows (${size.heightMm})`);
+      const alongWall = Math.max(size.widthMm, size.depthMm);
+      assert.ok(alongWall >= 1400 && alongWall <= 2400, `${where} is as wide as the brief asks (${alongWall})`);
+      assert.ok(["sage", "coral"].includes(state.finish), `${where} is one of the brief's colours`);
+    }
+    assert.ok(corpus.designs.some((record) => record.design.finish === "sage")
+      && corpus.designs.some((record) => record.design.finish === "coral"), "both colours were drawn");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(out, { force: true });
+  }
+});
+
+// ------------------------------------------------------------------ store ---
+
+test("an audit's fidelity is merged onto the scene it names, not written over it", () => {
+  const scene = { id: "S1", shotId: "X-1", code: "X", verdict: null, params: { scene: "kids-room" } };
+  const audit = { id: "S1", fidelity: { score: 4.2, verdict: "pass", issues: [] } };
+  assert.ok(isPartialRow(audit), "a row with only a key and a fidelity block is an addition");
+  assert.ok(!isPartialRow(scene), "a scene row is whole, even before it is judged");
+  assert.ok(!isPartialRow({ fingerprint: "f", verdict: "keep", design: {} }), "so is a design verdict");
+
+  const merged = mergeRow(scene, audit);
+  assert.deepEqual(merged, Object.assign({}, scene, { fidelity: audit.fidelity }), "the score lands on the scene");
+  assert.equal(mergeRow(null, scene), scene, "a whole row with nothing on record is itself");
+
+  // The page judges the scene a moment later, from a copy that never saw the
+  // audit. The score survives; the verdict is the page's.
+  const judged = Object.assign({}, scene, { verdict: "keep", note: "good" });
+  const kept = mergeRow(merged, judged);
+  assert.equal(kept.verdict, "keep");
+  assert.deepEqual(kept.fidelity, audit.fidelity, "a whole row keeps the fidelity it did not bring");
+  // And an audit run again replaces its own block rather than layering on it.
+  const again = mergeRow(kept, { id: "S1", fidelity: { score: 2.1, verdict: "fail", issues: ["gained a tier"] } });
+  assert.equal(again.fidelity.verdict, "fail");
+  assert.equal(again.verdict, "keep");
+});
+
+test("the store reads back the last line for every key", () => {
+  const file = path.join(os.tmpdir(), `lab-store-test-${process.pid}.jsonl`);
+  try {
+    fs.writeFileSync(file, [
+      JSON.stringify({ id: "A", verdict: null, shotId: "s" }),
+      JSON.stringify({ fingerprint: "F", verdict: "reject", design: {} }),
+      JSON.stringify({ id: "A", verdict: "keep", shotId: "s" }),
+      '{"id": "B", "verdict": nul'
+    ].join("\n") + "\n");
+    const rows = readStore(file);
+    assert.deepEqual(Object.keys(rows).sort(), ["A", "F"], "a half-written last line is skipped");
+    assert.equal(rows.A.verdict, "keep", "later lines win");
+    assert.deepEqual(readStore(path.join(os.tmpdir(), "no-such-store.jsonl")), {}, "no file is an empty record");
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
 });
 
 if (failures) {
