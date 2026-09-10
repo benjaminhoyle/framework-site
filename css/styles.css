@@ -17,7 +17,7 @@ html {
 
 body {
     padding-top: 100px;
-    padding-bottom: 60px;
+    padding-bottom: 0;
     min-height: 100vh;
 }
 
@@ -103,16 +103,6 @@ header nav ul li a.active {
 
 #mobile-menu-toggle span:nth-child(3) {
     bottom: 0;
-}
-
-footer {
-    text-align: center;
-    padding: 20px 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: white;
-    z-index: 1000;
 }
 
 .container {
@@ -364,7 +354,7 @@ footer {
 
     body {
         padding-top: 30px;
-        padding-bottom: 100px;
+        padding-bottom: 0;
     }
 
     .image-section {
@@ -485,36 +475,119 @@ footer {
     }
 }
 
+/* ---------------------------------------------------------------- footer
+ * Injected by js/site.js on every page except designer.html. It is chrome,
+ * like the header, so it takes the header's horizontal inset (10%, 7% on a
+ * phone) rather than any one page's content column. One layout at every
+ * width: a rule across the page, the contact lines left-aligned with WhatsApp
+ * first and largest because it is the channel people actually use, email and
+ * Instagram sharing a line where there is room, then the legal line, small
+ * and faint, last. Nothing is centred.
+ *
+ * Colours come from the tokens css/pages.css defines on /colours and /how and
+ * fall back to the same values on every other page, so the footer is the same
+ * colour everywhere.
+ *
+ * The markup order in site.js is legal, email, WhatsApp, Instagram, then a
+ * keyword line. The rules marked "current markup" reorder that with `order`
+ * and hide the keyword line; they can go once site.js carries the markup in
+ * framework-marketing/research/footer-fix.md, which the class rules already
+ * cover.
+ */
+
+footer {
+    margin-top: 40px;
+    padding: 34px 10% 56px;
+    border-top: 1px solid var(--rule, #e6eae8);
+    background: var(--paper, #fff);
+    color: var(--ink, #1b1f1e);
+    font-family: 'Red Hat Display', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: left;
+}
+
 .footer-content {
+    display: block;
+    padding: 0;
+}
+
+/* The contact lines: a wrapping row, so email and Instagram share a line
+   where there is room and stack where there is not, with no breakpoint. */
+.footer-info,
+.footer-contact {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 20px 0;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 28px;
+    row-gap: 6px;
+    text-align: left;
+    line-height: 1.5;
 }
 
-.footer-info {
-    text-align: center;
-    line-height: 1.6;
-}
-
-.footer-info p {
+.footer-info p,
+.footer-contact p,
+.footer-legal {
     margin: 0;
+    color: var(--muted, #656e6b);
 }
 
+footer a,
+footer .text-link {
+    color: var(--ink, #1b1f1e);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s ease;
+}
+
+footer a:hover,
+footer a:focus,
+footer .text-link:hover {
+    color: var(--ink, #1b1f1e);
+    border-bottom-color: var(--ink, #1b1f1e);
+}
+
+/* WhatsApp: its own row, first, the number large and in ink. */
+.footer-info p:nth-child(3), /* current markup */
+.footer-wa {
+    order: -1;
+    flex-basis: 100%;
+    font-size: 17px;
+    margin-bottom: 6px;
+}
+
+.footer-info p:nth-child(3) a, /* current markup */
+.footer-wa a {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* The legal line: last, small, faint. */
+.footer-info p:first-child, /* current markup */
+.footer-legal {
+    order: 1;
+    flex-basis: 100%;
+    margin-top: 22px;
+    font-size: 13px;
+    color: var(--faint, #98a29e);
+}
+
+/* The keyword line: four search phrases with nothing behind them. Hidden
+   here until it is removed from site.js. */
 .footer-keywords {
-    font-size: 0.75em;
-    color: #777;
-    margin-top: 10px;
-}
-
-.footer-tags {
-    margin: 0;
+    display: none;
 }
 
 @media (max-width: 768px) {
-    .footer-content {
-        padding: 15px 10px;
+    footer {
+        /* the bottom clears the fixed WhatsApp button on shelving.html */
+        padding: 30px 7% 84px;
+    }
+
+    .footer-info p:nth-child(3) a,
+    .footer-wa a {
+        font-size: 20px;
     }
 }
 
