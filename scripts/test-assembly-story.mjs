@@ -287,6 +287,107 @@ for (const { file, script } of derived) {
   }
 }
 
+/*
+ * --- what a device is asked to do ------------------------------------------
+ *
+ * The tier chooser and the pace judge decide, on the reader's own hardware,
+ * whether the page is crisp, soft or still. They were the two things Ben
+ * reported ("doesn't always seem to work", "a bit pixellated"), and both
+ * failed silently: nothing threw, the picture was simply wrong for the device.
+ */
+{
+  // An unknown ?tier= is ignored, not run as an unnamed live tier.
+  const probe = (search) => {
+    const scope = {
+      window: { location: { search }, matchMedia: () => ({ matches: false }), URLSearchParams },
+      navigator: {}, document: { createElement: () => ({ getContext: () => null }) }, URLSearchParams
+    };
+    scope.window.window = scope.window;
+    vm.createContext(scope);
+    for (const file of ["curator-shelf.js", "story.js", "scroll-story.js"]) {
+      vm.runInContext(fs.readFileSync(path.join(ROOT, "js/assembly", file), "utf8"), scope, { filename: file });
+    }
+    return scope.window.FrameworkAssembly.detectTier();
+  };
+  check("?tier=fast is not a tier", probe("?tier=fast").why !== "forced by ?tier=fast", JSON.stringify(probe("?tier=fast")));
+  check("?tier=calm is", probe("?tier=calm").tier === "calm");
+  check("every named tier is accepted", engine.TIERS.every((name) => probe(`?tier=${name}`).tier === name));
+
+  // The CPU rasterisers are recognised; a real GPU is not.
+  for (const name of ["Google SwiftShader", "llvmpipe (LLVM 15.0.7, 256 bits)", "Microsoft Basic Render Driver"]) {
+    check(`"${name}" is a software renderer`, engine.isSoftwareRenderer(name));
+  }
+  for (const name of ["ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)", "Mali-G52", "Apple GPU", ""]) {
+    check(`"${name}" is not a software renderer`, !engine.isSoftwareRenderer(name));
+  }
+
+  /*
+   * The pace judge steps the pixel ratio down on a GPU that cannot keep up,
+   * and leaves it alone on a display or a loop that is merely slow. The
+   * difference is whether idle frames are slow too: a throttled rAF makes
+   * every frame slow, a slow GPU only the painted ones. The first version
+   * judged against a fixed 32ms and sent a MacBook on battery to 1x.
+   */
+  const slowGpu = engine.createPace({ ratios: [2, 1.5, 1] });
+  for (let i = 0; i < 6; i += 1) slowGpu.observe(16.7, false);
+  let steps = 0;
+  for (let i = 0; i < 40; i += 1) if (slowGpu.observe(45, true)) steps += 1;
+  check("a slow GPU steps the ratio down, twice at most", steps === 2 && slowGpu.ratio() === 1, `${steps} steps, ratio ${slowGpu.ratio()}`);
+
+  const throttled = engine.createPace({ ratios: [2, 1.5, 1] });
+  for (let i = 0; i < 6; i += 1) throttled.observe(33.4, false);
+  let wrong = 0;
+  for (let i = 0; i < 100; i += 1) if (throttled.observe(34, true)) wrong += 1;
+  check("a 30Hz loop is not read as a slow GPU", wrong === 0 && throttled.ratio() === 2, `${wrong} steps`);
+
+  const blind = engine.createPace({ ratios: [2, 1.5, 1] });
+  let early = 0;
+  for (let i = 0; i < 40; i += 1) if (blind.observe(80, true)) early += 1;
+  check("no verdict before the display's own rate is known", early === 0, `${early} steps without an idle frame seen`);
+
+  const hiccup = engine.createPace({ ratios: [2, 1] });
+  for (let i = 0; i < 6; i += 1) hiccup.observe(16.7, false);
+  let stumbled = 0;
+  for (let i = 0; i < 60; i += 1) if (hiccup.observe(i % 4 === 0 ? 200 : 16.7, true)) stumbled += 1;
+  check("one long frame in four is a garbage collection, not a verdict", stumbled === 0, `${stumbled} steps`);
+
+  const fixed = engine.createPace({ ratios: [1] });
+  for (let i = 0; i < 6; i += 1) fixed.observe(16.7, false);
+  let moved = 0;
+  for (let i = 0; i < 40; i += 1) if (fixed.observe(90, true)) moved += 1;
+  check("a single-ratio pace never steps", moved === 0 && fixed.ratio() === 1);
+}
+
+/*
+ * --- the words ---------------------------------------------------------------
+ *
+ * Ben's rule for the animation text: useful and easy to understand, or say
+ * nothing. The half of that a script can hold is the house style: no em
+ * dashes anywhere (VOICE.md: zero in 8,655 messages), a caption body a reader
+ * can take in during the hold it sits on, and a pin label short enough not to
+ * crowd the thing it points at. Prices in the house form.
+ */
+{
+  const words = (text) => text.trim().split(/\s+/).length;
+  const everyString = [
+    ...story.captions.flatMap((c) => [c.title, c.body, c.photoAlt || ""]),
+    ...story.pins.map((p) => p.label),
+    ...[...page.matchAll(/data-copy="[^"]+"[^>]*>([^<]*)</g)].map((m) => m[1])
+  ];
+  check("no em dash in any caption, pin or page string", everyString.every((s) => !/—/.test(s)));
+  for (const caption of story.captions) {
+    check(`caption "${caption.title}" title is one short line`, words(caption.title) <= 7, `${words(caption.title)} words`);
+    check(`caption "${caption.title}" body is under 32 words`, words(caption.body) <= 32, `${words(caption.body)} words`);
+  }
+  for (const pin of story.pins) {
+    check(`pin "${pin.label}" is three words or fewer`, words(pin.label) <= 3);
+  }
+  const priced = story.captions.filter((c) => /Ksh/i.test(c.body));
+  check("the price is stated once, as shown, in the house form",
+    priced.length === 1 && /As shown:.*Ksh 36,500\/-.*Ksh 6,500\/-/.test(priced[0].body),
+    priced.map((c) => c.body).join(" | "));
+}
+
 if (failures) {
   console.error(`\n${failures} assembly-story check${failures === 1 ? "" : "s"} failed`);
   process.exit(1);

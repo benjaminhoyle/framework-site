@@ -51,40 +51,40 @@
     var COPY = {
         base: {
             title: 'It starts with a base.',
-            body: 'A two-tier unit on adjustable feet, so it stands level on any floor. Use it as it is, or add to it later.'
+            body: 'Two tiers on adjustable feet, so it stands level on any floor. Use it as it is, or add to it later.'
         },
         adapter: {
             title: 'The next unit drops on.',
-            body: 'Each post ends in a socket. The unit above has a pin under each leg. Line them up and lower it on. No tools.'
+            body: 'Each post on the base ends in a socket. The unit above has a pin under each leg. Line them up and lower it on. No tools.'
         },
         joint: {
             title: 'One joint, repeated.',
-            body: 'A 16 mm pin slides into a 20 mm tube and stops on the shoulder. Every joint in the shelf is this one.'
+            body: 'The pin under each leg slides into the tube below it and stops on the collar. Every joint in the shelf is this one.'
         },
         stagger: {
             title: 'Not every tier needs a full unit.',
-            body: 'Here a short unit lands on the left and a bare post on the right. Two standard parts, two different heights.'
+            body: 'A short unit goes on the left. On the right, just a post to hold up the next shelf. Both are standard parts.'
         },
         bridge: {
-            title: 'One shelf, two supports.',
-            body: 'The long shelf rests on the unit at one end and on the post at the other. That is where the uneven pockets come from.'
+            title: 'One shelf across both.',
+            body: 'It rests on the short unit at one end and on the post at the other. That gives two small openings on the left and one tall one on the right.'
         },
         cap: {
-            title: 'A full-width shelf closes it off.',
-            body: 'As shown: The Curator\'s Shelf, Ksh 36,500/- in Coral. Units from Ksh 6,500/-.'
+            title: 'The top shelf goes on last.',
+            body: 'As shown: The Curator\'s Shelf in Coral, Ksh 36,500/-. Units from Ksh 6,500/-.'
         },
         pins: {
             socket: 'socket',
-            drop: 'drops on',
+            drop: 'next unit',
             spigot: '16 mm pin',
-            booster: 'a bare post',
+            booster: 'just a post',
             onShelf: 'on the unit',
             onPost: 'on the post'
         },
         alt: {
             base: 'A steel leg meeting the floor beside the lowest shelf board.',
             joint: 'A leg held just above the one below it, showing the pin and the tube it drops into.',
-            stagger: 'The finished shelf, empty, showing the uneven pockets.',
+            stagger: 'The finished shelf, empty, with a short unit on the left and a single post on the right.',
             bridge: 'The finished shelf seen from an angle.',
             cap: 'The finished shelf holding books, bowls and small figures.'
         }

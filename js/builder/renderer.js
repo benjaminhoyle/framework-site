@@ -85,18 +85,52 @@ window.FrameworkDesignerRenderer = (function () {
     "attribute vec3 aPosition;",
     "attribute vec3 aNormal;",
     "uniform mat4 uModelViewProjection;",
+    "uniform mat4 uModel;",
     "uniform mat3 uNormalMatrix;",
     "varying vec3 vNormal;",
+    "varying vec3 vWorld;",
     "void main() {",
     "  vNormal = uNormalMatrix * aNormal;",
+    "  vWorld = (uModel * vec4(aPosition, 1.0)).xyz;",
     "  gl_Position = uModelViewProjection * vec4(aPosition, 1.0);",
     "}"
   ].join("\n");
+
+  /*
+   * A vertex normal that is not the normal of its own face is a fault, and the
+   * bundles carry some.
+   *
+   * The 24mm shoulder ring under each adapter leg and the base of the 16mm pin
+   * are exported with vertices welded across their hard edges, so a vertex on
+   * the ring's side wall may carry the disc's normal (up or down) and a disc
+   * vertex may carry the wall's. Measured on wide_adapter part 10: a third of
+   * the side-wall vertices are more than 45 degrees off their own face, some
+   * by 88. Lit per vertex that draws the ring's lower edge as a comb of dark
+   * and light facets -- in the middle of the frame during the assembly story's
+   * close-up, where a joint is exactly the thing being looked at. Polygon
+   * offset and depth precision do nothing for it, because nothing is fighting;
+   * the normals are simply wrong.
+   *
+   * The fix that belongs in the pipeline is to split vertices at hard edges
+   * when the bundle is written. Until then the renderer refuses to believe a
+   * vertex normal that is more than about 30 degrees off the face it is on,
+   * and uses the face's own normal instead, taken from the screen-space
+   * derivatives of world position. A 35-facet cylinder puts a vertex normal
+   * about 5 degrees off its faces, so smooth shading on the posts is untouched;
+   * only the welded rims change. Fragment derivatives need the extension in
+   * WebGL 1 and a highp fragment stage (a mediump world position is quantised
+   * to the millimetre, and its derivative is noise), so the check is compiled
+   * in only where both hold and the plain vertex normal is used elsewhere.
+   */
+  const FACE_NORMAL_AGREEMENT = 0.866; // cos 30 degrees
 
   // Two soft directional terms plus a sky/ground gradient. Enough to separate
   // a shelf top from its front edge without the cost or the shadow-acne risk
   // of anything physically based.
   const FRAGMENT_SHADER = [
+    // The extension line has to be the first thing in the source, ahead of the
+    // precision qualifier; it is prepended by buildProgram when the context
+    // has the extension.
     // gl_FragCoord reaches 1080 in the share image, and a half-precision float
     // cannot count that high a pixel at a time, which would break the hatch
     // into blocks. highp where the phone has it, mediump where it does not --
@@ -115,9 +149,22 @@ window.FrameworkDesignerRenderer = (function () {
     // 0 for an ordinary piece, otherwise the width in pixels of one diagonal
     // band pair.
     "uniform float uHatch;",
+    // Unit vector from the scene towards the camera, to orient a face normal:
+    // culling is off, so a face may be seen from either side.
+    "uniform vec3 uToCamera;",
     "varying vec3 vNormal;",
+    "varying vec3 vWorld;",
     "void main() {",
     "  vec3 n = normalize(vNormal);",
+    "#if defined(FACE_NORMALS) && defined(GL_FRAGMENT_PRECISION_HIGH)",
+    "  vec3 face = cross(dFdx(vWorld), dFdy(vWorld));",
+    "  float faceLength = length(face);",
+    "  if (faceLength > 0.0) {",
+    "    face /= faceLength;",
+    "    if (dot(face, uToCamera) < 0.0) face = -face;",
+    "    if (dot(face, n) < " + FACE_NORMAL_AGREEMENT.toFixed(3) + ") n = face;",
+    "  }",
+    "#endif",
     "  float key = max(dot(n, vec3(0.42, -0.55, 0.72)), 0.0);",
     "  float rim = max(dot(n, vec3(-0.60, 0.35, 0.25)), 0.0);",
     "  float sky = 0.5 + 0.5 * n.z;",
@@ -197,6 +244,11 @@ window.FrameworkDesignerRenderer = (function () {
 
     const meshProgram = buildProgram(gl, VERTEX_SHADER, FRAGMENT_SHADER);
     if (!meshProgram) return null;
+    // The renderer string is read once for the caller's benefit (the assembly
+    // story asks whether it is looking at a software rasteriser); it is not
+    // used for anything here.
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    const rendererName = debugInfo ? String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || "") : "";
 
     const state = {
       gl,
@@ -222,6 +274,7 @@ window.FrameworkDesignerRenderer = (function () {
       cssHeight: 1,
       frameQueued: false,
       contextLost: false,
+      rendererName,
       onFrame: settings.onFrame || null
     };
 
@@ -255,7 +308,14 @@ window.FrameworkDesignerRenderer = (function () {
   function buildProgram(gl, vertexSource, fragmentSource) {
     const program = gl.createProgram();
     const vertex = compile(gl, gl.VERTEX_SHADER, vertexSource);
-    const fragment = compile(gl, gl.FRAGMENT_SHADER, fragmentSource);
+    // Fragment derivatives are core in WebGL 2 and an extension in WebGL 1;
+    // this is a WebGL 1 context, so ask, and compile the face-normal check in
+    // only when the answer is yes. See FACE_NORMAL_AGREEMENT.
+    const derivatives = gl.getExtension("OES_standard_derivatives");
+    const fragmentPrefix = derivatives
+      ? "#extension GL_OES_standard_derivatives : enable\n#define FACE_NORMALS 1\n"
+      : "";
+    const fragment = compile(gl, gl.FRAGMENT_SHADER, fragmentPrefix + fragmentSource);
     if (!vertex || !fragment) return null;
     gl.attachShader(program, vertex);
     gl.attachShader(program, fragment);
@@ -274,6 +334,8 @@ window.FrameworkDesignerRenderer = (function () {
       },
       uniforms: {
         modelViewProjection: gl.getUniformLocation(program, "uModelViewProjection"),
+        model: gl.getUniformLocation(program, "uModel"),
+        toCamera: gl.getUniformLocation(program, "uToCamera"),
         normalMatrix: gl.getUniformLocation(program, "uNormalMatrix"),
         color: gl.getUniformLocation(program, "uColor"),
         alpha: gl.getUniformLocation(program, "uAlpha"),
@@ -605,6 +667,8 @@ window.FrameworkDesignerRenderer = (function () {
 
     gl.useProgram(mesh.program);
     gl.uniformMatrix4fv(mesh.uniforms.modelViewProjection, false, mvp);
+    gl.uniformMatrix4fv(mesh.uniforms.model, false, model);
+    gl.uniform3f(mesh.uniforms.toCamera, -camera.forward[0], -camera.forward[1], -camera.forward[2]);
     gl.uniformMatrix3fv(mesh.uniforms.normalMatrix, false, normalMatrix(instance));
     gl.uniform1f(mesh.uniforms.alpha, alpha);
     gl.uniform1f(mesh.uniforms.lit, placeholder ? OMITTED_LIT : 1);
@@ -680,6 +744,14 @@ window.FrameworkDesignerRenderer = (function () {
   function api(state) {
     return {
       isReady: () => !state.contextLost,
+
+      /**
+       * What the browser says is drawing, e.g. "ANGLE (Apple, ANGLE Metal
+       * Renderer: Apple M4, ...)" or "Google SwiftShader". Empty where the
+       * browser withholds it. A caller deciding how much to ask of the device
+       * wants to know when the answer is "a software rasteriser".
+       */
+      rendererName: () => state.rendererName,
 
       setPixelRatio(ratio) {
         state.pixelRatio = Math.max(1, Math.min(ratio, 2));

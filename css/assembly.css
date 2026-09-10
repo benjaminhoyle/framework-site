@@ -80,20 +80,47 @@ body {
     margin: 0 0 12px;
 }
 
-.fa-hint {
-    margin-top: 40px;
+/*
+ * The scroll hint: the word, and a small chevron under it pointing the way.
+ *
+ * Written as `.fa-intro .fa-hint` because `.fa-intro p` above outranks a bare
+ * `.fa-hint`, which is how the first version ended up in body type with a
+ * stray vertical rule beside it. Nothing here animates unless the reader has
+ * not asked for less motion, and even then it is a slow nudge, not a bounce.
+ */
+.fa-intro .fa-hint {
+    margin: 40px 0 0;
     color: var(--faint);
-    font-size: 14px;
-    display: flex;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    line-height: 1;
+    display: inline-flex;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
 }
 
-.fa-hint::after {
+.fa-intro .fa-hint::after {
     content: "";
-    width: 1px;
-    height: 34px;
-    background: linear-gradient(var(--faint), transparent);
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    margin-top: -2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .fa-intro .fa-hint::after {
+        animation: fa-nudge 2.4s ease-in-out infinite;
+    }
+    @keyframes fa-nudge {
+        0%, 100% { transform: translateY(0) rotate(45deg); }
+        50% { transform: translateY(4px) rotate(45deg); }
+    }
 }
 
 .fa-cta {

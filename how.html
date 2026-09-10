@@ -150,9 +150,9 @@
             </section>
 
             <section class="hw-section">
-                <img class="pg-shot" src="/images/colours/stepped-display-feature.jpg"
+                <img class="pg-shot" src="/images/shelving/configs/stepped-display-emptied.jpg"
                     alt="A low three-tier marine shelf with a tall stack standing on one end of it."
-                    width="1100" height="1100" loading="lazy">
+                    width="1400" height="1400" loading="lazy">
                 <div class="hw-section-text">
                     <h2>Start with one unit. Add to it later.</h2>
                     <p>A base unit stands on its own. When you need more, the next unit slides onto it, in the same colour or a new one.</p>
@@ -215,14 +215,12 @@
 
         /*
          * js/site.js puts the site header in at window.load, which moves the
-         * track down by the header's height after the story may already have
-         * measured where it starts. The story re-measures on resize, so ask it
-         * to. site.js registered its load listener first (it is in the head),
-         * so the header is in place by the time this runs.
+         * track down by the header's height. This page used to dispatch a
+         * resize event here to make the story re-measure, and that was a
+         * race: the story only listened once its geometry had arrived, which
+         * on a slow connection is after load. The story now watches the
+         * body's own size (scroll-story.js) and needs nothing from the page.
          */
-        window.addEventListener('load', function () {
-            window.dispatchEvent(new Event('resize'));
-        });
     </script>
 </body>
 

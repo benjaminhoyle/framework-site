@@ -53,7 +53,7 @@ window.FrameworkAssembly = (function () {
      * What this device should be asked to do.
      *
      *   full    live 3D, device pixel ratio up to 2, antialiased
-     *   lite    live 3D at 1x with no antialiasing, capped at 30fps
+     *   lite    live 3D, pixel ratio up to 1.5, antialiased, capped at 30fps
      *   calm    live 3D, but the camera cuts between shots instead of moving
      *   still   the story as a stack of stills, drawn once by the same renderer
      *   photo   the story as words and the shelf's own product photographs
@@ -74,9 +74,13 @@ window.FrameworkAssembly = (function () {
      * fine -- an iPhone that reports nothing is not the device being guarded
      * against here.
      */
+    var TIERS = ['full', 'lite', 'calm', 'still', 'photo'];
+
     function detectTier() {
         var override = new URLSearchParams(window.location.search).get('tier');
-        if (override) return { tier: override, why: 'forced by ?tier=' + override };
+        // A name this file does not know is ignored, not run as a fifth kind
+        // of live tier: `?tier=fast` used to behave as `full` without saying so.
+        if (override && TIERS.indexOf(override) >= 0) return { tier: override, why: 'forced by ?tier=' + override };
 
         var link = navigator.connection || {};
         if (link.saveData === true) return { tier: 'photo', why: 'Save-Data is on' };
@@ -108,6 +112,17 @@ window.FrameworkAssembly = (function () {
         var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (reduced) return { tier: 'calm', why: 'prefers-reduced-motion' };
 
+        /*
+         * WebGL that is there but drawn by the CPU. Chrome with the GPU
+         * blocklisted, a virtual machine, a remote desktop: the context is
+         * created, every capability check passes, and each frame then has to
+         * be rasterised in software, which at 1.5 million pixels a frame is
+         * seconds, not milliseconds. The pace judge would get there in the end;
+         * this gets there before the first frame.
+         */
+        var drawnBy = rendererName();
+        if (isSoftwareRenderer(drawnBy)) return { tier: 'lite', why: 'software WebGL: ' + drawnBy };
+
         var cores = navigator.hardwareConcurrency || 0;
         var memory = navigator.deviceMemory || 0;
         if ((cores && cores <= 4) || (memory && memory <= 4)) {
@@ -124,6 +139,90 @@ window.FrameworkAssembly = (function () {
         } catch (error) {
             return false;
         }
+    }
+
+    /** What the browser says is drawing its WebGL, or '' where it will not say. */
+    function rendererName() {
+        try {
+            var probe = document.createElement('canvas');
+            var gl = probe.getContext('webgl') || probe.getContext('experimental-webgl');
+            var info = gl && gl.getExtension('WEBGL_debug_renderer_info');
+            return info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL) || '') : '';
+        } catch (error) {
+            return '';
+        }
+    }
+
+    // The names the CPU rasterisers go by: Chrome's, Mesa's, Windows'.
+    function isSoftwareRenderer(name) {
+        return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name || '');
+    }
+
+    /**
+     * The judge for the adaptive pixel ratio.
+     *
+     * The tier guess is made from navigator.deviceMemory and hardwareConcurrency,
+     * and on the devices this most needs to protect it is wrong: a mid-range
+     * Android reports eight cores and no memory at all, lands in `full`, and
+     * then has to fill 1.5 million pixels a frame on a GPU that cannot. iOS
+     * reports neither number, so every iPhone -- old ones included -- also
+     * lands in `full`. So the guess is checked against what actually happens:
+     * a run of painted frames slower than about 30fps steps the drawing buffer
+     * down, twice at most and only downwards, because a page renegotiating its
+     * own resolution in both directions mid-scroll is worse to look at than one
+     * that is slightly soft.
+     *
+     * The only evidence of a fill-rate-bound frame is the time between two
+     * requestAnimationFrame ticks. But that same interval also lengthens when
+     * the browser throttles the loop and the GPU has nothing to do with it:
+     * Chrome's energy saver, a 30Hz external display, a window on a second
+     * screen. The first version judged against a fixed 32ms, and on a MacBook
+     * on battery that is every frame, so after twelve scrolled frames the page
+     * went to 1x on a Retina display for no reason and stayed there. That is
+     * what "a bit pixellated" on a desktop was.
+     *
+     * So the interval is judged against the interval the display actually
+     * delivers when the page is idle, which the loop sees for free on every
+     * frame the scroll position has not moved. A painted frame counts as slow
+     * only if it took materially longer than an idle one. A throttled loop has
+     * slow idle frames too and is left alone; a slow GPU has fast idle frames
+     * and slow painted ones, which is the case this exists for.
+     */
+    function createPace(options) {
+        var ratios = options.ratios;
+        var slowMs = options.slowMs || 32;
+        var run = options.run || 12;
+        var idle = 0;
+        var idleSeen = 0;
+        var slowFrames = 0;
+        var step = 0;
+        return {
+            ratio: function () { return ratios[step]; },
+            step: function () { return step; },
+            idle: function () { return idle; },
+            /** One frame's evidence. Returns true when the ratio just stepped down. */
+            observe: function (elapsed, painted) {
+                if (!painted) {
+                    // A running average, and each sample capped: one long idle
+                    // frame is a tab switch, not a 500ms refresh rate.
+                    var sample = Math.min(elapsed, 100);
+                    idle = idleSeen ? idle + (sample - idle) * 0.25 : sample;
+                    idleSeen += 1;
+                    return false;
+                }
+                if (step >= ratios.length - 1) return false;
+                // No verdict until the display's own rate is known.
+                if (idleSeen < 3) return false;
+                var threshold = Math.max(slowMs, idle * 1.9);
+                // A single long frame is a garbage collection or a tab switch,
+                // not a verdict. A run of them is the device telling us.
+                slowFrames = elapsed > threshold ? slowFrames + 1 : 0;
+                if (slowFrames < run) return false;
+                slowFrames = 0;
+                step += 1;
+                return true;
+            }
+        };
     }
 
     // ------------------------------------------------------------ timeline
@@ -405,16 +504,25 @@ window.FrameworkAssembly = (function () {
          *
          * On a phone the canvas gives up this band so the caption is never on
          * top of the model (see css/assembly.css). The cards are laid out but
-         * invisible at this point, so they have a height to read; the reflow it
-         * costs happens once, before the first frame.
+         * invisible at this point, so they have a height to read. Measured
+         * again whenever the track is re-measured, because the web font
+         * arriving after the first paint changes the height of a four-line
+         * caption by a line, and a band sized to the fallback font clips the
+         * last line of the real one.
          */
-        var tallest = 0;
-        captions.forEach(function (caption) {
-            tallest = Math.max(tallest, caption.node.offsetHeight);
-        });
-        stage.style.setProperty('--fa-caption-band', (tallest + 40) + 'px');
+        function fitBand() {
+            var tallest = 0;
+            captions.forEach(function (caption) {
+                tallest = Math.max(tallest, caption.node.offsetHeight);
+            });
+            var band = (tallest + 40) + 'px';
+            if (stage.style.getPropertyValue('--fa-caption-band') !== band) {
+                stage.style.setProperty('--fa-caption-band', band);
+            }
+        }
+        fitBand();
 
-        return { root: overlay, captions: captions, pins: pinNodes, dots: dots };
+        return { root: overlay, captions: captions, pins: pinNodes, dots: dots, fitBand: fitBand };
     }
 
     /*
@@ -516,6 +624,8 @@ window.FrameworkAssembly = (function () {
         var overlay = buildOverlay(stage, story);
 
         var renderer = null;
+        var scene = null;
+        var ready = false;
         var moment = null;
         var progress = 0;
 
@@ -524,11 +634,19 @@ window.FrameworkAssembly = (function () {
          * one we last asked for. The renderer coalesces draw requests, so on the
          * frame a fling lands on those are not the same thing -- and a label
          * half a move behind its own dot is the one artefact people notice.
+         *
+         * Antialiasing stays on in every live tier. It was turned off in `lite`
+         * as a saving, and the saving is imaginary: multisampling is resolved
+         * in tile memory on every mobile GPU this page will meet, while the
+         * cost of doing without it is real and was the first thing Ben saw --
+         * a thin crossbar drawn as a comb of stair-steps where its top face
+         * meets its side along a shallow diagonal. Fill rate is the lever for
+         * a slow device, and that is what the pixel ratio below is for.
          */
         renderer = window.FrameworkDesignerRenderer.create(options.canvas, {
-            antialias: !lite,
+            antialias: true,
             onFrame: function () {
-                if (moment) {
+                if (moment && ready) {
                     paintPins(overlay, renderer.project, moment, progress,
                         options.canvas.clientWidth, options.canvas.clientHeight);
                 }
@@ -538,123 +656,207 @@ window.FrameworkAssembly = (function () {
             overlay.root.remove();
             return runPhoto(options, 'WebGL context could not be created');
         }
-        return loadScene(story).then(function (scene) {
+
+        /*
+         * Track geometry is measured once and on resize, never per frame.
+         * getBoundingClientRect() inside a scroll loop is the classic way to
+         * turn a smooth page into a stuttering one: it forces layout at the
+         * exact moment the browser is trying to composite.
+         */
+        var span = 1;
+        var top = 0;
+        var painted = -1;
+
+        function measure() {
+            var rect = track.getBoundingClientRect();
+            top = rect.top + window.scrollY;
+            span = Math.max(1, track.offsetHeight - stage.offsetHeight);
+            overlay.fitBand();
+            renderer.resize();
+            painted = -1; // reframe: fit() depends on the aspect ratio
+        }
+
+        function scrollProgress() {
+            return clamp01((window.scrollY - top) / span);
+        }
+
+        /*
+         * The words do not wait for the geometry.
+         *
+         * The six module bundles are 96KB and arrive whenever the connection
+         * lets them; the scroll loop starts before they do. Until the scene is
+         * ready a frame paints the caption for wherever the reader is, so
+         * someone who scrolls into the track on a slow connection reads the
+         * story against a blank stage rather than seeing nothing at all, and
+         * the shelf appears in the right place when it lands.
+         */
+        function apply(p) {
+            progress = p;
+            moment = sample(keys, p, calm);
+            paintCaptions(overlay, p);
+            if (!ready) return;
+            renderer.setInstances(instancesFor(story, moment));
+            renderer.fit(moment.focus, moment.padding);
+        }
+
+        /*
+         * Adaptive pixel ratio. Fill rate is the only thing this page spends
+         * anything on, so it is the only thing worth taking away, and the
+         * difference between 2x and 1.5x on a flat-shaded isometric is
+         * genuinely hard to see. createPace() above says how the verdict is
+         * reached, and why it is not a fixed number of milliseconds.
+         *
+         * `lite` starts at 1.5x rather than 1x: a 390px phone at 1.5x is a
+         * 0.6 megapixel frame, which is nothing, and 1x on a 3x phone is what
+         * "a bit pixellated" looks like. The judge still has 1x to fall to.
+         */
+        var device = Math.min(window.devicePixelRatio || 1, 2);
+        var pace = createPace({
+            ratios: lite ? [Math.min(device, 1.5), 1] : [device, 1.5, 1]
+        });
+        renderer.setPixelRatio(pace.ratio());
+
+        var running = false;
+        var queued = false;
+        var lastAt = 0;
+        // Halving the frame rate on a slow device buys back far more than it
+        // costs to look at: the story is a slow move, and 30fps of it reads
+        // as smooth where 60 dropped frames does not.
+        var minInterval = lite ? 32 : 0;
+
+        function frame() {
+            queued = false;
+            if (!running) return;
+            queued = true;
+            window.requestAnimationFrame(frame);
+            var now = performance.now();
+            if (now - lastAt < minInterval) return;
+            var elapsed = now - lastAt;
+            lastAt = now;
+            var p = scrollProgress();
+            // The first frame after a restart has no previous frame to be
+            // measured against, so it is neither idle evidence nor slow
+            // evidence; `painted` is -1 exactly then.
+            if (Math.abs(p - painted) < 0.0004) {
+                if (painted >= 0) pace.observe(elapsed, false);
+                return;
+            }
+            if (ready && painted >= 0 && pace.observe(elapsed, true)) {
+                renderer.setPixelRatio(pace.ratio());
+                renderer.resize();
+            }
+            painted = p;
+            apply(p);
+        }
+
+        measure();
+        apply(scrollProgress());
+        painted = progress;
+
+        /*
+         * The loop only turns over while the track is on screen. Above and
+         * below it this page costs nothing at all.
+         *
+         * The observer can deliver several entries at once after a burst of
+         * layout, and the last one is the current state. And there is at most
+         * one loop: `queued` says a frame is already on its way, so a track
+         * that leaves and comes back inside one frame does not end up with two
+         * loops each reading the scroll position and judging the pace twice.
+         */
+        var watcher = new IntersectionObserver(function (entries) {
+            var visible = entries[entries.length - 1].isIntersecting;
+            if (visible === running) return;
+            running = visible;
+            if (running) {
+                painted = -1;
+                if (!queued) { queued = true; window.requestAnimationFrame(frame); }
+            }
+        }, { rootMargin: '10% 0px' });
+        watcher.observe(track);
+
+        /*
+         * Anything that moves the track re-measures it.
+         *
+         * `top` is where the track starts, and everything above the track
+         * can still change after this code has run: the site header that
+         * js/site.js puts in at window.load pushes it down by 70 to 90px, a
+         * web font arriving with display=swap reflows the intro by another
+         * 35px, and on a phone the menu opening does the same. Measured once
+         * at load, the story would then begin that many pixels before the
+         * stage locks, or end that many after it unlocks.
+         *
+         * So the page is not asked to remember to dispatch a resize (how.html
+         * used to); the body's own size is watched. It changes whenever the
+         * header lands, a font swaps, or an image without dimensions loads,
+         * and a measurement costs one getBoundingClientRect, once, off the
+         * scroll path. The plain listeners cover browsers without
+         * ResizeObserver and the cases it does not see: a viewport change,
+         * a rotation, and a return from the back-forward cache, which puts
+         * the page back exactly as it was, scroll position included, without
+         * a load event.
+         */
+        var resizeTimer = null;
+        function scheduleMeasure() {
+            window.clearTimeout(resizeTimer);
+            resizeTimer = window.setTimeout(measure, 120);
+        }
+        window.addEventListener('resize', scheduleMeasure, { passive: true });
+        window.addEventListener('orientationchange', scheduleMeasure);
+        window.addEventListener('pageshow', scheduleMeasure);
+        if (document.readyState === 'complete') scheduleMeasure();
+        else window.addEventListener('load', scheduleMeasure);
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleMeasure);
+        var sizer = null;
+        if (window.ResizeObserver) {
+            sizer = new ResizeObserver(scheduleMeasure);
+            sizer.observe(document.body);
+            sizer.observe(track);
+        }
+
+        function stop() {
+            running = false;
+            watcher.disconnect();
+            if (sizer) sizer.disconnect();
+            window.clearTimeout(resizeTimer);
+        }
+
+        /*
+         * A lost WebGL context comes back empty.
+         *
+         * Android and in-app browsers drop the context readily when a tab
+         * goes to the background; the renderer catches the event and keeps
+         * the context alive, but the geometry it had uploaded is gone with
+         * the old context, and so is the GL state create() set up. Without
+         * this the page came back from the background as a black rectangle
+         * (verified: every sampled pixel of the drawing buffer at 0,0,0
+         * after a forced lose/restore) and stayed that way for the rest of
+         * the visit. The renderer's own restored handler runs first, since
+         * it was registered first, so by the time this runs the context is
+         * usable again and the shader is rebuilt: put the modules back, put
+         * the state back, and draw the frame the reader is looking at.
+         */
+        options.canvas.addEventListener('webglcontextrestored', function () {
+            if (!scene) return;
+            var gl = options.canvas.getContext('webgl') || options.canvas.getContext('experimental-webgl');
+            if (gl) {
+                gl.clearColor(1, 1, 1, 1);
+                gl.enable(gl.DEPTH_TEST);
+                gl.disable(gl.CULL_FACE);
+            }
+            scene.modules.forEach(function (module) { renderer.addModule(module.id, module.geometry); });
+            painted = -1;
+            apply(scrollProgress());
+        });
+
+        return loadScene(story).then(function (loaded) {
+            scene = loaded;
             renderer.setPalette(story.palette);
             scene.modules.forEach(function (module) { renderer.addModule(module.id, module.geometry); });
-
-            /*
-             * Track geometry is measured once and on resize, never per frame.
-             * getBoundingClientRect() inside a scroll loop is the classic way to
-             * turn a smooth page into a stuttering one: it forces layout at the
-             * exact moment the browser is trying to composite.
-             */
-            var span = 1;
-            var top = 0;
-            var painted = -1;
-
-            function measure() {
-                var rect = track.getBoundingClientRect();
-                top = rect.top + window.scrollY;
-                span = Math.max(1, track.offsetHeight - stage.offsetHeight);
-                renderer.resize();
-                painted = -1; // reframe: fit() depends on the aspect ratio
-            }
-
-            function scrollProgress() {
-                return clamp01((window.scrollY - top) / span);
-            }
-
-            function apply(p) {
-                progress = p;
-                moment = sample(keys, p, calm);
-                renderer.setInstances(instancesFor(story, moment));
-                renderer.fit(moment.focus, moment.padding);
-                paintCaptions(overlay, p);
-            }
-
-            /*
-             * Adaptive pixel ratio.
-             *
-             * The tier guess is made from navigator.deviceMemory and
-             * hardwareConcurrency, and on the devices this most needs to protect
-             * it is wrong: a mid-range Android reports eight cores and no memory
-             * at all, lands in `full`, and then has to fill 1.5 million pixels a
-             * frame on a GPU that cannot. iOS reports neither number, so every
-             * iPhone -- old ones included -- also lands in `full`.
-             *
-             * So the guess is checked against what actually happens. If the page
-             * spends a stretch of frames slower than about 30fps *while it is
-             * repainting*, the drawing buffer is stepped down. Fill rate is the
-             * only thing this page spends anything on, so it is also the only
-             * thing worth taking away, and the difference between 2x and 1x on a
-             * flat-shaded isometric is genuinely hard to see.
-             *
-             * Only ever downwards, and only twice: a page that renegotiates its
-             * own resolution in both directions during a scroll is worse to look
-             * at than one that is simply a bit soft.
-             */
-            var ratios = lite ? [1] : [Math.min(window.devicePixelRatio || 1, 2), 1.25, 1];
-            var ratioStep = 0;
-            renderer.setPixelRatio(ratios[0]);
-            var slowFrames = 0;
-            var SLOW_MS = 32;
-            var SLOW_RUN = 12;
-
-            function checkPace(elapsed) {
-                if (ratioStep >= ratios.length - 1) return;
-                // A single long frame is a garbage collection or a tab switch,
-                // not a verdict. A run of them is the device telling us.
-                slowFrames = elapsed > SLOW_MS ? slowFrames + 1 : 0;
-                if (slowFrames < SLOW_RUN) return;
-                slowFrames = 0;
-                ratioStep += 1;
-                renderer.setPixelRatio(ratios[ratioStep]);
-                renderer.resize();
-                painted = -1;
-            }
-
-            var running = false;
-            var lastAt = 0;
-            // Halving the frame rate on a slow device buys back far more than it
-            // costs to look at: the story is a slow move, and 30fps of it reads
-            // as smooth where 60 dropped frames does not.
-            var minInterval = lite ? 32 : 0;
-
-            function frame() {
-                if (!running) return;
-                window.requestAnimationFrame(frame);
-                var now = performance.now();
-                if (now - lastAt < minInterval) return;
-                var elapsed = now - lastAt;
-                lastAt = now;
-                var p = scrollProgress();
-                if (Math.abs(p - painted) < 0.0004) return;
-                // Only frames that did work are evidence about how fast the work
-                // is; an idle frame says nothing.
-                if (painted >= 0) checkPace(elapsed);
-                painted = p;
-                apply(p);
-            }
-
-            measure();
+            ready = true;
+            // The frame the reader is looking at, now with the shelf in it.
+            painted = -1;
             apply(scrollProgress());
             painted = progress;
-
-            // The loop only turns over while the track is on screen. Above and
-            // below it this page costs nothing at all.
-            var watcher = new IntersectionObserver(function (entries) {
-                var visible = entries[0].isIntersecting;
-                if (visible === running) return;
-                running = visible;
-                if (running) { painted = -1; window.requestAnimationFrame(frame); }
-            }, { rootMargin: '10% 0px' });
-            watcher.observe(track);
-
-            var resizeTimer = null;
-            window.addEventListener('resize', function () {
-                window.clearTimeout(resizeTimer);
-                resizeTimer = window.setTimeout(measure, 120);
-            }, { passive: true });
 
             /*
              * A handle for the bench: seek(p) puts the story at an exact point
@@ -663,13 +865,16 @@ window.FrameworkAssembly = (function () {
              */
             return {
                 tier: options.tier, keys: keys.length, modules: scene.modules.length,
-                pixelRatio: function () { return ratios[ratioStep]; },
+                pixelRatio: function () { return pace.ratio(); },
+                pace: pace,
                 renderer: renderer, story: story, instancesFor: instancesFor,
                 seek: function (p) { window.scrollTo(0, top + span * clamp01(p)); },
                 at: scrollProgress,
+                measure: measure,
                 moment: function () { return moment; }
             };
         }).catch(function (error) {
+            stop();
             overlay.root.remove();
             return runPhoto(options, error.message);
         });
@@ -691,7 +896,9 @@ window.FrameworkAssembly = (function () {
     function runStill(options) {
         var story = options.story;
         var canvas = document.createElement('canvas');
-        var renderer = window.FrameworkDesignerRenderer.create(canvas, { antialias: false });
+        // Antialiased for the same reason the live tiers are: a still is looked
+        // at for longer than a frame, and it is drawn once.
+        var renderer = window.FrameworkDesignerRenderer.create(canvas, { antialias: true });
         if (!renderer) return runPhoto(options, 'WebGL context could not be created');
 
         var keys = fillCameras(resolveKeys(story));
@@ -721,9 +928,13 @@ window.FrameworkAssembly = (function () {
 
             var width = Math.min(880, Math.round((steps.clientWidth || 720)));
             var height = Math.round(width * 0.75);
+            // Drawn at the screen's own density, once, so a still on a Retina
+            // display is as crisp as the live version would have been. Six
+            // stills at 2x is one extra frame's worth of pixels, paid once.
+            var density = Math.min(window.devicePixelRatio || 1, 2);
             var paper = document.createElement('canvas');
-            paper.width = width;
-            paper.height = height;
+            paper.width = Math.round(width * density);
+            paper.height = Math.round(height * density);
             var context = paper.getContext('2d');
 
             placed.forEach(function (step) {
@@ -732,8 +943,11 @@ window.FrameworkAssembly = (function () {
                 var p = (step.spec.from + step.spec.to) / 2;
                 var moment = sample(keys, p);
                 renderer.setInstances(instancesFor(story, moment));
+                // Drawn at the paper's size, not the picture's: the paper is
+                // `density` times larger, and a snapshot taken at CSS size
+                // filled a quarter of it and left the rest grey.
                 var shot = renderer.snapshot({
-                    width: width, height: height,
+                    width: paper.width, height: paper.height,
                     boundsMm: moment.focus, padding: moment.padding
                 });
                 // readPixels hands back rows bottom-up, the way GL stores them.
@@ -842,5 +1056,11 @@ window.FrameworkAssembly = (function () {
         });
     }
 
-    return { start: start, detectTier: detectTier, sample: sample, resolveKeys: resolveKeys, fillCameras: fillCameras, blendFocus: blendFocus, windowOpacity: windowOpacity };
+    return {
+        start: start, detectTier: detectTier, sample: sample, resolveKeys: resolveKeys,
+        fillCameras: fillCameras, blendFocus: blendFocus, windowOpacity: windowOpacity,
+        // For scripts/test-assembly-story.mjs: the parts that decide what a
+        // device is asked to do, testable without a browser.
+        createPace: createPace, isSoftwareRenderer: isSoftwareRenderer, TIERS: TIERS
+    };
 })();
