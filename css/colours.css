@@ -1,85 +1,35 @@
 /*
  * /colours: the four finishes and the add-ons, on one short page.
  *
- * Built for a phone, because the page is sent as a link in a WhatsApp reply
- * when somebody asks what colours there are. Everything is one column and
- * every tile is a photograph of a real shelf from the catalogue, so the page
- * cannot promise a colour the workshop does not make.
+ * This is the link the team sends when somebody on WhatsApp asks what colours
+ * there are, so a phone is the first case and the page stays one scroll.
+ * Tokens, type and the two closing blocks come from css/pages.css.
  *
- * The site header and footer come from js/site.js, which is why css/styles.css
- * is loaded too; the body padding it adds for other pages is taken back here.
+ * The four colour photographs are not the catalogue's own. Each catalogue shot
+ * was taken on its own day against its own backdrop, so side by side the
+ * papers disagreed and each shelf sat at a different size in its frame, which
+ * made a colour comparison read as four unrelated products. The set in
+ * images/colours/ is built from those same photographs by scripts/build-colour-tiles.py:
+ * one paper for all of them, one floor line, one margin. The shelf colours
+ * themselves are untouched, which on this page of all pages is the point.
  */
 
-:root {
-    --ink: #1b1f1e;
-    --muted: #6a7370;
-    --faint: #9aa5a1;
-    --rule: #e4e8e6;
-    --paper: #ffffff;
-    --accent: #2f6f52;
-}
-
-body {
-    padding: 0;
-    min-height: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: 'Red Hat Display', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    font-size: 17px;
-    line-height: 1.5;
-    -webkit-text-size-adjust: 100%;
-}
-
 .co {
-    max-width: 720px;
+    max-width: 1080px;
     margin: 0 auto;
-    padding: 28px 20px 72px;
+    padding: clamp(28px, 5vw, 56px) 24px clamp(64px, 8vw, 96px);
 }
 
-.co-kicker {
-    font-size: 12px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--faint);
-    font-weight: 700;
-    margin: 0 0 12px;
-}
-
-.co-intro h1 {
-    font-size: clamp(30px, 7vw, 46px);
-    line-height: 1.08;
-    letter-spacing: -0.02em;
-    font-weight: 700;
-    margin: 0 0 14px;
-}
-
-.co-intro p,
-.co-lead {
-    color: var(--muted);
-    font-size: clamp(17px, 2.4vw, 19px);
-    margin: 0 0 16px;
-}
-
-.co h2 {
-    font-size: clamp(22px, 4.2vw, 28px);
-    line-height: 1.2;
-    letter-spacing: -0.01em;
-    font-weight: 700;
-    margin: 0 0 10px;
-}
-
-.co p { margin: 0 0 14px; }
-
-.co section { margin-top: 56px; }
+.co section { margin-top: var(--gap); }
 .co .co-intro { margin-top: 0; }
 
-/* ------------------------------------------------------------- the colours */
+/* ------------------------------------------------------------- the four */
 
-.co-colours {
+.co-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px 14px;
-    margin-top: 28px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(20px, 3vw, 32px) clamp(14px, 2vw, 24px);
+    margin-top: clamp(28px, 4vw, 44px);
 }
 
 .co-tile { margin: 0; }
@@ -90,73 +40,85 @@ body {
     text-decoration: none;
 }
 
+/* The tiles are the one place a ratio is imposed, and it is safe: every
+   picture in images/colours/ was built to it, with the shelf already inside
+   the margin. */
 .co-tile img {
     display: block;
     width: 100%;
-    /* The width and height attributes on the <img> are only there for the
-       aspect ratio; without this the height attribute wins as a presentational
-       hint and the picture is drawn 1,400px tall. */
     height: auto;
-    aspect-ratio: 1 / 1;
-    object-fit: cover;
-    border-radius: 12px;
-    background: #f6f8f7;
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius);
+    background: var(--wash);
 }
 
 .co-tile figcaption {
-    padding: 10px 2px 0;
+    padding: 14px 2px 0;
     font-size: 15px;
-    line-height: 1.4;
+    line-height: 1.45;
     color: var(--muted);
 }
 
-.co-tile b {
+.co-name {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     font-size: 18px;
+    font-weight: 700;
     color: var(--ink);
-    margin-bottom: 2px;
+    margin-bottom: 3px;
 }
 
-/* A swatch beside the name: the steel colour on the left, the board colour on
-   the right, both from the builder's own palette. */
+/* Steel on the left of the dot, board on the right, both from the builder's
+   own palette in assets/shelving/builder-contract.json. */
 .co-dot {
-    width: 16px;
-    height: 16px;
+    width: 17px;
+    height: 17px;
     border-radius: 50%;
     flex: none;
     background: linear-gradient(90deg, var(--steel) 50%, var(--board) 50%);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+/* Two lines whether the words fill them or not, so the prices under four
+   tiles sit on one line across the row. */
+.co-desc {
+    display: block;
+    min-height: 2.9em;
 }
 
 .co-shown {
     display: block;
     font-size: 14px;
     color: var(--faint);
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
-.co-tile a:hover .co-shown,
-.co-tile a:focus .co-shown { color: var(--accent); }
+.co-tile a:hover .co-name,
+.co-tile a:focus .co-name { color: var(--accent); }
 
-.co-tile.co-mix { grid-column: 1 / -1; }
+/* --------------------------------------------------- the two wide pieces */
 
-.co-tile.co-mix img { aspect-ratio: 4 / 3; }
+/* A picture beside its paragraph: the mix, and how a shelf grows. */
+.co-feature {
+    display: grid;
+    gap: clamp(20px, 3vw, 40px);
+    align-items: center;
+}
 
-/* ------------------------------------------------------------ how it grows */
+.co-feature .pg-shot { max-width: 520px; }
 
-.co-grow img {
-    display: block;
-    width: 100%;
-    /* The width and height attributes on the <img> are only there for the
-       aspect ratio; without this the height attribute wins as a presentational
-       hint and the picture is drawn 1,400px tall. */
-    height: auto;
-    aspect-ratio: 4 / 3;
-    object-fit: cover;
-    border-radius: 12px;
-    background: #f6f8f7;
-    margin-bottom: 18px;
+.co-feature-text p {
+    color: var(--muted);
+    max-width: 46ch;
+}
+
+@media (min-width: 860px) {
+    .co-grid { grid-template-columns: repeat(4, 1fr); }
+    .co-feature { grid-template-columns: 1fr 1fr; }
+    /* The mix is the answer to a question the four tiles raise, so it reads
+       right to left: picture first on the page, words beside it. */
+    .co-feature-flip .co-feature-text { order: -1; }
 }
 
 /* ---------------------------------------------------------------- add-ons */
@@ -164,35 +126,34 @@ body {
 .co-addons ul {
     list-style: none;
     padding: 0;
-    margin: 20px 0 0;
+    margin: clamp(24px, 4vw, 40px) 0 0;
     display: grid;
-    gap: 22px;
+    gap: clamp(22px, 3vw, 36px);
 }
 
 .co-addon {
     display: grid;
-    grid-template-columns: 116px 1fr;
-    gap: 16px;
+    grid-template-columns: 132px 1fr;
+    gap: 20px;
     align-items: center;
 }
 
 .co-addon img {
     display: block;
     width: 100%;
-    /* The width and height attributes on the <img> are only there for the
-       aspect ratio; without this the height attribute wins as a presentational
-       hint and the picture is drawn 1,400px tall. */
     height: auto;
     aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: 10px;
-    background: #f6f8f7;
+    border-radius: 12px;
+    background: var(--wash);
 }
+
+.co-addon a { display: block; color: inherit; text-decoration: none; }
 
 .co-addon b {
     display: block;
     font-size: 18px;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
 }
 
 .co-addon p {
@@ -201,78 +162,36 @@ body {
     font-size: 15.5px;
 }
 
-.co-addon .co-shown { margin-top: 6px; }
+.co-addon a:hover b, .co-addon a:focus b { color: var(--accent); }
+.co-addon .co-shown { margin-top: 8px; }
 
-/* An add-on with no photograph yet: a plain tile with the name, the same
-   size as the photographs, so the list keeps its rhythm. */
-.co-plain {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    aspect-ratio: 1 / 1;
-    border-radius: 10px;
-    background: #f6f8f7;
-    color: var(--faint);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    text-align: center;
-    padding: 8px;
+/* The display bar has no photograph yet, so it is a sentence under the list
+   rather than a grey box pretending to be one. */
+.co-also {
+    margin: clamp(22px, 3vw, 32px) 0 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 15.5px;
+    max-width: 52ch;
 }
 
-.co-addon a { color: inherit; text-decoration: none; }
-.co-addon a:hover, .co-addon a:focus { color: var(--accent); }
-
-/* ------------------------------------------------------------ the ask */
-
-.co-ask {
-    padding: 24px 22px;
-    border: 1px solid var(--rule);
-    border-radius: 14px;
+/* On a wider screen the three become cards, side by side and in one row, with
+   the picture over the words. Three of them in a two-column list left one
+   stranded on a second row, and a 150px thumbnail is too small to read a
+   bookend in. */
+@media (min-width: 860px) {
+    .co-addons ul { grid-template-columns: repeat(3, 1fr); gap: 32px; }
+    /* A column, so the prices sit on one line across the three however long
+       the descriptions run. */
+    .co-addon { display: flex; flex-direction: column; }
+    .co-addon > div { display: flex; flex-direction: column; flex: 1; }
+    .co-addon .co-shown { margin-top: auto; padding-top: 10px; }
+    /* Square: three of these sources are square, and the 4:3 this started with
+       took the shade off the lamp. */
+    .co-addon img { margin-bottom: 16px; }
 }
 
-.co-ask p { color: var(--muted); }
-
-.co-wa {
-    display: inline-block;
-    margin: 6px 0 14px;
-    padding: 14px 24px;
-    border-radius: 999px;
-    background: var(--ink);
-    color: #fff;
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.co-wa:hover, .co-wa:focus { background: #000; }
-
-.co-small {
-    font-size: 14px;
-    color: var(--faint);
-    margin: 0;
-}
-
-/* ------------------------------------------------------------ elsewhere */
-
-.co-links {
-    margin-top: 40px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 28px;
-    font-size: 16px;
-}
-
-.co-links a {
-    color: var(--accent);
-    text-decoration: none;
-    border-bottom: 1px solid var(--rule);
-}
-
-.co-links a:hover, .co-links a:focus { border-bottom-color: var(--accent); }
-
-@media (min-width: 700px) {
-    .co { padding-top: 40px; }
-    .co-colours { gap: 20px 18px; }
-    .co-addon { grid-template-columns: 150px 1fr; gap: 22px; }
+@media (max-width: 400px) {
+    .co-addon { grid-template-columns: 104px 1fr; gap: 16px; }
 }

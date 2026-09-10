@@ -75,6 +75,7 @@
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
     <!-- styles.css carries the header and footer that js/site.js injects. -->
     <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/pages.css">
     <link rel="stylesheet" href="/css/colours.css">
     <script src="/js/site.js" defer></script>
 </head>
@@ -85,100 +86,103 @@
             style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <main class="co">
+    <main class="pg co">
         <section class="co-intro">
-            <p class="co-kicker">Colours</p>
+            <p class="pg-kicker">Colours</p>
             <h1>Four colours, made in Nairobi.</h1>
-            <p>Each one is a steel colour with a lighter board to match. The frames are painted to order, so any design comes in any of the four, or in a mix.</p>
+            <p class="pg-lead">Each one is a steel colour with a lighter board to match. The frames are painted to order, so any design comes in any of the four, or in a mix.</p>
         </section>
 
         <!--
-          One tile per colour, each a catalogue photograph of a shelf that was
-          made in it, and each linking to that product. The swatch beside the
-          name is the steel colour and the board colour from the builder's own
-          palette (assets/shelving/builder-contract.json, finishes).
+          One tile per colour, each a shelf that was made in it, and each
+          linking to that product so the page cannot promise a colour or a
+          price the workshop does not make. The pictures come from
+          images/colours/, built to a shared paper, floor line and margin: see
+          the note at the head of css/colours.css.
         -->
-        <section class="co-colours" aria-label="The four colours">
+        <section class="co-grid" aria-label="The four colours">
             <figure class="co-tile">
                 <a href="/shelving.html?config=quadruple">
-                    <img src="/images/shelving/configs/quadruple-emptied.jpg"
+                    <img src="/images/colours/quadruple.jpg"
                         alt="A four-tier shelf in Marine: deep blue steel posts with sky blue boards."
-                        width="1400" height="1400" loading="eager" fetchpriority="high">
+                        width="1000" height="1250" loading="eager" fetchpriority="high">
                     <figcaption>
-                        <b><span class="co-dot" style="--steel:#143F68;--board:#82AAD0"></span>Marine</b>
-                        Deep blue steel, sky blue boards.
+                        <span class="co-name"><span class="co-dot" style="--steel:#143F68;--board:#82AAD0"></span>Marine</span>
+                        <span class="co-desc">Deep blue steel, sky blue boards.</span>
                         <span class="co-shown">As shown: The Quadruple, Ksh 17,500/-</span>
                     </figcaption>
                 </a>
             </figure>
             <figure class="co-tile">
                 <a href="/shelving.html?config=versatile-stack">
-                    <img src="/images/shelving/configs/versatile-stack-emptied.jpg"
-                        alt="A tall seven-tier shelf in Sage: leaf green steel posts with mint green boards."
-                        width="1400" height="1400" loading="eager">
+                    <img src="/images/colours/versatile-stack.jpg"
+                        alt="A tall six-tier shelf in Sage: leaf green steel posts with mint green boards."
+                        width="1000" height="1250" loading="eager">
                     <figcaption>
-                        <b><span class="co-dot" style="--steel:#6F986A;--board:#B3D4BE"></span>Sage</b>
-                        Leaf green steel, mint green boards.
+                        <span class="co-name"><span class="co-dot" style="--steel:#6F986A;--board:#B3D4BE"></span>Sage</span>
+                        <span class="co-desc">Leaf green steel, mint green boards.</span>
                         <span class="co-shown">As shown: The Versatile Stack, Ksh 28,500/-</span>
                     </figcaption>
                 </a>
             </figure>
             <figure class="co-tile">
                 <a href="/shelving.html?config=low-console">
-                    <img src="/images/shelving/configs/low-console-emptied.jpg"
+                    <img src="/images/colours/low-console.jpg"
                         alt="A low three-tier console in Charcoal: near-black steel posts with cool grey boards."
-                        width="1400" height="1400" loading="lazy">
+                        width="1000" height="1250" loading="lazy">
                     <figcaption>
-                        <b><span class="co-dot" style="--steel:#171E20;--board:#94A4B0"></span>Charcoal</b>
-                        Charcoal steel, cool grey boards.
+                        <span class="co-name"><span class="co-dot" style="--steel:#171E20;--board:#94A4B0"></span>Charcoal</span>
+                        <span class="co-desc">Charcoal steel, cool grey boards.</span>
                         <span class="co-shown">As shown: The Low Console, Ksh 12,000/-</span>
                     </figcaption>
                 </a>
             </figure>
             <figure class="co-tile">
                 <a href="/shelving.html?config=wide-four-tier">
-                    <img src="/images/shelving/configs/wide-four-tier-emptied.jpg"
+                    <img src="/images/colours/wide-four-tier.jpg"
                         alt="A wide four-tier shelf in Coral: coral steel posts with soft coral boards."
-                        width="1400" height="1400" loading="lazy">
+                        width="1000" height="1250" loading="lazy">
                     <figcaption>
-                        <b><span class="co-dot" style="--steel:#C8554B;--board:#F29A8C"></span>Coral</b>
-                        Coral steel, soft coral boards.
+                        <span class="co-name"><span class="co-dot" style="--steel:#C8554B;--board:#F29A8C"></span>Coral</span>
+                        <span class="co-desc">Coral steel, soft coral boards.</span>
                         <span class="co-shown">As shown: The Wide Four-Tier, Ksh 22,000/-</span>
                     </figcaption>
                 </a>
             </figure>
-            <figure class="co-tile co-mix">
-                <a href="/shelving.html?config=multicolor-stack">
-                    <img src="/images/shelving/configs/multicolor-stack-emptied.jpg"
-                        alt="A five-tier shelf with each tier in a different colour: charcoal at the top, then coral, marine and sage."
-                        width="1400" height="1400" loading="lazy">
-                    <figcaption>
-                        <b>Or a mix</b>
-                        Each unit is one colour, so one shelf can carry all four.
-                        <span class="co-shown">As shown: The Multicolor Stack, Ksh 23,000/-</span>
-                    </figcaption>
-                </a>
-            </figure>
         </section>
 
-        <section class="co-grow">
-            <img src="/images/shelving/configs/high-low-emptied.jpg"
-                alt="A low sage shelf with a tall five-tier unit standing on one end of it."
-                width="1400" height="1400" loading="lazy">
-            <h2>It grows.</h2>
-            <p>Our shelves are modular, which means they are made of separate parts that stack together. Start with one unit and add more as your collection grows. A unit you buy later slides onto the one you already have, in the same colour or a new one. Units from Ksh 6,500/-.</p>
+        <section class="co-feature">
+            <a href="/shelving.html?config=multicolor-stack">
+                <img class="pg-shot" src="/images/colours/multicolor-stack-feature.jpg"
+                    alt="A five-tier shelf with each unit in a different colour: charcoal at the top, then coral, marine and sage."
+                    width="1100" height="1100" loading="lazy">
+            </a>
+            <div class="co-feature-text">
+                <h2>Or a mix.</h2>
+                <p>Each unit is painted on its own, so one shelf can carry all four colours. Pick a colour for every unit, or keep one all the way up.</p>
+                <p class="co-shown">As shown: The Multicolor Stack, Ksh 23,000/-</p>
+            </div>
+        </section>
+
+        <section class="co-feature co-feature-flip">
+            <img class="pg-shot" src="/images/colours/high-low-feature.jpg"
+                alt="A low sage shelf with a tall unit standing on one end of it."
+                width="1100" height="1100" loading="lazy">
+            <div class="co-feature-text">
+                <h2>It grows.</h2>
+                <p>Our shelves are modular, which means they are made of separate parts that stack together. Start with one unit and add more as your collection grows.</p>
+                <p>A unit you buy later slides onto the one you already have, in the same colour or a new one. Units from Ksh 6,500/-.</p>
+            </div>
         </section>
 
         <!--
-          Prices here are the catalogue's own: the bookend is sold on its own at
-          Ksh 1,000, and the lamp and the coat hanger are shown on the
-          configurations that carry them, with the shade excluded the way the
-          catalogue excludes it. The display bar has no catalogue price and no
-          photograph yet, so it is named and described and nothing more.
+          Prices are the catalogue's own: the bookend is sold on its own, the
+          lamp and the coat hanger are shown on the configurations that carry
+          them, with the shade excluded the way the catalogue excludes it.
         -->
         <section class="co-addons">
             <h2>Add-ons.</h2>
-            <p class="co-lead">Any of these can go on your order, or onto a shelf you already have.</p>
+            <p class="pg-lead">Any of these can go on your order, or onto a shelf you already have.</p>
             <ul>
                 <li class="co-addon">
                     <a href="/shelving.html?config=bookend">
@@ -187,7 +191,7 @@
                             width="1400" height="1278" loading="lazy">
                     </a>
                     <div>
-                        <b>The Bookend</b>
+                        <a href="/shelving.html?config=bookend"><b>The Bookend</b></a>
                         <p>Clamps onto a shelf and keeps a row of books upright. Fully detachable, so it moves as the books do. It fits every standard unit.</p>
                         <span class="co-shown">Ksh 1,000/- each</span>
                     </div>
@@ -195,48 +199,42 @@
                 <li class="co-addon">
                     <a href="/shelving.html?config=lighted-console">
                         <img src="/images/shelving/configs/lighted-console-emptied.jpg"
-                            alt="A marine console shelf with a steel lamp arm rising from one end and a white shade hanging over it."
+                            alt="A marine console shelf with a steel lamp arm rising from one end and a shade hanging over it."
                             width="1400" height="1400" loading="lazy">
                     </a>
                     <div>
-                        <b>The Lamp</b>
+                        <a href="/shelving.html?config=lighted-console"><b>The Lamp</b></a>
                         <p>A steel arm that drops into a post at the top of a unit and holds a bulb over the shelf. Shades are not included; Elewa Art and Baskets Kenya sell them.</p>
                         <span class="co-shown">As shown: The Lighted Console, Ksh 19,500/- (excl. shade)</span>
                     </div>
                 </li>
                 <li class="co-addon">
-                    <div class="co-plain" aria-hidden="true"><span>Display bar</span></div>
-                    <div>
-                        <b>The Display Bar</b>
-                        <p>A steel bar across a shelf, so books or records can stand facing out.</p>
-                    </div>
-                </li>
-                <li class="co-addon">
                     <a href="/shelving.html?config=wardrobe-shelf">
                         <img src="/images/shelving/configs/wardrobe-shelf-populated.jpg"
-                            alt="A tall charcoal shelf with a rail across the top, jackets on hangers and baskets on the shelves below."
+                            alt="A tall charcoal shelf with a rail across it, jackets on hangers and baskets on the shelves below."
                             width="1400" height="1400" loading="lazy">
                     </a>
                     <div>
-                        <b>The Coat Hanger</b>
+                        <a href="/shelving.html?config=wardrobe-shelf"><b>The Coat Hanger</b></a>
                         <p>A rail in place of a shelf, for clothes on hangers. It takes the width of a unit, with shelves above and below.</p>
                         <span class="co-shown">As shown: The Wardrobe Shelf, Ksh 43,000/-</span>
                     </div>
                 </li>
             </ul>
+            <p class="co-also">We also make a display bar: a steel bar across a shelf, so books or records can stand facing out. Kindly ask and we will send a photograph and a price.</p>
         </section>
 
-        <section class="co-ask">
+        <section class="pg-ask">
             <h2>Which colour is it for your space?</h2>
             <p>Kindly share the colour you have in mind and what the shelf is for, and we'll revert back with a design and a price.</p>
-            <a class="co-wa"
+            <a class="pg-wa"
                 href="https://wa.me/254783891005?text=Hello%2C%20I%27m%20interested%20in%20your%20shelving.%20I%27ve%20seen%20the%20colours%20page%20and%20I%27d%20like%20help%20choosing%20a%20colour."
                 target="_blank" rel="noopener noreferrer" data-fwk-handoff="colours"
                 onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{link_target:'colours_page',content_category:'colours_page'});}">Message us on WhatsApp</a>
-            <p class="co-small">Delivered assembled within Nairobi. We provide an ETR invoice.</p>
+            <p class="pg-fine">Delivered assembled within Nairobi. We provide an ETR invoice.</p>
         </section>
 
-        <nav class="co-links" aria-label="Elsewhere on the site">
+        <nav class="pg-links" aria-label="Elsewhere on the site">
             <a href="/how">How a shelf works</a>
             <a href="/shelving.html">See the range</a>
             <a href="/builder">Design your own</a>

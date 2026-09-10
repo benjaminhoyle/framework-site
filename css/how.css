@@ -1,65 +1,47 @@
 /*
- * /how: the system page.
- *
- * The assembly story is the hero and css/assembly.css lays it out; this file
- * only adds what sits around it: the three sections under the animation, the
- * colours link, and the two doors at the end. It loads after css/styles.css,
- * whose header and footer js/site.js injects, and takes back the body padding
- * that stylesheet adds for the older pages.
+ * /how: the system page. The assembly story is the hero and css/assembly.css
+ * lays that out; this file is only what sits around it. Tokens, type and the
+ * closing blocks come from css/pages.css.
  *
  * One rule carried over from docs/assembly-animation.md: nothing above the
  * sticky stage may carry a transform, filter, perspective or will-change.
- * Nothing here does.
+ * Nothing here does, and nothing here may.
  */
-
-body {
-    padding: 0;
-    height: auto;
-    min-height: 0;
-}
 
 /* ----------------------------------------------------------------- intro */
 
-/* Shorter than the story's own intro: the animation is the point of this page
-   and should be one small scroll away, not a screen away. */
+/* Shorter than the story's own intro on /assembly: the animation is the point
+   of this page and should be one small scroll away, not a screen away. */
 .hw-intro {
-    padding: 8vh 24px 6vh;
+    padding: clamp(48px, 9vh, 96px) 24px clamp(36px, 6vh, 64px);
 }
 
-/* ---------------------------------------------------------------- sections */
+/* --------------------------------------------------------------- sections */
+
+.hw-body {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px clamp(64px, 8vw, 96px);
+}
 
 .hw-section {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 64px 24px 0;
+    margin-top: var(--gap);
+    display: grid;
+    gap: clamp(18px, 3vw, 40px);
+    align-items: center;
 }
 
-.hw-section img {
-    display: block;
-    width: 100%;
-    /* The width and height attributes on the <img> are only there for the
-       aspect ratio; without this the height attribute wins as a presentational
-       hint and the picture is drawn 1,400px tall. */
-    height: auto;
-    aspect-ratio: 4 / 3;
-    object-fit: cover;
-    border-radius: 12px;
-    background: #f6f8f7;
-    margin-bottom: 18px;
-}
-
-.hw-section h2 {
-    font-size: clamp(24px, 4.4vw, 32px);
-    line-height: 1.15;
-    letter-spacing: -0.01em;
-    font-weight: 700;
-    margin: 0 0 10px;
-}
-
-.hw-section p {
+.hw-section-text p {
     color: var(--muted);
-    font-size: clamp(17px, 2.4vw, 19px);
-    margin: 0;
+    font-size: clamp(16.5px, 1.7vw, 18.5px);
+    max-width: 46ch;
+}
+
+@media (min-width: 860px) {
+    .hw-section { grid-template-columns: 1fr 1fr; }
+    /* The pictures alternate side to side down the page, so three sections of
+       the same shape do not read as one block repeated. */
+    .hw-section:nth-child(even) .hw-section-text { order: -1; }
 }
 
 /* --------------------------------------------------------------- colours */
@@ -67,84 +49,38 @@ body {
 .hw-colours {
     display: flex;
     align-items: center;
-    gap: 16px;
-    max-width: 720px;
-    margin: 64px auto 0;
-    padding: 18px 20px;
+    gap: 18px;
+    margin-top: var(--gap);
+    padding: 20px 24px;
     border: 1px solid var(--rule);
-    border-radius: 14px;
+    border-radius: var(--radius);
     color: var(--muted);
     text-decoration: none;
     font-size: 16px;
     line-height: 1.45;
+    transition: border-color 0.15s ease;
 }
 
 .hw-colours b { color: var(--ink); }
+.hw-colours:hover, .hw-colours:focus { border-color: var(--accent); }
 
-.hw-colours:hover,
-.hw-colours:focus { border-color: var(--accent); }
-
-/* The four swatches, steel on the left and board on the right, from the
-   builder's own palette. */
+/* Steel on the left of each dot, board on the right, from the builder's own
+   palette. The same four as the tiles on /colours. */
 .hw-swatches {
     display: flex;
-    gap: 6px;
+    gap: 7px;
     flex: none;
 }
 
 .hw-swatches i {
     display: block;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background: linear-gradient(90deg, var(--steel) 50%, var(--board) 50%);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
-/* ----------------------------------------------------------------- doors */
-
-.hw-doors {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 64px 24px 96px;
-    display: grid;
-    gap: 14px;
-}
-
-.hw-door {
-    display: block;
-    padding: 22px 24px;
-    border-radius: 14px;
-    background: #f6f8f7;
-    color: var(--ink);
-    text-decoration: none;
-}
-
-.hw-door b {
-    display: block;
-    font-size: 22px;
-    line-height: 1.2;
-    margin-bottom: 4px;
-}
-
-.hw-door span {
-    display: block;
-    color: var(--muted);
-    font-size: 15.5px;
-    line-height: 1.45;
-}
-
-.hw-door-dark { background: var(--ink); color: #fff; }
-.hw-door-dark span { color: rgba(255, 255, 255, 0.72); }
-
-.hw-door:hover, .hw-door:focus { background: #eef2f0; }
-.hw-door-dark:hover, .hw-door-dark:focus { background: #000; }
-
-@media (min-width: 700px) {
-    .hw-doors { grid-template-columns: 1fr 1fr; }
-}
-
-@media (max-width: 760px) {
-    .hw-section { padding-top: 48px; }
-    .hw-colours { margin-top: 48px; }
-    .hw-doors { padding-top: 48px; padding-bottom: 72px; }
+@media (max-width: 520px) {
+    .hw-colours { flex-direction: column; align-items: flex-start; gap: 12px; }
 }

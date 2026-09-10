@@ -85,6 +85,7 @@
          assembly.css is the story's own stylesheet, shared with /assembly. -->
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/assembly.css">
+    <link rel="stylesheet" href="/css/pages.css">
     <link rel="stylesheet" href="/css/how.css">
     <!--
       Not deferred, on purpose: site.js registers its load listener here, before
@@ -110,7 +111,7 @@
             style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <main class="hw">
+    <main class="pg hw">
         <section class="fa-intro hw-intro">
             <p class="fa-kicker">How it works</p>
             <h1>One shelf, made of parts that stack together.</h1>
@@ -130,50 +131,67 @@
             </div>
         </div>
 
-        <section class="hw-section">
-            <img src="/images/studio/details/shelf-10-joint.jpg"
-                alt="A sage steel post held just above the one below it, with the pin about to drop into the tube."
-                width="1200" height="900" loading="lazy">
-            <h2>Modular means separate parts.</h2>
-            <p>A unit is a steel frame with its boards. Units stack at the posts: a pin under the one above slides into a tube on the one below. No tools, no screws.</p>
-        </section>
+        <div class="hw-body">
+            <!--
+              Three sections, each a picture beside its paragraph, alternating
+              side to side. The joint and the board edge are details and are
+              cropped on purpose; the shelf in the middle is a whole product
+              and keeps its own proportions, because a crop takes the top off
+              a tall unit.
+            -->
+            <section class="hw-section">
+                <img class="pg-shot" src="/images/shelving/configs/multicolor-stack-joint.jpg"
+                    alt="A coral steel post held just above a marine tube on a sky blue board, about to drop into it."
+                    width="1400" height="1400" loading="lazy">
+                <div class="hw-section-text">
+                    <h2>Modular means separate parts.</h2>
+                    <p>A unit is a steel frame with its boards. Units stack at the posts: a pin under the one above slides into a tube on the one below. No tools, no screws.</p>
+                </div>
+            </section>
 
-        <section class="hw-section">
-            <img src="/images/shelving/configs/stepped-display-emptied.jpg"
-                alt="A low three-tier marine shelf with a tall stack standing on one end of it."
-                width="1400" height="1400" loading="lazy">
-            <h2>Start with one unit. Add to it later.</h2>
-            <p>A base unit stands on its own. When you need more, the next unit slides onto it, in the same colour or a new one. Units from Ksh 6,500/-.</p>
-        </section>
+            <section class="hw-section">
+                <img class="pg-shot" src="/images/colours/stepped-display-feature.jpg"
+                    alt="A low three-tier marine shelf with a tall stack standing on one end of it."
+                    width="1100" height="1100" loading="lazy">
+                <div class="hw-section-text">
+                    <h2>Start with one unit. Add to it later.</h2>
+                    <p>A base unit stands on its own. When you need more, the next unit slides onto it, in the same colour or a new one.</p>
+                    <p>Units from Ksh 6,500/-.</p>
+                </div>
+            </section>
 
-        <section class="hw-section">
-            <img src="/images/studio/details/shelf-12-foot.jpg"
-                alt="The adjustable foot of a sage steel post, resting on a stone floor."
-                width="1200" height="900" loading="lazy">
-            <h2>Steel, painted in Nairobi.</h2>
-            <p>The frame is all steel and the boards are painted engineered wood. Every base unit has adjustable feet, so it stands level on any floor. Made in our Dagoretti Corner workshop, and delivered assembled within Nairobi.</p>
-        </section>
+            <section class="hw-section">
+                <img class="pg-shot" src="/images/studio/details/shelf-11-mdf-edge.jpg"
+                    alt="The edge of a sage board where it meets the steel post that carries it."
+                    width="1000" height="1000" loading="lazy">
+                <div class="hw-section-text">
+                    <h2>Steel, painted in Nairobi.</h2>
+                    <p>The frame is all steel and the boards are painted engineered wood. Every base unit has adjustable feet, so it stands level on any floor.</p>
+                    <p>Made in our Dagoretti Corner workshop, and delivered assembled within Nairobi.</p>
+                </div>
+            </section>
 
-        <a class="hw-colours" href="/colours">
-            <span class="hw-swatches" aria-hidden="true">
-                <i style="--steel:#143F68;--board:#82AAD0"></i>
-                <i style="--steel:#6F986A;--board:#B3D4BE"></i>
-                <i style="--steel:#171E20;--board:#94A4B0"></i>
-                <i style="--steel:#C8554B;--board:#F29A8C"></i>
-            </span>
-            <span><b>Four colours.</b> Marine, Sage, Charcoal and Coral, each on a real shelf, and the add-ons.</span>
-        </a>
-
-        <section class="hw-doors" aria-label="Where next">
-            <a class="hw-door" href="/shelving.html">
-                <b>See the range</b>
-                <span>Popular configurations with prices. Units from Ksh 6,500/-.</span>
+            <a class="hw-colours" href="/colours">
+                <span class="hw-swatches" aria-hidden="true">
+                    <i style="--steel:#143F68;--board:#82AAD0"></i>
+                    <i style="--steel:#6F986A;--board:#B3D4BE"></i>
+                    <i style="--steel:#171E20;--board:#94A4B0"></i>
+                    <i style="--steel:#C8554B;--board:#F29A8C"></i>
+                </span>
+                <span><b>Four colours.</b> Marine, Sage, Charcoal and Coral, each on a real shelf, and the add-ons.</span>
             </a>
-            <a class="hw-door hw-door-dark" href="/builder">
-                <b>Design your own</b>
-                <span>Build one in the browser and it prices itself as you go.</span>
-            </a>
-        </section>
+
+            <section class="pg-doors" aria-label="Where next">
+                <a class="pg-door" href="/shelving.html">
+                    <b>See the range</b>
+                    <span>Popular configurations with prices. Units from Ksh 6,500/-.</span>
+                </a>
+                <a class="pg-door pg-door-dark" href="/builder">
+                    <b>Design your own</b>
+                    <span>Build one in the browser and it prices itself as you go.</span>
+                </a>
+            </section>
+        </div>
     </main>
 
     <!-- The same files /assembly loads, in the same order. Nothing is copied. -->

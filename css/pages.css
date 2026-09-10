@@ -1,0 +1,180 @@
+/*
+ * Shared by /colours and /how: the tokens, the type scale, the section
+ * rhythm, and the two primitives both pages end on (the WhatsApp ask and the
+ * doors). Loaded after css/styles.css, whose header and footer js/site.js
+ * injects, and it takes back the body padding that stylesheet adds for the
+ * older pages.
+ *
+ * One rule about photographs, and it is the one that was got wrong first:
+ * never force an aspect ratio onto a picture the page did not build. The
+ * catalogue shots are square, and the 4:3 cover crop these pages started with
+ * took the top off every tall unit and the shade off the lamp. `.pg-shot`
+ * keeps a picture whole. Where a common shape is wanted, the picture is built
+ * to it by scripts/build-colour-tiles.py rather than cropped in the browser.
+ */
+
+:root {
+    --ink: #1b1f1e;
+    --muted: #656e6b;
+    --faint: #98a29e;
+    --rule: #e6eae8;
+    --wash: #f5f7f6;
+    --paper: #ffffff;
+    --accent: #2f6f52;
+    --gap: clamp(56px, 8vw, 96px);
+    --radius: 14px;
+}
+
+body {
+    padding: 0;
+    height: auto;
+    min-height: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Red Hat Display', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* ------------------------------------------------------------------ type */
+
+.pg-kicker {
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 700;
+    margin: 0 0 14px;
+}
+
+.pg h1 {
+    font-size: clamp(32px, 5.6vw, 52px);
+    line-height: 1.06;
+    letter-spacing: -0.025em;
+    font-weight: 700;
+    margin: 0 0 16px;
+    max-width: 16ch;
+}
+
+.pg h2 {
+    font-size: clamp(24px, 3.4vw, 34px);
+    line-height: 1.14;
+    letter-spacing: -0.015em;
+    font-weight: 700;
+    margin: 0 0 12px;
+}
+
+.pg-lead {
+    color: var(--muted);
+    font-size: clamp(17px, 1.9vw, 20px);
+    line-height: 1.45;
+    margin: 0;
+    max-width: 54ch;
+}
+
+.pg p { margin: 0 0 14px; }
+.pg p:last-child { margin-bottom: 0; }
+
+/* --------------------------------------------------------------- pictures */
+
+/* A whole shelf. Its own proportions, never cropped. */
+.pg-shot {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius);
+    background: var(--wash);
+}
+
+/* ------------------------------------------------------------- the ask */
+
+.pg-ask {
+    background: var(--wash);
+    border-radius: var(--radius);
+    padding: clamp(28px, 4vw, 44px);
+}
+
+.pg-ask p {
+    color: var(--muted);
+    max-width: 46ch;
+}
+
+.pg-wa {
+    display: inline-block;
+    margin: 8px 0 16px;
+    padding: 15px 28px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.pg-wa:hover, .pg-wa:focus { background: #000; }
+
+.pg-fine {
+    font-size: 14.5px;
+    color: var(--faint);
+    margin: 0;
+}
+
+/* ---------------------------------------------------------------- doors */
+
+.pg-doors {
+    display: grid;
+    gap: 14px;
+    margin-top: var(--gap);
+}
+
+.pg-door {
+    display: block;
+    padding: 24px 26px;
+    border-radius: var(--radius);
+    background: var(--wash);
+    color: var(--ink);
+    text-decoration: none;
+    transition: background 0.15s ease;
+}
+
+.pg-door b {
+    display: block;
+    font-size: 21px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.pg-door span {
+    display: block;
+    color: var(--muted);
+    font-size: 15.5px;
+    line-height: 1.45;
+}
+
+.pg-door-dark { background: var(--ink); color: #fff; }
+.pg-door-dark span { color: rgba(255, 255, 255, 0.72); }
+.pg-door:hover, .pg-door:focus { background: #eaeeec; }
+.pg-door-dark:hover, .pg-door-dark:focus { background: #000; }
+
+@media (min-width: 700px) {
+    .pg-doors { grid-template-columns: 1fr 1fr; }
+}
+
+/* ------------------------------------------------------------ elsewhere */
+
+.pg-links {
+    margin-top: var(--gap);
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 30px;
+    font-size: 16px;
+}
+
+.pg-links a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.pg-links a:hover, .pg-links a:focus { text-decoration: underline; }
