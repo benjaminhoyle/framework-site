@@ -376,6 +376,9 @@
     // ---------- structure ----------
     function structure() {
       var st = obj(D.structure);
+      // Nothing declares the folder's shape any more, so there is nothing to
+      // police and the section would only add a line saying so.
+      if (!st.declared || !st.declared.length) return '';
       var un = arr(st.undeclared), miss = arr(st.missing), decl = arr(st.declared);
       var body;
       if (!D.structure) body = '<div class="empty">No structure check in this snapshot.</div>';
