@@ -92,10 +92,16 @@ def build(src: Path, dest: Path, size=(W, H)) -> str:
     # narrow and ringed by the board's own edges, while the gaps between tiers
     # are far wider than the kernel and stay paper.
     generous = ndimage.binary_closing(generous, disc(23))
-    # A crease or a shadow on the backdrop, far from the shelf, is darker than
-    # paper too, and against a clean field it lands as a grey rag hanging in
-    # the air. Keep only what is near the shelf itself.
-    generous &= ndimage.binary_dilation(strict, disc(61))
+    # A crease or a shadow on the backdrop is darker than paper too, and
+    # against a clean field it lands as a grey rag hanging in the air. Two
+    # constraints, and both are needed: stay near the shelf, because the
+    # backdrop of The Stepped Display creases right beside it and is joined to
+    # it through the shelf edge; and touch the shelf, because the same crease
+    # leaves crescents floating loose inside that neighbourhood.
+    generous &= ndimage.binary_dilation(strict, disc(41))
+    generous_labels, _ = ndimage.label(generous)
+    touching = np.unique(generous_labels[strict])
+    generous = np.isin(generous_labels, touching[touching > 0])
     generous = np.asarray(Image.fromarray((generous * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(2.5))).astype(np.float32) / 255.0
     pixels = np.asarray(im).astype(np.float32)
     flat = pixels * generous[..., None] + PAPER * (1 - generous[..., None])
