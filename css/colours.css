@@ -5,13 +5,10 @@
  * there are, so a phone is the first case and the page stays one scroll.
  * Tokens, type and the two closing blocks come from css/pages.css.
  *
- * The four colour photographs are not the catalogue's own. Each catalogue shot
- * was taken on its own day against its own backdrop, so side by side the
- * papers disagreed and each shelf sat at a different size in its frame, which
- * made a colour comparison read as four unrelated products. The set in
- * images/colours/ is built from those same photographs by scripts/build-colour-tiles.py:
- * one paper for all of them, one floor line, one margin. The shelf colours
- * themselves are untouched, which on this page of all pages is the point.
+ * The photographs are the catalogue's own, untouched. An earlier pass masked
+ * the shelves out of them onto one shared paper and the masks showed, so the
+ * tiles now do the unifying instead: one square, the picture whole inside it,
+ * one radius, one keyline, one caption shape. See .co-pic below.
  */
 
 .co {
@@ -40,16 +37,80 @@
     text-decoration: none;
 }
 
-/* The tiles are the one place a ratio is imposed, and it is safe: every
-   picture in images/colours/ was built to it, with the shelf already inside
-   the margin. */
-.co-tile img {
+/* A photograph in a tile, and the hover.
+
+   The empty catalogue shot sits in flow and sets the size. The populated shot
+   of the same shelf lies over it, hidden, and fades in while a pointer is on
+   the tile or the keyboard is on its link. Both are the catalogue's own
+   1400x1400 squares, so the square tile crops nothing and the two line up
+   exactly; nothing moves when the swap happens.
+
+   The overlay is display:none until the (hover: hover) query says there is a
+   pointer, and its <picture> only names the populated file inside a <source>
+   gated on the same query. A phone therefore never fetches the populated
+   shots at all: no matching source, no box to lazy-load into. A laptop fetches
+   them lazily as the tiles come near the viewport, so the swap is ready before
+   the pointer arrives. */
+.co-pic {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--wash);
+}
+
+.co-pic > img {
     display: block;
     width: 100%;
     height: auto;
-    aspect-ratio: 4 / 5;
-    border-radius: var(--radius);
-    background: var(--wash);
+    aspect-ratio: 1 / 1;
+    border-radius: 0;
+}
+
+/* One keyline over every picture. The papers in the six shots are close but
+   not the same white, and the line gives them one edge to share. */
+.co-pic::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px rgba(27, 31, 30, 0.08);
+    pointer-events: none;
+}
+
+.co-full {
+    display: none;
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.45s ease;
+}
+
+.co-full img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (hover: hover) {
+    .co-full { display: block; }
+    .co-pic:hover .co-full,
+    .co-tile a:hover .co-full,
+    a:focus-visible .co-full { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .co-full { transition: none; }
+}
+
+/* Keyboard focus rings the picture, not the whole tile: the browser's own
+   ring around the link would sit outside this one and read as two. */
+.co-tile a:focus-visible { outline: none; }
+
+.co-tile a:focus-visible .co-pic {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
 }
 
 .co-tile figcaption {
@@ -106,7 +167,7 @@
     align-items: center;
 }
 
-.co-feature .pg-shot { max-width: 520px; }
+.co-feature .co-pic { max-width: 520px; }
 
 .co-feature-text p {
     color: var(--muted);

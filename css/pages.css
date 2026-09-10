@@ -9,8 +9,8 @@
  * never force an aspect ratio onto a picture the page did not build. The
  * catalogue shots are square, and the 4:3 cover crop these pages started with
  * took the top off every tall unit and the shade off the lamp. `.pg-shot`
- * keeps a picture whole. Where a common shape is wanted, the picture is built
- * to it by scripts/build-colour-tiles.py rather than cropped in the browser.
+ * keeps a picture whole. The catalogue squares go into square tiles, which
+ * crop nothing; nothing is rebuilt or masked to fit a shape.
  */
 
 :root {
