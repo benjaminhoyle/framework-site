@@ -61,6 +61,13 @@
   to = "/colours.html"
   status = 200
 
+# Landing B for the Search campaign, one of three versions of /how being
+# compared (framework-marketing/research/landing-strategy.md, section 4).
+[[redirects]]
+  from = "/how-b"
+  to = "/how-b.html"
+  status = 200
+
 # The American spelling, typed by hand.
 [[redirects]]
   from = "/colors"
