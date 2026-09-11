@@ -77,9 +77,11 @@
             socket: 'socket',
             drop: 'next unit',
             spigot: '16 mm pin',
-            booster: 'just a post',
-            onShelf: 'on the unit',
-            onPost: 'on the post'
+            shortUnit: 'Slim Extension',
+            rightPost: 'Standard Booster',
+            leftPost: 'Standard Booster',
+            bridge: 'Standard Extension',
+            top: 'Wide Extension'
         },
         alt: {
             base: 'A steel leg meeting the floor beside the lowest shelf board.',
@@ -161,6 +163,28 @@
             if (score > bestScore) { bestScore = score; best = point; }
         });
         return best;
+    }
+
+    /**
+     * The point on a piece its name tag rides.
+     *
+     * The front-right post, at mid height: nearest the camera in the locked
+     * isometric, so the dot is never behind a board. Which post is front-right
+     * is read off the joints the piece lands on, against the renderer's own
+     * view direction, so a camera change moves the tags to the right leg by
+     * itself. Same rule as story-a.js, so the two pages tag the same leg.
+     */
+    function tagPoint(id) {
+        var view = (window.FrameworkDesignerRenderer && window.FrameworkDesignerRenderer.VIEW_DIRECTION)
+            || [0.68, -0.68, 0.56];
+        var p = piece(id);
+        var best = null;
+        var bestScore = -Infinity;
+        p.joints.forEach(function (point) {
+            var score = point[0] * view[0] + point[1] * view[1];
+            if (score > bestScore) { bestScore = score; best = point; }
+        });
+        return [best[0], best[1], (p.bounds[2] + p.bounds[5]) / 2];
     }
 
     // ------------------------------------------------------------- the shot
@@ -317,9 +341,19 @@
                 point: [JOINT[0], JOINT[1], JOINT[2] + 302], dx: 104, dy: -22
             },
             { id: 'spigot', from: 0.41, to: 0.60, point: [JOINT[0], JOINT[1], JOINT[2] + 48], dx: 108, dy: -42 },
-            { id: 'booster', from: 0.755, to: 0.845, point: [1143, 0, 875], dx: 96, dy: -30 },
-            { id: 'onShelf', from: 0.855, to: 0.945, point: [440, 0, 1026], dx: -86, dy: -34 },
-            { id: 'onPost', from: 0.855, to: 0.945, point: [1143, 0, 1026], dx: 92, dy: -34 }
+            /*
+             * From here on a pin names the part it rides, by the name the
+             * catalogue and the builder use, so a reader who goes to /builder
+             * next meets the same words. The 16 mm pin above is the one label
+             * that earns a measurement: it is the beat that explains the joint.
+             * Each tag follows its piece down and fades soon after it lands;
+             * the captions carry what the part is for.
+             */
+            { id: 'shortUnit', from: 0.695, to: 0.775, follow: 'item_003', point: tagPoint('item_003'), dx: -96, dy: -30 },
+            { id: 'rightPost', from: 0.755, to: 0.845, follow: 'item_004', point: tagPoint('item_004'), dx: 96, dy: -30 },
+            { id: 'leftPost', from: 0.815, to: 0.875, follow: 'item_006', point: tagPoint('item_006'), dx: -96, dy: -30 },
+            { id: 'bridge', from: 0.85, to: 0.925, follow: 'item_005', point: tagPoint('item_005'), dx: 96, dy: -30 },
+            { id: 'top', from: 0.92, to: 0.985, follow: 'item_007', point: tagPoint('item_007'), dx: 96, dy: -30 }
         ].map(function (pin) {
             return {
                 id: pin.id, from: pin.from, to: pin.to, follow: pin.follow || null,

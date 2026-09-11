@@ -4,16 +4,20 @@
  * The same shape as js/assembly/story.js and the same generated geometry
  * (js/assembly/curator-shelf.js); only the direction differs. Where story.js
  * explains the system, this one tells the segment message in numbers: a shelf
- * you can buy one unit at a time, so the price starts where you start. Every
- * figure on screen is the catalogue price of the part that just landed, and
- * the running total is the "As shown" price by the end.
+ * you can buy one unit at a time, so the price starts where you start. Each
+ * part is named on screen as it lands, by the name the catalogue and the
+ * builder use, and the running total in the captions is the "As shown" price
+ * by the end.
  *
  * Five beats over about three screens. The joint close-up is cut: "No tools"
  * in the second caption says what that beat proved, and the catalogue still
  * carries the joint. Nothing lands in pairs, as before.
  *
- * Copy is from research/landing-strategy.md section 4, contender A, taken
- * verbatim; scripts/test-landing-a.mjs checks it against that file.
+ * Captions are from research/landing-strategy.md section 4, contender A,
+ * taken verbatim; scripts/test-landing-a.mjs checks them against that file.
+ * The pins depart from the brief on purpose: it wrote a price tag per part,
+ * and Ben asked (2026-09-11) for the name of the unit instead. The captions
+ * already carried the running total, so nothing else moved.
  */
 (function () {
     "use strict";
@@ -22,7 +26,7 @@
 
     /*
      * Every word on the page, in one place, one `id: 'string'` per line.
-     * The running total lives here; the pins carry only each part's price.
+     * The running total lives here; the pins carry only each part's name.
      */
     var COPY = {
         base: {
@@ -42,13 +46,13 @@
             body: 'As shown: The Curator\'s Shelf, Ksh 36,500/- in Coral. Delivered assembled within Nairobi.'
         },
         pins: {
-            item_001: 'Ksh 8,000/-',
-            item_002: 'Ksh 7,000/-',
-            item_003: 'Ksh 5,000/-',
-            item_004: 'Ksh 2,000/-',
-            item_005: 'Ksh 5,500/-',
-            item_006: 'Ksh 2,000/-',
-            item_007: 'Ksh 7,000/-'
+            item_001: 'Wide Base',
+            item_002: 'Wide Adapter',
+            item_003: 'Slim Extension',
+            item_004: 'Standard Booster',
+            item_005: 'Standard Extension',
+            item_006: 'Standard Booster',
+            item_007: 'Wide Extension'
         },
         alt: {
             base: 'A steel leg meeting the floor beside the lowest shelf board.',
@@ -96,7 +100,7 @@
     }
 
     /**
-     * The point on a piece its price tag rides.
+     * The point on a piece its name tag rides.
      *
      * The front-right post, at mid height: nearest the camera in the locked
      * isometric, so the dot is never behind a board. Which post is front-right
@@ -217,9 +221,11 @@
         }),
 
         /*
-         * Pins: one price tag per piece, riding it down (`follow`) and fading
+         * Pins: one name tag per piece, riding it down (`follow`) and fading
          * once it has landed. The base has nowhere to arrive from, so its tag
-         * is simply up for the first beat.
+         * is simply up for the first beat. The name is the catalogue's, which
+         * is also the builder's, so a reader who goes there next meets the same
+         * words; what the part is for is said in the caption.
          */
         pins: [
             { id: 'item_001', from: -0.08, to: 0.14 },
