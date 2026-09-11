@@ -86,7 +86,6 @@
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/assembly.css">
     <link rel="stylesheet" href="/css/pages.css">
-    <link rel="stylesheet" href="/css/how.css">
     <!--
       Not deferred, on purpose: site.js registers its load listener here, before
       the page's own one at the foot of the body, so by the time the page asks
@@ -112,7 +111,7 @@
     <!-- End Google Tag Manager (noscript) -->
 
     <main class="pg hw">
-        <section class="fa-intro hw-intro">
+        <section class="fa-intro">
             <p class="fa-kicker">How it works</p>
             <h1>One shelf, made of parts that stack together.</h1>
             <p>Our shelves are modular, which means they are made of separate parts that stack together. This one is The Curator's Shelf: seven parts and one joint, repeated.</p>
@@ -131,48 +130,67 @@
             </div>
         </div>
 
-        <div class="hw-body">
-            <!--
-              Three sections, each a picture beside its paragraph, alternating
-              side to side. The joint and the board edge are details and are
-              cropped on purpose; the shelf in the middle is a whole product
-              and keeps its own proportions, because a crop takes the top off
-              a tall unit.
-            -->
-            <section class="hw-section">
+        <!--
+          The close, the same on /how, /how-a and /how-b: the one-unit start
+          with the photograph of The Curator's Shelf, the parts, Nairobi, then
+          the ask, the colors strip and the two doors. Pictures alternate side
+          to side down the page (css/pages.css, .pg-section).
+        -->
+        <div class="pg-close">
+            <section class="pg-section">
+                <img class="pg-shot" src="/images/shelving/hero-image.jpg"
+                    srcset="/images/shelving/w400/hero-image.jpg 400w, /images/shelving/w800/hero-image.jpg 800w, /images/shelving/w1100/hero-image.jpg 1100w, /images/shelving/hero-image.jpg 1600w"
+                    sizes="(min-width: 860px) 520px, calc(100vw - 48px)"
+                    alt="The Curator's Shelf in Sage: six tiers of leaf green steel and mint boards, holding baskets, mugs of brushes and painted clay animals."
+                    width="1600" height="1600" loading="lazy">
+                <div class="pg-section-text">
+                    <h2>Start with one unit. Add to it later.</h2>
+                    <p>A base unit stands on its own. When you need more, the next unit slides onto it, in the same color or a new one. Units from Ksh 6,500/-.</p>
+                </div>
+            </section>
+
+            <section class="pg-section">
                 <img class="pg-shot" src="/images/shelving/configs/multicolor-stack-joint.jpg"
+                    srcset="/images/shelving/configs/w400/multicolor-stack-joint.jpg 400w, /images/shelving/configs/w800/multicolor-stack-joint.jpg 800w, /images/shelving/configs/w1100/multicolor-stack-joint.jpg 1100w, /images/shelving/configs/multicolor-stack-joint.jpg 1400w"
+                    sizes="(min-width: 860px) 520px, calc(100vw - 48px)"
                     alt="A coral steel post held just above a marine tube on a sky blue board, about to drop into it."
                     width="1400" height="1400" loading="lazy">
-                <div class="hw-section-text">
+                <div class="pg-section-text">
                     <h2>Modular means separate parts.</h2>
                     <p>A unit is a steel frame with its boards. Units stack at the posts: a pin under the one above slides into a tube on the one below. No tools, no screws.</p>
                 </div>
             </section>
 
-            <section class="hw-section">
-                <img class="pg-shot" src="/images/shelving/configs/stepped-display-emptied.jpg"
-                    alt="A low three-tier marine shelf with a tall stack standing on one end of it."
-                    width="1400" height="1400" loading="lazy">
-                <div class="hw-section-text">
-                    <h2>Start with one unit. Add to it later.</h2>
-                    <p>A base unit stands on its own. When you need more, the next unit slides onto it, in the same color or a new one.</p>
-                    <p>Units from Ksh 6,500/-.</p>
-                </div>
-            </section>
-
-            <section class="hw-section">
+            <section class="pg-section">
                 <img class="pg-shot" src="/images/studio/details/shelf-11-mdf-edge.jpg"
                     alt="The edge of a sage board where it meets the steel post that carries it."
                     width="1000" height="1000" loading="lazy">
-                <div class="hw-section-text">
-                    <h2>Steel, painted in Nairobi.</h2>
+                <div class="pg-section-text">
+                    <h2>Made in Nairobi.</h2>
                     <p>The frame is all steel and the boards are painted engineered wood. Every base unit has adjustable feet, so it stands level on any floor.</p>
-                    <p>Made in our Dagoretti Corner workshop, and delivered assembled within Nairobi.</p>
                 </div>
             </section>
 
-            <a class="hw-colours" href="/colors">
-                <span class="hw-swatches" aria-hidden="true">
+            <section class="pg-ask">
+                <h2>Your space</h2>
+                <p>Kindly share what the shelf is for and roughly where it would go, and we'll revert back with design ideas and a price.</p>
+            <!--
+              The ask hands the visitor the task; the message typed into
+              WhatsApp (AGENTS.md) is the customer's own opener and is complete
+              on its own if they tap and send without writing. A self-written
+              first message converts at 31% against 1% for a tapped template,
+              so the page hands over the task and not the answer. js/site.js
+              adds the short code on click and beacons the handoff.
+            -->
+                <a class="pg-wa"
+                    href="https://wa.me/254783891005?text=Hello%2C%20I%27m%20interested%20in%20your%20shelving.%20I%27ve%20seen%20The%20Curator%27s%20Shelf%20and%20I%27d%20like%20a%20design%20and%20a%20price."
+                    target="_blank" rel="noopener noreferrer" data-fwk-handoff="how"
+                    onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{link_target:'how_page',content_category:'how_page'});}">Message us on WhatsApp</a>
+                <p>Made in our Dagoretti Corner workshop. Delivered assembled within Nairobi. ETR invoice provided.</p>
+            </section>
+
+            <a class="pg-colors" href="/colors">
+                <span class="pg-swatches" aria-hidden="true">
                     <i style="--steel:#143F68;--board:#82AAD0"></i>
                     <i style="--steel:#6F986A;--board:#B3D4BE"></i>
                     <i style="--steel:#171E20;--board:#94A4B0"></i>

@@ -1,9 +1,34 @@
 /*
- * Shared by /colors and /how: the tokens, the type scale, the section
- * rhythm, and the two primitives both pages end on (the WhatsApp ask and the
- * doors). Loaded after css/styles.css, whose header and footer js/site.js
- * injects, and it takes back the body padding that stylesheet adds for the
- * older pages.
+ * Shared by /colors, /how, /how-a and /how-b: the tokens, the type roles, the
+ * section rhythm, and the close every one of them ends on (a picture beside
+ * its paragraph, the WhatsApp ask, the colors strip, the doors). Loaded after
+ * css/styles.css, whose header and footer js/site.js injects, and it takes
+ * back the body padding that stylesheet adds for the older pages.
+ *
+ * ---------------------------------------------------------------- type ---
+ *
+ * Five roles, and no sixth. Each has one size, one weight and one color;
+ * anything else a page wants to say is said with space. The scale is a major
+ * third (1.25) on the 17px body, rounded to the pixel: 14, 17, 21, 27, 33,
+ * 42, 52. A role that has two sizes has them one step apart, the smaller one
+ * for a phone.
+ *
+ *   title     h1                     52 (42 on a phone)  700  ink    one per page
+ *   section   h2, .pg-statement      33 (27 on a phone)  700  ink    one per section
+ *   body      p, span, li, a         17                  400  ink    everything that is read
+ *   name      b in a card or strip   17                  700  ink    body, bold: what a tile, card or door is called
+ *   small     .pg-small              14                  400  muted  the line above a title, the scroll hint
+ *
+ * The button is body, 700, paper on ink; the dark door is the same roles in
+ * paper on ink. Nothing is uppercase, nothing is letter-spaced, nothing is
+ * lighter than --muted (5.3:1 on paper, 4.9:1 on the wash), and no line of
+ * body runs past about 55 characters. A price is body: it is read, not
+ * footnoted. If a new element does not fit a role it is body, or it is cut.
+ *
+ * The site loads Red Hat Display at 400, 500 and 700 only. Nothing here asks
+ * for another weight; 500 is loaded but unused on these pages.
+ *
+ * ------------------------------------------------------------ pictures ---
  *
  * One rule about photographs, and it is the one that was got wrong first:
  * never force an aspect ratio onto a picture the page did not build. The
@@ -16,13 +41,16 @@
 :root {
     --ink: #1b1f1e;
     --muted: #656e6b;
-    --faint: #98a29e;
     --rule: #e6eae8;
     --wash: #f5f7f6;
     --paper: #ffffff;
     --accent: #2f6f52;
     --gap: clamp(56px, 8vw, 96px);
     --radius: 14px;
+    --t-title: clamp(42px, 4.8vw, 52px);
+    --t-section: clamp(27px, 3.05vw, 33px);
+    --t-body: 17px;
+    --t-small: 14px;
 }
 
 body {
@@ -32,49 +60,88 @@ body {
     background: var(--paper);
     color: var(--ink);
     font-family: 'Red Hat Display', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    font-size: 17px;
+    font-size: var(--t-body);
     line-height: 1.5;
     -webkit-text-size-adjust: 100%;
 }
 
 /* ------------------------------------------------------------------ type */
 
-.pg-kicker {
-    font-size: 12px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--faint);
+/* Written with .pg in front throughout, so these outrank the intro rules in
+   css/assembly.css (.fa-intro h1, .fa-intro p, .fa-intro .fa-hint), which the
+   three animation pages also load and which set their own sizes and greys. */
+
+.pg h1,
+.pg .fa-intro h1 {
+    font-size: var(--t-title);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
     font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 18px;
+    max-width: 18ch;
+}
+
+.pg h2,
+.pg .pg-statement {
+    font-size: var(--t-section);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    font-weight: 700;
+    color: var(--ink);
     margin: 0 0 14px;
+    max-width: 24ch;
 }
 
-.pg h1 {
-    font-size: clamp(32px, 5.6vw, 52px);
-    line-height: 1.06;
-    letter-spacing: -0.025em;
-    font-weight: 700;
-    margin: 0 0 16px;
-    max-width: 16ch;
-}
-
-.pg h2 {
-    font-size: clamp(24px, 3.4vw, 34px);
-    line-height: 1.14;
-    letter-spacing: -0.015em;
-    font-weight: 700;
-    margin: 0 0 12px;
-}
-
-.pg-lead {
-    color: var(--muted);
-    font-size: clamp(17px, 1.9vw, 20px);
-    line-height: 1.45;
-    margin: 0;
+.pg p,
+.pg .fa-intro p {
+    font-size: var(--t-body);
+    line-height: 1.5;
+    font-weight: 400;
+    color: var(--ink);
+    margin: 0 0 14px;
     max-width: 54ch;
 }
 
-.pg p { margin: 0 0 14px; }
 .pg p:last-child { margin-bottom: 0; }
+
+/* A caption under a tile: body, with no paragraph margin of its own. */
+.pg figcaption {
+    font-size: var(--t-body);
+    line-height: 1.5;
+    font-weight: 400;
+    color: var(--ink);
+}
+
+.pg b { font-weight: 700; }
+
+.pg .pg-small,
+.pg .fa-kicker,
+.pg .fa-intro .fa-kicker,
+.pg .fa-intro .fa-hint {
+    font-size: var(--t-small);
+    line-height: 1.45;
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--muted);
+    margin: 0 0 12px;
+}
+
+/* The scroll hint keeps its chevron from css/assembly.css; only the word
+   changes register. */
+.pg .fa-intro .fa-hint {
+    margin: 32px 0 0;
+    gap: 8px;
+}
+
+/* ----------------------------------------------------------------- intro */
+
+/* The words above the animation. css/assembly.css gives the intro 18vh of
+   padding for the lab page; here the story should be one small scroll away. */
+.pg .fa-intro {
+    padding: clamp(48px, 9vh, 96px) 24px clamp(36px, 6vh, 64px);
+}
 
 /* --------------------------------------------------------------- pictures */
 
@@ -87,6 +154,34 @@ body {
     background: var(--wash);
 }
 
+/* ----------------------------------------------------------------- close */
+
+/* What follows the animation on the three /how pages, and the foot of
+   /colors: the same width, the same rhythm. */
+.pg-close {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: clamp(40px, 6vw, 72px) 24px clamp(64px, 8vw, 96px);
+}
+
+.pg-close > * + * { margin-top: var(--gap); }
+
+/* A picture beside its paragraph. Two columns from 860px, the picture on the
+   left in odd sections and on the right in even ones, so three of the same
+   shape do not read as one block repeated. */
+.pg-section {
+    display: grid;
+    gap: clamp(18px, 3vw, 40px);
+    align-items: center;
+}
+
+.pg-section-text p { max-width: 46ch; }
+
+@media (min-width: 860px) {
+    .pg-section { grid-template-columns: 1fr 1fr; }
+    .pg-section:nth-of-type(even) .pg-section-text { order: -1; }
+}
+
 /* ------------------------------------------------------------- the ask */
 
 .pg-ask {
@@ -95,28 +190,63 @@ body {
     padding: clamp(28px, 4vw, 44px);
 }
 
-.pg-ask p {
-    color: var(--muted);
-    max-width: 46ch;
-}
+.pg-ask p { max-width: 46ch; }
 
 .pg-wa {
     display: inline-block;
-    margin: 8px 0 16px;
+    margin: 10px 0 22px;
     padding: 15px 28px;
     border-radius: 999px;
     background: var(--ink);
     color: #fff;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 700;
+    line-height: 1.5;
 }
 
 .pg-wa:hover, .pg-wa:focus { background: #000; }
 
-.pg-fine {
-    font-size: 14.5px;
-    color: var(--faint);
-    margin: 0;
+/* --------------------------------------------------------------- colors */
+
+/* The strip: four swatches and one line, linking to /colors. `.ha-colours`
+   is the same strip on /how-a, which keeps that class name because
+   scripts/test-landing-a.mjs looks for it by name. */
+.pg-colors,
+.ha-colours {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 20px 24px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    color: var(--ink);
+    text-decoration: none;
+    transition: border-color 0.15s ease;
+}
+
+.pg-colors:hover, .pg-colors:focus,
+.ha-colours:hover, .ha-colours:focus { border-color: var(--accent); }
+
+/* Steel on the left of each dot, board on the right, from the builder's own
+   palette in assets/shelving/builder-contract.json. The same four as the
+   tiles on /colors. */
+.pg-swatches {
+    display: flex;
+    gap: 7px;
+    flex: none;
+}
+
+.pg-swatches i {
+    display: block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, var(--steel) 50%, var(--board) 50%);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 520px) {
+    .pg-colors, .ha-colours { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
 
 /* ---------------------------------------------------------------- doors */
@@ -124,7 +254,6 @@ body {
 .pg-doors {
     display: grid;
     gap: 14px;
-    margin-top: var(--gap);
 }
 
 .pg-door {
@@ -137,22 +266,10 @@ body {
     transition: background 0.15s ease;
 }
 
-.pg-door b {
-    display: block;
-    font-size: 21px;
-    line-height: 1.2;
-    margin-bottom: 4px;
-}
-
-.pg-door span {
-    display: block;
-    color: var(--muted);
-    font-size: 15.5px;
-    line-height: 1.45;
-}
+.pg-door b,
+.pg-door span { display: block; }
 
 .pg-door-dark { background: var(--ink); color: #fff; }
-.pg-door-dark span { color: rgba(255, 255, 255, 0.72); }
 .pg-door:hover, .pg-door:focus { background: #eaeeec; }
 .pg-door-dark:hover, .pg-door-dark:focus { background: #000; }
 
@@ -160,21 +277,6 @@ body {
     .pg-doors { grid-template-columns: 1fr 1fr; }
 }
 
-/* ------------------------------------------------------------ elsewhere */
-
-.pg-links {
-    margin-top: var(--gap);
-    padding-top: 24px;
-    border-top: 1px solid var(--rule);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px 30px;
-    font-size: 16px;
+@media (min-width: 860px) {
+    .pg-doors-3 { grid-template-columns: 1fr 1fr 1fr; }
 }
-
-.pg-links a {
-    color: var(--accent);
-    text-decoration: none;
-}
-
-.pg-links a:hover, .pg-links a:focus { text-decoration: underline; }

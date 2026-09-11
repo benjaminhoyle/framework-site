@@ -1,90 +1,14 @@
 /*
  * /how-b, landing B: the assembly story is the hero and css/assembly.css lays
- * that out; the ask and the doors come from css/pages.css. This file is only
- * what is left: the intro's spacing, the prices line, the promise line above
- * the ask, and the colors strip.
+ * that out; the type, the intro and the close come from css/pages.css. This
+ * file is only what differs on this page: the track length.
  *
  * One rule carried over from docs/assembly-animation.md: nothing above the
  * sticky stage may carry a transform, filter, perspective or will-change.
  * Nothing here does, and nothing here may.
  */
 
-/* ----------------------------------------------------------------- intro */
-
-/* Short, so the shelf is one small scroll away rather than a screen away. */
-.hb-intro {
-    padding: clamp(48px, 9vh, 96px) 24px clamp(36px, 6vh, 64px);
-}
-
-/* Both prices, on the first screen, in the ink rather than the muted gray:
-   they do the filtering the page relies on. */
-.hb-intro .hb-prices {
-    color: var(--ink);
-    font-weight: 500;
-}
-
-/* ----------------------------------------------------------------- track */
-
 /* About three and a half screens for five beats, against /how's 4.6. */
 .hb .fa-track {
     --fa-track-height: 450vh;
-}
-
-/* ----------------------------------------------------------------- close */
-
-.hb-body {
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: clamp(40px, 6vw, 64px) 24px clamp(64px, 8vw, 96px);
-}
-
-/* The promise the premise made. One line, the size of a lead, in the ink. */
-.hb-promise {
-    font-size: clamp(20px, 2.6vw, 28px);
-    line-height: 1.3;
-    letter-spacing: -0.01em;
-    font-weight: 500;
-    max-width: 30ch;
-    margin: 0 0 clamp(24px, 3vw, 36px);
-}
-
-/* --------------------------------------------------------------- colors */
-
-.hb-colours {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    margin-top: var(--gap);
-    padding: 20px 24px;
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    color: var(--muted);
-    text-decoration: none;
-    font-size: 16px;
-    line-height: 1.45;
-    transition: border-color 0.15s ease;
-}
-
-.hb-colours b { color: var(--ink); }
-.hb-colours:hover, .hb-colours:focus { border-color: var(--accent); }
-
-/* Steel on the left of each dot, board on the right, from the builder's own
-   palette. The same four as the tiles on /colors. */
-.hb-swatches {
-    display: flex;
-    gap: 7px;
-    flex: none;
-}
-
-.hb-swatches i {
-    display: block;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: linear-gradient(90deg, var(--steel) 50%, var(--board) 50%);
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-}
-
-@media (max-width: 520px) {
-    .hb-colours { flex-direction: column; align-items: flex-start; gap: 12px; }
 }

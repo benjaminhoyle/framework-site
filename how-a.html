@@ -109,8 +109,8 @@
         <section class="fa-intro ha-intro">
             <p class="fa-kicker" data-copy="page.kicker">Shelving, made in Nairobi</p>
             <h1 data-copy="page.title">A shelf for your space. Start with one unit.</h1>
-            <p class="ha-lead" data-copy="page.intro">Our shelves are modular, which means they are made of separate parts that stack together. Scroll, and this one adds up.</p>
-            <p class="ha-prices" data-copy="page.prices">Units from Ksh 6,500/-. As shown when finished, Ksh 36,500/-.</p>
+            <p data-copy="page.intro">Our shelves are modular, which means they are made of separate parts that stack together. Scroll, and this one adds up.</p>
+            <p data-copy="page.prices">Units from Ksh 6,500/-. As shown when finished, Ksh 36,500/-.</p>
             <p class="fa-hint" data-copy="page.hint">Scroll</p>
         </section>
 
@@ -127,28 +127,69 @@
             </div>
         </div>
 
-        <!-- Beat 5. The close: the ask, the colors, the two doors. -->
-        <div class="ha-body">
+        <!--
+          Beat 5. The close, the same on /how, /how-a and /how-b: the one-unit
+          start with the photograph of The Curator's Shelf, the parts, Nairobi,
+          then the ask, the colors strip and the two doors. The ask's words are
+          the brief's, verbatim, on data-copy attributes; the strip keeps the
+          class name scripts/test-landing-a.mjs looks for.
+        -->
+        <div class="pg-close">
+            <section class="pg-section">
+                <img class="pg-shot" src="/images/shelving/hero-image.jpg"
+                    srcset="/images/shelving/w400/hero-image.jpg 400w, /images/shelving/w800/hero-image.jpg 800w, /images/shelving/w1100/hero-image.jpg 1100w, /images/shelving/hero-image.jpg 1600w"
+                    sizes="(min-width: 860px) 520px, calc(100vw - 48px)"
+                    alt="The Curator's Shelf in Sage: six tiers of leaf green steel and mint boards, holding baskets, mugs of brushes and painted clay animals."
+                    width="1600" height="1600" loading="lazy">
+                <div class="pg-section-text">
+                    <h2>Start with one unit. Add to it later.</h2>
+                    <p>A base unit stands on its own. When you need more, the next unit slides onto it, in the same color or a new one. Units from Ksh 6,500/-.</p>
+                </div>
+            </section>
+
+            <section class="pg-section">
+                <img class="pg-shot" src="/images/shelving/configs/multicolor-stack-joint.jpg"
+                    srcset="/images/shelving/configs/w400/multicolor-stack-joint.jpg 400w, /images/shelving/configs/w800/multicolor-stack-joint.jpg 800w, /images/shelving/configs/w1100/multicolor-stack-joint.jpg 1100w, /images/shelving/configs/multicolor-stack-joint.jpg 1400w"
+                    sizes="(min-width: 860px) 520px, calc(100vw - 48px)"
+                    alt="A coral steel post held just above a marine tube on a sky blue board, about to drop into it."
+                    width="1400" height="1400" loading="lazy">
+                <div class="pg-section-text">
+                    <h2>Modular means separate parts.</h2>
+                    <p>A unit is a steel frame with its boards. Units stack at the posts: a pin under the one above slides into a tube on the one below. No tools, no screws.</p>
+                </div>
+            </section>
+
+            <section class="pg-section">
+                <img class="pg-shot" src="/images/studio/details/shelf-11-mdf-edge.jpg"
+                    alt="The edge of a sage board where it meets the steel post that carries it."
+                    width="1000" height="1000" loading="lazy">
+                <div class="pg-section-text">
+                    <h2>Made in Nairobi.</h2>
+                    <p>The frame is all steel and the boards are painted engineered wood. Every base unit has adjustable feet, so it stands level on any floor.</p>
+                </div>
+            </section>
+
             <section class="pg-ask" id="ask">
-                <p class="pg-kicker" data-copy="page.outroKicker">Your space</p>
+                <h2 data-copy="page.outroKicker">Your space</h2>
                 <p data-copy="page.outroBody">Kindly share what the shelf is for and roughly where it would go, and we'll revert back with design ideas and a price.</p>
-                <!--
-                  The message is typed in already (AGENTS.md), in the
-                  customer's own words, and complete on its own. The ask
-                  above is what hands the visitor the task; this is what goes
-                  if they tap and send without writing. js/site.js adds the
-                  short code on click and beacons the handoff.
-                -->
+            <!--
+              The ask hands the visitor the task; the message typed into
+              WhatsApp (AGENTS.md) is the customer's own opener and is complete
+              on its own if they tap and send without writing. A self-written
+              first message converts at 31% against 1% for a tapped template,
+              so the page hands over the task and not the answer. js/site.js
+              adds the short code on click and beacons the handoff.
+            -->
                 <a class="pg-wa" id="ask-whatsapp"
                     href="https://wa.me/254783891005?text=Hello%2C%20I%27m%20interested%20in%20your%20shelving.%20I%27ve%20seen%20the%20shelf%20that%20starts%20with%20one%20unit%20and%20I%27d%20like%20design%20ideas%20and%20a%20price%20for%20my%20space."
                     target="_blank" rel="noopener noreferrer" data-fwk-handoff="how-a"
                     onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{link_target:'how_a_page',content_category:'how_a_page'});}"
                     data-copy="page.cta">Message us on WhatsApp</a>
-                <p class="pg-fine" data-copy="page.fine">Made in our Dagoretti Corner workshop. Delivered assembled within Nairobi. ETR invoice provided.</p>
+                <p data-copy="page.fine">Made in our Dagoretti Corner workshop. Delivered assembled within Nairobi. ETR invoice provided.</p>
             </section>
 
             <a class="ha-colours" href="/colors">
-                <span class="ha-swatches" aria-hidden="true">
+                <span class="pg-swatches" aria-hidden="true">
                     <i style="--steel:#143F68;--board:#82AAD0"></i>
                     <i style="--steel:#6F986A;--board:#B3D4BE"></i>
                     <i style="--steel:#171E20;--board:#94A4B0"></i>

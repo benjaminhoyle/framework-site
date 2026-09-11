@@ -3,7 +3,8 @@
  *
  * This is the link the team sends when somebody on WhatsApp asks what colors
  * there are, so a phone is the first case and the page stays one scroll.
- * Tokens, type and the two closing blocks come from css/pages.css.
+ * Tokens, type roles, the ask and the doors come from css/pages.css; this
+ * file is the tiles, the two wide pieces and the add-on cards.
  *
  * The photographs are the catalogue's own, untouched. An earlier pass masked
  * the shelves out of them onto one shared paper and the masks showed, so the
@@ -17,16 +18,14 @@
     padding: clamp(28px, 5vw, 56px) 24px clamp(64px, 8vw, 96px);
 }
 
-.co section { margin-top: var(--gap); }
-.co .co-intro { margin-top: 0; }
+.co > * + * { margin-top: var(--gap); }
 
 /* ------------------------------------------------------------- the four */
 
 .co-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: clamp(20px, 3vw, 32px) clamp(14px, 2vw, 24px);
-    margin-top: clamp(28px, 4vw, 44px);
+    gap: clamp(24px, 3vw, 36px) clamp(14px, 2vw, 24px);
 }
 
 .co-tile { margin: 0; }
@@ -113,48 +112,28 @@
     outline-offset: 3px;
 }
 
-.co-tile figcaption {
-    padding: 14px 2px 0;
-    font-size: 15px;
-    line-height: 1.45;
-    color: var(--muted);
-}
+/* The caption: the name on one line with its dot, then one paragraph of
+   body that says what the color is and what the pictured shelf costs. */
+.co-tile figcaption { padding: 14px 2px 0; }
 
 .co-name {
     display: flex;
     align-items: center;
     gap: 9px;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--ink);
-    margin-bottom: 3px;
+    margin-bottom: 4px;
 }
+
+.co-tile figcaption span:not(.co-name):not(.co-dot) { display: block; }
 
 /* Steel on the left of the dot, board on the right, both from the builder's
    own palette in assets/shelving/builder-contract.json. */
 .co-dot {
-    width: 17px;
-    height: 17px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     flex: none;
     background: linear-gradient(90deg, var(--steel) 50%, var(--board) 50%);
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-}
-
-/* Two lines whether the words fill them or not, so the prices under four
-   tiles sit on one line across the row. */
-.co-desc {
-    display: block;
-    min-height: 2.9em;
-}
-
-.co-shown {
-    display: block;
-    font-size: 14px;
-    /* The page's --faint (#98a29e) is 2.6:1 on white; this is the same
-       green-grey two steps darker, 4.7:1, so the price line passes AA. */
-    color: #6d7672;
-    margin-top: 6px;
 }
 
 .co-tile a:hover .co-name,
@@ -171,10 +150,7 @@
 
 .co-feature .co-pic { max-width: 520px; }
 
-.co-feature-text p {
-    color: var(--muted);
-    max-width: 46ch;
-}
+.co-feature-text p { max-width: 46ch; }
 
 @media (min-width: 860px) {
     .co-grid { grid-template-columns: repeat(4, 1fr); }
@@ -189,9 +165,9 @@
 .co-addons ul {
     list-style: none;
     padding: 0;
-    margin: clamp(24px, 4vw, 40px) 0 0;
+    margin: clamp(28px, 4vw, 44px) 0 0;
     display: grid;
-    gap: clamp(22px, 3vw, 36px);
+    gap: clamp(24px, 3vw, 36px);
 }
 
 .co-addon {
@@ -201,7 +177,8 @@
     align-items: center;
 }
 
-.co-addon img {
+.co-addon img,
+.co-addon video {
     display: block;
     width: 100%;
     height: auto;
@@ -213,31 +190,11 @@
 
 .co-addon a { display: block; color: inherit; text-decoration: none; }
 
-.co-addon b {
-    display: block;
-    font-size: 18px;
-    margin-bottom: 3px;
-}
+.co-addon b { display: block; margin-bottom: 4px; }
 
-.co-addon p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 15.5px;
-}
+.co-addon p { margin: 0; }
 
 .co-addon a:hover b, .co-addon a:focus b { color: var(--accent); }
-.co-addon .co-shown { margin-top: 8px; }
-
-/* The display bar has no photograph yet, so it is a sentence under the list
-   rather than a gray box pretending to be one. */
-.co-also {
-    margin: clamp(22px, 3vw, 32px) 0 0;
-    padding-top: 20px;
-    border-top: 1px solid var(--rule);
-    color: var(--muted);
-    font-size: 15.5px;
-    max-width: 52ch;
-}
 
 /* On a wider screen the three become cards, side by side and in one row, with
    the picture over the words. Three of them in a two-column list left one
@@ -245,14 +202,9 @@
    bookend in. */
 @media (min-width: 860px) {
     .co-addons ul { grid-template-columns: repeat(3, 1fr); gap: 32px; }
-    /* A column, so the prices sit on one line across the three however long
-       the descriptions run. */
-    .co-addon { display: flex; flex-direction: column; }
-    .co-addon > div { display: flex; flex-direction: column; flex: 1; }
-    .co-addon .co-shown { margin-top: auto; padding-top: 10px; }
-    /* Square: three of these sources are square, and the 4:3 this started with
-       took the shade off the lamp. */
-    .co-addon img { margin-bottom: 16px; }
+    .co-addon { display: block; }
+    .co-addon img,
+    .co-addon video { margin-bottom: 16px; }
 }
 
 @media (max-width: 400px) {
