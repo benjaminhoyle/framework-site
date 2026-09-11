@@ -450,6 +450,26 @@ window.FrameworkAssembly = (function () {
 
     var SVG_NS = 'http://www.w3.org/2000/svg';
 
+    /**
+     * A caption's words, as elements: the title, and the body only if there is
+     * one. A story may give a caption a title and nothing else, and an empty
+     * paragraph under it is a gap the card pays for in height and the reader
+     * reads as something missing.
+     */
+    function captionWords(caption) {
+        var nodes = [];
+        var heading = document.createElement('h2');
+        heading.textContent = caption.title;
+        nodes.push(heading);
+        if (caption.body) {
+            var body = document.createElement('p');
+            body.textContent = caption.body;
+            nodes.push(body);
+        }
+        return nodes;
+    }
+
+
     function buildOverlay(stage, story) {
         var overlay = document.createElement('div');
         overlay.className = 'fa-overlay';
@@ -462,12 +482,7 @@ window.FrameworkAssembly = (function () {
         var captions = story.captions.map(function (caption) {
             var card = document.createElement('div');
             card.className = 'fa-caption';
-            var heading = document.createElement('h2');
-            heading.textContent = caption.title;
-            var body = document.createElement('p');
-            body.textContent = caption.body;
-            card.appendChild(heading);
-            card.appendChild(body);
+            captionWords(caption).forEach(function (node) { card.appendChild(node); });
             overlay.appendChild(card);
             return { spec: caption, node: card, shown: -1 };
         });
@@ -942,13 +957,8 @@ window.FrameworkAssembly = (function () {
             step.className = 'fa-step';
             var blank = document.createElement('div');
             blank.className = 'fa-step-blank';
-            var heading = document.createElement('h2');
-            heading.textContent = caption.title;
-            var body = document.createElement('p');
-            body.textContent = caption.body;
             step.appendChild(blank);
-            step.appendChild(heading);
-            step.appendChild(body);
+            captionWords(caption).forEach(function (node) { step.appendChild(node); });
             steps.appendChild(step);
             return { spec: caption, slot: blank };
         });
@@ -1047,12 +1057,7 @@ window.FrameworkAssembly = (function () {
                 picture.decoding = 'async';
                 step.appendChild(picture);
             }
-            var heading = document.createElement('h2');
-            heading.textContent = caption.title;
-            var body = document.createElement('p');
-            body.textContent = caption.body;
-            step.appendChild(heading);
-            step.appendChild(body);
+            captionWords(caption).forEach(function (node) { step.appendChild(node); });
             steps.appendChild(step);
         });
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Guards on the /how-b story, js/assembly/story-b.js.
+ * Guards on the /how story, js/assembly/story-how.js.
  *
- *   node scripts/test-assembly-story-b.mjs
+ *   node scripts/test-assembly-story-how.mjs
  *
  * The same arithmetic walk scripts/test-assembly-story.mjs makes over the
  * current story, against this one, plus the checks that are particular to a
@@ -53,7 +53,7 @@ context.window.window = context.window;
 vm.createContext(context);
 // The renderer is loaded for its view direction: the story anchors its pins
 // against it and this test measures the frame with it.
-for (const file of ["builder/renderer.js", "assembly/curator-shelf.js", "assembly/story-b.js", "assembly/scroll-story.js"]) {
+for (const file of ["builder/renderer.js", "assembly/curator-shelf.js", "assembly/story-how.js", "assembly/scroll-story.js"]) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, "js", file), "utf8"), context, { filename: file });
 }
 
@@ -458,13 +458,29 @@ for (let i = 1; i < story.captions.length; i += 1) {
 }
 check("no silent stretch longer than 6% of the story", widest <= 0.06, `widest gap ${(widest * 100).toFixed(1)}%`);
 
+/*
+ * Three captions, and the last of them is the last word on the animation: the
+ * page ends on the photograph of the shelf, which names it and prices it, so
+ * the closing beat has no caption over it at all.
+ *
+ * Two of the three are a title and nothing else. A caption with no body must
+ * carry null rather than undefined or an empty string, because that is what
+ * scroll-story.js's captionWords() reads to decide whether to draw the
+ * paragraph, and an empty paragraph is a gap the card pays for in height.
+ */
+check("three captions, and no fourth", story.captions.length === 3, `${story.captions.length} captions`);
 for (const caption of story.captions) {
-  check("captions have both a title and a body", Boolean(caption.title && caption.body), caption.title);
+  check("every caption has a title", Boolean(caption.title), caption.id);
+  check("a caption with no body carries null", caption.body === null || (typeof caption.body === "string" && caption.body.length > 0),
+    `${caption.id}: ${JSON.stringify(caption.body)}`);
   const middle = engine.windowOpacity((caption.from + caption.to) / 2, caption.from, caption.to);
   check("every caption reaches full opacity", middle > 0.999, `"${caption.title}" peaks at ${middle.toFixed(2)}`);
-  const words = caption.body.split(/\s+/).length;
+  const words = (caption.body || "").split(/\s+/).filter(Boolean).length;
   check("every caption body is under 25 words, so the phone band keeps its room", words < 25, `"${caption.title}" body is ${words} words`);
 }
+check("the story ends with no words over the shelf",
+  story.captions.every((caption) => caption.to <= 0.96),
+  story.captions.map((caption) => `${caption.id} to ${caption.to}`).join(", "));
 const apart = story.captions.find((caption) => caption.id === "apart");
 check("the swap's caption is up as the swap begins and through the hold", apart && apart.from <= 0.44 && apart.to >= 0.70, apart && `${apart.from} to ${apart.to}`);
 
@@ -550,29 +566,39 @@ check("the pins name the slim unit, a post and the shelf",
 // --- the words -----------------------------------------------------------------
 
 const WORDS = {
-  "parts.title": "Five parts, one joint.",
-  "parts.body": "A base and four units. Each one slides onto a pin on the one below. No tools.",
-  "apart.title": "Choose different parts and it is a different shelf.",
-  "apart.body": "Taller, wider, a low one for a child's room. The price is known before you order.",
-  "together.title": "It comes apart again when you move.",
-  "together.body": "Delivered assembled within Nairobi. Start with one unit, from Ksh 6,500, and add to it later.",
-  "hero.title": "As shown: Ksh 36,500 in Sage.",
-  "hero.body": "The Curator's Shelf. Made in our Dagoretti Corner workshop."
+  "parts.title": "One shelf made of five interlocking parts",
+  "parts.body": null,
+  "apart.title": "Infinitely customizable",
+  "apart.body": null,
+  "together.title": "Ready to reconfigure",
+  "together.body": "Disassemble the units if you move house or want to change the design."
 };
 for (const caption of story.captions) {
   check(`caption "${caption.id}" title is the story's`, caption.title === WORDS[`${caption.id}.title`], caption.title);
   check(`caption "${caption.id}" body is the story's`, caption.body === WORDS[`${caption.id}.body`], caption.body);
 }
-const hero = story.captions.find((caption) => caption.id === "hero");
-check("the close names the finish the animation is drawn in", hero && hero.title.includes(story.finishName), hero && hero.title);
-check("the close carries the bake's price", hero && hero.title.includes(shelf.totalKsh.toLocaleString("en-KE")), hero && hero.title);
-check("the close has no photograph of the shelf in another finish", hero && hero.photo === null);
+check("no caption is the closing price any more", !story.captions.some((caption) => caption.id === "hero"));
 
-const PAGE_FILE = path.join(ROOT, "how-b.html");
+const PAGE_FILE = path.join(ROOT, "how.html");
 const page = fs.readFileSync(PAGE_FILE, "utf8");
 check("the page never says TCC", !/\bTCC\b/.test(page));
 
-for (const file of ["how-b.html", "css/how-b.css", "js/assembly/story-b.js", "scripts/test-assembly-story-b.mjs"]) {
+/*
+ * The animation no longer ends on the shelf's name and price, so the page has
+ * to: the reader scrolls out of the story straight into the photograph of it.
+ * That section is the first thing under the track, it names the shelf, it
+ * carries the bake's own total, and the picture is a link to the catalogue's
+ * entry for the same shelf.
+ */
+const closeStart = page.indexOf('id="how-close"');
+const firstSection = page.slice(closeStart, page.indexOf("</section>", closeStart));
+check("the close opens on the shelf", /The Curator's Shelf/.test(firstSection), firstSection.slice(0, 120));
+check("the close carries the bake's price",
+  firstSection.includes(shelf.totalKsh.toLocaleString("en-KE")), String(shelf.totalKsh));
+check("the photograph links to the catalogue's own entry for it",
+  /<a class="pg-shot-link" href="\/shelving\.html\?config=asymmetric-display"/.test(firstSection));
+
+for (const file of ["how.html", "css/how.css", "js/assembly/story-how.js", "scripts/test-assembly-story-how.mjs"]) {
   const text = fs.readFileSync(path.join(ROOT, file), "utf8");
   check(`${file} has no em dash`, !text.includes("\u2014"), `found at ${text.indexOf("\u2014")}`);
 }
@@ -626,8 +652,8 @@ for (const caption of story.captions) {
 }
 
 if (failures) {
-  console.error(`\n${failures} story-b check${failures === 1 ? "" : "s"} failed`);
+  console.error(`\n${failures} story check${failures === 1 ? "" : "s"} failed`);
   process.exit(1);
 }
-console.log(`story b ok: ${story.keys.length} keys (${keys.cameras.length} camera), ${story.pieces.length} pieces`
+console.log(`story ok: ${story.keys.length} keys (${keys.cameras.length} camera), ${story.pieces.length} pieces`
   + ` over ${bundles.size} bundles, ${story.captions.length} captions, ${story.pins.length} pins, ${story.finishName}`);

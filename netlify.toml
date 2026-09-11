@@ -49,24 +49,35 @@
   to = "/how.html"
   status = 200
 
-# Landing A, "One unit first": one of the versions of /how being compared
-# (framework-marketing/research/landing-strategy.md, section 4).
-[[redirects]]
-  from = "/how-a"
-  to = "/how-a.html"
-  status = 200
-
 [[redirects]]
   from = "/colors"
   to = "/colors.html"
   status = 200
 
-# Landing B for the Search campaign, one of three versions of /how being
-# compared (framework-marketing/research/landing-strategy.md, section 4).
+# Three versions of /how were tried in September 2026 (framework-marketing/
+# research/landing-strategy.md, section 4). Ben picked B on 11 September and
+# the other two were deleted, so /how now serves it. Both old addresses were
+# noindex and are kept only because a test click or a chat link may still
+# carry one.
+[[redirects]]
+  from = "/how-a"
+  to = "/how"
+  status = 301
+
+[[redirects]]
+  from = "/how-a.html"
+  to = "/how"
+  status = 301
+
 [[redirects]]
   from = "/how-b"
-  to = "/how-b.html"
-  status = 200
+  to = "/how"
+  status = 301
+
+[[redirects]]
+  from = "/how-b.html"
+  to = "/how"
+  status = 301
 
 # The page was /colours until 2026-09-11 ("let's always use 'colors'"), and that
 # address is in WhatsApp replies already sent, so it keeps working. The .html

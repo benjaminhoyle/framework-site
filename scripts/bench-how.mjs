@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Look at /how-b: frames across the whole story at a given width and tier.
+ * Look at /how: frames across the whole story at a given width and tier.
  *
- *   node scripts/bench-how-b.mjs --width 1280 --height 800 --tier full --out <dir>
- *   node scripts/bench-how-b.mjs --width 390 --height 844 --reduced-motion
+ *   node scripts/bench-how.mjs --width 1280 --height 800 --tier full --out <dir>
+ *   node scripts/bench-how.mjs --width 390 --height 844 --reduced-motion
  *
  * Dev only. Drives the page in Chrome through playwright-core from the
  * sibling framework-ops checkout, seeks the story to each point with the
@@ -28,7 +28,7 @@ const height = Number(opt("height", 800));
 const tier = opt("tier", "");
 const reduced = args.includes("--reduced-motion");
 const out = opt("out", `/private/tmp/claude-501/-Users-ben-code-framework/2f7f03bb-0df8-4fb5-9ba2-f7b9cc40151c/scratchpad/frames-${width}${reduced ? "-rm" : ""}${tier ? "-" + tier : ""}`);
-const url = `http://127.0.0.1:8770/how-b.html${tier ? `?tier=${tier}` : ""}`;
+const url = `http://127.0.0.1:8770/how.html${tier ? `?tier=${tier}` : ""}`;
 const points = (opt("points", "0,0.06,0.12,0.16,0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.525,0.55,0.60,0.65,0.70,0.75,0.80,0.83,0.86,0.90,0.95,1"))
   .split(",").map(Number);
 
@@ -70,8 +70,8 @@ if (live) {
   console.log();
 }
 
-// The close: scroll to the promise line, then to the foot of the page.
-await page.evaluate(() => document.getElementById("hb-close").scrollIntoView());
+// The close: scroll to the shelf, then to the foot of the page.
+await page.evaluate(() => document.getElementById("how-close").scrollIntoView());
 await page.waitForTimeout(200);
 await page.screenshot({ path: path.join(out, "close.png") });
 await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));

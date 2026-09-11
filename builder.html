@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="/css/builder.css?v=99">
+    <link rel="stylesheet" href="/css/builder.css?v=100">
 
     <!--
       Nothing can render until the catalogue arrives, and the app's own scripts
@@ -32,7 +32,7 @@
         // with a stale catalogue silently loses whatever the catalogue gained,
         // which is exactly what a CDN or a browser cache will hand you a few
         // minutes after a deploy. Bump this whenever any of them changes.
-        window.frameworkDesignerVersion = '99';
+        window.frameworkDesignerVersion = '100';
         window.frameworkDesignerCatalog =
             fetch('/assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
                 .then(function (response) {
@@ -51,6 +51,28 @@
             <a class="nd-brand" href="/index.html">
                 <img src="/images/global/fwk-icon.png" alt="" width="28" height="28">
                 <span>Shelf Designer</span>
+            </a>
+
+            <!--
+              Help me design. The same handover to WhatsApp the order button
+              makes, with a different opening line, so somebody halfway through
+              a shelf can hand us what they have rather than starting the
+              conversation from nothing. It carries the design code and the
+              link, the way an order does, and it works on an empty shelf too.
+
+              Outlined rather than filled: the order button at the foot of the
+              page is the green one, and two green buttons on one screen is two
+              things shouting. On a narrow header it keeps the mark and drops
+              the words, which is why the mark is WhatsApp's and not a question
+              mark: a question mark alone says nothing about what happens next.
+            -->
+            <a class="nd-help" id="nd-help" href="#" target="_blank" rel="noopener noreferrer"
+                title="Ask us for help with this design on WhatsApp">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path
+                        d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.3-1.4A9.9 9.9 0 1 0 12.04 2Zm5.8 14.1c-.25.7-1.45 1.34-2 1.38-.51.04-1.16.06-1.87-.12a15.6 15.6 0 0 1-6.8-5.9c-.5-.83-.83-1.8-.83-2.74 0-.94.5-1.4.67-1.6.18-.2.4-.25.53-.25h.38c.12 0 .29-.05.45.34l.62 1.5c.05.12.09.26 0 .41l-.24.36-.35.38c-.11.12-.23.25-.1.48.13.24.58 1 1.25 1.6.86.77 1.58 1.01 1.8 1.13.23.12.36.1.5-.06l.7-.82c.16-.2.3-.15.5-.08l1.42.67c.2.1.35.15.4.23.05.09.05.5-.2 1.2Z" />
+                </svg>
+                <span>Help me design</span>
             </a>
 
             <div class="nd-modes" role="tablist" aria-label="Interface level" id="nd-modes">
@@ -263,11 +285,11 @@
         </div>
     </div>
 
-    <script src="/js/builder/engine.js?v=99" defer></script>
-    <script src="/js/builder/geometry.js?v=99" defer></script>
-    <script src="/js/builder/renderer.js?v=99" defer></script>
-    <script src="/js/builder/present.js?v=99" defer></script>
-    <script src="/js/builder/app.js?v=99" defer></script>
+    <script src="/js/builder/engine.js?v=100" defer></script>
+    <script src="/js/builder/geometry.js?v=100" defer></script>
+    <script src="/js/builder/renderer.js?v=100" defer></script>
+    <script src="/js/builder/present.js?v=100" defer></script>
+    <script src="/js/builder/app.js?v=100" defer></script>
 
     <!--
       Analytics loads after the designer is interactive. On a mid-range phone

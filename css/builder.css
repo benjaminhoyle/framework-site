@@ -90,6 +90,68 @@ button { cursor: pointer; }
   .nd-brand span { display: none; }
 }
 
+/*
+ * Help me design: a quiet outlined pill beside the brand.
+ *
+ * The order button at the foot of the page is the filled green one, and this
+ * must not compete with it: the border and the words are the header's own
+ * greys, and only the mark carries WhatsApp's colour, which is what makes it
+ * readable at a glance without shouting. Hover and focus bring the border up
+ * to the green rather than filling the shape.
+ *
+ * Below 560px the words go and the pill becomes a round button the size of
+ * undo and redo, because the header already gives up the brand at 380px and
+ * three interface names sit in the middle of it. The mark is WhatsApp's rather
+ * than a question mark on purpose: at that size the icon is the whole message,
+ * and a question mark does not say what pressing it does.
+ */
+.nd-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 7px 13px 7px 10px;
+  border: 1px solid var(--nd-line);
+  border-radius: 999px;
+  background: var(--nd-panel);
+  color: var(--nd-muted);
+  font-size: .82rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: border-color .15s ease, color .15s ease;
+}
+
+.nd-help svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: var(--nd-whatsapp);
+}
+
+.nd-help:hover,
+.nd-help:focus-visible {
+  border-color: var(--nd-whatsapp);
+  color: var(--nd-ink);
+}
+
+@media (max-width: 560px) {
+  .nd-help {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  .nd-help span { display: none; }
+}
+
+@media (max-width: 380px) {
+  .nd-help { width: 34px; height: 34px; }
+  .nd-help svg { width: 15px; height: 15px; }
+}
+
 
 /* Interface switch — the one control that is identical in all three modes. */
 .nd-modes {

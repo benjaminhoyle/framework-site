@@ -138,9 +138,12 @@ body {
 }
 
 /* The scroll hint keeps its chevron from css/assembly.css; only the word
-   changes register. */
+   changes register, and it is centred under the intro rather than hanging off
+   the left edge of it: it points at the animation, which is the whole width. */
 .pg .fa-intro .fa-hint {
-    margin: 32px 0 0;
+    display: flex;
+    width: fit-content;
+    margin: 32px auto 0;
     gap: 8px;
 }
 
@@ -153,6 +156,18 @@ body {
 }
 
 /* --------------------------------------------------------------- pictures */
+
+/* A photograph that is also a link to the thing in it. The link is the
+   picture and nothing else, so the ring goes round the picture. */
+.pg-shot-link {
+    display: block;
+    border-radius: var(--radius);
+}
+
+.pg-shot-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
 
 /* A whole shelf. Its own proportions, never cropped. */
 .pg-shot {

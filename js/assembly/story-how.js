@@ -1,5 +1,5 @@
 /**
- * The shot list for /how-b, "Parts, stacked": a plain shelf taken apart in
+ * The shot list for /how, "Parts, stacked": a plain shelf taken apart in
  * the air, three of its units traded for The Curator's Shelf's parts, and the
  * whole put back together as you scroll.
  *
@@ -7,7 +7,7 @@
  * js/assembly/curator-shelf.js, which scripts/bake-assembly-story.mjs
  * generates from the builder's own placement engine; nothing here retypes a
  * millimetre. The three parts the bake does not carry are derived from it (see
- * "The plain shelf" below) and scripts/test-assembly-story-b.mjs holds them
+ * "The plain shelf" below) and scripts/test-assembly-story-how.mjs holds them
  * against the engine's own placement of that shelf.
  *
  * ## The device
@@ -90,30 +90,32 @@
 
     /*
      * Every word on the page, in one place, one `id: 'string'` per line so a
-     * copy script can rewrite it. The four captions are section 4 of
-     * research/landing-strategy.md with only what the new beats required
-     * changed: the opening counts the plain shelf's parts, the close names
-     * the finish the animation is drawn in. The pin labels are not here: they
-     * are the bake's own names for the parts, which are the catalogue's.
-     * scripts/test-assembly-story-b.mjs holds all of it and counts em dashes
-     * (zero).
+     * copy script can rewrite it. Ben wrote these on 11 September 2026, over
+     * the four longer captions the three landings were tried with. Two of them
+     * are a title and nothing else: what the drawing is doing is the sentence,
+     * and a second line under it was reading as fine print. A caption with no
+     * `body` draws no paragraph (scroll-story.js), so the card is the words
+     * and not an empty box under them.
+     *
+     * There is no fourth caption. The story used to end on a price, and the
+     * page now ends on the photograph of the shelf, which names it and prices
+     * it a scroll further down. The last beat is the shelf standing, with
+     * nothing written over it.
+     *
+     * The pin labels are not here: they are the bake's own names for the
+     * parts, which are the catalogue's. scripts/test-assembly-story-how.mjs
+     * holds all of it and counts em dashes (zero).
      */
     var COPY = {
         parts: {
-            title: 'Five parts, one joint.',
-            body: 'A base and four units. Each one slides onto a pin on the one below. No tools.'
+            title: 'One shelf made of five interlocking parts'
         },
         apart: {
-            title: 'Choose different parts and it is a different shelf.',
-            body: 'Taller, wider, a low one for a child\'s room. The price is known before you order.'
+            title: 'Infinitely customizable'
         },
         together: {
-            title: 'It comes apart again when you move.',
-            body: 'Delivered assembled within Nairobi. Start with one unit, from Ksh 6,500, and add to it later.'
-        },
-        hero: {
-            title: 'As shown: Ksh 36,500 in Sage.',
-            body: 'The Curator\'s Shelf. Made in our Dagoretti Corner workshop.'
+            title: 'Ready to reconfigure',
+            body: 'Disassemble the units if you move house or want to change the design.'
         },
         alt: {
             parts: 'A leg held just above the one below it, showing the pin and the tube it drops into.',
@@ -125,13 +127,13 @@
      * The finish.
      *
      * The bake carries Coral, the finish the design was saved in, and /how
-     * and /how-a paint with it. This page ends on the photograph of the shelf
-     * in Sage, so it paints in Sage: the catalogue's own pair for that finish
+     * paint with it. This page ends on the photograph of the shelf in Sage,
+     * so it paints in Sage: the catalogue's own pair for that finish
      * (assets/shelving/catalog.json, finishes[sage].builder), which
-     * scripts/test-assembly-story-b.mjs holds against the catalogue so the
+     * scripts/test-assembly-story-how.mjs holds against the catalogue so the
      * two cannot drift apart. The honest permanent form is "finish": "sage"
      * in data/assembly/curator.design.json and a re-bake, which would turn
-     * all three pages green at once and is not this file's call.
+     * the assembly lab green too and is not this file's call.
      */
     var FINISH = { id: 'sage', name: 'Sage', palette: { steel: '#709169', surface: '#C5DCC1' } };
 
@@ -483,13 +485,12 @@
         captions: [
             { id: 'parts', from: 0.00, to: 0.40, photo: 'asymmetric-display-joint' },
             { id: 'apart', from: 0.41, to: 0.745 },
-            { id: 'together', from: 0.755, to: 0.905, photo: 'asymmetric-display-angle' },
-            { id: 'hero', from: 0.915, to: 1.08 }
+            { id: 'together', from: 0.755, to: 0.95, photo: 'asymmetric-display-angle' }
         ].map(function (caption) {
             return {
                 id: caption.id, from: caption.from, to: caption.to,
                 title: COPY[caption.id].title,
-                body: COPY[caption.id].body,
+                body: COPY[caption.id].body || null,
                 photo: caption.photo || null,
                 photoAlt: COPY.alt[caption.id] || null
             };

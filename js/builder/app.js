@@ -175,10 +175,34 @@
     return decodeURIComponent(escape(atob(padded)));
   }
 
+  /*
+   * The two events that are a person opening a WhatsApp conversation with us:
+   * the order at the foot of the page, and the help button in the header. Both
+   * are a lead, and both report the same way.
+   *
+   * The Google Ads conversion is the one the rest of the site sends on a
+   * handoff (js/site.js, trackContactConversion). /builder deliberately does
+   * not load site.js, so until 11 September 2026 an order started here reached
+   * GA4 and Meta and never reached Google Ads at all: the Search campaign could
+   * not bid towards the one action this page exists for. Same conversion id as
+   * every other page, so the two count the same thing.
+   */
+  const ADS_CONVERSION = "AW-16875113878/1BgKCJjg0bYaEJab1-4-";
+  const HANDOFF_EVENTS = { order_click: true, help_click: true };
+
   function track(event, params) {
     try {
-      if (typeof window.gtag === "function") window.gtag("event", event, params || {});
-      if (typeof window.fbq === "function" && event === "order_click") window.fbq("track", "Lead", params || {});
+      if (typeof window.gtag === "function") {
+        window.gtag("event", event, params || {});
+        if (HANDOFF_EVENTS[event]) {
+          window.gtag("event", "conversion", {
+            send_to: ADS_CONVERSION,
+            value: (params && params.value) || 1.0,
+            currency: "KES"
+          });
+        }
+      }
+      if (typeof window.fbq === "function" && HANDOFF_EVENTS[event]) window.fbq("track", "Lead", params || {});
     } catch (error) {
       /* analytics must never break the tool */
     }
@@ -235,6 +259,7 @@
     total: el("nd-total"),
     totalNote: el("nd-total-note"),
     order: el("nd-order"),
+    help: el("nd-help"),
     breakdown: el("nd-breakdown"),
     breakdownToggle: el("nd-breakdown-toggle"),
     add: el("nd-add"),
@@ -2125,7 +2150,18 @@
     dom.present.disabled = empty;
     dom.order.setAttribute("aria-disabled", empty ? "true" : "false");
     dom.order.href = empty ? "#" : whatsappUrl(total, { code: designCode(), sessionId: builderSessionId() });
+    // The help button is never disabled: an empty shelf is one of the times
+    // somebody most wants to ask.
+    dom.help.href = helpUrl(total, { code: empty ? null : designCode(), sessionId: builderSessionId() });
   }
+
+  /*
+   * The first line, and the only thing that differs between the two handovers.
+   * Everything under it is the same account of the shelf, because somebody
+   * asking for help wants us looking at exactly what they are looking at.
+   */
+  const ORDER_OPENER = "Hi Framework! I designed a shelf and would like to order it.";
+  const HELP_OPENER = "Hi Framework! I'm working on this design and could use some help.";
 
   function whatsappUrl(total, options) {
     const code = options && options.code;
@@ -2134,7 +2170,7 @@
     const parts = lines.map((line) => `${line.quantity} x ${line.label}`);
     const size = sizeLabel();
     const message = [
-      "Hi Framework! I designed a shelf and would like to order it.",
+      (options && options.opener) || ORDER_OPENER,
       "",
       `Builder: ${MODE_LABELS[ui.mode] || ui.mode}`,
       code ? `Design code: ${code}` : null,
@@ -2156,6 +2192,20 @@
       // say; the empty strings above are deliberate blank lines in the message.
     ].filter((line) => line !== null).join("\n");
     return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+  }
+
+  /**
+   * The help link. The order message with a different opener, or, on a shelf
+   * with nothing on it yet, the opener and one honest line: the button is in
+   * the header from the first second and has to work there too.
+   */
+  function helpUrl(total, options) {
+    if (!ui.design.instances.length) {
+      return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(
+        [HELP_OPENER, "", "I have not placed anything yet."].join("\n")
+      )}`;
+    }
+    return whatsappUrl(total, Object.assign({ opener: HELP_OPENER }, options || {}));
   }
 
   /**
@@ -4005,6 +4055,43 @@
     dom.modal.addEventListener("click", (event) => {
       if (event.target === dom.modal) closePicker();
     });
+    /*
+     * Help me design.
+     *
+     * Unlike the order button this opens a second tab and leaves the builder
+     * standing, because somebody asking for help means to come back to the
+     * shelf they were working on. The tab is opened inside the click, not
+     * after the save, or Safari treats it as a popup and blocks it; if it is
+     * blocked anyway, the same tab does the job.
+     *
+     * The design is saved first so the link in the message resolves, and a
+     * failed save is not a failure: the message already lists every piece,
+     * the colour and the size, so it is worth sending without the link.
+     */
+    dom.help.addEventListener("click", (event) => {
+      event.preventDefault();
+      const { total } = priceBreakdown();
+      const sessionId = builderSessionId();
+      const empty = ui.design.instances.length === 0;
+      const tab = window.open("", "_blank", "noopener");
+      const go = (href) => {
+        dom.help.href = href;
+        if (tab) tab.location.href = href;
+        else window.location.href = href;
+      };
+      track("help_click", { mode: ui.mode, pieces: ui.design.instances.length, session_id: sessionId });
+      if (empty) {
+        go(helpUrl(total, { sessionId }));
+        return;
+      }
+      saveDesign()
+        .then((code) => go(helpUrl(total, { code, sessionId })))
+        .catch((error) => {
+          console.warn("could not save design before asking for help:", error.message);
+          go(helpUrl(total, { code: designCode(), sessionId }));
+        });
+    });
+
     dom.order.addEventListener("click", (event) => {
       if (dom.order.getAttribute("aria-disabled") === "true") return;
       event.preventDefault();
