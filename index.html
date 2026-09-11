@@ -2,6 +2,11 @@
 <html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Framework Designs | Premium Kenyan Design Services and Modular Furniture Nairobi</title>
+    <meta name="description"
+        content="Discover high-quality, Kenyan-made steel shelving systems and modular furniture solutions in Nairobi. Customizable designs perfect for homes, offices, and retail spaces.">
     <!-- === TRACKING === -->
     <!-- Meta Pixel Code -->
     <script>
@@ -19,13 +24,16 @@
     <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id=1492649948884685&ev=PageView&noscript=1"/></noscript>
     <!-- End Meta Pixel Code -->
-    <!-- Google tag (gtag.js) -->
+    <!-- Google tag (gtag.js): one loader for Google Ads and GA4. Each ID used to
+         have its own loader script, and whichever ran first fetched the other's
+         container a second time (2026-09-10). -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16875113878"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
         gtag('config', 'AW-16875113878');
+        gtag('config', 'G-HXHT6KGZT3');
     </script>
     <!-- Google Tag Manager -->
     <script>(function (w, d, s, l, i) {
@@ -45,21 +53,7 @@
             y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
         })(window, document, "clarity", "script", "wansrhuwwq");
     </script>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HXHT6KGZT3"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-
-        gtag('config', 'G-HXHT6KGZT3');
-    </script>
     <script src="js/image-loading.js"></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Framework Designs | Premium Kenyan Design Services and Modular Furniture Nairobi</title>
-    <meta name="description"
-        content="Discover high-quality, Kenyan-made steel shelving systems and modular furniture solutions in Nairobi. Customizable designs perfect for homes, offices, and retail spaces.">
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap">
     <link rel="stylesheet" href="css/styles.css">
@@ -86,7 +80,19 @@
             <div class="spacer"></div>
         </div>
         <div class="image-section">
-            <img src="images/home/cover-shelf.jpg" alt="Responsive image">
+            <!-- The LCP image. Explicit dimensions so the browser reserves
+                 its box before the file arrives, and resized copies from
+                 scripts/build-responsive-images.py so a phone does not pull
+                 the 1410 px master for a 393 px column. -->
+            <img src="images/home/cover-shelf.jpg"
+                 srcset="images/home/w400/cover-shelf.jpg 400w,
+                         images/home/w800/cover-shelf.jpg 800w,
+                         images/home/w1100/cover-shelf.jpg 1100w,
+                         images/home/cover-shelf.jpg 1410w"
+                 sizes="(min-width: 769px) 47vw, 100vw"
+                 width="1410" height="3523"
+                 alt="A tall six-tier Framework shelf in Sage: leaf green steel posts with mint green boards, photographed empty on white."
+                 loading="eager" fetchpriority="high" decoding="async">
         </div>
     </div>
 </body>
