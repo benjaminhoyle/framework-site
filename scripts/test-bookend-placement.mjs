@@ -74,7 +74,26 @@ test("a lone base offers its two upper ends, and never its lower ones", () => {
   assert.equal(legal.length, 2);
   assert.deepEqual(legal.map((anchor) => anchor.level), [1, 1], "level 0 is 85mm off the floor and unusable");
   assert.deepEqual(legal.map((anchor) => anchor.end), ["left", "right"]);
-  assert.deepEqual(legal.map((anchor) => anchor.rotationDeg), [0, 180], "a left end faces one way, a right end the other");
+  assert.deepEqual(legal.map((anchor) => anchor.rotationDeg), [180, 0], "a left end faces one way, a right end the other");
+  /*
+   * And which way round. The bookend's own +x runs from its screw wall to its
+   * stem, so +x turned by the yaw has to point OUT of the run: that puts the
+   * screws and the 30 mm window the spine passes through on the inboard side,
+   * which is the photograph and what the render draws. Facing it the other way
+   * buries the solid back wall in the spine the End Flat caps. The contract's
+   * `inboard` says the opposite, and engine.js turns it half round; this is the
+   * check that would catch that correction going missing.
+   */
+  const state = withBase("standard_base");
+  for (const anchor of legal) {
+    const host = state.instances.find((instance) => instance.id === anchor.instanceId);
+    const bounds = engine.instanceBounds(catalog, host);
+    const middle = [(bounds[0] + bounds[3]) / 2, (bounds[1] + bounds[4]) / 2];
+    const outward = [middle[0] - anchor.worldMm[0], middle[1] - anchor.worldMm[1]];
+    const yaw = anchor.rotationDeg * Math.PI / 180;
+    const along = Math.cos(yaw) * outward[0] + Math.sin(yaw) * outward[1];
+    assert.ok(along < 0, `the ${anchor.end} end's bookend points its stem out of the run (${along.toFixed(0)})`);
+  }
 });
 
 test("a trimmed unit has no ends that take one", () => {

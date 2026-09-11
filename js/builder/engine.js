@@ -645,12 +645,32 @@
   }
 
   /**
-   * The yaw a bookend sits at. Its own +x runs along the anchor's inboard
-   * direction, so a left end on an unrotated unit is 0 and a right end is 180.
+   * The yaw a bookend sits at: half a turn from the anchor's inboard direction.
+   *
+   * The contract says an accessory's own +x goes along inboard, and for this
+   * one that is backwards. The bookend's +x runs from its screw wall to its
+   * stem, and its screw wall is the one with a 30 mm window in it. Hung the
+   * contract's way the window faces out over open air and the solid back wall
+   * goes inboard, where it lands three millimetres inside the 20 mm spine the
+   * End Flat caps: steel inside steel, with a gap beside the clip where the
+   * shelf's own rail should have arrived. Turned half around, the spine runs
+   * through the window with five millimetres either side, the two read as one
+   * joint, and the screws face into the shelf, which is what the photograph
+   * images/shelving/configs/bookend.jpg shows and what Ben asked for on
+   * 11 September 2026.
+   *
+   * The permanent home for this is the pipeline: framework-renderer's
+   * scripts/extract/build-accessory-anchors.py writes the convention, and
+   * scripts/render/animate-bookend.py already carries the same correction as
+   * its `--screw-side` default. Until the anchors themselves are turned round,
+   * it is stated here so the builder, the share image and a render agree.
    */
+  const BOOKEND_SCREWS_INBOARD_DEG = 180;
+
   function anchorYawDeg(anchor, rotationDeg) {
     const [x, y] = anchorInboard(anchor, rotationDeg);
-    return normaliseQuarterTurn(Math.round(Math.atan2(y, x) * 180 / Math.PI));
+    const along = Math.round(Math.atan2(y, x) * 180 / Math.PI);
+    return normaliseQuarterTurn(along + BOOKEND_SCREWS_INBOARD_DEG);
   }
 
   /**
