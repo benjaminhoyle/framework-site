@@ -570,7 +570,8 @@ footer .text-link:hover {
     flex-basis: 100%;
     margin-top: 22px;
     font-size: 13px;
-    color: var(--faint, #98a29e);
+    /* #98a29e is 2.6:1 on white; the same green-grey two steps darker is 4.7:1 */
+    color: #6d7672;
 }
 
 /* The keyword line: four search phrases with nothing behind them. Hidden
