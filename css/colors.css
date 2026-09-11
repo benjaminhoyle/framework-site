@@ -112,8 +112,9 @@
     outline-offset: 3px;
 }
 
-/* The caption: the name on one line with its dot, then one paragraph of
-   body that says what the color is and what the pictured shelf costs. */
+/* The caption: the name on one line with its dot, then one line saying what
+   the color is like to live with, then the muted "As shown" for the shelf in
+   the photograph. */
 .co-tile figcaption { padding: 14px 2px 0; }
 
 .co-name {
@@ -124,6 +125,7 @@
 }
 
 .co-tile figcaption span:not(.co-name):not(.co-dot) { display: block; }
+.co-tile figcaption .pg-shown { margin-top: 6px; }
 
 /* Steel on the left of the dot, board on the right, both from the builder's
    own palette in assets/shelving/builder-contract.json. */
@@ -170,12 +172,17 @@
     gap: clamp(24px, 3vw, 36px);
 }
 
+/* One card shape at every width: the picture, then the name, then the
+    words. A phone used to get the picture in a 132px column beside the text,
+    which was too small to read a bookend or a lampshade in; the picture now
+    takes the column, capped so it does not swallow the page. */
 .co-addon {
     display: grid;
-    grid-template-columns: 132px 1fr;
-    gap: 20px;
-    align-items: center;
+    gap: 14px;
+    align-content: start;
 }
+
+.co-addon > a:first-child { max-width: 340px; }
 
 .co-addon img,
 .co-addon video {
@@ -188,33 +195,34 @@
     background: var(--wash);
 }
 
+.co-addon > div { align-self: start; }
+
 .co-addon a { display: block; color: inherit; text-decoration: none; }
 
 .co-addon b { display: block; margin-bottom: 4px; }
 
 .co-addon p { margin: 0; }
 
+.co-addon .pg-shown { margin-top: 8px; }
+
 .co-addon a:hover b, .co-addon a:focus b { color: var(--accent); }
 
-/* The Bookend's picture is a short clip of the mechanism: the bookend sliding
-   onto the bar under a shelf and seating. It is a 4:5 render shown in the
-   same square as the two photographs, so the row stays a row; the crop takes
-   a little paper off the top and the post off the bottom and nothing of the
-   action. The poster is the seated frame, so the card is complete before
+/* The Bookend's picture is a short clip of the mechanism, the one add-on whose
+   whole point is one. It is rendered square, to the same shape as the two
+   photographs beside it, and it is fitted rather than covered so that a clip
+   of another ratio would letterbox on the wash rather than lose its top and
+   its bottom. The poster is the seated frame, so the card is complete before
    the clip is fetched, and complete if it never is. */
-.co-clip { object-position: center 45%; }
+.co-addon .co-clip { object-fit: contain; }
 
-/* On a wider screen the three become cards, side by side and in one row, with
-   the picture over the words. Three of them in a two-column list left one
-   stranded on a second row, and a 150px thumbnail is too small to read a
-   bookend in. */
-@media (min-width: 860px) {
-    .co-addons ul { grid-template-columns: repeat(3, 1fr); gap: 32px; }
-    .co-addon { display: block; }
-    .co-addon img,
-    .co-addon video { margin-bottom: 16px; }
+/* One column on a phone, two on a tablet, three across in one row on a laptop.
+   Three cards in a two-column list leave one stranded on a second row, so the
+   three-column band starts where three of them still read. */
+@media (min-width: 560px) {
+    .co-addons ul { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 400px) {
-    .co-addon { grid-template-columns: 104px 1fr; gap: 16px; }
+@media (min-width: 860px) {
+    .co-addons ul { grid-template-columns: repeat(3, 1fr); gap: 32px; }
+    .co-addon > a:first-child { max-width: none; }
 }

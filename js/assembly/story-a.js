@@ -31,19 +31,19 @@
     var COPY = {
         base: {
             title: 'One unit stands on its own.',
-            body: 'A two-tier base on adjustable feet, so it sits level on any floor. Ksh 8,000/- as shown.'
+            body: 'A two-tier base on adjustable feet, so it sits level on any floor. Ksh 8,000 as shown.'
         },
         adapter: {
             title: 'The next one drops on. No tools.',
-            body: 'A pin under each leg slides into the post below. Ksh 15,000/- so far.'
+            body: 'A pin under each leg slides into the post below. Ksh 15,000 so far.'
         },
         tier: {
             title: 'Add a tier when you need one.',
-            body: 'A short unit, a post, and a shelf across them. Ksh 29,500/- so far.'
+            body: 'A short unit, a post, and a shelf across them. Ksh 29,500 so far.'
         },
         whole: {
             title: 'Or the whole shelf at once.',
-            body: 'As shown: The Curator\'s Shelf, Ksh 36,500/- in Coral. Delivered assembled within Nairobi.'
+            body: 'As shown: The Curator\'s Shelf, Ksh 36,500 in Coral. Delivered assembled within Nairobi.'
         },
         pins: {
             item_001: 'Wide Base',

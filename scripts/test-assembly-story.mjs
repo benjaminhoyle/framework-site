@@ -384,7 +384,7 @@ for (const { file, script } of derived) {
   }
   const priced = story.captions.filter((c) => /Ksh/i.test(c.body));
   check("the price is stated once, as shown, in the house form",
-    priced.length === 1 && /As shown:.*Ksh 36,500\/-.*Ksh 6,500\/-/.test(priced[0].body),
+    priced.length === 1 && /As shown:.*Ksh 36,500.*Ksh 6,500/.test(priced[0].body),
     priced.map((c) => c.body).join(" | "));
 }
 

@@ -543,6 +543,36 @@ window.FrameworkAssembly = (function () {
     }
 
     /*
+     * A frame narrower than this gets a pin's `narrow` windows if it has any.
+     * 640 px is below the smallest tablet and above the widest phone, and the
+     * three /how pages all step their own layout at 760.
+     */
+    var NARROW_PINS_PX = 640;
+
+    /**
+     * The window and the offset a pin is drawn with at this frame width.
+     *
+     * A pin states one timing and one offset for a screen with room, and may
+     * state a second set for a screen without. A label is as wide as its words
+     * at any width, so on a phone three of them cannot be placed beside three
+     * different parts of one shelf without crossing each other; a story that
+     * has something to say about that says it in `narrow`, usually by giving
+     * each pin a third of the same hold so they come one at a time. Anything
+     * `narrow` leaves out falls back to the wide value, so a story can change
+     * the timing alone or the offset alone.
+     */
+    function pinBand(spec, width) {
+        if (!spec.narrow || width >= NARROW_PINS_PX) return spec;
+        var n = spec.narrow;
+        return {
+            from: n.from == null ? spec.from : n.from,
+            to: n.to == null ? spec.to : n.to,
+            dx: n.dx == null ? spec.dx : n.dx,
+            dy: n.dy == null ? spec.dy : n.dy
+        };
+    }
+
+    /*
      * Pins are placed from the camera that drew the frame, and then kept inside
      * it. Two things have to be true that are not true by construction:
      *
@@ -558,7 +588,8 @@ window.FrameworkAssembly = (function () {
      */
     function paintPins(overlay, project, moment, p, width, height) {
         overlay.pins.forEach(function (pin) {
-            var opacity = windowOpacity(p, pin.spec.from, pin.spec.to);
+            var band = pinBand(pin.spec, width);
+            var opacity = windowOpacity(p, band.from, band.to);
             var at = opacity > 0.01 ? project(pinPoint(pin.spec, moment)) : null;
             if (at) {
                 // Fade out over the last 40px of the frame rather than snapping,
@@ -591,13 +622,13 @@ window.FrameworkAssembly = (function () {
              * the side is chosen here, flipping to whichever has room. The dot
              * never moves, so the leader line stays honest either way.
              */
-            var reach = pin.spec.dx == null ? 80 : pin.spec.dx;
+            var reach = band.dx == null ? 80 : band.dx;
             if (at.x + reach + margin > width || at.x + reach - margin < 0) {
                 var flipped = at.x - reach;
                 if (flipped + margin <= width && flipped - margin >= 0) reach = -reach;
             }
             var lx = Math.max(margin, Math.min(width - margin, at.x + reach));
-            var ly = Math.max(24, Math.min(height - 24, at.y + (pin.spec.dy || -30)));
+            var ly = Math.max(24, Math.min(height - 24, at.y + (band.dy == null ? -30 : band.dy)));
             pin.dot.setAttribute('cx', at.x);
             pin.dot.setAttribute('cy', at.y);
             pin.dot.setAttribute('opacity', opacity);

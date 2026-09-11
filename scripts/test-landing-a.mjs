@@ -159,7 +159,7 @@ for (const pin of story.pins) {
 
 // --- the tags and the prices -------------------------------------------------
 
-const ksh = (n) => `Ksh ${n.toLocaleString("en-GB")}/-`;
+const ksh = (n) => `Ksh ${n.toLocaleString("en-GB")}`;
 const priceOf = new Map(shelf.pieces.map((piece) => [piece.id, piece.priceKsh]));
 // The pins named their piece's price until 2026-09-11, when Ben asked for the
 // part's name instead: a price on a tag says nothing a buyer can act on, and
@@ -203,7 +203,7 @@ function landedTotal(p) {
   return sum;
 }
 for (const caption of story.captions) {
-  const figures = [...caption.body.matchAll(/Ksh ([\d,]+)\/-/g)].map((m) => Number(m[1].replace(/,/g, "")));
+  const figures = [...caption.body.matchAll(/Ksh ([\d,]+)/g)].map((m) => Number(m[1].replace(/,/g, "")));
   check(`"${caption.title}" quotes one price`, figures.length === 1, caption.body);
   const at = Math.min(1, caption.to);
   check(`"${caption.title}" quotes what has landed by the time it leaves (${figures[0]})`,
@@ -324,7 +324,7 @@ if (!fs.existsSync(BRIEF)) {
     check(`the brief has ${id}`, Boolean(text));
     check(`${id} is the brief's, verbatim`, onPage(id) === text, `page:  "${onPage(id)}"\n      brief: "${text}"`);
   }
-  for (const door of ["Popular configurations with prices. Units from Ksh 6,500/-.", "Build one in the browser and it prices itself as you go."]) {
+  for (const door of ["Popular configurations with prices. Units from Ksh 6,500.", "Build one in the browser and it prices itself as you go."]) {
     check("the doors say what the brief says", a.includes(door) && page.includes(door), door);
   }
   check("the brief's colours line is on the page", page.includes("Marine, Sage, Charcoal and Coral"));

@@ -7,8 +7,10 @@
  *
  * ---------------------------------------------------------------- type ---
  *
- * Five roles, and no sixth. Each has one size, one weight and one color;
- * anything else a page wants to say is said with space. The scale is a major
+ * Six roles, and no seventh. Each has one size, one weight and one color, and
+ * two of the six are the body role in another weight or another grey, so the
+ * page still reads as three sizes. Anything else a page wants to say is said
+ * with space. The scale is a major
  * third (1.25) on the 17px body, rounded to the pixel: 14, 17, 21, 27, 33,
  * 42, 52. A role that has two sizes has them one step apart, the smaller one
  * for a phone.
@@ -17,6 +19,7 @@
  *   section   h2, .pg-statement      33 (27 on a phone)  700  ink    one per section
  *   body      p, span, li, a         17                  400  ink    everything that is read
  *   name      b in a card or strip   17                  700  ink    body, bold: what a tile, card or door is called
+ *   shown     .pg-shown              17                  400  muted  body, muted: the "As shown" line under a picture
  *   small     .pg-small              14                  400  muted  the line above a title, the scroll hint
  *
  * The button is body, 700, paper on ink; the dark door is the same roles in
@@ -104,6 +107,12 @@ body {
 }
 
 .pg p:last-child { margin-bottom: 0; }
+
+/* The "As shown" line: what the pictured shelf is and what it costs, which is
+   a fact about the photograph rather than about the color or the add-on it
+   sits under. Body, so it is read and not footnoted; muted, so the sentence
+   above it is the one the eye takes first. */
+.pg .pg-shown { color: var(--muted); }
 
 /* A caption under a tile: body, with no paragraph margin of its own. */
 .pg figcaption {

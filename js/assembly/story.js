@@ -71,7 +71,7 @@
         },
         cap: {
             title: 'The top shelf goes on last.',
-            body: 'As shown: The Curator\'s Shelf in Coral, Ksh 36,500/-. Units from Ksh 6,500/-.'
+            body: 'As shown: The Curator\'s Shelf in Coral, Ksh 36,500. Units from Ksh 6,500.'
         },
         pins: {
             socket: 'socket',

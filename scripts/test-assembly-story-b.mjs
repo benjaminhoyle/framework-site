@@ -6,17 +6,18 @@
  *
  * The same arithmetic walk scripts/test-assembly-story.mjs makes over the
  * current story, against this one, plus the checks that are particular to a
- * story that takes a plain shelf apart and trades two of its parts for The
- * Curator's Shelf's:
+ * story that takes a plain shelf apart and trades three of its units for The
+ * Curator's Shelf's parts:
  *
- *  - the two derived Wide Extensions are where the builder's own engine puts
+ *  - the three derived Wide Extensions are where the builder's own engine puts
  *    them, and the plain shelf they make is a shelf the engine will build;
  *  - nothing ever passes through anything, checked pair by pair over the
  *    whole timeline, not just against what a piece rests on;
  *  - a part waiting to arrive or gone after leaving is outside the frame on
  *    every aspect ratio up to 21:9, measured with the renderer's own view;
  *  - every part the finished shelf is made of reaches its resting place;
- *  - the three pins carry the bake's names for the parts they follow;
+ *  - the three pins carry the bake's names for the parts they follow, and on
+ *    a phone they come one at a time rather than three over one small shelf;
  *  - the finish is the catalogue's Sage, not a hand-typed pair that drifts;
  *  - every word is what this story means to say, with no em dash anywhere.
  *
@@ -62,12 +63,12 @@ const engine = context.window.FrameworkAssembly;
 const VIEW = context.window.FrameworkDesignerRenderer && context.window.FrameworkDesignerRenderer.VIEW_DIRECTION;
 check("all four scripts define their global", Boolean(shelf && story && engine && VIEW));
 
-// --- the pieces: the bake's seven and the two derived from it ----------------
+// --- the pieces: the bake's seven and the three derived from it --------------
 
 const byId = new Map(shelf.pieces.map((piece) => [piece.id, piece]));
 for (const piece of story.plain) byId.set(piece.id, piece);
 const ids = new Set(story.pieces.map((piece) => piece.id));
-check("the story carries the bake's seven pieces and two more", story.pieces.length === 9 && story.plain.length === 2,
+check("the story carries the bake's seven pieces and three more", story.pieces.length === 10 && story.plain.length === 3,
   `${story.pieces.length} pieces, ${story.plain.length} derived`);
 for (const piece of shelf.pieces) check(`the bake's ${piece.id} is in the story`, ids.has(piece.id));
 
@@ -84,15 +85,12 @@ for (const piece of shelf.pieces) check(`the bake's ${piece.id} is in the story`
     schemaVersion: 1, finish: story.finish, bookends: 0,
     instances: [
       { id: "item_001", type: "wide_base", originWorldMm: [0, 0, 0], rotationDeg: 0, placement: { method: "floor" } },
-      { id: "item_002", type: byId.get("item_002").moduleId, originWorldMm: origin("item_002"), rotationDeg: byId.get("item_002").rot, placement: { method: "socket", on: ["item_001"] } },
-      { id: "plain_2", type: "wide_extension", originWorldMm: origin("plain_2"), rotationDeg: 0, placement: { method: "socket", on: ["item_002"] } },
+      { id: "plain_1", type: "wide_extension", originWorldMm: origin("plain_1"), rotationDeg: 0, placement: { method: "socket", on: ["item_001"] } },
+      { id: "plain_2", type: "wide_extension", originWorldMm: origin("plain_2"), rotationDeg: 0, placement: { method: "socket", on: ["plain_1"] } },
       { id: "plain_3", type: "wide_extension", originWorldMm: origin("plain_3"), rotationDeg: 0, placement: { method: "socket", on: ["plain_2"] } },
       { id: "item_007", type: "wide_extension", originWorldMm: origin("item_007"), rotationDeg: 0, placement: { method: "socket", on: ["plain_3"] } }
     ]
   };
-  // The adapter's origin in the design is the joint at the origin corner,
-  // which for a piece rotated 180 is the last of its joints, not the first.
-  record.instances[1].originWorldMm = byId.get("item_002").joints.find((j) => j[0] === 0 && j[1] === 0) || origin("item_002");
   const state = placement.deserializeState(catalog, record.design || record);
   const validation = placement.validateState(catalog, state);
   check("the plain shelf is a shelf the engine will build", validation.isValid, (validation.reasons || []).join("; "));
@@ -160,9 +158,9 @@ check("nothing is ever hidden: a part that is not in the picture is outside the 
 
 // --- who is where, when ------------------------------------------------------
 
-const PLAIN = ["item_001", "item_002", "plain_2", "plain_3", "item_007"];
+const PLAIN = ["item_001", "plain_1", "plain_2", "plain_3", "item_007"];
 const CURATOR = shelf.pieces.map((piece) => piece.id);
-const LEAVING = ["plain_2", "plain_3"];
+const LEAVING = ["plain_1", "plain_2", "plain_3"];
 const ARRIVING = CURATOR.filter((id) => !PLAIN.includes(id));
 const atRest = (state) => state.off.every((n) => Math.abs(n) < 0.01);
 
@@ -182,13 +180,13 @@ const atRest = (state) => state.off.every((n) => Math.abs(n) < 0.01);
   }
 }
 
-const tierOf = { item_001: 0, item_002: 1, item_003: 2, item_004: 2, plain_2: 2, item_005: 3, item_006: 3, plain_3: 3, item_007: 4 };
+const tierOf = { item_001: 0, item_002: 1, plain_1: 1, item_003: 2, item_004: 2, plain_2: 2, item_005: 3, item_006: 3, plain_3: 3, item_007: 4 };
 const LIFT = 120;
 
 // The first hold: the plain shelf fully exploded, every tier 120 mm per tier
 // above where it rests, and the Curator's parts still waiting.
 {
-  const hold = engine.sample(keys, 0.42);
+  const hold = engine.sample(keys, 0.40);
   for (const id of PLAIN) {
     const off = hold.pieces[id].off;
     check(`${id} is exploded by ${tierOf[id] * LIFT} mm in the first hold`,
@@ -200,7 +198,7 @@ const LIFT = 120;
   check("the exploded frame clears the top piece", hold.focus[5] >= topExploded, `ceiling ${hold.focus[5]}, top ${topExploded}`);
 }
 
-// The second hold: The Curator's Shelf fully exploded, the two wide units
+// The second hold: The Curator's Shelf fully exploded, the three wide units
 // gone, and the frame unchanged, so the swap happened inside one picture.
 {
   const hold = engine.sample(keys, 0.70);
@@ -210,7 +208,7 @@ const LIFT = 120;
       Math.abs(off[2] - tierOf[id] * LIFT) < 0.5 && Math.abs(off[0]) < 0.5 && Math.abs(off[1]) < 0.5, `offset ${off.join(",")}`);
   }
   for (const id of LEAVING) check(`${id} is gone in the second hold`, hold.pieces[id].off[0] > story.outMm - 0.5);
-  check("the frame is the same in both holds", hold.focus.join(",") === engine.sample(keys, 0.42).focus.join(","));
+  check("the frame is the same in both holds", hold.focus.join(",") === engine.sample(keys, 0.40).focus.join(","));
 }
 
 // The swap: a leaving part moves only along x, and only outward; an arriving
@@ -232,20 +230,31 @@ const LIFT = 120;
   }
   check("during the swap every part moves along x only, at its tier's height", level, where);
   check("during the swap every part moves one way only, rightward", monotone, where);
-  const before = engine.sample(keys, 0.44);
+  const before = engine.sample(keys, 0.42);
   const after = engine.sample(keys, 0.66);
   check("the swap begins with everything in the first hold's places", [...LEAVING].every((id) => Math.abs(before.pieces[id].off[0]) < 0.5));
   check("the swap ends with everything in the second hold's places", [...ARRIVING].every((id) => Math.abs(after.pieces[id].off[0]) < 0.5));
-  // Tier two before tier three, the reassembly's order kept in the air.
+  // Bottom-up, the reassembly's order kept in the air, and the order the
+  // parts depend on each other in.
   const arrivedAt = (id) => {
     for (let step = 400; step <= 700; step += 1) {
       if (Math.abs(engine.sample(keys, step / 1000).pieces[id].off[0]) < 0.5) return step / 1000;
     }
     return null;
   };
+  check("the adapter arrives before the slim unit that stands on its middle tubes",
+    arrivedAt("item_002") < arrivedAt("item_003"),
+    `${arrivedAt("item_002")} against ${arrivedAt("item_003")}`);
   check("the slim unit and its post arrive before the shelf above them",
     arrivedAt("item_003") < arrivedAt("item_005") && arrivedAt("item_004") < arrivedAt("item_005"),
     `${arrivedAt("item_003")}, ${arrivedAt("item_004")} against ${arrivedAt("item_005")}`);
+  // One tier finishes before the next begins: nothing is in flight at the
+  // instant a set lands, which is what "one before the next" means.
+  for (const [done, next] of [["item_002", "item_003"], ["item_003", "item_005"]]) {
+    check(`nothing is still sliding when ${done} lands`,
+      Math.abs(engine.sample(keys, arrivedAt(done)).pieces[next].off[0] + story.outMm) < 0.5,
+      `${next} at ${engine.sample(keys, arrivedAt(done)).pieces[next].off[0].toFixed(0)}`);
+  }
 }
 
 // --- nothing passes through anything -----------------------------------------
@@ -288,11 +297,11 @@ const LIFT = 120;
 {
   let worst = 0;
   let where = "";
-  const plainSupports = { item_002: ["item_001"], plain_2: ["item_002"], plain_3: ["plain_2"], item_007: ["plain_3"] };
+  const plainSupports = { plain_1: ["item_001"], plain_2: ["plain_1"], plain_3: ["plain_2"], item_007: ["plain_3"] };
   for (let step = 0; step <= 1000; step += 1) {
     const p = step / 1000;
     const moment = engine.sample(keys, p);
-    const graph = p < 0.44 ? Object.entries(plainSupports) : p > 0.66 ? shelf.pieces.map((piece) => [piece.id, piece.on]) : [];
+    const graph = p < 0.42 ? Object.entries(plainSupports) : p > 0.66 ? shelf.pieces.map((piece) => [piece.id, piece.on]) : [];
     for (const [id, on] of graph) {
       for (const support of on) {
         const gap = moment.pieces[id].off[2] - moment.pieces[support].off[2];
@@ -408,16 +417,16 @@ function restsAt(id, from, to) {
   return from;
 }
 {
-  const starts = Object.fromEntries(PLAIN.map((id) => [id, firstMoveAt(id, 0, 0.43)]));
+  const starts = Object.fromEntries(PLAIN.map((id) => [id, firstMoveAt(id, 0, 0.41)]));
   check("the base never moves", starts.item_001 === null);
-  for (const id of ARRIVING) check(`${id} does not move before the swap`, firstMoveAt(id, 0, 0.43) === null);
-  const order = ["item_007", "plain_3", "plain_2", "item_002"];
+  for (const id of ARRIVING) check(`${id} does not move before the swap`, firstMoveAt(id, 0, 0.41) === null);
+  const order = ["item_007", "plain_3", "plain_2", "plain_1"];
   for (let i = 1; i < order.length; i += 1) {
     check(`${order[i]} lifts after ${order[i - 1]} has started`, starts[order[i]] > starts[order[i - 1]],
       `${order[i - 1]} at ${starts[order[i - 1]]}, ${order[i]} at ${starts[order[i]]}`);
   }
   check("the lift begins at about 12%", starts.item_007 >= 0.11 && starts.item_007 <= 0.13, `at ${starts.item_007}`);
-  check("the lift is done by 41%", PLAIN.every((id) => id === "item_001" || firstMoveAt(id, 0.41, 0.43) === null));
+  check("the lift is done by 39%", PLAIN.every((id) => id === "item_001" || firstMoveAt(id, 0.39, 0.41) === null));
 }
 {
   const landed = Object.fromEntries(CURATOR.map((id) => [id, restsAt(id, 0.66, 1)]));
@@ -478,17 +487,27 @@ check("the pins name the slim unit, a post and the shelf",
   story.pins.map((pin) => pin.label).join(","));
 
 /*
- * No two labels can share a line. On a phone the engine flips every label to
- * the side with room, which is the inside of the shelf, so all three land in
- * one column and only their height tells them apart. Measured the way the
- * page draws it: the hold's frame fitted to a 390 x 579 canvas (a 390 x 844
- * phone less the caption band), each anchor projected onto the camera's up
- * and the label's own dy added, and the same again on a 1280 x 800 desktop.
+ * The labels, at the two widths that matter.
+ *
+ * On a wide screen all three are up at once, so no two of them may share a
+ * line. Measured the way the page draws it: the hold's frame fitted to a
+ * 1280 x 800 canvas, each anchor projected onto the camera's up, and the
+ * label's own dy added.
+ *
+ * On a phone there is no arrangement of three chips over a 390 px shelf that
+ * reads. A label is as wide as its words at any width, the engine has to keep
+ * the whole of one inside the picture, and the three anchors are on opposite
+ * sides of the shelf, so the leader lines cross the drawing to reach them. So
+ * the story gives each pin a second window and they come one at a time, and
+ * what is checked here is that they really do: at no point is more than one
+ * drawn, each still reaches full opacity, each sits over or under its own dot
+ * rather than off to one side, and they run bottom-up, in the order the parts
+ * arrived. scroll-story.js picks the second window below 640 px.
  */
-for (const [label, width, height] of [["a 390 phone", 390, 579], ["a 1280 desktop", 1280, 800]]) {
+{
   const hold = engine.sample(keys, 0.70);
-  const frame = frameOf(hold.focus, hold.padding, width / height);
-  const pxPerMm = (height / 2) / frame.halfUp;
+  const frame = frameOf(hold.focus, hold.padding, 1280 / 800);
+  const pxPerMm = (800 / 2) / frame.halfUp;
   const rows = story.pins.map((pin) => {
     const off = hold.pieces[pin.follow].off;
     const at = [pin.point[0] + off[0], pin.point[1] + off[1], pin.point[2] + off[2]];
@@ -497,9 +516,35 @@ for (const [label, width, height] of [["a 390 phone", 390, 579], ["a 1280 deskto
   for (let i = 0; i < rows.length; i += 1) {
     for (let j = i + 1; j < rows.length; j += 1) {
       const gap = Math.abs(rows[i].y - rows[j].y);
-      check(`"${rows[i].label}" and "${rows[j].label}" sit on different lines on ${label}`, gap >= 34, `${gap.toFixed(0)} px apart`);
+      check(`"${rows[i].label}" and "${rows[j].label}" sit on different lines on a 1280 desktop`, gap >= 34, `${gap.toFixed(0)} px apart`);
     }
   }
+}
+{
+  const narrowed = story.pins.filter((pin) => pin.narrow);
+  check("every pin carries a phone window", narrowed.length === story.pins.length,
+    `${narrowed.length} of ${story.pins.length}`);
+  let most = 0;
+  let where = "";
+  for (let step = 0; step <= 1000; step += 1) {
+    const p = step / 1000;
+    const lit = narrowed.filter((pin) => engine.windowOpacity(p, pin.narrow.from, pin.narrow.to) > 0.01);
+    if (lit.length > most) { most = lit.length; where = `${lit.map((pin) => pin.label).join(" and ")} at p=${p}`; }
+  }
+  check("on a phone only one label is ever on screen", most <= 1, where);
+  check("on a phone a label is on screen at all", most === 1);
+  for (const pin of narrowed) {
+    const middle = engine.windowOpacity((pin.narrow.from + pin.narrow.to) / 2, pin.narrow.from, pin.narrow.to);
+    check(`pin "${pin.label}" reaches full opacity on a phone`, middle > 0.999, middle.toFixed(2));
+    check(`pin "${pin.label}"'s phone window opens no earlier than its wide one`, pin.narrow.from >= pin.from - 1e-9,
+      `${pin.narrow.from} against ${pin.from}`);
+    check(`pin "${pin.label}"'s phone window closes before its part has landed`,
+      pin.narrow.to <= restsAt(pin.follow, 0.66, 1), `${pin.narrow.to} against ${restsAt(pin.follow, 0.66, 1)}`);
+    check(`pin "${pin.label}" sits over or under its own dot on a phone`, pin.narrow.dx === 0, String(pin.narrow.dx));
+  }
+  const order = narrowed.slice().sort((a, b) => a.narrow.from - b.narrow.from).map((pin) => pin.label);
+  check("the phone shows the labels in the order the parts arrived",
+    order.join(",") === "Slim Extension,Standard Booster,Standard Extension", order.join(","));
 }
 
 // --- the words -----------------------------------------------------------------
@@ -510,8 +555,8 @@ const WORDS = {
   "apart.title": "Choose different parts and it is a different shelf.",
   "apart.body": "Taller, wider, a low one for a child's room. The price is known before you order.",
   "together.title": "It comes apart again when you move.",
-  "together.body": "Delivered assembled within Nairobi. Start with one unit, from Ksh 6,500/-, and add to it later.",
-  "hero.title": "As shown: Ksh 36,500/- in Sage.",
+  "together.body": "Delivered assembled within Nairobi. Start with one unit, from Ksh 6,500, and add to it later.",
+  "hero.title": "As shown: Ksh 36,500 in Sage.",
   "hero.body": "The Curator's Shelf. Made in our Dagoretti Corner workshop."
 };
 for (const caption of story.captions) {
@@ -572,7 +617,7 @@ for (const caption of story.captions) {
   check("calm shows the plain shelf exploded", PLAIN.every((id) => Math.abs(first.pieces[id].off[2] - tierOf[id] * LIFT) < 0.5));
   const second = engine.sample(keys, 0.70, true);
   check("calm shows The Curator's Shelf exploded", CURATOR.every((id) => Math.abs(second.pieces[id].off[2] - tierOf[id] * LIFT) < 0.5 && Math.abs(second.pieces[id].off[0]) < 0.5));
-  const mid = engine.sample(keys, 0.51, true);
+  const mid = engine.sample(keys, 0.54, true);
   check("calm shows the swap in motion", Math.abs(mid.pieces.plain_2.off[0]) > 100 && Math.abs(mid.pieces.item_003.off[0]) > 100 && Math.abs(mid.pieces.item_003.off[0]) < story.outMm - 100);
   const calmEnd = engine.sample(keys, 1, true);
   for (const id of CURATOR) {
