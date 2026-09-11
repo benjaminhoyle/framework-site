@@ -110,11 +110,28 @@ test("the vendored contract, the catalog and the pipeline agree", () => {
     if (JSON.stringify(ours) !== JSON.stringify(theirsValue)) moved.add(pathText);
   };
   walk("", contract, theirs);
-  // The pipeline flips the bookend's own vocabulary entry to "active" when it
-  // folds the accessory in; that entry is the accessory.
-  const accessoryOnly = Array.from(moved).filter((entry) =>
-    !/^\/vocabulary\/types\[\d+\]\/(status|dims|source)$/.test(entry)
-    && !/^\/(registryPolicies|source)\/(bookend|accessories|accessoryAnchors)$/.test(entry));
+  /*
+   * Two paths outside `accessories` still belong to an accessory, and both are
+   * matched by the accessory's own name rather than by its position: the
+   * registry policy that says how it attaches, and its vocabulary entry, which
+   * the pipeline flips from "model-pending" to "active" with its measured dims
+   * when it folds the accessory in. Naming them this way is what keeps a real
+   * module's vocabulary dims inside the guard: only an entry whose `type` is
+   * one of the contract's accessories is let through.
+   */
+  const accessories = new Set(Object.keys(contract.accessories || {}));
+  const accessoryVocabulary = new Set(
+    (contract.vocabulary.types || [])
+      .map((entry, index) => (accessories.has(entry.type) ? index : -1))
+      .filter((index) => index >= 0)
+  );
+  const accessoryOnly = Array.from(moved).filter((entry) => {
+    const vocabulary = /^\/vocabulary\/types\[(\d+)\]\//.exec(entry);
+    if (vocabulary && accessoryVocabulary.has(Number(vocabulary[1]))) return false;
+    const owned = /^\/(registryPolicies|source)\/(.+)$/.exec(entry);
+    if (owned && (accessories.has(owned[2]) || owned[2] === "accessories" || owned[2] === "accessoryAnchors")) return false;
+    return true;
+  });
   assert.deepEqual(
     accessoryOnly,
     [],
