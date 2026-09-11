@@ -304,8 +304,14 @@
      * `at(id)` gives a piece's offset at the start of the run, `to(id)` at the
      * end; the rest is linear between the key times, and the engine eases each
      * segment.
+     *
+     * `through` is the camera's key times. A camera key that falls inside a
+     * run is a key the engine will interpolate through, and a piece it does
+     * not mention stands still up to it (the carry-forward) and then hurries.
+     * So the run states every piece at those instants too, and merge() below
+     * folds the two keys into one.
      */
-    function schedule(order, start, end, overlap, tail, at, to) {
+    function schedule(order, start, end, overlap, tail, at, to, through) {
         var groups = order.map(function (entry) { return [].concat(entry); });
         var n = groups.length;
         var d = (end - start + (n - 1) * overlap) / n;
@@ -317,6 +323,9 @@
         windows.forEach(function (w) {
             if (times.indexOf(w.s) < 0) times.push(w.s);
             if (times.indexOf(w.e) < 0) times.push(w.e);
+        });
+        (through || []).forEach(function (t) {
+            if (t > start && t < end && times.indexOf(t) < 0) times.push(t);
         });
         times.sort(function (a, b) { return a - b; });
 
@@ -354,6 +363,29 @@
     }
 
     function round(v) { return Math.round(v * 10000) / 10000; }
+
+    /**
+     * Keys at the same instant become one key: the camera's frame, with every
+     * piece any run states there. The engine sorts by time itself, so the
+     * order of the lists does not matter.
+     */
+    function merge(lists) {
+        var byTime = {};
+        var order = [];
+        lists.forEach(function (list) {
+            list.forEach(function (key) {
+                var k = String(key.at);
+                if (!byTime[k]) { byTime[k] = { at: key.at }; order.push(k); }
+                var into = byTime[k];
+                if (key.focus) { into.focus = key.focus; into.padding = key.padding; }
+                if (key.pieces) {
+                    into.pieces = into.pieces || {};
+                    Object.keys(key.pieces).forEach(function (id) { into.pieces[id] = key.pieces[id]; });
+                }
+            });
+        });
+        return order.map(function (k) { return byTime[k]; });
+    }
 
     var rest = function () { return [0, 0, 0]; };
 
@@ -398,9 +430,10 @@
         { at: 1.0, focus: HERO, padding: 1.04 }
     ];
 
-    var liftKeys = schedule(LIFT_ORDER, 0.12, 0.40, 0.012, 0.15, rest, lift);
-    var swapKeys = schedule(SWAP, 0.44, 0.66, 0.06, 0.15, swapFrom, swapTo);
-    var landKeys = schedule(LAND_ORDER, 0.74, 0.90, 0.012, 0.15, lift, rest);
+    var cameraTimes = cameraKeys.map(function (key) { return key.at; });
+    var liftKeys = schedule(LIFT_ORDER, 0.12, 0.40, 0.012, 0.15, rest, lift, cameraTimes);
+    var swapKeys = schedule(SWAP, 0.44, 0.66, 0.06, 0.15, swapFrom, swapTo, cameraTimes);
+    var landKeys = schedule(LAND_ORDER, 0.74, 0.90, 0.012, 0.15, lift, rest, cameraTimes);
 
     window.FrameworkAssemblyStory = {
         title: shelf.title,
@@ -424,7 +457,7 @@
         plain: PLAIN,
         outMm: OUT,
 
-        keys: cameraKeys.concat(liftKeys, swapKeys, landKeys),
+        keys: merge([cameraKeys, liftKeys, swapKeys, landKeys]),
 
         /*
          * Captions. `from`/`to` are windows on the same timeline; the engine
