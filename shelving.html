@@ -2,6 +2,11 @@
 <html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customizable Modernist Shelving System | Kenyan-Made Modular Design | Framework Nairobi</title>
+    <meta name="description"
+        content="Flexible, modernist and Kenyan-made. Use our modular shelving system to bring functionality, design and color to any part of your home, office or shop.">
     <!-- === TRACKING === -->
     <!-- Meta Pixel Code -->
     <script>
@@ -19,13 +24,25 @@
     <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id=1492649948884685&ev=PageView&noscript=1"/></noscript>
     <!-- End Meta Pixel Code -->
-    <!-- Google tag (gtag.js) -->
+    <!-- Google tag (gtag.js): one loader for Google Ads and GA4. Each ID used to
+         have its own loader script, and whichever ran first fetched the other's
+         container a second time (2026-09-10). -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16875113878"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
         gtag('config', 'AW-16875113878');
+        gtag('config', 'G-HXHT6KGZT3', {
+            send_page_view: true,
+            allow_google_signals: true,
+            enhanced_measurement: {
+                scroll: true,
+                engagement: true,
+                page_changes: true,
+                url_changes: true
+            }
+        });
     </script>
     <!-- Google Tag Manager -->
     <script>(function (w, d, s, l, i) {
@@ -45,25 +62,8 @@
             y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
         })(window, document, "clarity", "script", "wansrhuwwq");
     </script>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HXHT6KGZT3"></script>
     <script src="js/image-loading.js" defer></script>
     <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-
-        gtag('config', 'G-HXHT6KGZT3', {
-            send_page_view: true,
-            allow_google_signals: true,
-            enhanced_measurement: {
-                scroll: true,
-                engagement: true,
-                page_changes: true,
-                url_changes: true
-            }
-        });
-
         // Add right after your gtag config
         const startTime = performance.now();
 
@@ -76,17 +76,12 @@
         });
     </script>
     <script src="js/faq-schema.js" defer></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customizable Modernist Shelving System | Kenyan-Made Modular Design | Framework Nairobi</title>
-    <meta name="description"
-        content="Flexible, modernist and Kenyan-made. Use our modular shelving system to bring functionality, design and color to any part of your home, office or shop.">
     <meta property="og:title" content="Customizable Modernist Shelving | Framework Nairobi">
     <meta property="og:description" content="Flexible, modernist and Kenyan-made. Modular shelving that brings design and color to any space. Starting from Ksh 6,500.">
     <meta property="og:image" content="https://www.framework.co.ke/images/shelving/shelf (18).jpg">
     <meta property="og:url" content="https://www.framework.co.ke/shelving.html">
     <meta property="og:type" content="product">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" href="/images/global/fwk-icon-lg.png">
     <!-- The product catalogue. Preloaded so it downloads alongside the HTML
          rather than after the page script parses — the range is the first thing
          below the fold and should not wait on a script to ask for it. -->
@@ -263,7 +258,7 @@
           font-size: 13px;
           letter-spacing: 2px;
           text-transform: uppercase;
-          color: #999;
+          color: #6b6b6b; /* was #999 (2.8:1); this matches .intro-headline and passes AA */
           margin: 0 0 12px;
           font-weight: 400;
         }
@@ -529,7 +524,7 @@
           transform: translateX(3px);
         }
         .catalog-card-price {
-          color: #16a34a;
+          color: #15803d; /* one step darker than the #16a34a buttons: 5.0:1 on white */
           font-weight: 700;
           margin: 0 0 0.5rem;
         }
@@ -742,7 +737,7 @@
         .lightbox-price {
           font-size: 1.35rem;
           font-weight: 700;
-          color: #16a34a;
+          color: #15803d;
           margin: 0 0 8px;
         }
         .lightbox-desc {
@@ -921,13 +916,13 @@
           width: 20px;
         }
         .btn-order {
-          background: #16a34a;
-          border: 1px solid #16a34a;
+          background: #15803d; /* same reason as .btn-green */
+          border: 1px solid #15803d;
           box-shadow: 0 6px 14px rgba(22, 163, 74, 0.18);
           color: #fff;
         }
         .btn-order:hover {
-          background: #15803d;
+          background: #166534;
           box-shadow: 0 8px 18px rgba(22, 163, 74, 0.22);
           transform: translateY(-1px);
         }
@@ -1191,7 +1186,7 @@
         }
         .btn-blue:hover { background-color: #1d4ed8; }
         .btn-green {
-          background-color: #16a34a;
+          background-color: #15803d; /* white on #16a34a is 3.3:1; on this it is 5.0:1 */
           color: #fff;
           font-weight: 500;
           padding: 0.5rem 1.5rem;
@@ -1200,7 +1195,7 @@
           display: inline-block;
           text-decoration: none;
         }
-        .btn-green:hover { background-color: #15803d; }
+        .btn-green:hover { background-color: #166534; }
 
         /* Mobile-only title bg */
         .bg-mobile-title {
@@ -1261,6 +1256,8 @@
       <div class="featured-grid">
         <button type="button" class="featured-item" data-fwk-featured-id="stepped-display" onclick="openConfigById('stepped-display', 'featured_gallery')">
           <img src="images/shelving/shelf (18).jpg"
+               srcset="images/shelving/w400/shelf%20(18).jpg 400w, images/shelving/w800/shelf%20(18).jpg 800w, images/shelving/shelf%20(18).jpg 1080w"
+               sizes="(min-width: 768px) 310px, 92vw"
                alt="Modular shelving system showing infinite expandability — stack vertically, extend horizontally, turn corners"
                class="featured-img"
                width="1080" height="1080"
@@ -1269,6 +1266,8 @@
         </button>
         <button type="button" class="featured-item" data-fwk-featured-id="triple" onclick="openConfigById('triple', 'featured_gallery')">
           <img src="images/shelving/configs/multicolor-stack-under-mdf.jpg"
+               srcset="images/shelving/configs/w400/multicolor-stack-under-mdf.jpg 400w, images/shelving/configs/w800/multicolor-stack-under-mdf.jpg 800w, images/shelving/configs/w1100/multicolor-stack-under-mdf.jpg 1100w, images/shelving/configs/multicolor-stack-under-mdf.jpg 1400w"
+               sizes="(min-width: 768px) 310px, 92vw"
                alt="Close-up of the steel and MDF shelving underside crafted in Nairobi"
                class="featured-img"
                width="1400" height="1400"
@@ -1277,6 +1276,8 @@
         </button>
         <button type="button" class="featured-item" data-fwk-featured-id="multicolor-stack" onclick="openConfigById('multicolor-stack', 'featured_gallery')">
           <img src="images/shelving/configs/multicolor-stack-populated.jpg"
+               srcset="images/shelving/configs/w400/multicolor-stack-populated.jpg 400w, images/shelving/configs/w800/multicolor-stack-populated.jpg 800w, images/shelving/configs/w1100/multicolor-stack-populated.jpg 1100w, images/shelving/configs/multicolor-stack-populated.jpg 1400w"
+               sizes="(min-width: 768px) 310px, 92vw"
                alt="Colorful customizable shelving in multiple color options"
                class="featured-img"
                width="1400" height="1400"
@@ -1351,6 +1352,8 @@
           <div class="md:flex">
             <div class="customize-media">
               <img src="images/shelving/configs/wide-four-tier-emptied.jpg"
+                   srcset="images/shelving/configs/w400/wide-four-tier-emptied.jpg 400w, images/shelving/configs/w800/wide-four-tier-emptied.jpg 800w, images/shelving/configs/w1100/wide-four-tier-emptied.jpg 1100w, images/shelving/configs/wide-four-tier-emptied.jpg 1400w"
+                   sizes="(min-width: 768px) 410px, 92vw"
                    alt="Simple modular shelf configuration"
                    class="w-full h-auto object-cover"
                    width="1400" height="1400"
@@ -1542,6 +1545,7 @@
        target="_blank"
        rel="noopener noreferrer"
        class="whatsapp-fab"
+       aria-label="Chat with us on WhatsApp"
        data-fwk-handoff="fab"
        onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{link_target:'whatsapp_fab',content_category:'shelving_page'});}">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
@@ -1590,6 +1594,24 @@
 
     function getConfigUrl(config) {
       return getSiteUrl('shelving.html?config=' + encodeURIComponent(config.id));
+    }
+
+    // The catalogue tile is 320 to 380 CSS px wide (measured at 1280 desktop
+    // and on a 393 px phone), so it never needs the 1400 px master except on
+    // a 3x phone. scripts/build-responsive-images.py writes w400, w800 and
+    // w1100 copies next to the masters; this returns the srcset and sizes
+    // attributes for one of them, or nothing for an image it has no copies of.
+    var CATALOG_CARD_SIZES = '(min-width: 960px) 320px, (min-width: 640px) 47vw, 92vw';
+    function getConfigSrcsetAttrs(image, sizes) {
+      var src = String(image || '');
+      var m = /^(images\/shelving\/configs\/)([^\/]+\.jpg)$/.exec(src);
+      if (!m) return '';
+      var dir = m[1], name = m[2];
+      var candidates = [400, 800, 1100].map(function(w) {
+        return escapeHtml(dir + 'w' + w + '/' + name) + ' ' + w + 'w';
+      });
+      candidates.push(escapeHtml(src) + ' 1400w');
+      return ' srcset="' + candidates.join(', ') + '" sizes="' + sizes + '"';
     }
 
     function getConfigThumbnailImage(image) {
@@ -1982,9 +2004,9 @@
           ' data-clarity-action="open_config"' +
           ' data-clarity-config-id="' + escapeHtml(config.id) + '"' +
           ' data-clarity-config-title="' + escapeHtml(config.title) + '"' +
-          ' aria-label="Open ' + escapeHtml(config.title) + ' configuration details"' +
           ' onclick="openCatalogConfig(' + index + ')">' +
-            '<img class="catalog-card-image" src="' + escapeHtml(image) + '" alt="' + escapeHtml(config.title + ' shelving configuration') + '" loading="lazy" width="800" height="800">' +
+            '<img class="catalog-card-image" src="' + escapeHtml(image) + '"' + getConfigSrcsetAttrs(image, CATALOG_CARD_SIZES) +
+              ' alt="' + escapeHtml(config.title + ' shelving configuration') + '" loading="lazy" width="800" height="800">' +
             '<span class="catalog-card-body">' +
               '<span class="catalog-card-title">' + escapeHtml(config.title) + '</span>' +
               '<span class="catalog-card-price">' + escapeHtml(getConfigPriceLabel(config)) + '</span>' +
