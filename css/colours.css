@@ -151,7 +151,9 @@
 .co-shown {
     display: block;
     font-size: 14px;
-    color: var(--faint);
+    /* The page's --faint (#98a29e) is 2.6:1 on white; this is the same
+       green-grey two steps darker, 4.7:1, so the price line passes AA. */
+    color: #6d7672;
     margin-top: 6px;
 }
 
