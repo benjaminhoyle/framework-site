@@ -1,5 +1,5 @@
 /*
- * Shared by /colours and /how: the tokens, the type scale, the section
+ * Shared by /colors and /how: the tokens, the type scale, the section
  * rhythm, and the two primitives both pages end on (the WhatsApp ask and the
  * doors). Loaded after css/styles.css, whose header and footer js/site.js
  * injects, and it takes back the body padding that stylesheet adds for the

@@ -2,7 +2,7 @@
  * /how-b, landing B: the assembly story is the hero and css/assembly.css lays
  * that out; the ask and the doors come from css/pages.css. This file is only
  * what is left: the intro's spacing, the prices line, the promise line above
- * the ask, and the colours strip.
+ * the ask, and the colors strip.
  *
  * One rule carried over from docs/assembly-animation.md: nothing above the
  * sticky stage may carry a transform, filter, perspective or will-change.
@@ -16,7 +16,7 @@
     padding: clamp(48px, 9vh, 96px) 24px clamp(36px, 6vh, 64px);
 }
 
-/* Both prices, on the first screen, in the ink rather than the muted grey:
+/* Both prices, on the first screen, in the ink rather than the muted gray:
    they do the filtering the page relies on. */
 .hb-intro .hb-prices {
     color: var(--ink);
@@ -48,7 +48,7 @@
     margin: 0 0 clamp(24px, 3vw, 36px);
 }
 
-/* --------------------------------------------------------------- colours */
+/* --------------------------------------------------------------- colors */
 
 .hb-colours {
     display: flex;
@@ -69,7 +69,7 @@
 .hb-colours:hover, .hb-colours:focus { border-color: var(--accent); }
 
 /* Steel on the left of each dot, board on the right, from the builder's own
-   palette. The same four as the tiles on /colours. */
+   palette. The same four as the tiles on /colors. */
 .hb-swatches {
     display: flex;
     gap: 7px;

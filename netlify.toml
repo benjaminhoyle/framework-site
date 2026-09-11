@@ -42,8 +42,8 @@
   status = 200
 
 # The two pages that explain the system. /how carries the assembly story as its
-# hero and is the landing for "build your own"; /colours is the link sent in a
-# WhatsApp reply when someone asks what colours there are.
+# hero and is the landing for "build your own"; /colors is the link sent in a
+# WhatsApp reply when someone asks what colors there are.
 [[redirects]]
   from = "/how"
   to = "/how.html"
@@ -57,8 +57,8 @@
   status = 200
 
 [[redirects]]
-  from = "/colours"
-  to = "/colours.html"
+  from = "/colors"
+  to = "/colors.html"
   status = 200
 
 # Landing B for the Search campaign, one of three versions of /how being
@@ -68,10 +68,17 @@
   to = "/how-b.html"
   status = 200
 
-# The American spelling, typed by hand.
+# The page was /colours until 2026-09-11 ("let's always use 'colors'"), and that
+# address is in WhatsApp replies already sent, so it keeps working. The .html
+# form too: there is no file at it any more.
 [[redirects]]
-  from = "/colors"
-  to = "/colours"
+  from = "/colours"
+  to = "/colors"
+  status = 301
+
+[[redirects]]
+  from = "/colours.html"
+  to = "/colors"
   status = 301
 
 # The assembly story. Reachable and noindex, but linked from nowhere: it is

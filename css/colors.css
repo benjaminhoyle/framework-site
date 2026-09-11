@@ -1,7 +1,7 @@
 /*
- * /colours: the four finishes and the add-ons, on one short page.
+ * /colors: the four finishes and the add-ons, on one short page.
  *
- * This is the link the team sends when somebody on WhatsApp asks what colours
+ * This is the link the team sends when somebody on WhatsApp asks what colors
  * there are, so a phone is the first case and the page stays one scroll.
  * Tokens, type and the two closing blocks come from css/pages.css.
  *
@@ -229,7 +229,7 @@
 .co-addon .co-shown { margin-top: 8px; }
 
 /* The display bar has no photograph yet, so it is a sentence under the list
-   rather than a grey box pretending to be one. */
+   rather than a gray box pretending to be one. */
 .co-also {
     margin: clamp(22px, 3vw, 32px) 0 0;
     padding-top: 20px;

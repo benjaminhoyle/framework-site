@@ -74,7 +74,7 @@
     margin-bottom: 18px;
 }
 
-/* --------------------------------------------------------------- colours */
+/* --------------------------------------------------------------- colors */
 
 .ha-colours {
     display: flex;
@@ -95,7 +95,7 @@
 .ha-colours:hover, .ha-colours:focus { border-color: var(--accent); }
 
 /* Steel on the left of each dot, board on the right, from the builder's own
-   palette. The same four as the tiles on /colours. */
+   palette. The same four as the tiles on /colors. */
 .ha-swatches {
     display: flex;
     gap: 7px;
