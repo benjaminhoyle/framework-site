@@ -172,7 +172,7 @@
      * isometric, so the dot is never behind a board. Which post is front-right
      * is read off the joints the piece lands on, against the renderer's own
      * view direction, so a camera change moves the tags to the right leg by
-     * itself. Same rule as story-a.js, so the two pages tag the same leg.
+     * itself. Same rule the landing pages used, so every page tags the same leg.
      */
     function tagPoint(id) {
         var view = (window.FrameworkDesignerRenderer && window.FrameworkDesignerRenderer.VIEW_DIRECTION)
