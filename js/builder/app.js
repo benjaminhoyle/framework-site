@@ -1153,7 +1153,7 @@
     return {
       module: entry.module,
       note: `${spacings.length} spacings`,
-      onPick: () => openPicker(`${moduleLabel(entry.module)} — spacing`, spacings.map((spacing, index) => ({
+      onPick: () => openPicker(`${moduleLabel(entry.module)}: spacing`, spacings.map((spacing, index) => ({
         module: entry.module,
         label: gapName(index),
         note: isTouching(spacing.gapMm) ? "against its neighbour" : `${mmToCm(spacing.gapMm)} cm clear`,
@@ -1552,7 +1552,7 @@
       menu.appendChild(remove);
     }
     if (!menu.childNodes.length) {
-      setHint("This piece is holding the shelf up — remove what is on top of it first.");
+      setHint("This piece is holding the shelf up. Remove what is on top of it first.");
       ui.selectedId = null;
       return;
     }
@@ -1823,7 +1823,7 @@
       return;
     }
     const moved = plan ? plan.moves.length : 0;
-    setHint(`Spacing evened out — ${moved} unit${moved === 1 ? "" : "s"} moved.`);
+    setHint(`Spacing evened out: ${moved} unit${moved === 1 ? "" : "s"} moved.`);
   }
 
   function toggleOmitted(instance) {
@@ -1831,7 +1831,7 @@
     if (!commit(engine.setInstanceOmitted(ui.catalog, ui.design, instance.id, omit), { keepSelection: true })) return;
     const name = moduleLabel(ui.catalog.modules[instance.moduleId]);
     setHint(omit
-      ? `${name} left out of the invoice — still in the design, not in the total.`
+      ? `${name} left out of the invoice. Still in the design, not in the total.`
       : `${name} is back in the invoice.`);
   }
 
@@ -2345,7 +2345,7 @@
       };
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(code).then(done, () => {
-          setHint("Copying was blocked — the code is on the image too.", true);
+          setHint("Copying was blocked. The code is on the image too.", true);
         });
       } else {
         const range = document.createRange();
@@ -2699,7 +2699,7 @@
     const field = make("div", "nd-field");
     field.appendChild(make("span", "nd-label", "What is in it"));
     if (!lines.length && !omitted.length) {
-      field.appendChild(make("p", "nd-note", "Nothing yet — add a unit to get started."));
+      field.appendChild(make("p", "nd-note", "Nothing yet. Add a unit to get started."));
       return field;
     }
     const list = make("div", "nd-lines");
@@ -2796,7 +2796,7 @@
     body.appendChild(make(
       "p",
       "nd-note",
-      "Want to mix unit sizes, add hanging rails or leave gaps? Switch to Flexible or Advanced above — your shelf comes with you."
+      "Want to mix unit sizes, add hanging rails or leave gaps? Switch to Flexible or Advanced above. Your shelf comes with you."
     ));
   }
 
@@ -2832,7 +2832,7 @@
     openPicker("Add a piece", addPieceOptions(), {
       emptyLabel: ui.design.instances.length
         ? "Nothing else will fit on this design."
-        : "Nothing to add yet — one moment."
+        : "Nothing to add yet. One moment."
     });
   }
 
