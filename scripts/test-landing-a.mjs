@@ -6,10 +6,11 @@
  *
  * The same timeline checks scripts/test-assembly-story.mjs runs on story.js,
  * against this page's story, and then the things that make this version what
- * it is: every pin carries the catalogue price of the piece it rides; the
+ * it is: every pin names the piece it rides, as the catalogue names it; the
  * running total in each caption is true by the time the caption leaves; the
- * whole comes to Ksh 36,500; the words on the page are the brief's words,
- * verbatim, when the brief is on disk beside this repo; no em dash anywhere.
+ * whole comes to Ksh 36,500; the captions and the page copy are the brief's
+ * words, verbatim, when the brief is on disk beside this repo; no em dash
+ * anywhere.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -156,16 +157,22 @@ for (const pin of story.pins) {
   check("every pin reaches full opacity", middle > 0.999, `"${pin.label}" peaks at ${middle.toFixed(2)}`);
 }
 
-// --- the prices --------------------------------------------------------------
+// --- the tags and the prices -------------------------------------------------
 
 const ksh = (n) => `Ksh ${n.toLocaleString("en-GB")}/-`;
 const priceOf = new Map(shelf.pieces.map((piece) => [piece.id, piece.priceKsh]));
+// The pins named their piece's price until 2026-09-11, when Ben asked for the
+// part's name instead: a price on a tag says nothing a buyer can act on, and
+// the running total is in the captions anyway. The names come from the bake,
+// which is also what /builder puts in a parts list and what customers paste
+// back into an order, so the two cannot drift.
+const labelOf = new Map(shelf.pieces.map((piece) => [piece.id, piece.label]));
 const total = shelf.pieces.reduce((sum, piece) => sum + piece.priceKsh, 0);
 check("the seven pieces sum to the catalogue price", total === 36500 && shelf.totalKsh === 36500, `sum ${total}, totalKsh ${shelf.totalKsh}`);
 
 for (const pin of story.pins) {
-  check(`the tag on ${pin.follow} carries its catalogue price`, pin.label === ksh(priceOf.get(pin.follow)),
-    `label "${pin.label}", price ${priceOf.get(pin.follow)}`);
+  check(`the tag on ${pin.follow} carries its catalogue name`, pin.label === labelOf.get(pin.follow),
+    `label "${pin.label}", catalogue "${labelOf.get(pin.follow)}"`);
   // A tag rides its piece down and fades once it has landed: it must be up
   // while the piece is moving and gone by, or shortly after, the landing.
   let landedAt = null;
@@ -272,12 +279,14 @@ if (!fs.existsSync(BRIEF)) {
     check(`caption ${index + 1} body is the brief's`, caption && caption.body === row[2], `story: "${caption && caption.body}"\n      brief: "${row[2]}"`);
   });
 
-  // Pins, from the pins paragraph.
-  const tags = [...a.matchAll(/`(Ksh [\d,]+\/-)`/g)].map((m) => m[1]);
-  check("the brief lists seven tags", tags.length === 7, `${tags.length} found`);
-  tags.forEach((tag, index) => {
-    check(`tag ${index + 1} is the brief's`, story.pins[index] && story.pins[index].label === tag, `story "${story.pins[index] && story.pins[index].label}", brief "${tag}"`);
-  });
+  /*
+   * Pins, not from the brief. Its pins paragraph asks for a price tag per part.
+   * Ben asked on 2026-09-11 for the name of the unit instead, and the page now
+   * carries the catalogue names, checked against the bake above; the reasoning
+   * is in research/story-labels.md beside this brief. The paragraph stands as
+   * the record of what was first built, so nothing is read from it here.
+   */
+  console.log("note: the brief's pins paragraph is superseded; the tags are checked against the bake");
 
   // The page's own strings, from the blockquotes, joined across wrapped lines.
   const quoted = (label, from) => {
