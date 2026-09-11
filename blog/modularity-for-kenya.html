@@ -42,13 +42,16 @@
     <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id=1492649948884685&ev=PageView&noscript=1"/></noscript>
     <!-- End Meta Pixel Code -->
-    <!-- Google tag (gtag.js) -->
+    <!-- Google tag (gtag.js): one loader for Google Ads and GA4. Each ID used to
+         have its own loader script, and whichever ran first fetched the other's
+         container a second time (2026-09-10). -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16875113878"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
         gtag('config', 'AW-16875113878');
+        gtag('config', 'G-HXHT6KGZT3');
     </script>
     <!-- Google Tag Manager -->
     <script>(function (w, d, s, l, i) {
@@ -60,14 +63,6 @@
                     'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
         })(window, document, 'script', 'dataLayer', 'GTM-NNSS73RJ');</script>
     <!-- End Google Tag Manager -->
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HXHT6KGZT3"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-        gtag('config', 'G-HXHT6KGZT3');
-    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -95,7 +90,11 @@
                     <time class="blog-post-date" datetime="2025-04-02">2 April 2025</time>
                 </p>
                 <figure class="blog-post-hero">
-                    <img src="/images/shelving/shelf%20(03).jpg" alt="Modular shelving system in a Kenyan home" loading="eager" fetchpriority="high">
+                    <img src="/images/shelving/shelf%20(03).jpg"
+                         srcset="/images/shelving/w400/shelf%20(03).jpg 400w, /images/shelving/w800/shelf%20(03).jpg 800w, /images/shelving/shelf%20(03).jpg 1000w"
+                         sizes="(min-width: 820px) 760px, calc(100vw - 30px)"
+                         width="1000" height="1000"
+                         alt="Modular shelving system in a Kenyan home" loading="eager" fetchpriority="high">
                 </figure>
             </div>
 
@@ -111,7 +110,11 @@
                 <p>Such offerings, most famously from IKEA, are designed to save as much space in transportation as possible. This makes sense from an industrial-scale, commercial sense, where goods are shipped globally, and every inch of trucks and shipping containers is best left unused.</p>
 
                 <figure class="blog-figure">
-                    <img src="/images/shelving/shelf%20(18).jpg" alt="Showing modular furniture assembly" loading="lazy">
+                    <img src="/images/shelving/shelf%20(18).jpg"
+                         srcset="/images/shelving/w400/shelf%20(18).jpg 400w, /images/shelving/w800/shelf%20(18).jpg 800w, /images/shelving/shelf%20(18).jpg 1080w"
+                         sizes="(min-width: 820px) 760px, calc(100vw - 30px)"
+                         width="1080" height="1080"
+                         alt="Showing modular furniture assembly" loading="lazy">
                 </figure>
 
                 <p>For a Kenyan furniture brand, however, we have found that focusing on flat pack might not be the best solution. This is because flat pack solutions are more complex for customers to assemble, which can often cause frustration.</p>
@@ -143,7 +146,11 @@
                 </ol>
 
                 <figure class="blog-figure">
-                    <img src="/images/shelving/shelf%20(10).jpg" alt="Framework Designs modular shelving system in a Nairobi apartment" loading="lazy">
+                    <img src="/images/shelving/shelf%20(10).jpg"
+                         srcset="/images/shelving/w400/shelf%20(10).jpg 400w, /images/shelving/w800/shelf%20(10).jpg 800w, /images/shelving/shelf%20(10).jpg 1000w"
+                         sizes="(min-width: 820px) 760px, calc(100vw - 30px)"
+                         width="1000" height="1000"
+                         alt="Framework Designs modular shelving system in a Nairobi apartment" loading="lazy">
                 </figure>
 
                 <p><em>Framework Designs is a Nairobi steelworks studio specializing in modular furniture. Our minimal shelving system adapts to your space and style.</em></p>
