@@ -594,6 +594,162 @@
     return bounds;
   }
 
+  // ------------------------------------------------------------- bookends --
+
+  /*
+   * Where the bookends go.
+   *
+   * A bookend does not stand on a shelf: it hangs from the one above. The hook
+   * is the End Flat, a 20x3 plate standing on edge across the end of the spine
+   * rail, 103mm past each leg of an UNTRIMMED unit, its top edge flush with the
+   * board underside. The pipeline finds every one of those plates in the Rhino
+   * model and the contract carries them as each module's `accessoryAnchors`,
+   * module-local like its sockets and read with the same maths, so a turned
+   * unit turns its anchors with it.
+   *
+   * Nothing about the choice is stored. A design carries a count; which ends it
+   * lands on is worked out from the placed pieces every time. That is what
+   * keeps `serializeState`, the URL payload and `designCode` exactly what they
+   * were before bookends were drawn at all.
+   */
+
+  // The bookend hangs this far below the board it clips to, so a plate is only
+  // usable when there is a shelf at least this far under it. A base's lower
+  // plate is 85mm off the floor: nothing can hang there, and the floor is what
+  // says so, not the geometry.
+  const BOOKEND_DROP_MM = 170;
+  // How far out from the end of the shelf we look for a neighbour. An untrimmed
+  // end that another unit's shelf runs into is a divider between two shelves,
+  // not the end of one, and Ben asked for the ends that are available.
+  const BOOKEND_CLEARANCE_MM = 200;
+  // The board above the plate, so the probe reaches the shelf surface.
+  const BOOKEND_BOARD_MM = 12;
+
+  /** An anchor's world point: the same maths `worldSocket` uses on a socket. */
+  function anchorWorldPoint(instance, module, anchor) {
+    const [nx, ny] = rotatedOffset(module, anchor, instance.rotationDeg || 0);
+    return [
+      rounded(instance.originWorldMm[0] + nx),
+      rounded(instance.originWorldMm[1] + ny),
+      rounded(instance.translation[2] + (anchor.local_mm || [0, 0, 0])[2])
+    ];
+  }
+
+  /** The anchor's `inboard` vector, turned with the instance. */
+  function anchorInboard(anchor, rotationDeg) {
+    const [ix, iy] = anchor.inboard || [1, 0, 0];
+    const radians = normaliseQuarterTurn(rotationDeg) * Math.PI / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    return [rounded(ix * cos - iy * sin), rounded(ix * sin + iy * cos)];
+  }
+
+  /**
+   * The yaw a bookend sits at. Its own +x runs along the anchor's inboard
+   * direction, so a left end on an unrotated unit is 0 and a right end is 180.
+   */
+  function anchorYawDeg(anchor, rotationDeg) {
+    const [x, y] = anchorInboard(anchor, rotationDeg);
+    return normaliseQuarterTurn(Math.round(Math.atan2(y, x) * 180 / Math.PI));
+  }
+
+  /**
+   * Is the shelf end outboard of this plate clear?
+   *
+   * The probe is a slab just outboard of the unit: from the end of its board
+   * out to `BOOKEND_CLEARANCE_MM` beyond, the board's full depth, and from the
+   * board underside down the bookend's own drop. Anything another placed piece
+   * puts a horizontal box into it is a shelf running on, so the end is taken.
+   */
+  function bookendEndIsFree(catalog, instance, anchor, worldMm, otherBoxes) {
+    const host = instanceBounds(catalog, instance);
+    const inboard = anchorInboard(anchor, instance.rotationDeg || 0);
+    const axis = Math.abs(inboard[0]) >= Math.abs(inboard[1]) ? 0 : 1;
+    // Outboard is the way the bookend's back faces: away from the unit.
+    const outward = (axis === 0 ? inboard[0] : inboard[1]) < 0 ? 1 : -1;
+    const face = outward > 0 ? host[axis + 3] : host[axis];
+    const across = axis === 0 ? 1 : 0;
+    const slab = [0, 0, 0, 0, 0, 0];
+    slab[axis] = outward > 0 ? face : face - BOOKEND_CLEARANCE_MM;
+    slab[axis + 3] = outward > 0 ? face + BOOKEND_CLEARANCE_MM : face;
+    slab[across] = host[across];
+    slab[across + 3] = host[across + 3];
+    slab[2] = worldMm[2] - BOOKEND_DROP_MM;
+    slab[5] = worldMm[2] + BOOKEND_BOARD_MM;
+    return !otherBoxes.some((box) => box.instanceId !== instance.id && boxesOverlap(box.bbox, slab));
+  }
+
+  /**
+   * Every end of the design that can take a bookend, bottom up.
+   *
+   * Ordered by the plate's own height first, then across the run, so filling
+   * from the start of the list fills the shelf from the bottom. The order is a
+   * pure function of where the pieces stand, so the builder, the share image
+   * and the render console all get the same answer for the same design.
+   */
+  function legalBookendAnchors(catalog, state) {
+    const instances = (state && state.instances) || [];
+    const otherBoxes = collectHorizontalBoxes(catalog, instances);
+    const legal = [];
+    for (const instance of instances) {
+      const module = moduleFor(catalog, instance.moduleId);
+      const anchors = (module.accessoryAnchors || [])
+        .filter((anchor) => (anchor.takes || []).indexOf("bookend") >= 0);
+      if (!anchors.length) continue;
+
+      // One plate per end. A deep unit has a spine at each of its two depths
+      // and so two plates at every end; the front one is the one you see, and
+      // taking it stops two bookends sitting 170mm apart at one end.
+      const frontOfEnd = new Map();
+      for (const anchor of anchors) {
+        if (module.role === "base" && Number(anchor.level) === 0) continue;
+        const key = `${anchor.end}:${anchor.level}`;
+        const depth = Number((anchor.normalized_mm || [0, 0, 0])[1]) || 0;
+        const chosen = frontOfEnd.get(key);
+        if (!chosen || depth < chosen.depth) frontOfEnd.set(key, { anchor, depth });
+      }
+
+      for (const entry of frontOfEnd.values()) {
+        const anchor = entry.anchor;
+        const worldMm = anchorWorldPoint(instance, module, anchor);
+        if (!bookendEndIsFree(catalog, instance, anchor, worldMm, otherBoxes)) continue;
+        legal.push({
+          instanceId: instance.id,
+          moduleId: instance.moduleId,
+          anchorId: anchor.id,
+          end: anchor.end,
+          level: Number(anchor.level) || 0,
+          worldMm,
+          rotationDeg: anchorYawDeg(anchor, instance.rotationDeg || 0),
+          // A bookend ships in the colour of the unit it hangs on, so a piece
+          // with a colour of its own passes it to whatever hangs off it.
+          finish: instance.finish || null
+        });
+      }
+    }
+    legal.sort((first, second) =>
+      first.worldMm[2] - second.worldMm[2]
+      || first.worldMm[0] - second.worldMm[0]
+      || first.worldMm[1] - second.worldMm[1]
+      || first.anchorId.localeCompare(second.anchorId)
+      || first.instanceId.localeCompare(second.instanceId));
+    return legal;
+  }
+
+  /**
+   * The anchors the design's bookends actually land on: the bottom-most ones,
+   * as many as there are bookends, and no more than there are ends.
+   *
+   * A count above the number of ends is left alone. The extra bookends are
+   * still priced and still delivered; they are simply not in the picture, and
+   * the builder says so.
+   */
+  function bookendPlacements(catalog, state) {
+    const wanted = Math.max(0, Math.floor(Number(state && state.bookends) || 0));
+    if (!wanted) return [];
+    return legalBookendAnchors(catalog, state).slice(0, wanted);
+  }
+
   function intervalGap(first, second) {
     return Math.max(0, first[0] - second[1], second[0] - first[1]);
   }
@@ -1758,6 +1914,7 @@
     additionContext,
     applyCandidate,
     boardBounds,
+    bookendPlacements,
     createState,
     designBounds,
     designCode,
@@ -1766,6 +1923,7 @@
     generateCandidates,
     instanceBounds,
     isLoadBearing,
+    legalBookendAnchors,
     localPivot,
     moduleFor,
     moduleHasDistinctRotation,

@@ -710,8 +710,46 @@
     };
   }
 
+  /**
+   * The bookends, as renderer entries.
+   *
+   * They are not pieces: the design carries a count, and the engine works out
+   * which ends they hang on from where the units stand (see
+   * `bookendPlacements`). So they are appended to the scene rather than to the
+   * design, and nothing about them reaches `serializeState`, the share link or
+   * the design code.
+   *
+   * The pocket in the bookend's top is what sits on the plate, so that is both
+   * the point that has to land on the anchor and the point it turns about: put
+   * the pivot there and the translation is a plain subtraction.
+   */
+  function bookendSceneEntries() {
+    const accessory = ui.catalog.accessories && ui.catalog.accessories.bookend;
+    if (!accessory) return [];
+    const anchorMm = (accessory.attach && accessory.attach.anchorLocalMm) || [0, 0, 0];
+    return engine.bookendPlacements(ui.catalog, ui.design).map((placement, index) => ({
+      id: `bookend_${index + 1}`,
+      moduleId: "bookend",
+      translation: [
+        placement.worldMm[0] - anchorMm[0],
+        placement.worldMm[1] - anchorMm[1],
+        placement.worldMm[2] - anchorMm[2]
+      ],
+      rotationDeg: placement.rotationDeg,
+      pivotMm: [placement.worldMm[0], placement.worldMm[1]],
+      // No bounds on purpose. They are what the camera frames and what a tap
+      // hit-tests, and a bookend is neither the size of the shelf nor a thing
+      // anyone means to select.
+      boundsMm: null,
+      highlight: false,
+      // A bookend ships in the colour of the unit it hangs on.
+      palette: placement.finish ? shaderPalette(finishById(placement.finish)) : null,
+      muted: false
+    }));
+  }
+
   function syncScene() {
-    ui.renderer.setInstances(ui.design.instances.map(renderInstance));
+    ui.renderer.setInstances(ui.design.instances.map(renderInstance).concat(bookendSceneEntries()));
   }
 
   // --------------------------------------------------------------- overlays --
@@ -2631,10 +2669,29 @@
         refresh({});
       }
     ));
-    // Bookends are priced and go on the order, but the pipeline has no model for
-    // them yet, so say plainly that they will not appear in a shared image.
-    field.appendChild(make("small", "nd-subtext", "Priced and ordered, but not shown in the image"));
+    field.appendChild(make("small", "nd-subtext", bookendFitNote()));
     return field;
+  }
+
+  /**
+   * What the stepper says under itself.
+   *
+   * The picture fills the shelf ends that can take a bookend, bottom up, so the
+   * only thing worth saying is how the count and the ends stand. Asking for
+   * more than there are ends is allowed and always was: those bookends are
+   * priced and delivered like the rest, they are simply not in the picture, and
+   * this is where that is said rather than by stopping the stepper.
+   */
+  function bookendFitNote() {
+    const count = ui.design.bookends || 0;
+    const ends = engine.legalBookendAnchors(ui.catalog, ui.design).length;
+    if (count <= ends) return "Shown at the shelf ends that can take one";
+    if (!ends) {
+      return `None shown: your shelf has no ends that take a bookend. `
+        + `All ${count} are priced and will be delivered.`;
+    }
+    return `${ends} of ${count} shown: your shelf has ${ends} end${ends === 1 ? "" : "s"} `
+      + `that take${ends === 1 ? "s" : ""} a bookend. All ${count} are priced and will be delivered.`;
   }
 
   function breakdownSection() {
@@ -3842,6 +3899,9 @@
     ui.renderer.setPalette(shaderPalette(currentFinish()));
 
     const needed = Array.from(new Set(ui.design.instances.map((instance) => instance.moduleId)));
+    // The bookend bundle is only fetched once someone asks for one, which is
+    // most of the time never.
+    if ((ui.design.bookends || 0) > 0) needed.push("bookend");
     ensureGeometry(needed);
     syncScene();
 
