@@ -49,6 +49,13 @@
   to = "/how.html"
   status = 200
 
+# Landing A, "One unit first": one of the versions of /how being compared
+# (framework-marketing/research/landing-strategy.md, section 4).
+[[redirects]]
+  from = "/how-a"
+  to = "/how-a.html"
+  status = 200
+
 [[redirects]]
   from = "/colours"
   to = "/colours.html"
