@@ -1,4 +1,46 @@
 {
+  "accessories": {
+    "bookend": {
+      "attach": {
+        "anchorLocalMm": [
+          14.75,
+          50.0,
+          170.0
+        ],
+        "clearanceMm": {
+          "x": 4.0,
+          "y": 4.0
+        },
+        "dropBelowAnchorMm": 170.0,
+        "hardware": "end_flat",
+        "hardwareDimsMm": [
+          3.0,
+          80.0,
+          20.0
+        ],
+        "inboardAxis": "+x"
+      },
+      "bboxMm": [
+        0.0,
+        0.0,
+        0.0,
+        29.739,
+        100.0,
+        170.0
+      ],
+      "dimensionsMm": [
+        29.739,
+        100.0,
+        170.0
+      ],
+      "glb": "/generated/assets/modules/glb/bookend.glb",
+      "id": "bookend",
+      "label": "Bookend",
+      "role": "accessory",
+      "source": "source/pending-modules/bookend.dae",
+      "sourceSha256": "bf3608074b3fba84e57cc79af513ce5b98c31467b9d32a6c88b9ee58df99f656"
+    }
+  },
   "aliases": {
     "booster_adapter": "booster_adapter",
     "broad_base": "broad_base",
@@ -52,7 +94,7 @@
     "wide_spacer": "wide_spacer",
     "wide_top_bar": "wide_top_bar"
   },
-  "contentHash": "b313d37bcc60a51bee31037c1af3d4eaf234ff4215001ea12fedae063a24f7e3",
+  "contentHash": "7b6790e2821f8cb640cdb94c4ad678e9445d7979c28965cfc3799f64a9de4352",
   "finishes": [
     {
       "displayName": "Marine",
@@ -95,7 +137,7 @@
       "steelLabel": "Coral steel"
     }
   ],
-  "generatedAt": "2026-08-16T00:17:34Z",
+  "generatedAt": "2026-09-11T14:45:32Z",
   "modules": {
     "booster_adapter": {
       "bboxMm": [
@@ -246,6 +288,200 @@
       "widthSpanMm": 0.0
     },
     "broad_base": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            128.5,
+            98.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y298",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            298.5,
+            98.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            298.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            806.0,
+            128.5,
+            98.0
+          ],
+          "normalized_mm": [
+            806.0,
+            128.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y298",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            806.0,
+            298.5,
+            98.0
+          ],
+          "normalized_mm": [
+            806.0,
+            298.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l1_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            -103.0,
+            128.5,
+            403.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l1_y298",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            -103.0,
+            298.5,
+            403.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            298.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l1_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            806.0,
+            128.5,
+            403.0
+          ],
+          "normalized_mm": [
+            806.0,
+            128.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l1_y298",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            806.0,
+            298.5,
+            403.0
+          ],
+          "normalized_mm": [
+            806.0,
+            298.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -138.5,
         -10.0,
@@ -974,6 +1210,104 @@
       "widthSpanMm": 703.0
     },
     "broad_extension": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            128.5,
+            303.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y298",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            298.5,
+            303.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            298.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            806.0,
+            128.5,
+            303.0
+          ],
+          "normalized_mm": [
+            806.0,
+            128.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y298",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            806.0,
+            298.5,
+            303.0
+          ],
+          "normalized_mm": [
+            806.0,
+            298.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -138.5,
         -12.0,
@@ -2181,6 +2515,200 @@
       "widthSpanMm": 703.0
     },
     "compact_base": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            128.5,
+            98.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y298",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            298.5,
+            98.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            298.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            543.0,
+            128.5,
+            98.0
+          ],
+          "normalized_mm": [
+            543.0,
+            128.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y298",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            543.0,
+            298.5,
+            98.0
+          ],
+          "normalized_mm": [
+            543.0,
+            298.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l1_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            -103.0,
+            128.5,
+            403.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l1_y298",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            -103.0,
+            298.5,
+            403.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            298.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l1_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            543.0,
+            128.5,
+            403.0
+          ],
+          "normalized_mm": [
+            543.0,
+            128.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l1_y298",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            543.0,
+            298.5,
+            403.0
+          ],
+          "normalized_mm": [
+            543.0,
+            298.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -138.5,
         -10.0,
@@ -2909,6 +3437,104 @@
       "widthSpanMm": 440.001
     },
     "compact_extension": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            128.5,
+            303.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y298",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            298.5,
+            303.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            298.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            543.0,
+            128.5,
+            303.0
+          ],
+          "normalized_mm": [
+            543.0,
+            128.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y298",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            543.0,
+            298.5,
+            303.0
+          ],
+          "normalized_mm": [
+            543.0,
+            298.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -138.5,
         -12.0,
@@ -4116,6 +4742,104 @@
       "widthSpanMm": 440.0
     },
     "corner_base": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            128.5,
+            98.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1040.574,
+            128.5,
+            98.0
+          ],
+          "normalized_mm": [
+            1040.574,
+            128.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l1_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            -103.0,
+            128.5,
+            403.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l1_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            1040.574,
+            128.5,
+            403.0
+          ],
+          "normalized_mm": [
+            1040.574,
+            128.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -138.5,
         -10.001,
@@ -4458,6 +5182,56 @@
       "widthSpanMm": 703.0
     },
     "corner_base_trimmed": {
+      "accessoryAnchors": [
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1040.574,
+            128.5,
+            98.0
+          ],
+          "normalized_mm": [
+            1040.574,
+            128.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l1_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            1040.574,
+            128.5,
+            403.0
+          ],
+          "normalized_mm": [
+            1040.574,
+            128.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -40.0,
         -10.001,
@@ -4734,6 +5508,56 @@
       "widthSpanMm": 703.0
     },
     "corner_extension": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            128.5,
+            303.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1040.574,
+            128.5,
+            303.0
+          ],
+          "normalized_mm": [
+            1040.574,
+            128.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -138.5,
         -12.0,
@@ -5035,6 +5859,32 @@
       "widthSpanMm": 703.0
     },
     "corner_extension_trimmed": {
+      "accessoryAnchors": [
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1040.574,
+            128.5,
+            303.0
+          ],
+          "normalized_mm": [
+            1040.574,
+            128.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -40.0,
         -12.0,
@@ -5303,6 +6153,104 @@
       "widthSpanMm": 703.0
     },
     "deep_adapter": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            128.5,
+            303.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y298",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            298.5,
+            303.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            298.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1246.0,
+            128.5,
+            303.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            128.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y298",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1246.0,
+            298.5,
+            303.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            298.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -138.5,
         -12.0,
@@ -6103,6 +7051,200 @@
       "widthSpanMm": 1143.0
     },
     "deep_base": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            128.5,
+            98.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y298",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            298.5,
+            98.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            298.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1246.0,
+            128.5,
+            98.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            128.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y298",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1246.0,
+            298.5,
+            98.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            298.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l1_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            -103.0,
+            128.5,
+            403.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l1_y298",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            -103.0,
+            298.5,
+            403.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            298.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l1_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            1246.0,
+            128.5,
+            403.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            128.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l1_y298",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            1246.0,
+            298.5,
+            403.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            298.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -138.5,
         -10.0,
@@ -6967,6 +8109,104 @@
       "widthSpanMm": 0.0
     },
     "deep_extension": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            128.5,
+            303.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y298",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            298.5,
+            303.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            298.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1246.0,
+            128.5,
+            303.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            128.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y298",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1246.0,
+            298.5,
+            303.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            298.5,
+            303.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -138.5,
         -12.0,
@@ -8248,6 +9488,104 @@
       "widthSpanMm": 0.0
     },
     "slim_base": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            128.5,
+            98.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            543.0,
+            128.5,
+            98.0
+          ],
+          "normalized_mm": [
+            543.0,
+            128.5,
+            98.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l1_y128",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            -103.0,
+            128.5,
+            403.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l1_y128",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            543.0,
+            128.5,
+            403.0
+          ],
+          "normalized_mm": [
+            543.0,
+            128.5,
+            403.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -138.5,
         -10.001,
@@ -8844,6 +10182,56 @@
       "widthSpanMm": 440.0
     },
     "slim_extension": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y280",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -681.5,
+            279.682,
+            -12.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            -12.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y280",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -35.5,
+            279.682,
+            -12.0
+          ],
+          "normalized_mm": [
+            543.0,
+            128.5,
+            -12.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -717.0,
         141.182,
@@ -9684,6 +11072,104 @@
       "widthSpanMm": 440.0
     },
     "standard_base": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y115",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            35.5,
+            115.0,
+            85.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            85.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y115",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            944.5,
+            115.0,
+            85.0
+          ],
+          "normalized_mm": [
+            806.0,
+            128.5,
+            85.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l1_y115",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            35.5,
+            115.0,
+            390.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            390.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l1_y115",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            944.5,
+            115.0,
+            390.0
+          ],
+          "normalized_mm": [
+            806.0,
+            128.5,
+            390.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         0.0,
         -23.5,
@@ -10350,6 +11836,56 @@
       "widthSpanMm": 0.0
     },
     "standard_extension": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y115",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            35.5,
+            115.0,
+            299.983
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            299.983
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y115",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            944.5,
+            115.0,
+            299.983
+          ],
+          "normalized_mm": [
+            806.0,
+            128.5,
+            299.983
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         0.0,
         -23.5,
@@ -11190,6 +12726,56 @@
       "widthSpanMm": 703.0
     },
     "wide_adapter": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y115",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            35.5,
+            115.0,
+            0.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.499,
+            0.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y115",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1384.5,
+            115.0,
+            0.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            128.499,
+            0.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         0.0,
         -23.5,
@@ -11880,6 +13466,104 @@
       "widthSpanMm": 1143.0
     },
     "wide_base": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y138",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            -103.0,
+            138.5,
+            85.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            85.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y138",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1246.0,
+            138.5,
+            85.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            128.5,
+            85.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l1_y138",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            -103.0,
+            138.5,
+            390.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            390.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l1_y138",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 1,
+          "local_mm": [
+            1246.0,
+            138.5,
+            390.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            128.5,
+            390.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         -138.5,
         0.0,
@@ -12432,6 +14116,56 @@
       "widthSpanMm": 1143.0
     },
     "wide_extension": {
+      "accessoryAnchors": [
+        {
+          "end": "left",
+          "hardware": "end_flat",
+          "id": "end_flat_left_l0_y115",
+          "inboard": [
+            1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            35.5,
+            115.0,
+            270.0
+          ],
+          "normalized_mm": [
+            -103.0,
+            128.5,
+            270.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        },
+        {
+          "end": "right",
+          "hardware": "end_flat",
+          "id": "end_flat_right_l0_y115",
+          "inboard": [
+            -1,
+            0,
+            0
+          ],
+          "level": 0,
+          "local_mm": [
+            1384.5,
+            115.0,
+            270.0
+          ],
+          "normalized_mm": [
+            1246.0,
+            128.5,
+            270.0
+          ],
+          "takes": [
+            "bookend"
+          ]
+        }
+      ],
       "bboxMm": [
         0.0,
         -23.5,
@@ -13336,6 +15070,21 @@
       "role": "top_bar",
       "socket_policy": "matching_family_back_two_sockets"
     },
+    "bookend": {
+      "attach": {
+        "anchor_local_mm": [
+          14.75,
+          50.0,
+          170.0
+        ],
+        "hardware": "end_flat",
+        "inboard": "+x"
+      },
+      "notes": "An inverted T that hangs from the End Flat (the 20x3 flat bar closing the spine rail 103mm past each leg of an UNTRIMMED unit). The pocket in its top 20mm slides up over the plate from below; two screws pinch the plate against the back plate. anchor_local_mm is the centre of that pocket at its top face, in the flat export's own frame after scripts/assets/export-pending-module-assets.py moves the bounding-box minimum to the origin; scripts/extract/analyze-pending-modules.py measures the pocket and fails if the plate would not fit there. +x is the side the stem and tube are on, so a placed bookend has +x pointing into the unit. It is not a socket module: it never touches the connector grammar.",
+      "role": "accessory",
+      "socket_policy": "none",
+      "source": "source/pending-modules/bookend.dae"
+    },
     "booster_adapter": {
       "notes": "Use two booster adapters across a deep-width unit to convert deep depth rows to standard-depth rows.",
       "role": "booster_adapter",
@@ -13376,6 +15125,8 @@
   },
   "schema": "framework-builder-contract@1",
   "source": {
+    "accessories": "generated/analysis/accessory-analysis.json",
+    "accessoryAnchors": "generated/interfaces/accessory-anchors.json",
     "assetPlan": "generated/manifests/three-asset-plan.json",
     "connectors": "generated/connectors/module-connectors.json",
     "validationReport": "generated/validation/module-validation-report.json"
@@ -14282,12 +16033,19 @@
     "stackOverlapMm": 31,
     "types": [
       {
-        "dims": null,
+        "dims": {
+          "bbox_height_mm": 170.0,
+          "depth_mm": 100.0,
+          "height_mm": 170.0,
+          "stack_overlap_mm": 0,
+          "width_mm": 29.739
+        },
         "displayName": "Bookend",
         "family": null,
         "rhinoBlockId": null,
         "role": "accessory",
-        "status": "model-pending",
+        "source": "source/pending-modules/bookend.dae",
+        "status": "active",
         "trimmed": false,
         "type": "bookend"
       },

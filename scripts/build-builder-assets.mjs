@@ -1226,6 +1226,46 @@ function buildCatalog(contract, builtModules, rotationShifts) {
       horizontalBoxes: (module.horizontalBoxes || []).map((box) => ({ kind: box.kind, bbox: box.bbox })),
       priceKsh: priceFor(prices.prices, id)
     });
+    // Where a bookend may hang: the End Flat plates closing the spine rails of
+    // an untrimmed end. Module-local like the sockets, and read the same way,
+    // so a turned unit turns its anchors with it. Only carried when a module
+    // has any, which is 18 of the 51.
+    const anchors = (module.accessoryAnchors || []).map((anchor) => trim({
+      id: anchor.id,
+      end: anchor.end,
+      level: anchor.level,
+      local_mm: anchor.local_mm,
+      normalized_mm: anchor.normalized_mm,
+      inboard: anchor.inboard,
+      takes: anchor.takes || []
+    }));
+    if (anchors.length) modules[id].accessoryAnchors = anchors;
+  }
+
+  /*
+   * The accessories, beside the modules rather than among them. The builder
+   * never offers one as a piece to place: a bookend is derived from the design
+   * (a count, plus the ends that can take one), never stored in it.
+   */
+  const accessories = {};
+  for (const [id, accessory] of Object.entries(contract.accessories || {})) {
+    if (!builtModules.has(id)) continue;
+    accessories[id] = trim({
+      id,
+      label: displayNames.get(id) || accessory.label || id,
+      role: accessory.role || "accessory",
+      dimensionsMm: accessory.dimensionsMm || null,
+      bboxMm: accessory.bboxMm || null,
+      // The point on the accessory that meets the anchor, in its own local mm,
+      // and the axis its body runs along from there. Both measured against the
+      // mesh by the pipeline, not typed in.
+      attach: {
+        anchorLocalMm: (accessory.attach || {}).anchorLocalMm || null,
+        inboardAxis: (accessory.attach || {}).inboardAxis || null,
+        dropBelowAnchorMm: (accessory.attach || {}).dropBelowAnchorMm ?? null
+      },
+      priceKsh: prices.prices[id] ?? null
+    });
   }
 
   const aliases = {};
@@ -1260,7 +1300,8 @@ function buildCatalog(contract, builtModules, rotationShifts) {
       };
     }),
     aliases,
-    modules
+    modules,
+    accessories
   };
 }
 
@@ -1280,7 +1321,19 @@ function main() {
   const rotationShifts = new Map();
   let totalBytes = 0;
 
-  for (const [id, module] of Object.entries(contract.modules)) {
+  /*
+   * Accessories bake exactly like modules: they are GLBs from the same
+   * pipeline, in the same frame, and the builder draws them through the same
+   * renderer. They are kept in their own section of the contract rather than
+   * being a 52nd module so the site cannot offer one as a piece to place, so
+   * the only thing this loop needs is to walk both lists.
+   */
+  const toBake = [
+    ...Object.entries(contract.modules),
+    ...Object.entries(contract.accessories || {})
+  ];
+
+  for (const [id, module] of toBake) {
     if (SKIP_MODULE(module)) continue;
     if (!module.glb) {
       console.warn(`skip ${id}: no GLB in the pipeline catalog`);
@@ -1385,7 +1438,8 @@ function main() {
       `${row.id.padEnd(32)}${String(row.kb).padStart(6)}${String(row.sourceKb).padStart(7)}${String(row.parts).padStart(7)}${String(row.instances).padStart(6)}${String(row.tris).padStart(8)}`
     );
   }
-  console.log(`\n${built.size} modules, ${Math.round(totalBytes / 1024)}KB of geometry`);
+  const accessoryCount = Object.keys(contract.accessories || {}).filter((id) => built.has(id)).length;
+  console.log(`\n${built.size - accessoryCount} modules, ${accessoryCount} accessories, ${Math.round(totalBytes / 1024)}KB of geometry`);
   console.log(`catalog.json ${Math.round(fs.statSync(path.join(OUT_DIR, "catalog.json")).size / 1024)}KB`);
 }
 
