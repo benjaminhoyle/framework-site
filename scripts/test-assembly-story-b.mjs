@@ -477,6 +477,31 @@ check("the pins name the slim unit, a post and the shelf",
   story.pins.map((pin) => pin.label).sort().join(",") === "Slim Extension,Standard Booster,Standard Extension",
   story.pins.map((pin) => pin.label).join(","));
 
+/*
+ * No two labels can share a line. On a phone the engine flips every label to
+ * the side with room, which is the inside of the shelf, so all three land in
+ * one column and only their height tells them apart. Measured the way the
+ * page draws it: the hold's frame fitted to a 390 x 579 canvas (a 390 x 844
+ * phone less the caption band), each anchor projected onto the camera's up
+ * and the label's own dy added, and the same again on a 1280 x 800 desktop.
+ */
+for (const [label, width, height] of [["a 390 phone", 390, 579], ["a 1280 desktop", 1280, 800]]) {
+  const hold = engine.sample(keys, 0.70);
+  const frame = frameOf(hold.focus, hold.padding, width / height);
+  const pxPerMm = (height / 2) / frame.halfUp;
+  const rows = story.pins.map((pin) => {
+    const off = hold.pieces[pin.follow].off;
+    const at = [pin.point[0] + off[0], pin.point[1] + off[1], pin.point[2] + off[2]];
+    return { label: pin.label, y: -dot(up, at) * pxPerMm + (pin.dy || -30) };
+  });
+  for (let i = 0; i < rows.length; i += 1) {
+    for (let j = i + 1; j < rows.length; j += 1) {
+      const gap = Math.abs(rows[i].y - rows[j].y);
+      check(`"${rows[i].label}" and "${rows[j].label}" sit on different lines on ${label}`, gap >= 34, `${gap.toFixed(0)} px apart`);
+    }
+  }
+}
+
 // --- the words -----------------------------------------------------------------
 
 const WORDS = {

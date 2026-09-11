@@ -470,8 +470,8 @@
          */
         captions: [
             { id: 'parts', from: 0.00, to: 0.41, photo: 'asymmetric-display-joint' },
-            { id: 'apart', from: 0.42, to: 0.73 },
-            { id: 'together', from: 0.74, to: 0.905, photo: 'asymmetric-display-angle' },
+            { id: 'apart', from: 0.42, to: 0.745 },
+            { id: 'together', from: 0.755, to: 0.905, photo: 'asymmetric-display-angle' },
             { id: 'hero', from: 0.915, to: 1.08 }
         ].map(function (caption) {
             return {
@@ -487,15 +487,23 @@
          * Pins: three, in the hold after the swap, naming the parts that came
          * in by the bake's own names, which are the catalogue's. Each follows
          * its piece, so the dot sits on the part where it is in the air, and
-         * each is anchored on a front post at mid height: the slim unit on its
-         * left post with the label to the left, the post and the shelf on
-         * their right posts with the labels to the right. They run a little
+         * each is anchored on a front post at mid height. They run a little
          * into the reassembly and ride down with their parts.
+         *
+         * Which post, and which side, is set by the phone. On a 390 px screen
+         * the engine flips every label to whichever side has room, which is
+         * the inside, so all three end up in one column and can only be told
+         * apart by height. In this isometric a front-right post one tier up
+         * sits at the same screen height as a front-left post one tier down,
+         * so the shelf is tagged on its right post with the label below the
+         * dot, the slim unit on its left post with the label above, and the
+         * post that is named is the one on the tier above the slim unit, on
+         * the left, a full tier higher. The test holds the three apart.
          */
         pins: [
-            { id: 'slim', from: 0.665, to: 0.79, follow: 'item_003', point: post('item_003', 'left'), dx: -84, dy: -26 },
-            { id: 'booster', from: 0.665, to: 0.79, follow: 'item_004', point: post('item_004', 'right'), dx: 84, dy: -26 },
-            { id: 'standard', from: 0.665, to: 0.79, follow: 'item_005', point: post('item_005', 'right'), dx: 84, dy: -26 }
+            { id: 'slim', from: 0.66, to: 0.79, follow: 'item_003', point: post('item_003', 'left'), dx: -84, dy: -26 },
+            { id: 'booster', from: 0.66, to: 0.79, follow: 'item_006', point: post('item_006', 'left'), dx: -84, dy: -26 },
+            { id: 'standard', from: 0.66, to: 0.79, follow: 'item_005', point: post('item_005', 'right'), dx: 84, dy: 34 }
         ].map(function (pin) {
             return {
                 id: pin.id, from: pin.from, to: pin.to, follow: pin.follow,
