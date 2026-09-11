@@ -237,6 +237,13 @@
           Prices are the catalogue's own: the bookend is sold on its own, the
           lamp and the coat hanger are shown on the configurations that carry
           them, with the shade excluded the way the catalogue excludes it.
+
+          The Bookend's picture is a clip of the mechanism, the one add-on
+          whose whole point is one. It costs a phone nothing until it is
+          wanted: preload="none", a poster of the seated frame, and the script
+          at the foot of the page starts it once when the card scrolls into
+          view. On Save-Data, a slow connection or reduced motion the poster
+          is all there is.
         -->
         <section class="co-addons">
             <h2>Add-ons.</h2>
@@ -244,11 +251,12 @@
             <ul>
                 <li class="co-addon">
                     <a href="/shelving.html?config=bookend">
-                        <img src="/images/shelving/configs/bookend.jpg"
-                            srcset="/images/shelving/configs/w400/bookend.jpg 400w, /images/shelving/configs/w800/bookend.jpg 800w, /images/shelving/configs/w1100/bookend.jpg 1100w, /images/shelving/configs/bookend.jpg 1400w"
-                            sizes="(min-width: 860px) 323px, (min-width: 401px) 132px, 104px"
-                            alt="A marine steel bookend clamped to a shelf board, holding a row of books upright."
-                            width="1400" height="1278" loading="lazy">
+                        <video class="co-clip" preload="none" muted playsinline
+                            poster="/images/shelving/animations/bookend-slide.jpg"
+                            width="720" height="900"
+                            aria-label="A sage bookend sliding onto the bar under a shelf and seating.">
+                            <source src="/images/shelving/animations/bookend-slide.mp4" type="video/mp4">
+                        </video>
                     </a>
                     <div>
                         <a href="/shelving.html?config=bookend"><b>The Bookend</b></a>
@@ -310,6 +318,32 @@
         </nav>
     </main>
 
+    <!--
+      The bookend clip. Nothing is fetched until the card is in view, and it
+      plays once: the mechanism shows itself the way the assembly story does,
+      then holds on the seated frame. Save-Data, a 2G connection, reduced
+      motion or an old browser get the poster and no request at all.
+    -->
+    <script>
+        (function () {
+            var clip = document.querySelector('.co-clip');
+            if (!clip || !('IntersectionObserver' in window)) return;
+            var net = navigator.connection || {};
+            if (net.saveData || /2g/.test(net.effectiveType || '')) return;
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            var watcher = new IntersectionObserver(function (entries) {
+                var last = entries[entries.length - 1];
+                if (last.isIntersecting) {
+                    var started = clip.play();
+                    if (started && started.catch) started.catch(function () {});
+                } else {
+                    clip.pause();
+                }
+            }, { threshold: 0.6 });
+            watcher.observe(clip);
+            clip.addEventListener('ended', function () { watcher.disconnect(); });
+        })();
+    </script>
 </body>
 
 </html>

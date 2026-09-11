@@ -196,6 +196,14 @@
 
 .co-addon a:hover b, .co-addon a:focus b { color: var(--accent); }
 
+/* The Bookend's picture is a short clip of the mechanism: the bookend sliding
+   onto the bar under a shelf and seating. It is a 4:5 render shown in the
+   same square as the two photographs, so the row stays a row; the crop takes
+   a little paper off the top and the post off the bottom and nothing of the
+   action. The poster is the seated frame, so the card is complete before
+   the clip is fetched, and complete if it never is. */
+.co-clip { object-position: center 45%; }
+
 /* On a wider screen the three become cards, side by side and in one row, with
    the picture over the words. Three of them in a two-column list left one
    stranded on a second row, and a 150px thumbnail is too small to read a
