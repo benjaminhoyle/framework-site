@@ -644,33 +644,29 @@
     return [rounded(ix * cos - iy * sin), rounded(ix * sin + iy * cos)];
   }
 
-  /**
-   * The yaw a bookend sits at: half a turn from the anchor's inboard direction.
-   *
-   * The contract says an accessory's own +x goes along inboard, and for this
-   * one that is backwards. The bookend's +x runs from its screw wall to its
-   * stem, and its screw wall is the one with a 30 mm window in it. Hung the
-   * contract's way the window faces out over open air and the solid back wall
-   * goes inboard, where it lands three millimetres inside the 20 mm spine the
-   * End Flat caps: steel inside steel, with a gap beside the clip where the
-   * shelf's own rail should have arrived. Turned half around, the spine runs
-   * through the window with five millimetres either side, the two read as one
-   * joint, and the screws face into the shelf, which is what the photograph
-   * images/shelving/configs/bookend.jpg shows and what Ben asked for on
-   * 11 September 2026.
-   *
-   * The permanent home for this is the pipeline: framework-renderer's
-   * scripts/extract/build-accessory-anchors.py writes the convention, and
-   * scripts/render/animate-bookend.py already carries the same correction as
-   * its `--screw-side` default. Until the anchors themselves are turned round,
-   * it is stated here so the builder, the share image and a render agree.
-   */
-  const BOOKEND_SCREWS_INBOARD_DEG = 180;
+  // Which of an accessory's own axes points into the unit, as the yaw that
+  // carries its +x onto that axis. Any other value is refused upstream, in the
+  // pipeline's build-accessory-anchors.py.
+  const INBOARD_AXIS_DEG = { "+x": 0, "+y": 90, "-x": 180, "-y": 270 };
 
-  function anchorYawDeg(anchor, rotationDeg) {
+  /**
+   * The yaw an accessory hangs at on this anchor.
+   *
+   * Two statements, both out of the contract, and neither of them about
+   * bookends in particular: the anchor's `inboard` says which way is into the
+   * unit, and the accessory's `attach.inboardAxis` says which of its own axes
+   * goes that way. The bookend declares -x, because its own +x runs from its
+   * screw wall to its stem and it hangs screw wall inboard, where the 30 mm
+   * window in that wall takes the 20 mm spine rail the End Flat caps. So the
+   * builder, the share image and a render turn it the same way without any of
+   * them knowing what a bookend is.
+   */
+  function anchorYawDeg(catalog, anchor, rotationDeg) {
+    const accessory = (catalog.accessories || {})[(anchor.takes || [])[0]] || {};
+    const axisDeg = INBOARD_AXIS_DEG[(accessory.attach || {}).inboardAxis] || 0;
     const [x, y] = anchorInboard(anchor, rotationDeg);
     const along = Math.round(Math.atan2(y, x) * 180 / Math.PI);
-    return normaliseQuarterTurn(along + BOOKEND_SCREWS_INBOARD_DEG);
+    return normaliseQuarterTurn(along - axisDeg);
   }
 
   /**
@@ -740,7 +736,7 @@
           end: anchor.end,
           level: Number(anchor.level) || 0,
           worldMm,
-          rotationDeg: anchorYawDeg(anchor, instance.rotationDeg || 0),
+          rotationDeg: anchorYawDeg(catalog, anchor, instance.rotationDeg || 0),
           // A bookend ships in the colour of the unit it hangs on, so a piece
           // with a colour of its own passes it to whatever hangs off it.
           finish: instance.finish || null

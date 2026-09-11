@@ -18,7 +18,7 @@
           80.0,
           20.0
         ],
-        "inboardAxis": "+x"
+        "inboardAxis": "-x"
       },
       "bboxMm": [
         0.0,
@@ -94,7 +94,7 @@
     "wide_spacer": "wide_spacer",
     "wide_top_bar": "wide_top_bar"
   },
-  "contentHash": "7b6790e2821f8cb640cdb94c4ad678e9445d7979c28965cfc3799f64a9de4352",
+  "contentHash": "de439f350c062cd475e025171d2fe39ab925dca30ebf092f1c85150d8b0e8cfb",
   "finishes": [
     {
       "displayName": "Marine",
@@ -137,7 +137,7 @@
       "steelLabel": "Coral steel"
     }
   ],
-  "generatedAt": "2026-09-11T14:45:32Z",
+  "generatedAt": "2026-09-11T15:43:13Z",
   "modules": {
     "booster_adapter": {
       "bboxMm": [
@@ -15078,9 +15078,9 @@
           170.0
         ],
         "hardware": "end_flat",
-        "inboard": "+x"
+        "inboard": "-x"
       },
-      "notes": "An inverted T that hangs from the End Flat (the 20x3 flat bar closing the spine rail 103mm past each leg of an UNTRIMMED unit). The pocket in its top 20mm slides up over the plate from below; two screws pinch the plate against the back plate. anchor_local_mm is the centre of that pocket at its top face, in the flat export's own frame after scripts/assets/export-pending-module-assets.py moves the bounding-box minimum to the origin; scripts/extract/analyze-pending-modules.py measures the pocket and fails if the plate would not fit there. +x is the side the stem and tube are on, so a placed bookend has +x pointing into the unit. It is not a socket module: it never touches the connector grammar.",
+      "notes": "An inverted T that hangs from the End Flat (the 20x3 flat bar closing the spine rail 103mm past each leg of an UNTRIMMED unit). The pocket in its top 20mm slides up over the plate from below; two screws pinch the plate against the back plate. anchor_local_mm is the centre of that pocket at its top face, in the flat export's own frame after scripts/assets/export-pending-module-assets.py moves the bounding-box minimum to the origin; scripts/extract/analyze-pending-modules.py measures the pocket and fails if the plate would not fit there. `inboard` is the accessory's own axis that points into the unit once it is hung, and the bookend's is -x: its +x runs from the screw wall to the stem and tube, and it hangs with that screw wall inboard, because the wall carries a 30mm window and the window is what the 20mm spine rail passes through with 5mm either side. Facing it the other way buries the solid back plate 3mm inside the spine the End Flat caps and shows two screw heads at the end of the run, which the photograph images/shelving/configs/bookend.jpg does not. It is not a socket module: it never touches the connector grammar.",
       "role": "accessory",
       "socket_policy": "none",
       "source": "source/pending-modules/bookend.dae"

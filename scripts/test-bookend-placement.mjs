@@ -55,6 +55,11 @@ const idsOf = (anchors) => anchors.map((anchor) => `${anchor.instanceId}:${ancho
 test("the catalog carries the anchors and the bookend geometry", () => {
   assert.ok(catalog.accessories && catalog.accessories.bookend, "catalog.json has an accessories section");
   assert.deepEqual(catalog.accessories.bookend.attach.anchorLocalMm, [14.75, 50, 170]);
+  assert.equal(
+    catalog.accessories.bookend.attach.inboardAxis,
+    "-x",
+    "the bookend hangs screw wall inboard, and the contract is where that is said"
+  );
   const withAnchors = Object.values(catalog.modules).filter((module) => (module.accessoryAnchors || []).length);
   assert.equal(withAnchors.length, 18, "18 modules carry End Flat anchors");
   assert.ok(
@@ -80,9 +85,10 @@ test("a lone base offers its two upper ends, and never its lower ones", () => {
    * stem, so +x turned by the yaw has to point OUT of the run: that puts the
    * screws and the 30 mm window the spine passes through on the inboard side,
    * which is the photograph and what the render draws. Facing it the other way
-   * buries the solid back wall in the spine the End Flat caps. The contract's
-   * `inboard` says the opposite, and engine.js turns it half round; this is the
-   * check that would catch that correction going missing.
+   * buries the solid back wall in the spine the End Flat caps. The contract
+   * says it, as the accessory's own `attach.inboardAxis`, and engine.js turns
+   * the anchor's `inboard` onto that axis; this is the check that would catch
+   * either of the two going wrong.
    */
   const state = withBase("standard_base");
   for (const anchor of legal) {
