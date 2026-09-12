@@ -22,10 +22,17 @@
 
 /* ------------------------------------------------------------- the four */
 
+/* One colour at a time on a phone, two on a tablet, four across on a laptop.
+   Two 160px squares side by side is not enough shelf to judge a colour by,
+   which is the only thing this page is for. */
 .co-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: clamp(24px, 3vw, 36px) clamp(14px, 2vw, 24px);
+    grid-template-columns: 1fr;
+    gap: clamp(28px, 4vw, 36px) clamp(14px, 2vw, 24px);
+}
+
+@media (min-width: 560px) {
+    .co-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 .co-tile { margin: 0; }
