@@ -22,6 +22,8 @@ const THEME_ROTATION = { NE: 0, NW: 270, SE: 90, SW: 180 };
 const CORNER_ROTATION = { NE: 0, NW: 90, SW: 180, SE: 270 };
 const MANUAL_BUILDER_CODES = {
   'asymmetric-display': '0GI7A94',
+  'clothes-rail': '1AUCNMH',
+  'home-office': '4UVKBHR',
   'lantern-shelf': '3WU3UN2',
   'terraced-console': '4R4TE7U'
 };

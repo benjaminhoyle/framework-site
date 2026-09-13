@@ -1,0 +1,128 @@
+{
+  "ok": true,
+  "code": "4UVKBHR",
+  "hash": "WzEsInN0YW5kYXJkIiwibWFyaW5lIiwwLFsid2lkZV9iYXNlIiwid2lkZV9leHRlbnNpb24iLCJ3aWRlX3NwYWNlciJdLFtbMCwwLDAsMCwwLFtdXSxbMSwwLDAsMCwxLFswXV0sWzIsMCwwLDAsMSxbMV1dLFsxLDAsMCwwLDEsWzJdXSxbMSwwLDAsMCwxLFszXV0sWzAsMTQ1MCwwLDAsMCxbXV0sWzEsMTQ1MCwwLDAsMSxbNV1dXV0",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "marine",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "wide_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor",
+          "basePlacementKind": "first_base",
+          "nextTo": null
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "wide_extension",
+        "originWorldMm": [
+          0,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_001"
+          ]
+        }
+      },
+      {
+        "id": "item_003",
+        "type": "wide_spacer",
+        "originWorldMm": [
+          0,
+          0,
+          724
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_002"
+          ]
+        }
+      },
+      {
+        "id": "item_004",
+        "type": "wide_extension",
+        "originWorldMm": [
+          0,
+          0,
+          1026
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_003"
+          ]
+        }
+      },
+      {
+        "id": "item_005",
+        "type": "wide_extension",
+        "originWorldMm": [
+          0,
+          0,
+          1328
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_004"
+          ]
+        }
+      },
+      {
+        "id": "item_006",
+        "type": "wide_base",
+        "originWorldMm": [
+          1450,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor",
+          "basePlacementKind": "adjacent_right",
+          "nextTo": "item_001"
+        }
+      },
+      {
+        "id": "item_007",
+        "type": "wide_extension",
+        "originWorldMm": [
+          1450,
+          0,
+          422
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "socket",
+          "on": [
+            "item_006"
+          ]
+        }
+      }
+    ]
+  },
+  "mode": "standard",
+  "finish": "marine",
+  "pieces": 7,
+  "total_ksh": 49000,
+  "created_at": "2026-09-13T04:35:22.863Z",
+  "source_product_id": "home-office"
+}

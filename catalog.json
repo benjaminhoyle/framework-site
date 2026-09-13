@@ -198,6 +198,22 @@
       "designCode": "4KJB1S9"
     },
     {
+      "id": "clothes-rail",
+      "title": "The Clothes Rail",
+      "price": "Ksh 34,000",
+      "priceValue": 34000,
+      "description": "A slim coral frame with a hanging rail under the top shelf and two lower shelves for folded clothes, baskets or shoes. Built from steel in our Nairobi workshop for a bedroom corner where a full wardrobe will not fit.",
+      "image": "images/shelving/configs/clothes-rail-populated.jpg",
+      "images": [
+        "images/shelving/configs/clothes-rail-populated.jpg",
+        "images/shelving/configs/clothes-rail-emptied.jpg"
+      ],
+      "active": true,
+      "designerUrl": "https://framework.co.ke/builder/1AUCNMH",
+      "designCode": "1AUCNMH",
+      "size": "52 × 45 × 164 cm"
+    },
+    {
       "id": "dynamic-corner",
       "title": "Dynamic Corner",
       "price": "Ksh 36,000",
@@ -309,6 +325,22 @@
       "active": true,
       "designerUrl": "https://framework.co.ke/builder/2QR5QNX",
       "designCode": "2QR5QNX"
+    },
+    {
+      "id": "home-office",
+      "title": "The Home Office",
+      "price": "Ksh 49,000",
+      "priceValue": 49000,
+      "description": "A tall bay and a low bay side by side in marine, with an open gap in the tall bay for box files and taller things. Built from steel in our Nairobi workshop for a home office that grows with your work.",
+      "image": "images/shelving/configs/home-office-populated.jpg",
+      "images": [
+        "images/shelving/configs/home-office-populated.jpg",
+        "images/shelving/configs/home-office-emptied.jpg"
+      ],
+      "active": true,
+      "designerUrl": "https://framework.co.ke/builder/4UVKBHR",
+      "designCode": "4UVKBHR",
+      "size": "287 × 28 × 163 cm"
     },
     {
       "id": "high-low",
