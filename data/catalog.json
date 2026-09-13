@@ -1,6 +1,6 @@
 {
   "schema": "framework-catalog-public@1",
-  "updatedAt": "2026-09-13T19:29:13.203Z",
+  "updatedAt": "2026-09-13T20:01:05.902Z",
   "products": [
     {
       "id": "starter",
@@ -222,8 +222,7 @@
       "image": "images/shelving/configs/wardrobe-shelf-populated.jpg",
       "images": [
         "images/shelving/configs/wardrobe-shelf-populated.jpg",
-        "images/shelving/configs/wardrobe-shelf-emptied.jpg",
-        "images/shelving/configs/wardrobe-shelf-front.jpg"
+        "images/shelving/configs/wardrobe-shelf-emptied.jpg"
       ],
       "price": "Ksh 43,000",
       "priceValue": 43000,

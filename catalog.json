@@ -271,8 +271,7 @@
       "image": "images/shelving/configs/wardrobe-shelf-populated.jpg",
       "images": [
         "images/shelving/configs/wardrobe-shelf-populated.jpg",
-        "images/shelving/configs/wardrobe-shelf-emptied.jpg",
-        "images/shelving/configs/wardrobe-shelf-front.jpg"
+        "images/shelving/configs/wardrobe-shelf-emptied.jpg"
       ],
       "active": true,
       "designerUrl": "https://framework.co.ke/builder/1F69EEH",

@@ -1187,33 +1187,6 @@
     ],
     "variant": "emptied"
   },
-  "wardrobe-shelf-front.jpg": {
-    "kind": "catalog",
-    "configId": "wardrobe-shelf",
-    "modules": [
-      {
-        "type": "deep_base",
-        "finish": "sage"
-      },
-      {
-        "type": "deep_spacer",
-        "finish": "sage"
-      },
-      {
-        "type": "deep_spacer",
-        "finish": "sage"
-      },
-      {
-        "type": "deep_hanger",
-        "finish": "sage"
-      },
-      {
-        "type": "deep_extension",
-        "finish": "sage"
-      }
-    ],
-    "variant": "front"
-  },
   "deep-stack-populated.jpg": {
     "kind": "catalog",
     "configId": "deep-stack",
