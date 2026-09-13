@@ -40,7 +40,7 @@
     .warn { color:var(--warning); }
     .mono { font-family:ui-monospace,Menlo,monospace; font-size:12px; }
 
-    /* The standing card: two lines, the steward's note behind the one fold. */
+    /* The standing card: two lines. */
     .standing { line-height:1.7; }
     .standing b { font-weight:600; }
 
@@ -174,7 +174,7 @@
       [1, 'Understand'], [2, 'Intend'], [3, 'Story'], [4, 'Produce'],
       [5, 'Distribute'], [6, 'Converse'], [7, 'Measure']
     ];
-    var SESSIONS = ['strategy', 'ads', 'content', 'monitor'];
+    var SESSIONS = ['monitor', 'strategy', 'scenes', 'meta-ad'];
     var SITE_DOORS = [
       { label: 'Funnel Monitor', href: '/metrics.html' },
       { label: 'Catalog Manager', href: '/catalog.html' }
@@ -193,31 +193,18 @@
 
     // ---------- the standing card ----------
     // Line one: what waits on Ben and which session comes first. Line two:
-    // when this was generated and from what, and the steward's standing.
+    // when this was generated and from what.
     function standing() {
-      var home = obj(D.home), st = obj(D.steward), spend = obj(st.spendMonth), nx = obj(D.next);
+      var home = obj(D.home), nx = obj(D.next);
       var waiting = has(nx.decisions) ? Number(nx.decisions) : arr(D.decisions).length;
       var one = '<a href="#decisions"><b>' + esc(waiting) + ' decision' + (waiting === 1 ? '' : 's') + ' waiting</b></a>'
         + (has(nx.session) ? '; next: <span class="mono">' + esc(nx.session) + '</span>' : '');
 
       var two = 'generated ' + (has(D.generatedAt) ? esc(fmt(D.generatedAt)) : '<span class="muted">(no time)</span>')
         + (has(home.commit) ? ' from <span class="mono" title="' + esc(home.commit) + (has(home.branch) ? ' on ' + esc(home.branch) : '') + '">' + esc(String(home.commit).slice(0, 8)) + '</span>' : '');
-      var s = [];
-      if (has(st.installed)) s.push('steward ' + (st.installed ? 'installed' : 'not installed'));
-      if (has(st.lastRun)) s.push('last run ' + esc(fmt(st.lastRun)));
-      if (has(st.nextRun)) s.push('next ' + esc(fmt(st.nextRun)));
-      if (has(spend.usd) || has(spend.capUsd)) {
-        var over = has(spend.capUsd) && Number(spend.usd) > Number(spend.capUsd);
-        s.push('<span class="' + (over ? 'warn' : '') + '">$' + esc(has(spend.usd) ? Number(spend.usd).toFixed(2) : '0.00')
-          + (has(spend.capUsd) ? ' of $' + esc(spend.capUsd) : '') + ' this month</span>');
-      }
-      if (s.length) two += '; ' + s.join(', ');
-
       var schema = has(D.schema) && D.schema !== 'framework-marketing-state@1'
         ? '<div class="warn" style="margin-top:6px">Snapshot schema ' + esc(D.schema) + '; this page reads framework-marketing-state@1.</div>' : '';
-      var fold = has(st.lastNote)
-        ? '<details><summary>The steward\'s last note</summary><div class="inner"><pre>' + esc(st.lastNote) + '</pre></div></details>' : '';
-      return '<section><div class="card standing">' + one + '<br>' + two + schema + fold + '</div></section>';
+      return '<section><div class="card standing">' + one + '<br>' + two + schema + '</div></section>';
     }
 
     // ---------- the ladder ----------
@@ -349,8 +336,8 @@
         var isNext = nextCmd === k;
         return '<span class="session' + (isNext ? ' next' : '') + '">/' + esc(k) + (isNext ? '<span class="next-tag">next</span>' : '') + '</span>';
       });
-      return '<section><h2>Sessions</h2><div class="card">'
-        + '<div class="dim" style="margin-bottom:6px">Open Claude Code in the marketing folder and type the command.</div>'
+      return '<section><h2>The four tools</h2><div class="card">'
+        + '<div class="dim" style="margin-bottom:6px">Type one in Claude Code, from any folder.</div>'
         + '<div class="row">' + row.join('') + '</div></div></section>';
     }
 
@@ -394,7 +381,7 @@
     // here are drawn already, drawn onto the ladder by the builder (the
     // measures, the studio totals, the batches, the videos, the pages, the ad
     // changes), or live in the folder (the files), so they are not listed.
-    var KNOWN = ['schema','generatedAt','home','structure','ladder','stories','steward','decisions','sessions','doors','files','measures',
+    var KNOWN = ['schema','generatedAt','home','structure','ladder','stories','decisions','sessions','doors','files','measures',
       'next','studio','batches','videos','pages','undocumentedAdChanges'];
     function extras() {
       var keys = Object.keys(D).filter(function (k) { return KNOWN.indexOf(k) < 0; });

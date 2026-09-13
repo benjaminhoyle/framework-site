@@ -10,8 +10,8 @@
 // reads), in one file because the two halves share a store and a key. Only the
 // runner may write, so writes take SITE_EXPORT_KEY only: the typed login key
 // can read the console but not overwrite what the others are reading. Netlify
-// holds nothing but the snapshot; the folder, the git log and the steward all
-// stay on the machine that built it.
+// holds nothing but the snapshot; the folder and the git log stay on the
+// machine that built it.
 //
 // 404 with a plain JSON body until the first publish, which the page turns
 // into "nothing published yet".
