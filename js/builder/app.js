@@ -4056,13 +4056,33 @@
       if (event.target === dom.modal) closePicker();
     });
     /*
-     * Help me design.
+     * Open a WhatsApp link in a second tab and leave the builder standing.
      *
-     * Unlike the order button this opens a second tab and leaves the builder
-     * standing, because somebody asking for help means to come back to the
-     * shelf they were working on. The tab is opened inside the click, not
-     * after the save, or Safari treats it as a popup and blocks it; if it is
-     * blocked anyway, the same tab does the job.
+     * Both buttons save first, and the save is async, so the tab has to be
+     * opened inside the click or Safari treats it as a popup and blocks it.
+     * It is opened without the "noopener" feature on purpose: with it,
+     * window.open returns null, so the new tab stays blank and the fallback
+     * sends the builder itself to WhatsApp. The opener is cut by hand instead.
+     *
+     * If the popup is blocked outright, the same tab does the job: losing the
+     * session beats losing the message.
+     */
+    function openWhatsAppTab() {
+      const tab = window.open("", "_blank");
+      if (tab) tab.opener = null;
+      return {
+        go(href) {
+          if (tab && !tab.closed) tab.location.href = href;
+          else window.location.href = href;
+        },
+        abandon() {
+          if (tab && !tab.closed) tab.close();
+        },
+      };
+    }
+
+    /*
+     * Help me design.
      *
      * The design is saved first so the link in the message resolves, and a
      * failed save is not a failure: the message already lists every piece,
@@ -4073,11 +4093,10 @@
       const { total } = priceBreakdown();
       const sessionId = builderSessionId();
       const empty = ui.design.instances.length === 0;
-      const tab = window.open("", "_blank", "noopener");
+      const tab = openWhatsAppTab();
       const go = (href) => {
         dom.help.href = href;
-        if (tab) tab.location.href = href;
-        else window.location.href = href;
+        tab.go(href);
       };
       track("help_click", { mode: ui.mode, pieces: ui.design.instances.length, session_id: sessionId });
       if (empty) {
@@ -4096,23 +4115,26 @@
       if (dom.order.getAttribute("aria-disabled") === "true") return;
       event.preventDefault();
       const { total } = priceBreakdown();
-      const originalText = dom.order.textContent;
-      dom.order.textContent = "Preparing order...";
+      const label = dom.order.querySelector(".nd-button-text");
+      const originalText = label.textContent;
+      label.textContent = "Preparing order...";
       dom.order.setAttribute("aria-disabled", "true");
+      const tab = openWhatsAppTab();
       saveDesign()
         .then((code) => {
           const sessionId = builderSessionId();
           const href = whatsappUrl(total, { code, sessionId });
           dom.order.href = href;
           track("order_click", { value: total, currency: "KES", mode: ui.mode, design_code: code, session_id: sessionId });
-          window.location.href = href;
+          tab.go(href);
         })
         .catch((error) => {
+          tab.abandon();
           console.warn("could not save design before order:", error.message);
           setHint("Could not create the order link. Check your connection and try again.", true);
         })
         .then(() => {
-          dom.order.textContent = originalText;
+          label.textContent = originalText;
           dom.order.setAttribute("aria-disabled", ui.design.instances.length === 0 ? "true" : "false");
         });
     });
