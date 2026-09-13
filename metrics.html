@@ -314,7 +314,7 @@
         '<span style="color:' + col + '">● ' + lbl + '</span>' +
         '<span style="color:var(--muted)"> · ' + gen.toLocaleString() + '</span>';
 
-      var h = alerts() + dailyChart() + scaledChart() + adTable() + openerTable() + audienceTable() + funnels() + trend() + footerPanels();
+      var h = alerts() + dailyChart() + scaledChart() + adTable() + googleSearch() + openerTable() + audienceTable() + funnels() + trend() + footerPanels();
       show(h);
       wire();
     }
@@ -1173,6 +1173,77 @@
         'because no ad has used it in 30 days — its size is frozen, not small.</div></div></section>';
     }
 
+    // Google Search.
+    //
+    // Built by framework-ops (src/gadsync.js mirrors the account, src/gterms.js
+    // joins each keyword to the site's event lake and to Airtable) and published
+    // here by the same run that publishes Meta, from 2026-09-13. Costs are shown
+    // in shillings: the account bills in USD, and the runner converts at the rate
+    // in google/terms.json. Revenue on a keyword is the revenue of conversations
+    // whose short code came from a session tagged with that keyword; Google never
+    // says which query was behind a click, so a keyword's revenue is shared by
+    // every term it matched.
+    function googleSearch() {
+      var G = D.google; if (!G) return '';
+      var cur = G.currency || {};
+      var rate = cur.rate || 0;
+      var ksh = function (v) { return v == null ? '–' : 'Ksh ' + Math.round(v).toLocaleString('en-KE'); };
+      var n0 = function (v) { return v == null ? '–' : Math.round(v).toLocaleString('en-KE'); };
+      var pct = function (v) { return v == null ? '–' : (v * 100).toFixed(1) + '%'; };
+      var b = G.budget || {};
+      var plannedKsh = rate ? (b.plannedMonthly || 0) * rate : null;
+      var camps = (G.campaigns || []);
+      var status = camps.length ? camps.map(function (c) { return esc(c.name) + ' · ' + esc(String(c.status).toLowerCase()); }).join(', ') : 'no search campaign';
+
+      var al = (G.alerts || []).map(function (x) {
+        var cls = x.level === 'error' ? 'critical' : x.level === 'warn' ? 'warn' : 'info';
+        var ic  = x.level === 'error' ? '⛔' : x.level === 'warn' ? '⚠' : 'ⓘ';
+        return '<div class="alert ' + cls + '" style="margin:10px 12px 0"><span class="ic">' + ic + '</span><span>' + esc(x.text || x.message || '') + '</span></div>';
+      }).join('');
+
+      var segRows = (G.segments || []).map(function (r) {
+        return '<tr><td style="text-align:left">' + esc(r.label) + '</td>' +
+          '<td>' + n0(r.keywords) + '</td><td>' + n0(r.impressions) + '</td><td>' + n0(r.clicks) + '</td>' +
+          '<td>' + ksh(r.costBusiness) + '</td><td>' + n0(r.arrived) + '</td><td>' + n0(r.handoffs) + '</td>' +
+          '<td>' + n0(r.conversations) + '</td><td>' + n0(r.sales) + '</td><td>' + ksh(r.revenue) + '</td></tr>';
+      }).join('');
+
+      var serving = (G.keywords || []).filter(function (k) { return (k.impressions || 0) > 0; })
+        .sort(function (a, b) { return (b.costBusiness || 0) - (a.costBusiness || 0) || (b.impressions || 0) - (a.impressions || 0); });
+      var kwBody = serving.length ? serving.slice(0, 20).map(function (k) {
+        return '<tr><td style="text-align:left">' + esc(k.keyword) + '</td>' +
+          '<td style="text-align:left">' + esc((k.matchTypes || []).join(', ').toLowerCase()) + '</td>' +
+          '<td>' + (k.qualityScore == null ? '–' : n0(k.qualityScore)) + '</td>' +
+          '<td>' + n0(k.impressions) + '</td><td>' + n0(k.clicks) + '</td><td>' + pct(k.ctr) + '</td>' +
+          '<td>' + ksh(k.costBusiness) + '</td><td>' + n0(k.handoffs) + '</td>' +
+          '<td>' + ksh(k.costPerHandoff) + '</td><td>' + ksh(k.revenue) + '</td></tr>';
+      }).join('') :
+        '<tr><td colspan="10" style="text-align:left;padding:14px 12px"><span class="sec-note">' +
+        'No impressions yet. The ' + n0((G.keywords || []).length) + ' keywords are approved; the first clicks usually arrive within a day of the account being funded.' +
+        '</span></td></tr>';
+
+      var waste = (G.wasted || []).length ?
+        '<div class="sec-note" style="padding:0 12px 12px"><b>Paid for, nobody reached WhatsApp:</b> ' +
+        (G.wasted || []).slice(0, 8).map(function (w) { return esc(w.keyword); }).join(', ') + '</div>' : '';
+
+      return '<section><div class="sec-head"><h2>Google Search</h2>' +
+        '<span class="sec-note">' + status + ' · last ' + n0((G.window || {}).days) + ' days · ' +
+        ksh(b.spentInWindowBusiness) + (plannedKsh ? ' of ' + ksh(plannedKsh) + ' a month' : '') + '</span></div>' +
+        '<div class="card">' + al +
+        '<div class="tablewrap"><table>' +
+        '<thead><tr><th style="text-align:left">Ad group</th><th>Keywords</th><th>Impr.</th><th>Clicks</th>' +
+        '<th>Cost</th><th>Arrived</th><th>WhatsApp</th><th>Convos</th><th>Sales</th><th>Revenue</th></tr></thead>' +
+        '<tbody>' + segRows + '</tbody></table></div>' +
+        '<div class="tablewrap"><table>' +
+        '<thead><tr><th style="text-align:left">Keyword</th><th style="text-align:left">Match</th><th>QS</th>' +
+        '<th>Impr.</th><th>Clicks</th><th>CTR</th><th>Cost</th><th>WhatsApp</th><th>Cost / WhatsApp</th><th>Revenue</th></tr></thead>' +
+        '<tbody>' + kwBody + '</tbody></table></div>' + waste +
+        '<div class="sec-note" style="padding:10px 12px 12px">Google bills in USD; costs here are converted at ' +
+        (rate ? rate : '–') + ' shillings to the dollar. A keyword’s revenue is shared by every search term it matched. ' +
+        'The full search-terms report is <b>data/google/terms.md</b> in framework-ops.</div>' +
+        '</div></section>';
+    }
+
     // What the customer's FIRST message was.
     //
     // The strongest predictor of revenue in the corpus, and for a long time the
@@ -1492,9 +1563,9 @@
         '<details><summary>Refreshing this page</summary><div class="inner">' +
           '<p>This is a snapshot. To pull the latest numbers:</p><ol>' +
           '<li>On the Mac: Finder → <b>code</b> → <b>framework</b> → <b>framework-ops</b>.</li>' +
-          '<li>Double-click <b>sync.command</b> (about 30 seconds), then press Enter when it finishes.</li>' +
-          '<li>Reload this page — the badge up top should read “Synced today”.</li>' +
-          '</ol><p style="color:var(--muted)">To also pull new WhatsApp conversations, double-click <b>run.command</b> instead and press <b>y</b> when it asks.</p>' +
+          '<li>Double-click <b>sync.command</b> (about a minute). It refreshes Meta, Google Search and this page. Press Enter when it finishes.</li>' +
+          '<li>Reload this page. The badge up top should read “Synced today”.</li>' +
+          '</ol><p style="color:var(--muted)">To also pull new WhatsApp conversations, double-click <b>run.command</b> instead. It scrapes, then applies everything and refreshes the same things on its own.</p>' +
         '</div></details></section>';
     }
     function copyrow(t, id) {
