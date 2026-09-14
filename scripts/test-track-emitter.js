@@ -31,7 +31,11 @@ const sandbox = {
       getItem: (k) => (k in store ? store[k] : null),
       setItem: (k, v) => { store[k] = String(v); },
     },
-    location: { pathname: "/shelving.html", search: "?config=lantern-shelf&utm_content=AdX&ad_id=12345&fbclid=fb99" },
+    // Meta and Google params on one URL. No real click carries both, but the
+    // emitter is source-agnostic and the thing under test is that neither set is
+    // dropped — `utm_term` was captured into first-touch for months and never
+    // reached the beacon, which is the bug these assertions exist to prevent.
+    location: { pathname: "/shelving.html", search: "?config=lantern-shelf&utm_content=AdX&ad_id=12345&fbclid=fb99&utm_source=google&utm_medium=cpc&utm_term=shelving%20nairobi&gclid=GC1" },
   },
   navigator: {
     userAgent: "Mozilla/5.0 (iPhone)",
@@ -66,6 +70,15 @@ assert(arriveBeacon, "arrive event must beacon on init");
 assert.strictEqual(arriveBeacon.session_id, sid);
 assert.strictEqual(arriveBeacon.ad.utm_content, "AdX", "first-touch ad params captured from URL");
 assert.strictEqual(arriveBeacon.ad.ad_id, "12345");
+// The Google join keys. utm_term carries ValueTrack {keyword}; gclid identifies
+// the click. Without these on the beacon, a Google click reaches the site and
+// then becomes anonymous, and the whole ops-side term ledger reads zero.
+assert.strictEqual(arriveBeacon.ad.utm_term, "shelving nairobi", "utm_term must reach the beacon, not just first-touch");
+assert.strictEqual(arriveBeacon.ad.gclid, "GC1", "gclid is the per-click join key");
+assert.strictEqual(arriveBeacon.ad.utm_medium, "cpc");
+for (const k of ["gbraid", "wbraid"]) {
+  assert(k in arriveBeacon.ad, `${k} must be sent even when absent — it replaces gclid on iOS`);
+}
 
 // 3. deep-link landing (?config=lantern-shelf) emits a C2 product_view on init,
 //    independent of shelving.html's parse-time auto-open (regression guard).
@@ -107,6 +120,17 @@ assert.strictEqual(handoff.dims.has_config, true);
 assert(/^[0-9A-HJKMNP-TV-Z]{6}$/.test(handoff.dims.short_code), "handoff carries a short code");
 assert(codePayload, "code payload must beacon on WhatsApp click");
 assert.strictEqual(codePayload.code, handoff.dims.short_code, "code payload matches handoff short code");
+// The code payload is what resolves a WhatsApp conversation back to the click
+// that paid for it, so its ad block must carry the same keys as the events'. A
+// field on one and not the other is a join that works in the funnel and fails
+// on revenue — which is the only number anyone acts on.
+assert.deepStrictEqual(
+  Object.keys(codePayload.ad).sort(),
+  Object.keys(arriveBeacon.ad).sort(),
+  "code payload and event beacons must carry an identical ad block"
+);
+assert.strictEqual(codePayload.ad.gclid, "GC1");
+assert.strictEqual(codePayload.ad.utm_term, "shelving nairobi");
 assert(anchor._href, "click must rewrite the href");
 const outText = decodeURIComponent(/text=([^&]*)/.exec(anchor._href)[1].replace(/\+/g, " "));
 assert(outText.includes("config=lantern-shelf&r=" + codePayload.code), "ref code injected into the config URL: " + outText);

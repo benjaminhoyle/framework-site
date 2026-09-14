@@ -105,9 +105,22 @@ function cleanDims(dims) {
 
 function str(v) { return (v == null) ? null : String(v).slice(0, 300); }
 function num(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
+// The paid-traffic identity of a session. This allowlist is the second half of
+// adParams() in js/site.js: a field the client sends and this list omits is
+// dropped silently, which is exactly how `utm_term` was captured into
+// first-touch for months and never reached the lake. Add to both, together.
+//
+// `utm_term` carries Google's ValueTrack {keyword} — the keyword we BID, never
+// the query the person typed; Google reveals that only in aggregate. It is the
+// key the ops-side term ledger joins on.
 function cleanAd(ad) {
   if (!ad || typeof ad !== 'object') return {};
-  const keep = ['utm_source', 'utm_campaign', 'utm_content', 'ad_id', 'fbclid'];
+  const keep = [
+    'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+    'ad_id', 'fbclid',
+    // Google click ids. gbraid/wbraid arrive INSTEAD of gclid on iOS, not with it.
+    'gclid', 'gbraid', 'wbraid',
+  ];
   const out = {};
   for (const k of keep) if (ad[k] != null) out[k] = String(ad[k]).slice(0, 300);
   return out;

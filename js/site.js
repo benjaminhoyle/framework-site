@@ -280,17 +280,40 @@ function highlightActivePage() {
                 : ((page === 'index.html' || page === '') ? 'home' : 'other'));
         var ft = {
             utm_source: q.get('utm_source') || null,
+            utm_medium: q.get('utm_medium') || null,
             utm_campaign: q.get('utm_campaign') || null,
             utm_content: q.get('utm_content') || null,
             utm_term: q.get('utm_term') || null,
             ad_id: q.get('ad_id') || null,
             fbclid: q.get('fbclid') || null,
+            // Google's click ids. `gclid` comes from auto-tagging; `gbraid` and
+            // `wbraid` REPLACE it (they do not accompany it) on iOS and other
+            // restricted-tracking journeys, so reading gclid alone silently
+            // drops a slice of paid traffic that grows every year.
+            gclid: q.get('gclid') || null,
+            gbraid: q.get('gbraid') || null,
+            wbraid: q.get('wbraid') || null,
             device: detectDevice(),
             in_app_browser: detectInApp(),
             entry_type: entry_type
         };
         ss('fwk_first', JSON.stringify(ft));
         return ft;
+    }
+
+    // The paid-traffic identity of a session, in one place. Both the event beacon
+    // and the short-code payload send it, and they must agree: the code payload
+    // is what resolves a WhatsApp conversation back to the click that caused it,
+    // so a field present on one and missing from the other is a join that works
+    // in the funnel and fails on revenue. Anything added here must also be added
+    // to the `keep` allowlist in netlify/functions/track.js, which drops the rest.
+    function adParams(ft) {
+        return {
+            utm_source: ft.utm_source, utm_medium: ft.utm_medium,
+            utm_campaign: ft.utm_campaign, utm_content: ft.utm_content,
+            utm_term: ft.utm_term, ad_id: ft.ad_id, fbclid: ft.fbclid,
+            gclid: ft.gclid, gbraid: ft.gbraid, wbraid: ft.wbraid
+        };
     }
 
     // Core emitter. Every event carries session_id + ts; the server enriches
@@ -304,7 +327,7 @@ function highlightActivePage() {
             ts: Date.now(),
             // Session-level ad attributes ride only where the server needs them:
             // included on every event so the lake can group by ad without a join.
-            ad: { utm_source: ft.utm_source, utm_campaign: ft.utm_campaign, utm_content: ft.utm_content, ad_id: ft.ad_id, fbclid: ft.fbclid },
+            ad: adParams(ft),
             device: ft.device,
             in_app_browser: ft.in_app_browser,
             dims: dims || {}
@@ -451,7 +474,7 @@ function highlightActivePage() {
             session_id: sessionId(),
             product_id: product_id || null,
             handoff_source: source,
-            ad: { utm_source: ft.utm_source, utm_campaign: ft.utm_campaign, utm_content: ft.utm_content, ad_id: ft.ad_id, fbclid: ft.fbclid },
+            ad: adParams(ft),
             ts: Date.now()
         });
     }
