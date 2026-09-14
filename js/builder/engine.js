@@ -287,6 +287,22 @@
   }
 
   /**
+   * Every MDF board of an instance, in world mm, lowest first. A board is told
+   * from the rails by its footprint: an end rail can be deeper than the board
+   * it holds, but never anything like its area.
+   */
+  function boardBoxes(catalog, instance) {
+    const module = moduleFor(catalog, instance.moduleId);
+    const area = (box) => (box.bbox[3] - box.bbox[0]) * (box.bbox[4] - box.bbox[1]);
+    const boxes = (module.horizontalBoxes || []).filter((box) => box.kind === "horizontal" && box.bbox);
+    const largest = Math.max(0, ...boxes.map(area));
+    return boxes
+      .filter((box) => area(box) >= largest * 0.5)
+      .map((box) => transformBox(instance, module, box.bbox))
+      .sort((first, second) => first[2] - second[2]);
+  }
+
+  /**
    * Where a unit has to stand for the named faces to land where we want them.
    *
    * Bounds move one-for-one with the origin, so one probe placement is enough
@@ -1930,6 +1946,7 @@
     additionContext,
     applyCandidate,
     boardBounds,
+    boardBoxes,
     bookendPlacements,
     createState,
     designBounds,
@@ -1959,6 +1976,7 @@
     stackBounds,
     stacksOf,
     validateAddition,
-    validateState
+    validateState,
+    worldSocket
   };
 });

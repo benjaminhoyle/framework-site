@@ -117,12 +117,20 @@ window.FrameworkDesignerPresent = (function () {
     context.lineJoin = "round";
     context.strokeStyle = "#ffffff";
     context.lineWidth = fontPx * 0.3;
+    // Linear dimensions letter along their line; `angle` is absent on callouts.
+    const turned = (label, paint) => {
+      context.save();
+      context.translate(label.x, label.y);
+      context.rotate((label.angle || 0) * Math.PI / 180);
+      paint(label.text);
+      context.restore();
+    };
     for (const label of dimensions.labels) {
-      context.strokeText(label.text, label.x, label.y);
+      turned(label, (value) => context.strokeText(value, 0, 0));
     }
     context.fillStyle = INK;
     for (const label of dimensions.labels) {
-      context.fillText(label.text, label.x, label.y);
+      turned(label, (value) => context.fillText(value, 0, 0));
     }
     context.restore();
   }

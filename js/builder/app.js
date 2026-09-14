@@ -856,6 +856,13 @@
    */
   const SVG_NS = "http://www.w3.org/2000/svg";
   const DIM_GAP_PX = 10; // model edge -> start of the witness line
+  // The two depths leave almost no gap, so each witness line reads as the leg or
+  // the board edge carrying on. That is what tells them apart, not a word.
+  const DIM_TOUCH_GAP_PX = 2;
+  // How much further out the overall depth sits than the board depth inside it.
+  const DIM_NEST_PX = 30;
+  // The depths stand further off the shelf's end than width does off its front.
+  const DIM_DEPTH_CLEAR_PX = 20;
   const DIM_OFFSET_PX = 34; // model edge -> the dimension line
   const DIM_OVERSHOOT_PX = 3; // witness line past the dimension line
   const DIM_LABEL_PX = 13; // dimension line -> the number
@@ -925,7 +932,9 @@
     const arrowLengthPx = DIM_ARROW_LENGTH_PX * size;
     const arrowWidthPx = DIM_ARROW_WIDTH_PX * size;
 
-    for (const spec of DIMENSION_SPECS) {
+    const depths = depthDimensions();
+    const specs = depths ? DIMENSION_SPECS.filter((spec) => spec.axis !== 1) : DIMENSION_SPECS;
+    const runs = specs.map((spec) => {
       const from = [0, 0, 0];
       const to = [0, 0, 0];
       for (let axis = 0; axis < 3; axis += 1) {
@@ -935,30 +944,38 @@
         from[axis] = axis === spec.axis ? low : (pick === "max" ? high : low);
         to[axis] = axis === spec.axis ? high : (pick === "max" ? high : low);
       }
-      const valueMm = bounds[spec.axis + 3] - bounds[spec.axis];
+      return { from, to, offsetAxis: spec.offsetAxis, sign: spec.sign, valueMm: bounds[spec.axis + 3] - bounds[spec.axis], gapPx };
+    }).concat(depths ? depths.map((run) => Object.assign({ gapPx: DIM_TOUCH_GAP_PX * size }, run)) : []);
+
+    for (const run of runs) {
+      const { from, to, valueMm } = run;
       if (valueMm < 20) continue;
 
       const screenFrom = project(from);
       const screenTo = project(to);
-      const raw = axisScreenDirection(spec.offsetAxis, project);
-      const dir = { x: raw.x * spec.sign, y: raw.y * spec.sign };
+      const raw = axisScreenDirection(run.offsetAxis, project);
+      const dir = { x: raw.x * run.sign, y: raw.y * run.sign };
       const along = {
         x: (screenTo.x - screenFrom.x) / (Math.hypot(screenTo.x - screenFrom.x, screenTo.y - screenFrom.y) || 1),
         y: (screenTo.y - screenFrom.y) / (Math.hypot(screenTo.x - screenFrom.x, screenTo.y - screenFrom.y) || 1)
       };
 
-      const lineFrom = { x: screenFrom.x + dir.x * offsetPx, y: screenFrom.y + dir.y * offsetPx };
-      const lineTo = { x: screenTo.x + dir.x * offsetPx, y: screenTo.y + dir.y * offsetPx };
+      const runOffsetPx = offsetPx + ((run.extraOffsetPx || 0) + (run.nested ? DIM_NEST_PX : 0)) * size;
+      const lineFrom = { x: screenFrom.x + dir.x * runOffsetPx, y: screenFrom.y + dir.y * runOffsetPx };
+      const lineTo = { x: screenTo.x + dir.x * runOffsetPx, y: screenTo.y + dir.y * runOffsetPx };
 
-      for (const end of [screenFrom, screenTo]) {
+      // A witness line normally starts at the measured point; `witnessFrom` lets
+      // it start further in, at the part it belongs to, and run out past it.
+      const starts = run.witnessFrom ? [project(run.witnessFrom), project(run.witnessTo)] : [screenFrom, screenTo];
+      [screenFrom, screenTo].forEach((end, index) => {
         lines.push({
           witness: true,
-          x1: end.x + dir.x * gapPx,
-          y1: end.y + dir.y * gapPx,
-          x2: end.x + dir.x * (offsetPx + overshootPx),
-          y2: end.y + dir.y * (offsetPx + overshootPx)
+          x1: starts[index].x + dir.x * run.gapPx,
+          y1: starts[index].y + dir.y * run.gapPx,
+          x2: end.x + dir.x * (runOffsetPx + overshootPx),
+          y2: end.y + dir.y * (runOffsetPx + overshootPx)
         });
-      }
+      });
       lines.push({ x1: lineFrom.x, y1: lineFrom.y, x2: lineTo.x, y2: lineTo.y });
       // Open arrowheads point into the measured span. Unlike drafting ticks,
       // they do not cross the witness lines and stay readable on small screens.
@@ -980,15 +997,77 @@
       }
 
       const mid = { x: (lineFrom.x + lineTo.x) / 2, y: (lineFrom.y + lineTo.y) / 2 };
+      // The number turns with its line, as isometric drawings letter them. Level
+      // type needs clearance for its whole width; turned, only for its height,
+      // which is what leaves room to set the board depth between the two depths.
+      let angle = Math.atan2(along.y, along.x) * 180 / Math.PI;
+      if (angle > 90) angle -= 180;
+      if (angle < -90) angle += 180;
+      const across = side.x * dir.x + side.y * dir.y;
+      const outward = across < 0 ? -1 : 1;
+      const clearPx = run.labelBetween ? DIM_NEST_PX * size * Math.abs(across) / 2 : labelPx * 0.75;
       labels.push({
-        x: mid.x + dir.x * labelPx,
-        y: mid.y + dir.y * labelPx,
+        x: mid.x + side.x * outward * clearPx,
+        y: mid.y + side.y * outward * clearPx,
+        angle,
         text: `${mmToCm(valueMm)} cm`
       });
     }
 
     addHeightCallouts(lines, labels, project, size);
     return { lines, labels, fontPx: DIM_FONT_PX * size };
+  }
+
+  /*
+   * Depth twice, nested on the lowest board's surface off its right-hand end:
+   * across the board nearest, and over the legs one step further out. The legs
+   * stand just outside the board's front and back edges, so the outer one's
+   * witness lines start at the last pair of posts and run out past the board;
+   * the nesting and where each line starts say which is which, not a word.
+   *
+   * Only for a straight run. A run that turns a corner has no single depth, so
+   * it keeps the envelope dimension.
+   */
+  function depthDimensions() {
+    const shelf = ui.design.instances.filter((instance) => ui.catalog.modules[instance.moduleId].role !== "lamp");
+    if (!shelf.length || shelf.some((instance) => (instance.rotationDeg || 0) % 180 !== 0)) return null;
+
+    let posts = null;
+    for (const instance of shelf) {
+      const module = ui.catalog.modules[instance.moduleId];
+      for (const socket of module.sockets || []) {
+        if (socket.kind !== "top") continue;
+        const [x, , z] = engine.worldSocket(instance, socket, module).worldMm;
+        if (!posts || x > posts.x + 1 || (Math.abs(x - posts.x) <= 1 && z > posts.z)) {
+          posts = { x, z, bounds: engine.instanceBounds(ui.catalog, instance) };
+        }
+      }
+    }
+
+    // The lowest board at the right-hand end. Top bars are boards too, to the
+    // module, so anything shallower than a shelf is passed over.
+    let board = null;
+    for (const instance of shelf) {
+      for (const box of engine.boardBoxes(ui.catalog, instance)) {
+        if (box[4] - box[1] < 100) continue;
+        if (!board || box[3] > board[3] + 1 || (Math.abs(box[3] - board[3]) <= 1 && box[5] < board[5])) board = box;
+      }
+    }
+    if (!posts || !board) return null;
+
+    const legs = posts.bounds;
+    const z = board[5];
+    return [
+      {
+        from: [board[3], board[1], z], to: [board[3], board[4], z], offsetAxis: 0, sign: 1,
+        valueMm: board[4] - board[1], labelBetween: true, extraOffsetPx: DIM_DEPTH_CLEAR_PX
+      },
+      {
+        from: [board[3], legs[1], z], to: [board[3], legs[4], z], offsetAxis: 0, sign: 1,
+        witnessFrom: [posts.x, legs[1], z], witnessTo: [posts.x, legs[4], z],
+        valueMm: legs[4] - legs[1], nested: true, extraOffsetPx: DIM_DEPTH_CLEAR_PX
+      }
+    ];
   }
 
   function drawDimensions() {
@@ -1013,7 +1092,8 @@
     for (const label of labels) {
       const node = svgNode("text", {
         class: "nd-dim-text", x: label.x, y: label.y,
-        "text-anchor": "middle", "dominant-baseline": "middle"
+        "text-anchor": "middle", "dominant-baseline": "middle",
+        transform: `rotate(${label.angle || 0} ${label.x} ${label.y})`
       });
       node.textContent = label.text;
       svg.appendChild(node);
@@ -1044,12 +1124,22 @@
       const key = mmToCm(valueMm);
       const existing = byHeight.get(key);
       if (!existing || centreX < existing.centreX) {
+        // The arrow lands in the middle of the top board, on its surface, rather
+        // than at the post tops that set the height it quotes.
+        const top = ids.flatMap((id) => {
+          const instance = ui.design.instances.find((item) => item.id === id);
+          return instance && ui.catalog.modules[instance.moduleId].role !== "lamp"
+            ? engine.boardBoxes(ui.catalog, instance)
+            : [];
+        }).filter((box) => box[4] - box[1] >= 100)
+          .reduce((highest, box) => (!highest || box[5] > highest[5] ? box : highest), null);
+        const surface = top || unit;
         byHeight.set(key, {
           valueMm,
           centreX,
-          anchorX: unit[0] + Math.min(140, (unit[3] - unit[0]) * 0.22),
-          centreY: (unit[1] + unit[4]) / 2,
-          topZ: unit[5]
+          anchorX: (surface[0] + surface[3]) / 2,
+          centreY: (surface[1] + surface[4]) / 2,
+          topZ: surface[5]
         });
       }
     });
@@ -1921,6 +2011,11 @@
         renderPickerRows(options, "");
       }
     });
+    // Someone who opens a long list usually already knows what they want, so
+    // the cursor waits in the search box. Not on touch screens, where focusing
+    // it would put the keyboard over the list before they have seen it.
+    const search = dom.modalBody.querySelector(".nd-search");
+    if (search && window.matchMedia("(pointer: fine)").matches) search.focus();
   }
 
   function renderPickerRows(options, query) {

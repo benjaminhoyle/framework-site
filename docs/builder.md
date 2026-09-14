@@ -274,6 +274,19 @@ content and takes the snapshot.
   the one `renderer.snapshot()` hands back, which is the only way to reach a
   camera that no longer exists by the time the pixels do. The shelf is pulled in
   further when they are on, or the height callout clips the top of the art box.
+- **Depth is drawn twice, nested, and no word says which is which.** The legs
+  stand just outside the board's front and back edges, so the overall depth
+  (28cm on Standard) is a leg's width either side of the board (23cm).
+  `depthDimensions()` puts both on the lowest board's surface, off its
+  right-hand end: the board depth nearest, its witness lines carrying the
+  board's edges out, and the overall depth one step further out, its witness
+  lines starting at the last pair of posts. The numbers letter along their
+  lines, as isometric drawings do; level type needs clearance for its width,
+  turned type only for its height, and that is what leaves room to set the board
+  depth between the two lines. Tried and dropped: a line under the feet (the back
+  foot is behind the bottom board, and the line starts where the width line
+  ends) and one over the post tops (it lies across the top board). A run that
+  turns a corner has no single depth, so it keeps the one envelope dimension.
 - **The module list is sized to fit, not capped.** Rows are counted, split into
   two columns past seven, and then given whatever type size the band's height and
   the column's width both allow. A long design gets smaller type rather than a
