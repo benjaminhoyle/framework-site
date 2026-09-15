@@ -159,6 +159,69 @@ test("every module in the catalog has a geometry bundle", () => {
   }
 });
 
+test("steel is lit by normals that agree with its faces", () => {
+  // A rail lit with smoothed normals shades as if its corners were round, and
+  // where rails cross under a board the bar reads as bent. The build re-derives
+  // the normals of any part whose normals disagree with its faces (see
+  // normalsDisagree() in scripts/build-builder-assets.mjs). Before it did, 8.8%
+  // of the catalogue's steel surface was lit by a normal more than 30 degrees
+  // off its own face; after, 2.0%, nearly all of it round tubes whose faces
+  // twist across them and which keep their own smoothed normals on purpose.
+  // The lamp's shade is exempt: its normals are aimed at its axis on purpose.
+  const PAPER = 3;
+  const agreement = Math.cos((30 * Math.PI) / 180);
+  let offFace = 0;
+  let surface = 0;
+  for (const id of Object.keys(catalog.modules)) {
+    const bundle = JSON.parse(fs.readFileSync(path.join(ROOT, "assets/shelving/modules", `${id}.json`), "utf8"));
+    bundle.parts.forEach((part) => {
+      if (part.role === PAPER) return;
+      const positions = Buffer.from(part.positions, "base64");
+      const normals = Buffer.from(part.normals, "base64");
+      const indices = Buffer.from(part.indices, "base64");
+      const point = (v) => [0, 1, 2].map((axis) => positions.readUInt16LE((v * 3 + axis) * 2) * part.scale + part.offset[axis]);
+      const normal = (v) => [0, 1, 2].map((axis) => normals.readInt8(v * 4 + axis));
+      for (let i = 0; i < part.indexCount; i += 3) {
+        const corners = [0, 1, 2].map((k) => indices.readUInt16LE((i + k) * 2));
+        const [a, b, c] = corners.map(point);
+        const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+        const w = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+        const face = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+        const area = Math.hypot(face[0], face[1], face[2]);
+        if (!area) continue;
+        const bent = corners.some((v) => {
+          const n = normal(v);
+          const size = Math.hypot(n[0], n[1], n[2]) || 1;
+          return Math.abs(face[0] * n[0] + face[1] * n[1] + face[2] * n[2]) / (area * size) < agreement;
+        });
+        if (bent) offFace += area;
+        surface += area;
+      }
+    });
+  }
+  const share = offFace / surface;
+  assert.ok(share < 0.03,
+    `${(share * 100).toFixed(1)}% of the steel is lit by a normal more than 30 degrees off its face (2.0% when this was written)`);
+});
+
+test("every page that draws module geometry asks for the builder's version", () => {
+  // The bundles are cached for a week. A page asking for one without the
+  // version can be handed last week's geometry after a rebuild, and a preload
+  // at a different URL from the fetch is a wasted download.
+  // node scripts/bump-builder-version.mjs keeps all of these in step.
+  const builderPage = fs.readFileSync(path.join(ROOT, "builder.html"), "utf8");
+  const version = (builderPage.match(/window\.frameworkDesignerVersion = '(\d+)'/) || [])[1];
+  assert.ok(version, "builder.html declares its version");
+  const story = fs.readFileSync(path.join(ROOT, "js/assembly/scroll-story.js"), "utf8");
+  assert.equal((story.match(/var GEOMETRY_VERSION = '(\d+)'/) || [])[1], version,
+    "the scroll stories (/how, /customize, /assembly) load geometry at the builder's version");
+  for (const file of ["how.html", "assembly-lab.html"]) {
+    const preloads = [...fs.readFileSync(path.join(ROOT, file), "utf8").matchAll(/href="(\/assets\/shelving\/modules\/[a-z0-9_]+\.json)(\?v=\d+)?"/g)];
+    assert.ok(preloads.length > 0, `${file} preloads its geometry`);
+    for (const [, href, query] of preloads) assert.equal(query, `?v=${version}`, `${file}: ${href} is preloaded at a different version`);
+  }
+});
+
 test("geometry bundles parse and stay inside their declared bounds", () => {
   for (const id of Object.keys(catalog.modules)) {
     const bundle = JSON.parse(fs.readFileSync(path.join(ROOT, "assets/shelving/modules", `${id}.json`), "utf8"));

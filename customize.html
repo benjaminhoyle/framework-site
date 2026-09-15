@@ -4,11 +4,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Four colors | Framework Designs</title>
+    <title>Colors and add-ons | Framework Designs</title>
     <!--
-      The reply link. When somebody on WhatsApp asks what colors there are,
-      this is the page they are sent: the four colors on real shelves, how a
-      shelf grows, and the add-ons that can go on the order. Short on purpose,
+      The reply link, at /customize. When somebody on WhatsApp asks what colors
+      there are or what can go on a shelf, this is the page they are sent: the
+      four colors on real shelves, how a shelf grows, and the add-ons that can go
+      on the order. /colors lands here too, and /addons lands at the add-ons. Short on purpose,
       and laid out for a phone first, because that is where it is opened.
 
       Every photograph is the catalogue's own, untouched, and links to its
@@ -18,11 +19,11 @@
     -->
     <meta name="description"
         content="Framework shelving comes in four colors: Marine, Sage, Charcoal and Coral. See each one on a real shelf, how a shelf grows, and the add-ons you can put on an order.">
-    <link rel="canonical" href="https://www.framework.co.ke/colors">
+    <link rel="canonical" href="https://www.framework.co.ke/customize">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://www.framework.co.ke/colors">
-    <meta property="og:title" content="Our four colors">
-    <meta property="og:description" content="Marine, Sage, Charcoal and Coral. One color all through, or a mix. Made in Nairobi.">
+    <meta property="og:url" content="https://www.framework.co.ke/customize">
+    <meta property="og:title" content="Four colors, and add-ons">
+    <meta property="og:description" content="Marine, Sage, Charcoal and Coral, one color all through or a mix, and the bookends, lamp and coat hanger that go with them. Made in Nairobi.">
     <meta property="og:image" content="https://www.framework.co.ke/images/shelving/configs/color-stack.jpg">
     <meta name="theme-color" content="#ffffff">
     <link rel="icon" href="/images/global/fwk-icon-lg.png">
@@ -71,6 +72,7 @@
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
     <!-- styles.css carries the header and footer that js/site.js injects. -->
     <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/assembly.css">
     <link rel="stylesheet" href="/css/pages.css">
     <link rel="stylesheet" href="/css/colors.css">
     <script src="/js/site.js" defer></script>
@@ -84,8 +86,8 @@
 
     <main class="pg co">
         <section class="co-intro">
-            <h1>Four colors, made in Nairobi.</h1>
-            <p>Each one is a steel color with a lighter board to match. The frames are painted to order, so any design comes in any of the four, or in a mix.</p>
+            <h1>Shelving in four unmistakable colors.</h1>
+            <p>Bring any design to life in your choice of colors from our curated palette. And don't forget, you can mix and match.</p>
         </section>
 
         <!--
@@ -234,79 +236,68 @@
                 <h2>It grows.</h2>
                 <p>Our shelves are modular, which means they are made of separate parts that stack together. Start with one unit and add more as your collection grows.</p>
                 <p>A unit you buy later slides onto the one you already have, in the same color or a new one. Units from Ksh 6,500.</p>
+                <p><a href="/how">See how the parts fit together.</a></p>
             </div>
         </section>
 
         <!--
-          Prices are the catalogue's own: the bookend is sold on its own, the
-          lamp and the coat hanger are shown on the configurations that carry
-          them, with the shade excluded the way the catalogue excludes it.
+          The add-ons. The bookend and the lamp are shown going onto a shelf,
+          as you scroll, by /builder's own renderer: js/assembly/story-colors.js
+          directs it and css/assembly.css lays out the track, exactly as on
+          /how. The shelf is The Lantern Shelf (3WU3UN2), which is the
+          catalogue's own shelf with a lamp, with the four bookends /builder
+          would put on it.
 
-          The Bookend's picture is a clip of the mechanism, the one add-on
-          whose whole point is one. It is square, so the card crops nothing,
-          and it costs a phone nothing until it is wanted: 67KB behind
-          preload="none", a poster of the seated frame, and the script at the
-          foot of the page starts it once when the card scrolls into view. On
-          Save-Data, a slow connection or reduced motion the poster is all
-          there is.
+          The coat hanger is a photograph. A rail with nothing on it explains
+          nothing, and the one thing it has to say, that clothes hang from it,
+          is what The Wardrobe Shelf's picture already shows.
+
+          Prices are the catalogue's own: the bookend is sold on its own, the
+          lamp and the coat hanger are priced by the shelves that carry them,
+          with the shade excluded the way the catalogue excludes it.
+
+          Layout rule from docs/assembly-animation.md: nothing above .fa-stage
+          may carry a transform, filter, perspective or will-change, or the
+          sticky stage silently stops sticking.
         -->
-        <section class="co-addons">
-            <h2>Add-ons.</h2>
-            <p>Any of these can go on your order, or onto a shelf you already have.</p>
-            <ul>
-                <li class="co-addon">
-                    <a href="/shelving.html?config=bookend">
-                        <video class="co-clip" preload="none" muted playsinline
-                            poster="/images/shelving/animations/bookend-slide.jpg"
-                            width="900" height="900"
-                            aria-label="A sage bookend sliding up onto the flat bar under a shelf and seating, seen from below and outside the end of the run.">
-                            <source src="/images/shelving/animations/bookend-slide.mp4" type="video/mp4">
-                        </video>
-                    </a>
-                    <div>
-                        <a href="/shelving.html?config=bookend"><b>The Bookend</b></a>
-                        <p>Clamps onto a shelf and keeps a row of books upright. Fully detachable, so it moves as the books do. It fits every standard unit. Ksh&nbsp;1,000 each.</p>
-                    </div>
-                </li>
-                <li class="co-addon">
-                    <a href="/shelving.html?config=lighted-console">
-                        <img src="/images/shelving/configs/lighted-console-emptied.jpg"
-                            srcset="/images/shelving/configs/w400/lighted-console-emptied.jpg 400w, /images/shelving/configs/w800/lighted-console-emptied.jpg 800w, /images/shelving/configs/w1100/lighted-console-emptied.jpg 1100w, /images/shelving/configs/lighted-console-emptied.jpg 1400w"
-                            sizes="(min-width: 860px) 323px, (min-width: 401px) 132px, 104px"
-                            alt="A marine console shelf with a steel lamp arm rising from one end and a shade hanging over it."
-                            width="1400" height="1400" loading="lazy">
-                    </a>
-                    <div>
-                        <a href="/shelving.html?config=lighted-console"><b>The Lamp</b></a>
-                        <p>A steel arm that drops into a post at the top of a unit and holds a bulb over the shelf. Shades are not included; Elewa Art and Baskets Kenya sell them.</p>
-                        <p class="pg-shown">As shown: The Lighted Console, Ksh&nbsp;19,500 (excl. shade).</p>
-                    </div>
-                </li>
-                <li class="co-addon">
-                    <a href="/shelving.html?config=wardrobe-shelf">
-                        <img src="/images/shelving/configs/wardrobe-shelf-populated.jpg"
-                            srcset="/images/shelving/configs/w400/wardrobe-shelf-populated.jpg 400w, /images/shelving/configs/w800/wardrobe-shelf-populated.jpg 800w, /images/shelving/configs/w1100/wardrobe-shelf-populated.jpg 1100w, /images/shelving/configs/wardrobe-shelf-populated.jpg 1400w"
-                            sizes="(min-width: 860px) 323px, (min-width: 401px) 132px, 104px"
-                            alt="A wide sage shelf with a rail under the top board, jackets and jumpers on hangers and baskets on the shelves below."
-                            width="1400" height="1400" loading="lazy">
-                    </a>
-                    <div>
-                        <a href="/shelving.html?config=wardrobe-shelf"><b>The Coat Hanger</b></a>
-                        <p>A rail in place of a shelf, for clothes on hangers. It takes the width of a unit, with shelves above and below.</p>
-                        <p class="pg-shown">As shown: The Wardrobe Shelf, Ksh&nbsp;43,000.</p>
-                    </div>
-                </li>
-            </ul>
+        <section class="co-addons" id="addons">
+            <h2 class="co-title">Upgrade your shelf with add-ons.</h2>
+            <p>Custom-designed for Framework shelving. Include in your next order, or buy separately to elevate your existing unit.</p>
+        </section>
+
+        <div class="fa-track co-track" id="addons-track">
+            <div class="fa-stage" id="addons-stage">
+                <canvas class="fa-canvas" id="addons-canvas" aria-hidden="true"></canvas>
+                <noscript>
+                    <img class="co-track-still" src="/images/shelving/configs/w800/lantern-shelf-emptied.jpg"
+                        alt="The Lantern Shelf in Coral, with the lamp arm rising from its right end." width="800" height="800">
+                </noscript>
+            </div>
+        </div>
+
+        <p class="pg-shown co-track-shown">As shown: <a href="/shelving.html?config=lantern-shelf">The Lantern Shelf</a>, Ksh&nbsp;24,500 (excl. shade), plus four bookends at Ksh&nbsp;1,000 each.</p>
+
+        <section class="co-feature">
+            <a class="co-pic" href="/shelving.html?config=wardrobe-shelf">
+                <img class="pg-shot" src="/images/shelving/configs/wardrobe-shelf-populated.jpg"
+                    srcset="/images/shelving/configs/w400/wardrobe-shelf-populated.jpg 400w, /images/shelving/configs/w800/wardrobe-shelf-populated.jpg 800w, /images/shelving/configs/w1100/wardrobe-shelf-populated.jpg 1100w, /images/shelving/configs/wardrobe-shelf-populated.jpg 1400w"
+                    sizes="(min-width: 600px) 520px, calc(100vw - 48px)"
+                    alt="A wide sage shelf with a rail under the top board, jackets and jumpers on hangers and baskets on the shelves below."
+                    width="1400" height="1400" loading="lazy">
+            </a>
+            <div class="co-feature-text">
+                <h2>The Coat Hanger.</h2>
+                <p>A rail in place of a shelf, for clothes on hangers. Compatible with deep and compact units.</p>
+                <p class="pg-shown">As shown: <a href="/shelving.html?config=wardrobe-shelf">The Wardrobe Shelf</a>, Ksh&nbsp;43,000.</p>
+            </div>
         </section>
 
         <section class="pg-ask">
-            <h2>Which color is it for your space?</h2>
-            <p>Kindly share the color you have in mind and what the shelf is for, and we'll revert back with a design and a price.</p>
+            <h2>How will you customize yours?</h2>
             <a class="pg-wa"
-                href="https://wa.me/254783891005?text=Hello%2C%20I%27m%20interested%20in%20your%20shelving.%20I%27ve%20seen%20the%20colors%20page%20and%20I%27d%20like%20help%20choosing%20a%20color."
+                href="https://wa.me/254783891005?text=Hello%2C%20I%27m%20interested%20in%20your%20shelving.%20I%27ve%20seen%20your%20colors%20and%20add-ons%20and%20I%27d%20like%20help%20customizing%20mine."
                 target="_blank" rel="noopener noreferrer" data-fwk-handoff="colours"
                 onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{link_target:'colours_page',content_category:'colours_page'});}">Message us on WhatsApp</a>
-            <p>Delivered assembled within Nairobi. We provide an ETR invoice.</p>
         </section>
 
         <nav class="pg-doors pg-doors-3" aria-label="Where next">
@@ -326,29 +317,61 @@
     </main>
 
     <!--
-      The bookend clip. Nothing is fetched until the card is in view, and it
-      plays once: the mechanism shows itself the way the assembly story does,
-      then holds on the seated frame. Save-Data, a 2G connection, reduced
-      motion or an old browser get the poster and no request at all.
+      The add-ons story: the same engine and renderer /how loads, with this
+      page's own shelf and shot list. Nothing of it is on the page's critical
+      path. Its scripts (about 100 KB before compression) are fetched, in
+      order, only once the track is within two screens of the viewport, and
+      its geometry (the shelf's bundles and one pack of props) after that. A
+      reader who never scrolls to the add-ons downloads and parses none of it.
+      The engine picks its own tier (reduced motion cuts instead of moving;
+      Save-Data, 2G and no WebGL get the words and two photographs).
     -->
     <script>
         (function () {
-            var clip = document.querySelector('.co-clip');
-            if (!clip || !('IntersectionObserver' in window)) return;
-            var net = navigator.connection || {};
-            if (net.saveData || /2g/.test(net.effectiveType || '')) return;
-            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-            var watcher = new IntersectionObserver(function (entries) {
-                var last = entries[entries.length - 1];
-                if (last.isIntersecting) {
-                    var started = clip.play();
-                    if (started && started.catch) started.catch(function () {});
-                } else {
-                    clip.pause();
-                }
-            }, { threshold: 0.6 });
-            watcher.observe(clip);
-            clip.addEventListener('ended', function () { watcher.disconnect(); });
+            'use strict';
+            var track = document.getElementById('addons-track');
+            if (!track) return;
+            var SCRIPTS = [
+                '/js/builder/geometry.js',
+                '/js/builder/renderer.js',
+                '/js/assembly/lantern-shelf.js',
+                '/js/assembly/props.js',
+                '/js/assembly/story-colors.js',
+                '/js/assembly/scroll-story.js'
+            ];
+            function load(index, done) {
+                if (index >= SCRIPTS.length) { done(); return; }
+                var script = document.createElement('script');
+                script.src = SCRIPTS[index];
+                script.onload = function () { load(index + 1, done); };
+                script.onerror = function () { console.error('assembly: could not load ' + SCRIPTS[index]); };
+                document.body.appendChild(script);
+            }
+            var started = false;
+            function begin() {
+                if (started) return;
+                started = true;
+                load(0, function () {
+                    window.FrameworkAssembly.start({
+                        track: '#addons-track',
+                        stage: '#addons-stage',
+                        canvas: '#addons-canvas',
+                        onReady: function (result) {
+                            // Bench handle, read-only: FrameworkAssembly.debug.seek(0.5).
+                            window.FrameworkAssembly.debug = result;
+                        }
+                    }).catch(function (error) {
+                        console.error('assembly:', error);
+                    });
+                });
+            }
+            if (!('IntersectionObserver' in window)) { begin(); return; }
+            var near = new IntersectionObserver(function (entries) {
+                if (!entries[entries.length - 1].isIntersecting) return;
+                near.disconnect();
+                begin();
+            }, { rootMargin: '200% 0px' });
+            near.observe(track);
         })();
     </script>
 </body>

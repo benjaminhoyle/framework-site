@@ -214,6 +214,38 @@ body {
     line-height: 1.5;
 }
 
+/* A caption title that links to its product. The overlay ignores the pointer
+   so a swipe over the stage always scrolls the page; the link takes it back,
+   and a hidden card (visibility: hidden) takes nothing. The chevron says it
+   goes somewhere; the underline comes on hover and focus. */
+.fa-caption h2 a,
+.fa-step h2 a {
+    pointer-events: auto;
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+}
+
+.fa-caption h2 a::after,
+.fa-step h2 a::after {
+    content: "";
+    display: inline-block;
+    width: 0.36em;
+    height: 0.36em;
+    margin-left: 0.3em;
+    border-top: 2.5px solid currentColor;
+    border-right: 2.5px solid currentColor;
+    transform: rotate(45deg);
+    vertical-align: 0.14em;
+}
+
+.fa-caption h2 a:hover,
+.fa-caption h2 a:focus-visible,
+.fa-step h2 a:hover,
+.fa-step h2 a:focus-visible {
+    border-bottom-color: currentColor;
+}
+
 .fa-pin-label {
     position: absolute;
     padding: 5px 10px;
@@ -228,27 +260,6 @@ body {
     opacity: 0;
     will-change: opacity, transform;
 }
-
-/* ------------------------------------------------------------ progress rail */
-
-.fa-rail {
-    position: absolute;
-    right: 22px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-}
-
-.fa-rail span {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--rule);
-}
-
-.fa-rail span.is-on { background: var(--ink); }
 
 /* ------------------------------------------------------------------ mobile */
 
@@ -282,22 +293,6 @@ body {
         border-color: transparent;
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
-    }
-
-    /*
-     * The rail moves off the model's right edge and lies along the bottom of
-     * the canvas band instead. On a phone the right edge is where a pin label
-     * ends up once it has been flipped inward, and two small things fighting
-     * over the same 20px reads as a bug.
-     */
-    .fa-rail {
-        top: auto;
-        right: auto;
-        left: 50%;
-        bottom: calc(var(--fa-caption-band, 200px) + 12px);
-        transform: translateX(-50%);
-        flex-direction: row;
-        gap: 7px;
     }
     .fa-intro, .fa-outro { padding: 14vh 20px; }
 }

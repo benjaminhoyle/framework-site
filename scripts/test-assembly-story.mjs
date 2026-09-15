@@ -180,7 +180,7 @@ const PAGE_FILE = path.join(ROOT, "assembly-lab.html");
 const page = fs.readFileSync(PAGE_FILE, "utf8");
 const PAGE_STRINGS = [...page.matchAll(/data-copy="/g)].length;
 const captionsWithAlt = story.captions.filter((caption) => caption.photoAlt).length;
-const preloaded = [...page.matchAll(/href="([^"]*\/modules\/([a-z0-9_]+)\.json)"/g)];
+const preloaded = [...page.matchAll(/href="([^"]*\/modules\/([a-z0-9_]+)\.json)(?:\?v=\d+)?"/g)];
 const preloadedIds = preloaded.map((m) => m[2]);
 for (const moduleId of bundles.keys()) {
   check(`${moduleId} is preloaded by the page`, preloadedIds.includes(moduleId),

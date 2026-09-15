@@ -124,6 +124,18 @@ window.FrameworkDesignerRenderer = (function () {
    */
   const FACE_NORMAL_AGREEMENT = 0.866; // cos 30 degrees
 
+  /*
+   * The light rig: a key, a rim, and the direction the sky/ground gradient runs
+   * along. Fixed in world space, which suits /builder: it only ever looks from
+   * front-right-above, where the key falls on exactly the faces it sees. A
+   * caller that takes the camera somewhere the builder never goes -- under a
+   * shelf, say -- can turn the rig with it through setLighting(), so the faces
+   * towards the camera are lit as they are in the builder instead of being
+   * left in the ground term, which drew a board's underside brown.
+   */
+  // `weights` is how much of each term a face gets: ambient, key, rim, sky.
+  const LIGHTS = { key: [0.42, -0.55, 0.72], rim: [-0.60, 0.35, 0.25], up: [0, 0, 1], weights: [0.62, 0.26, 0.07, 0.12] };
+
   // Two soft directional terms plus a sky/ground gradient. Enough to separate
   // a shelf top from its front edge without the cost or the shadow-acne risk
   // of anything physically based.
@@ -152,9 +164,32 @@ window.FrameworkDesignerRenderer = (function () {
     // Unit vector from the scene towards the camera, to orient a face normal:
     // culling is off, so a face may be seen from either side.
     "uniform vec3 uToCamera;",
+    // The light rig, LIGHTS unless a caller has turned it.
+    "uniform vec3 uKey;",
+    "uniform vec3 uRim;",
+    "uniform vec3 uUp;",
+    "uniform vec4 uWeights;",
+    // A lamp's light, when a caller has switched one on (setLamp): the bulb
+    // and how bright (w, 0 for none); the shade's opening radius, the heights
+    // of its bottom and top openings, and the height nothing below is lit
+    // past; the light's colour and, in w, its reach in mm.
+    "uniform vec4 uLamp;",
+    "uniform vec4 uLampShape;",
+    "uniform vec4 uLampColor;",
+    // A lit shade's inside colour, with 1 in w while it applies, and the eye,
+    // which is what tells the inside of a shade from its outside.
+    "uniform vec4 uGlow;",
+    "uniform vec3 uEye;",
     "varying vec3 vNormal;",
     "varying vec3 vWorld;",
     "void main() {",
+    // The inside of a lit shade is the light itself: flat, whatever faces it.
+    // Its normals point out from the lamp's axis, so a wall whose normal points
+    // away from the eye is being seen from inside.
+    "  if (uGlow.w > 0.0 && dot(vNormal, uEye - vWorld) < 0.0) {",
+    "    gl_FragColor = vec4(uGlow.rgb, uAlpha);",
+    "    return;",
+    "  }",
     "  vec3 n = normalize(vNormal);",
     "#if defined(FACE_NORMALS) && defined(GL_FRAGMENT_PRECISION_HIGH)",
     "  vec3 face = cross(dFdx(vWorld), dFdy(vWorld));",
@@ -165,10 +200,10 @@ window.FrameworkDesignerRenderer = (function () {
     "    if (dot(face, n) < " + FACE_NORMAL_AGREEMENT.toFixed(3) + ") n = face;",
     "  }",
     "#endif",
-    "  float key = max(dot(n, vec3(0.42, -0.55, 0.72)), 0.0);",
-    "  float rim = max(dot(n, vec3(-0.60, 0.35, 0.25)), 0.0);",
-    "  float sky = 0.5 + 0.5 * n.z;",
-    "  float light = 0.62 + 0.26 * key + 0.07 * rim + 0.12 * sky;",
+    "  float key = max(dot(n, uKey), 0.0);",
+    "  float rim = max(dot(n, uRim), 0.0);",
+    "  float sky = 0.5 + 0.5 * dot(n, uUp);",
+    "  float light = uWeights.x + uWeights.y * key + uWeights.z * rim + uWeights.w * sky;",
     "  vec3 rgb = uColor * mix(1.0, light, uLit);",
     "  if (uHatch > 0.0) {",
     // Diagonal, because every edge in an isometric shelf is horizontal,
@@ -176,6 +211,22 @@ window.FrameworkDesignerRenderer = (function () {
     // reads as part of the object.
     "    float band = fract((gl_FragCoord.x + gl_FragCoord.y) / uHatch);",
     "    rgb *= 0.92 + 0.08 * step(0.5, band);",
+    "  }",
+    // The lamp: light from the bulb reaches a point only if the straight line
+    // between them leaves the shade through one of its open ends, which is
+    // where that line crosses the opening's height. Brightest on the axis and
+    // fading to nothing at the opening's rim, so the pool has no hard edge;
+    // cut off below the floor, turned by the face and falling off with
+    // distance. There are no shadows.
+    "  if (uLamp.w > 0.0) {",
+    "    vec3 d = vWorld - uLamp.xyz;",
+    "    float leave = d.z < -0.5 ? (uLampShape.y - uLamp.z) / d.z : (d.z > 0.5 ? (uLampShape.z - uLamp.z) / d.z : 0.0);",
+    "    float through = (leave > 0.0 && leave <= 1.0) ? 1.0 - smoothstep(uLampShape.x * 0.45, uLampShape.x, length(d.xy) * leave) : 0.0;",
+    "    through *= step(uLampShape.w - 2.0, vWorld.z);",
+    "    float dist = max(length(d), 1.0);",
+    "    float facing = max(dot(n, -d / dist), 0.0);",
+    "    float fall = 1.0 / (1.0 + dist * dist / (uLampColor.w * uLampColor.w));",
+    "    rgb += uColor * uLampColor.rgb * (uLamp.w * through * facing * fall);",
     "  }",
     "  gl_FragColor = vec4(rgb, uAlpha);",
     "}"
@@ -266,7 +317,12 @@ window.FrameworkDesignerRenderer = (function () {
       viewMode: "iso",
       // Console-only; ignored in the two locked views. distanceMm 0 means "work
       // it out from the design", which is what a freshly loaded design wants.
-      orbit: { azimuthDeg: 45, elevationDeg: 24, distanceMm: 0 },
+      orbit: { azimuthDeg: 45, elevationDeg: 24, distanceMm: 0, fovDeg: ORBIT_FOV_DEG },
+      // null is LIGHTS, fixed in the world; see setLighting().
+      lighting: null,
+      // A lamp's light, and lit shades' colours by set; see setLamp().
+      lamp: null,
+      glows: new Map(),
       pixelRatio: 1,
       width: 1,
       height: 1,
@@ -340,7 +396,16 @@ window.FrameworkDesignerRenderer = (function () {
         color: gl.getUniformLocation(program, "uColor"),
         alpha: gl.getUniformLocation(program, "uAlpha"),
         lit: gl.getUniformLocation(program, "uLit"),
-        hatch: gl.getUniformLocation(program, "uHatch")
+        hatch: gl.getUniformLocation(program, "uHatch"),
+        key: gl.getUniformLocation(program, "uKey"),
+        rim: gl.getUniformLocation(program, "uRim"),
+        up: gl.getUniformLocation(program, "uUp"),
+        weights: gl.getUniformLocation(program, "uWeights"),
+        lamp: gl.getUniformLocation(program, "uLamp"),
+        lampShape: gl.getUniformLocation(program, "uLampShape"),
+        lampColor: gl.getUniformLocation(program, "uLampColor"),
+        glow: gl.getUniformLocation(program, "uGlow"),
+        eye: gl.getUniformLocation(program, "uEye")
       }
     };
   }
@@ -559,7 +624,8 @@ window.FrameworkDesignerRenderer = (function () {
     const radius = state.sceneRadius || 1500;
     const near = Math.max(20, distance - radius * 2);
     const far = distance + radius * 4;
-    const halfV = (ORBIT_FOV_DEG * Math.PI) / 360;
+    const fov = orbit.fovDeg || ORBIT_FOV_DEG;
+    const halfV = (fov * Math.PI) / 360;
     const focal = 1 / Math.tan(halfV);
     const projection = new Float32Array([
       focal / aspect, 0, 0, 0,
@@ -575,7 +641,7 @@ window.FrameworkDesignerRenderer = (function () {
       eye,
       near,
       far,
-      fovDeg: ORBIT_FOV_DEG,
+      fovDeg: fov,
       distance,
       perspective: true
     };
@@ -587,7 +653,7 @@ window.FrameworkDesignerRenderer = (function () {
     const halfWidth = Math.max(60, (bounds[3] - bounds[0]) / 2);
     const halfHeight = Math.max(60, (bounds[5] - bounds[2]) / 2);
     const halfDepth = Math.max(30, (bounds[4] - bounds[1]) / 2);
-    const halfV = (ORBIT_FOV_DEG * Math.PI) / 360;
+    const halfV = ((state.orbit.fovDeg || ORBIT_FOV_DEG) * Math.PI) / 360;
     const halfH = Math.atan(Math.tan(halfV) * aspect);
     const radius = Math.hypot(halfWidth, halfHeight, halfDepth);
     return ORBIT_PADDING * (radius + Math.max(halfHeight / Math.tan(halfV), halfWidth / Math.tan(halfH)));
@@ -648,6 +714,21 @@ window.FrameworkDesignerRenderer = (function () {
     return resolved;
   }
 
+  /** A lit shade's colours as the shader wants them, worked out once per set. */
+  function glowFor(state, glow) {
+    const key = `${glow.inside}|${glow.outside || ""}|${glow.outsideLit}`;
+    let resolved = state.glows.get(key);
+    if (!resolved) {
+      resolved = {
+        inside: hexToRgb(glow.inside),
+        outside: glow.outside ? hexToRgb(glow.outside) : null,
+        outsideLit: glow.outsideLit == null ? 1 : glow.outsideLit
+      };
+      state.glows.set(key, resolved);
+    }
+    return resolved;
+  }
+
   function drawBatches(state, camera, instance, geometry, batches, alpha, overrideColor) {
     const gl = state.gl;
     const mesh = state.meshProgram;
@@ -669,6 +750,20 @@ window.FrameworkDesignerRenderer = (function () {
     gl.uniformMatrix4fv(mesh.uniforms.modelViewProjection, false, mvp);
     gl.uniformMatrix4fv(mesh.uniforms.model, false, model);
     gl.uniform3f(mesh.uniforms.toCamera, -camera.forward[0], -camera.forward[1], -camera.forward[2]);
+    gl.uniform3f(mesh.uniforms.eye, camera.eye[0], camera.eye[1], camera.eye[2]);
+    const lamp = state.lamp;
+    if (lamp && !placeholder) {
+      gl.uniform4f(mesh.uniforms.lamp, lamp.bulb[0], lamp.bulb[1], lamp.bulb[2], lamp.strength);
+      gl.uniform4fv(mesh.uniforms.lampShape, lamp.shape);
+      gl.uniform4f(mesh.uniforms.lampColor, lamp.color[0], lamp.color[1], lamp.color[2], lamp.reach);
+    } else {
+      gl.uniform4f(mesh.uniforms.lamp, 0, 0, 0, 0);
+    }
+    const lights = state.lighting || LIGHTS;
+    gl.uniform3fv(mesh.uniforms.key, lights.key);
+    gl.uniform3fv(mesh.uniforms.rim, lights.rim);
+    gl.uniform3fv(mesh.uniforms.up, lights.up);
+    gl.uniform4fv(mesh.uniforms.weights, lights.weights || LIGHTS.weights);
     gl.uniformMatrix3fv(mesh.uniforms.normalMatrix, false, normalMatrix(instance));
     gl.uniform1f(mesh.uniforms.alpha, alpha);
     gl.uniform1f(mesh.uniforms.lit, placeholder ? OMITTED_LIT : 1);
@@ -676,12 +771,18 @@ window.FrameworkDesignerRenderer = (function () {
     gl.enableVertexAttribArray(mesh.attributes.position);
     gl.enableVertexAttribArray(mesh.attributes.normal);
 
+    const glow = instance.glow && !placeholder && !overrideColor ? glowFor(state, instance.glow) : null;
     for (const batch of batches) {
-      const color = overrideColor
+      // A lit lamp's shade: its own outside colour, and its inside glowing.
+      const shade = glow && batch.role === ROLE_PAPER ? glow : null;
+      const color = (shade && shade.outside)
+        || overrideColor
         || (placeholder ? state.mutedColor : null)
         || palette[batch.role]
         || palette[0];
       gl.uniform3fv(mesh.uniforms.color, color);
+      gl.uniform4f(mesh.uniforms.glow, shade ? shade.inside[0] : 0, shade ? shade.inside[1] : 0, shade ? shade.inside[2] : 0, shade ? 1 : 0);
+      gl.uniform1f(mesh.uniforms.lit, shade ? shade.outsideLit : placeholder ? OMITTED_LIT : 1);
       gl.bindBuffer(gl.ARRAY_BUFFER, batch.positions);
       gl.vertexAttribPointer(mesh.attributes.position, 3, gl.UNSIGNED_SHORT, false, 0, 0);
       gl.bindBuffer(gl.ARRAY_BUFFER, batch.normals);
@@ -1083,6 +1184,46 @@ window.FrameworkDesignerRenderer = (function () {
           state.orbit.elevationDeg = Math.max(-ORBIT_MAX_ELEVATION_DEG, Math.min(ORBIT_MAX_ELEVATION_DEG, orbit.elevationDeg));
         }
         if (orbit.distanceMm != null) state.orbit.distanceMm = orbit.distanceMm;
+        // The lens. 38 degrees is the console's default; a long lens stood
+        // further back keeps close-up rails parallel instead of converging.
+        if (orbit.fovDeg != null) state.orbit.fovDeg = Math.max(8, Math.min(90, orbit.fovDeg));
+        requestFrame(state);
+      },
+
+      /**
+       * Turn the light rig, or pass null to put it back.
+       *
+       * `{ key, rim, up }` in world space, the same three vectors LIGHTS holds,
+       * and optionally `weights`, its four term strengths. /builder never calls
+       * this; it is for a camera that looks from where the fixed rig was not
+       * placed for, and for a close-up that wants a tube's faces told apart.
+       */
+      /**
+       * A lamp's light, or null for none. The light leaves a bulb through a
+       * shade's two open ends, so it reaches only what lies inside those two
+       * cones: `{ bulbMm, radiusMm, belowMm, aboveMm, floorMm, color, reachMm,
+       * strength }`, with the openings given as heights, nothing lit below
+       * `floorMm` (the board under the lamp is in the way) and the light
+       * falling off over `reachMm`. No shadows. /builder never calls this.
+       * An instance with `glow: { inside, outside, outsideLit }` draws its
+       * shade's inside flat in `inside`, and its outside in `outside`.
+       */
+      setLamp(lamp) {
+        state.lamp = lamp ? {
+          bulb: lamp.bulbMm.slice(),
+          shape: new Float32Array([lamp.radiusMm, lamp.belowMm, lamp.aboveMm, lamp.floorMm == null ? -10000 : lamp.floorMm]),
+          color: hexToRgb(lamp.color || "#ffffff"),
+          reach: lamp.reachMm || 600,
+          strength: lamp.strength == null ? 1 : lamp.strength
+        } : null;
+        requestFrame(state);
+      },
+
+      setLighting(rig) {
+        state.lighting = rig ? {
+          key: rig.key.slice(), rim: rig.rim.slice(), up: rig.up.slice(),
+          weights: (rig.weights || LIGHTS.weights).slice()
+        } : null;
         requestFrame(state);
       },
 
@@ -1192,5 +1333,5 @@ window.FrameworkDesignerRenderer = (function () {
     };
   }
 
-  return { create, VIEW_DIRECTION };
+  return { create, VIEW_DIRECTION, LIGHTS };
 })();

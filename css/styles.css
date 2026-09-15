@@ -1,5 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@300;400;500;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap');
 
 * {
     margin: 0;
@@ -478,62 +477,86 @@ header nav ul li a.active {
 /* ---------------------------------------------------------------- footer
  * Injected by js/site.js on every page except designer.html. It is chrome,
  * like the header, so it takes the header's horizontal inset (10%, 7% on a
- * phone) rather than any one page's content column. One layout at every
- * width: a rule across the page, the contact lines left-aligned with WhatsApp
- * first and largest because it is the channel people actually use, email and
- * Instagram sharing a line where there is room, then the legal line, small
- * and faint, last. Nothing is centred.
+ * phone) rather than any one page's content column. Nothing is centred.
  *
- * Colours come from the tokens css/pages.css defines on /colours and /how and
- * fall back to the same values on every other page, so the footer is the same
- * colour everywhere.
+ * Two sizes and two greys, the body and small roles of css/pages.css, and
+ * nothing else. The last version ranked WhatsApp by making the number 22px
+ * semibold beside a grey "WhatsApp:" at 17, with the other two lines at 15 and
+ * the legal line at 13: four sizes in five lines, a label and its value in
+ * two different voices, and a number that shouted. So every contact is now
+ * the same shape, a small grey name over the value in ink, and WhatsApp ranks
+ * by coming first. The mark and "Made in Nairobi" hold the left, so the block
+ * reads as the company rather than as a contact form.
  *
- * The markup order in site.js is legal, email, WhatsApp, Instagram, then a
- * keyword line. The rules marked "current markup" reorder that with `order`
- * and hide the keyword line; they can go once site.js carries the markup in
- * framework-marketing/research/footer-fix.md, which the class rules already
- * cover.
+ * Colours come from the tokens css/pages.css defines and fall back to the
+ * same values on pages that do not load it, so the footer is one colour
+ * everywhere.
  */
 
 footer {
     margin-top: 40px;
-    padding: 34px 10% 56px;
+    padding: 44px 10% 48px;
     border-top: 1px solid var(--rule, #e6eae8);
     background: var(--paper, #fff);
     color: var(--ink, #1b1f1e);
     font-family: 'Red Hat Display', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.5;
     text-align: left;
 }
 
 .footer-content {
-    display: block;
-    padding: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+        "brand contact"
+        "legal legal";
+    column-gap: 72px;
+    row-gap: 40px;
+    align-items: start;
 }
 
-/* The contact lines: a wrapping row, so email and Instagram share a line
-   where there is room and stack where there is not, with no breakpoint. */
-.footer-info,
-.footer-contact {
+.footer-brand {
+    grid-area: brand;
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    column-gap: 28px;
-    row-gap: 6px;
-    text-align: left;
-    line-height: 1.5;
-}
-
-.footer-info p,
-.footer-contact p,
-.footer-legal {
+    align-items: center;
+    gap: 14px;
     margin: 0;
     color: var(--muted, #656e6b);
 }
 
-footer a,
-footer .text-link {
+.footer-brand img {
+    display: block;
+    width: 30px;
+    height: auto;
+}
+
+/* One shape for every contact: a small grey name over the value. They sit in
+   a row that wraps, so a tablet breaks them over two lines with no breakpoint,
+   and they are pushed to the right edge where there is room. */
+.footer-contact {
+    grid-area: contact;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 18px 56px;
+    margin: 0;
+}
+
+.footer-contact div { min-width: 0; }
+
+.footer-contact dt {
+    margin: 0 0 2px;
+    font-size: 14px;
+    color: var(--muted, #656e6b);
+}
+
+.footer-contact dd {
+    margin: 0;
+    font-size: 17px;
+}
+
+footer a {
     color: var(--ink, #1b1f1e);
     text-decoration: none;
     border-bottom: 1px solid transparent;
@@ -541,54 +564,35 @@ footer .text-link {
 }
 
 footer a:hover,
-footer a:focus,
-footer .text-link:hover {
+footer a:focus {
     color: var(--ink, #1b1f1e);
     border-bottom-color: var(--ink, #1b1f1e);
 }
 
-/* WhatsApp: its own row, first, the number large and in ink. */
-.footer-info p:nth-child(3), /* current markup */
-.footer-wa {
-    order: -1;
-    flex-basis: 100%;
-    font-size: 17px;
-    margin-bottom: 6px;
-}
-
-.footer-info p:nth-child(3) a, /* current markup */
-.footer-wa a {
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-}
-
-/* The legal line: last, small, faint. */
-.footer-info p:first-child, /* current markup */
 .footer-legal {
-    order: 1;
-    flex-basis: 100%;
-    margin-top: 22px;
-    font-size: 13px;
+    grid-area: legal;
+    margin: 0;
+    font-size: 14px;
     /* #98a29e is 2.6:1 on white; the same green-grey two steps darker is 4.7:1 */
     color: #6d7672;
-}
-
-/* The keyword line: four search phrases with nothing behind them. Hidden
-   here until it is removed from site.js. */
-.footer-keywords {
-    display: none;
 }
 
 @media (max-width: 768px) {
     footer {
         /* the bottom clears the fixed WhatsApp button on shelving.html */
-        padding: 30px 7% 84px;
+        padding: 36px 7% 84px;
     }
 
-    .footer-info p:nth-child(3) a,
-    .footer-wa a {
-        font-size: 20px;
+    .footer-content {
+        grid-template-columns: 1fr;
+        grid-template-areas: "brand" "contact" "legal";
+        row-gap: 28px;
+    }
+
+    .footer-contact {
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 16px;
     }
 }
 

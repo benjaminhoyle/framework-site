@@ -610,7 +610,7 @@ for (const piece of story.pieces) bundles.set(piece.moduleId, "/assets/shelving/
 for (const [moduleId, base] of bundles) {
   check(`${moduleId}.json is on disk`, fs.existsSync(path.join(ROOT, base.replace(/^\//, ""), `${moduleId}.json`)));
 }
-const preloaded = [...page.matchAll(/href="([^"]*\/modules\/([a-z0-9_]+)\.json)"/g)].map((m) => m[2]);
+const preloaded = [...page.matchAll(/href="([^"]*\/modules\/([a-z0-9_]+)\.json)(?:\?v=\d+)?"/g)].map((m) => m[2]);
 for (const moduleId of bundles.keys()) {
   check(`${moduleId} is preloaded by the page`, preloaded.includes(moduleId));
 }

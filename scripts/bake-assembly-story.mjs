@@ -94,6 +94,72 @@ const pieces = ordered.map((instance, index) => {
   };
 });
 
+/*
+ * Bookends.
+ *
+ * They are not pieces: a design carries a count, and the engine works out which
+ * ends they hang on from where the units stand. So they are baked the way
+ * /builder draws them (bookendSceneEntries in js/builder/app.js): the pocket in
+ * the bookend's top lands on the anchor and is the point it turns about, so the
+ * translation is the anchor less that pocket and the pivot is the pocket.
+ *
+ * Written only when the design asks for some, so a story without bookends
+ * bakes to exactly the file it always did.
+ */
+const accessory = (catalog.accessories || {}).bookend;
+const pocket = (accessory && accessory.attach && accessory.attach.anchorLocalMm) || [0, 0, 0];
+function bookendEntry(placement, id) {
+  const t = [0, 1, 2].map((axis) => round(placement.worldMm[axis] - pocket[axis]));
+  const size = accessory.bboxMm;
+  // The bookend's own box, turned about its pocket.
+  const corners = [[size[0], size[1]], [size[3], size[4]]].map(([x, y]) => {
+    const radians = placement.rotationDeg * Math.PI / 180;
+    const dx = x - pocket[0];
+    const dy = y - pocket[1];
+    return [
+      placement.worldMm[0] + dx * Math.cos(radians) - dy * Math.sin(radians),
+      placement.worldMm[1] + dx * Math.sin(radians) + dy * Math.cos(radians)
+    ];
+  });
+  return {
+    id,
+    moduleId: "bookend",
+    label: accessory.label,
+    on: [placement.instanceId],
+    end: placement.end,
+    anchor: placement.worldMm.map(round),
+    t,
+    rot: placement.rotationDeg,
+    pivot: [pocket[0], pocket[1]],
+    bounds: box([
+      Math.min(corners[0][0], corners[1][0]), Math.min(corners[0][1], corners[1][1]), t[2] + size[2],
+      Math.max(corners[0][0], corners[1][0]), Math.max(corners[0][1], corners[1][1]), t[2] + size[5]
+    ]),
+    priceKsh: accessory.priceKsh == null ? null : accessory.priceKsh
+  };
+}
+
+const bookends = engine.bookendPlacements(catalog, state).map((placement, index) => bookendEntry(placement, `bookend_${index + 1}`));
+
+/*
+ * Every end of the design that can take a bookend, whichever the count would
+ * fill. /builder fills from the bottom up, and a story may want a different set
+ * of the same ends (the right-hand end of every shelf, say), so it chooses from
+ * these by name. Named by the unit and by which side of the design it is on,
+ * not by the anchor's own `end`, which is module-local and reads "left" on a
+ * unit turned round.
+ */
+// Which side of its own unit, not of the design: the slim unit's right-hand
+// end is left of the whole shelf's middle.
+const unitCentre = (instanceId) => {
+  const b = engine.instanceBounds(catalog, state.instances.find((instance) => instance.id === instanceId));
+  return (b[0] + b[3]) / 2;
+};
+const ends = bookends.length
+  ? engine.legalBookendAnchors(catalog, state).map((anchor) =>
+    bookendEntry(anchor, `end_${anchor.instanceId}_${anchor.worldMm[0] > unitCentre(anchor.instanceId) ? "right" : "left"}`))
+  : [];
+
 const bounds = box(engine.designBounds(catalog, state));
 const modules = [...new Set(pieces.map((p) => p.moduleId))].sort();
 const priced = pieces.filter((p) => p.priceKsh != null);
@@ -137,7 +203,15 @@ const lines = [
   `    totalKsh: ${total},`,
   "    pieces: [",
   ...pieces.map((piece, index) => "        " + JSON.stringify(piece) + (index < pieces.length - 1 ? "," : "")),
-  "    ]",
+  bookends.length ? "    ]," : "    ]",
+  ...(bookends.length ? [
+    "    bookends: [",
+    ...bookends.map((bookend, index) => "        " + JSON.stringify(bookend) + (index < bookends.length - 1 ? "," : "")),
+    "    ],",
+    "    ends: [",
+    ...ends.map((end, index) => "        " + JSON.stringify(end) + (index < ends.length - 1 ? "," : "")),
+    "    ]"
+  ] : []),
   "};",
   ""
 ];
@@ -151,5 +225,8 @@ console.log("  build order:");
 for (const piece of pieces) {
   console.log(`    ${piece.step}. ${piece.label.padEnd(22)} ${piece.on.length ? "on " + piece.on.join(" + ") : "on the floor"}`
     + `${piece.joints.length ? `  (${piece.joints.length} joints)` : ""}`);
+}
+for (const bookend of bookends) {
+  console.log(`    +  ${bookend.label.padEnd(22)} under ${bookend.on[0]}, ${bookend.end} end, anchor ${bookend.anchor.join(",")}`);
 }
 console.log(`  -> ${path.relative(ROOT, out)}`);

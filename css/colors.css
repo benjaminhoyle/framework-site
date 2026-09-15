@@ -171,65 +171,48 @@
 
 /* ---------------------------------------------------------------- add-ons */
 
-.co-addons ul {
-    list-style: none;
-    padding: 0;
-    margin: clamp(28px, 4vw, 44px) 0 0;
-    display: grid;
-    gap: clamp(24px, 3vw, 36px);
+/* The add-ons story's track. css/assembly.css is the track, the stage and the
+   captions; this is only how long it is and how wide. It runs edge to edge,
+   out of .co's column, by margins and not a transform (a transformed ancestor
+   stops the stage sticking). Shorter than /how's 450vh: five beats, not
+   seven, and this page is one scroll. */
+.co-track {
+    --fa-track-height: 540vh;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
 }
 
-/* One card shape at every width: the picture, then the name, then the
-    words. A phone used to get the picture in a 132px column beside the text,
-    which was too small to read a bookend or a lampshade in; the picture now
-    takes the column, capped so it does not swallow the page. */
-.co-addon {
-    display: grid;
-    gap: 14px;
-    align-content: start;
+@media (max-width: 760px) {
+    .co-track { --fa-track-height: 480vh; }
 }
 
-.co-addon > a:first-child { max-width: 340px; }
+.co > .co-track-shown { margin-top: 18px; }
 
-.co-addon img,
-.co-addon video {
+/* /addons lands here (netlify.toml). The site header scrolls away with the
+   page, so the offset is only breathing room above the heading. */
+.co-addons { scroll-margin-top: 24px; }
+
+/* The add-ons open a second part of the page, so their heading is set in the
+   title role, the size of the page's own h1, while staying an h2: the page
+   still has one h1. */
+.pg .co-title {
+    font-size: var(--t-title);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    max-width: 18ch;
+    margin-bottom: 18px;
+}
+
+.co-track-still {
     display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1 / 1;
-    object-fit: cover;
-    border-radius: 12px;
-    background: var(--wash);
+    max-width: min(520px, 100%);
+    margin: 0 auto;
 }
 
-.co-addon > div { align-self: start; }
-
-.co-addon a { display: block; color: inherit; text-decoration: none; }
-
-.co-addon b { display: block; margin-bottom: 4px; }
-
-.co-addon p { margin: 0; }
-
-.co-addon .pg-shown { margin-top: 8px; }
-
-.co-addon a:hover b, .co-addon a:focus b { color: var(--accent); }
-
-/* The Bookend's picture is a short clip of the mechanism, the one add-on whose
-   whole point is one. It is rendered square, to the same shape as the two
-   photographs beside it, and it is fitted rather than covered so that a clip
-   of another ratio would letterbox on the wash rather than lose its top and
-   its bottom. The poster is the seated frame, so the card is complete before
-   the clip is fetched, and complete if it never is. */
-.co-addon .co-clip { object-fit: contain; }
-
-/* One column on a phone, two on a tablet, three across in one row on a laptop.
-   Three cards in a two-column list leave one stranded on a second row, so the
-   three-column band starts where three of them still read. */
-@media (min-width: 560px) {
-    .co-addons ul { grid-template-columns: repeat(2, 1fr); }
+.co .pg-shown a,
+.co-feature-text a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
-@media (min-width: 860px) {
-    .co-addons ul { grid-template-columns: repeat(3, 1fr); gap: 32px; }
-    .co-addon > a:first-child { max-width: none; }
-}

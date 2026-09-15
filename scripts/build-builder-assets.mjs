@@ -625,7 +625,209 @@ function preparePart(primitive) {
 
   let part = { positions, normals, indices, vertexCount };
   if (indices.length / 3 > DECIMATE_MIN_TRIANGLES) part = decimate(positions, normals, indices) || part;
+  // Last, so it sees what decimation left behind as well as what Rhino sent.
+  if (normalsDisagree(part)) {
+    const fixed = hardEdgeNormals(part);
+    // Kept only if it worked. Some round tubes (the legs of a Broad, Compact or
+    // Corner base) are meshed so their faces twist across the tube; no normals
+    // taken from those faces agree with them, and the tube's own smoothed
+    // normals are the better picture of it, so those stay exactly as they were.
+    if (!normalsDisagree(fixed)) part = fixed;
+  }
   return part;
+}
+
+/*
+ * Shading normals that point where the faces point.
+ *
+ * A square rail lit with smoothed normals shades as if its corners were round:
+ * each flat face becomes a gradient swinging through ninety degrees across
+ * 20mm, and where rails cross under a board the bar reads as bent and wedge
+ * shaped. That was the "distortion" on /customize, and it was on /builder too.
+ * Two things made those normals. Decimation welds a box's per-face corners into
+ * one vertex and recomputeNormals() averages across the corner. And some rails
+ * arrive from Rhino already welded that way: a Wide base's right-hand end rails
+ * were never decimated, yet 85% of their surface was lit by a normal more than
+ * 30 degrees off its own face. The renderer only falls back to the true face
+ * normal past 30 degrees, so a face came out part flat and part gradient.
+ *
+ * So a part whose normals disagree with its faces over more than 5% of its area
+ * has them worked out again from the faces, split along hard edges. Parts whose
+ * normals are already right are left exactly as they were. Across the catalogue
+ * the steel lit off its faces went from 8.8% of its surface to 2.0%, for about
+ * 5% more geometry, gzipped.
+ */
+const NORMAL_AGREEMENT_COS = Math.cos((30 * Math.PI) / 180); // the renderer's FACE_NORMAL_AGREEMENT
+const NORMAL_DISAGREEMENT_SHARE = 0.05;
+// Faces meeting at less than this are one smooth surface. A leg's facets meet at
+// under 20 degrees and stay a round tube; a rail's faces meet at 90 and part.
+const HARD_EDGE_DEG = 50;
+
+/** Is more than NORMAL_DISAGREEMENT_SHARE of this part lit by a normal well off its face? */
+function normalsDisagree(part) {
+  const { positions, normals, indices } = part;
+  let disagreeing = 0;
+  let total = 0;
+  for (let i = 0; i < indices.length; i += 3) {
+    const a = indices[i] * 3;
+    const b = indices[i + 1] * 3;
+    const c = indices[i + 2] * 3;
+    const ux = positions[b] - positions[a];
+    const uy = positions[b + 1] - positions[a + 1];
+    const uz = positions[b + 2] - positions[a + 2];
+    const vx = positions[c] - positions[a];
+    const vy = positions[c + 1] - positions[a + 1];
+    const vz = positions[c + 2] - positions[a + 2];
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    const length = Math.hypot(nx, ny, nz); // twice the area
+    if (!length) continue;
+    let worst = 1;
+    for (const vertex of [a, b, c]) {
+      const size = Math.hypot(normals[vertex], normals[vertex + 1], normals[vertex + 2]) || 1;
+      // Either side: culling is off, and a mirrored placement turns a face over.
+      const agreement = Math.abs((nx * normals[vertex] + ny * normals[vertex + 1] + nz * normals[vertex + 2]) / (length * size));
+      worst = Math.min(worst, agreement);
+    }
+    if (worst < NORMAL_AGREEMENT_COS) disagreeing += length;
+    total += length;
+  }
+  return total > 0 && disagreeing / total > NORMAL_DISAGREEMENT_SHARE;
+}
+
+/**
+ * Normals from the faces: one per smooth surface meeting at each vertex.
+ *
+ * Vertices are welded by position first, to a micron, because a flat-shaded
+ * source repeats a corner once per face. Then, around each vertex, faces that
+ * share an edge there and meet within HARD_EDGE_DEG are grouped, and each group
+ * gets one area-weighted normal and its own copy of the vertex. Grouping along
+ * shared edges, rather than by each face's angle to its neighbours, is what
+ * keeps a smooth tube's vertices shared: every facet around a leg vertex is one
+ * group, so a leg costs no more than it did. Zero-area triangles are dropped.
+ */
+function hardEdgeNormals(part) {
+  const { positions, indices } = part;
+  const smooth = Math.cos((HARD_EDGE_DEG * Math.PI) / 180);
+  const faceCount = indices.length / 3;
+  const faceNormals = new Float32Array(faceCount * 3);
+  const faceAreas = new Float32Array(faceCount);
+  for (let face = 0; face < faceCount; face += 1) {
+    const a = indices[face * 3] * 3;
+    const b = indices[face * 3 + 1] * 3;
+    const c = indices[face * 3 + 2] * 3;
+    const ux = positions[b] - positions[a];
+    const uy = positions[b + 1] - positions[a + 1];
+    const uz = positions[b + 2] - positions[a + 2];
+    const vx = positions[c] - positions[a];
+    const vy = positions[c + 1] - positions[a + 1];
+    const vz = positions[c + 2] - positions[a + 2];
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    const length = Math.hypot(nx, ny, nz);
+    faceAreas[face] = length / 2;
+    if (length > 0) {
+      faceNormals[face * 3] = nx / length;
+      faceNormals[face * 3 + 1] = ny / length;
+      faceNormals[face * 3 + 2] = nz / length;
+    }
+  }
+  const live = (face) => faceAreas[face] > 1e-9;
+
+  const weldIndex = new Map();
+  const welded = new Uint32Array(positions.length / 3);
+  const weldSource = [];
+  for (let vertex = 0; vertex < welded.length; vertex += 1) {
+    const key = `${Math.round(positions[vertex * 3] * 1000)},${Math.round(positions[vertex * 3 + 1] * 1000)},${Math.round(positions[vertex * 3 + 2] * 1000)}`;
+    if (!weldIndex.has(key)) {
+      weldIndex.set(key, weldSource.length);
+      weldSource.push(vertex);
+    }
+    welded[vertex] = weldIndex.get(key);
+  }
+  const weldCount = weldSource.length;
+  const edgeKey = (p, q) => (p < q ? p * weldCount + q : q * weldCount + p);
+
+  const facesAt = Array.from({ length: weldCount }, () => []);
+  const facesOnEdge = new Map();
+  for (let face = 0; face < faceCount; face += 1) {
+    if (!live(face)) continue;
+    for (let corner = 0; corner < 3; corner += 1) {
+      const here = welded[indices[face * 3 + corner]];
+      const next = welded[indices[face * 3 + ((corner + 1) % 3)]];
+      if (!facesAt[here].includes(face)) facesAt[here].push(face);
+      const key = edgeKey(here, next);
+      if (!facesOnEdge.has(key)) facesOnEdge.set(key, []);
+      facesOnEdge.get(key).push(face);
+    }
+  }
+
+  const agree = (f, g) =>
+    faceNormals[f * 3] * faceNormals[g * 3] + faceNormals[f * 3 + 1] * faceNormals[g * 3 + 1] + faceNormals[f * 3 + 2] * faceNormals[g * 3 + 2] >= smooth;
+  const cornerVertex = new Int32Array(indices.length).fill(-1);
+  const outPositions = [];
+  const outNormals = [];
+  for (let vertex = 0; vertex < weldCount; vertex += 1) {
+    const faces = facesAt[vertex];
+    if (!faces.length) continue;
+    const parent = new Map(faces.map((face) => [face, face]));
+    const root = (face) => {
+      while (parent.get(face) !== face) face = parent.get(face);
+      return face;
+    };
+    for (const face of faces) {
+      for (let corner = 0; corner < 3; corner += 1) {
+        const p = welded[indices[face * 3 + corner]];
+        const q = welded[indices[face * 3 + ((corner + 1) % 3)]];
+        if (p !== vertex && q !== vertex) continue; // the edge opposite this vertex
+        for (const other of facesOnEdge.get(edgeKey(p, q))) {
+          if (other === face || !parent.has(other) || !agree(face, other)) continue;
+          const mine = root(face);
+          const theirs = root(other);
+          if (mine !== theirs) parent.set(mine, theirs);
+        }
+      }
+    }
+    const groups = new Map();
+    for (const face of faces) {
+      const key = root(face);
+      if (!groups.has(key)) groups.set(key, { normal: [0, 0, 0], faces: [] });
+      const group = groups.get(key);
+      for (let axis = 0; axis < 3; axis += 1) group.normal[axis] += faceNormals[face * 3 + axis] * faceAreas[face];
+      group.faces.push(face);
+    }
+    const source = weldSource[vertex] * 3;
+    for (const group of groups.values()) {
+      let normal = group.normal;
+      let length = Math.hypot(normal[0], normal[1], normal[2]);
+      if (!length) {
+        const first = group.faces[0] * 3;
+        normal = [faceNormals[first], faceNormals[first + 1], faceNormals[first + 2]];
+        length = Math.hypot(normal[0], normal[1], normal[2]) || 1;
+      }
+      const index = outPositions.length / 3;
+      outPositions.push(positions[source], positions[source + 1], positions[source + 2]);
+      outNormals.push(normal[0] / length, normal[1] / length, normal[2] / length);
+      for (const face of group.faces) {
+        for (let corner = 0; corner < 3; corner += 1) {
+          if (welded[indices[face * 3 + corner]] === vertex) cornerVertex[face * 3 + corner] = index;
+        }
+      }
+    }
+  }
+
+  const outIndices = [];
+  for (let face = 0; face < faceCount; face += 1) {
+    if (live(face)) outIndices.push(cornerVertex[face * 3], cornerVertex[face * 3 + 1], cornerVertex[face * 3 + 2]);
+  }
+  return {
+    positions: Float32Array.from(outPositions),
+    normals: Float32Array.from(outNormals),
+    indices: Uint32Array.from(outIndices),
+    vertexCount: outPositions.length / 3
+  };
 }
 
 function fillMissingNormals(positions, normals, indices) {

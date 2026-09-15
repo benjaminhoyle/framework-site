@@ -1,0 +1,18 @@
+{
+  "code": "3WU3UN2",
+  "title": "The Lantern Shelf",
+  "source": "https://framework.co.ke/builder/3WU3UN2",
+  "capturedAt": "2026-09-14",
+  "note": "Captured from data/builder-designs/3WU3UN2.json with one change: bookends 4, where the saved design has 0. The /customize add-ons story hangs four: the right-hand end of each of the three shelves and the left-hand end of the top one. A design carries a count and nothing else about them, and /builder would fill the four lowest ends; the bake writes every end that can take one, and the story chooses from those.",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "coral",
+    "bookends": 4,
+    "instances": [
+      { "id": "item_001", "type": "wide_base", "originWorldMm": [0, 0, 0], "rotationDeg": 0, "placement": { "method": "floor" } },
+      { "id": "item_002", "type": "wide_adapter", "originWorldMm": [0, 0, 422], "rotationDeg": 180, "placement": { "method": "socket", "on": ["item_001"] } },
+      { "id": "item_003", "type": "slim_extension", "originWorldMm": [0, 0, 724], "rotationDeg": 0, "placement": { "method": "socket", "on": ["item_002"] } },
+      { "id": "item_004", "type": "lamp", "originWorldMm": [1143, 257, 724], "rotationDeg": 225, "placement": { "method": "socket", "on": ["item_002"] } }
+    ]
+  }
+}

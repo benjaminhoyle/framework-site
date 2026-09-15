@@ -439,6 +439,20 @@ Every one of these is a response to a measurement, not a preference.
   bytes — inner walls are decimated far harder than outer ones to pay for it, on
   the grounds that the inside of a leg is visible, if at all, down an open tube
   end a few pixels across. `scripts/test-builder.mjs` asserts the roundness.
+- **Flat faces are lit flat.** A square rail lit with smoothed normals shades as
+  if its corners were round, and where rails cross under a board the bar reads
+  as bent and wedge-shaped; the close-up on /customize made it impossible to miss.
+  Decimation welded each box's corners and averaged the normals across them, and
+  some rails arrive from Rhino welded the same way (a Wide base's right-hand end
+  rails: 85% of their surface lit by a normal more than 30 degrees off its face).
+  The build now re-derives the normals of any part whose normals disagree with
+  its faces over more than 5% of its area, split along edges sharper than 50
+  degrees, so a rail's faces are flat and a leg is still round. The new normals
+  are kept only if they then agree: some round tubes (a Broad, Compact or Corner
+  base's legs) are meshed with faces that twist across the tube, and keep their
+  own smoothed normals. Parts that were already right are untouched. Steel lit
+  off its faces went from 8.8% of the catalogue's surface to 2.0%, for about 5%
+  more geometry gzipped; `scripts/test-builder.mjs` asserts it stays under 3%.
 - **Bundles are JSON with base64 buffers, not raw binary.** Netlify compresses by
   content type: `application/json` is brotli'd at the edge, `application/octet-stream`
   is served as-is. Base64 costs about a third more bytes before compression and

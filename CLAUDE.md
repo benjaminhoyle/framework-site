@@ -101,11 +101,28 @@ what has and has not been tested.
   placement engine and writes `js/assembly/curator-shelf.js`. Do not edit that
   file; re-run the bake after `make site` in the pipeline, alongside the builder
   assets. `js/assembly/story.js` holds the camera, timing and copy.
+- **`/customize` runs a third story**: The Lantern Shelf (3WU3UN2) taking four
+  bookends, three rows of books and its lamp, from `data/assembly/lantern.design.json`
+  baked to `js/assembly/lantern-shelf.js` (which carries `ends`, every end that
+  takes a bookend), directed by `js/assembly/story-colors.js`. It is the one
+  story on the angled (orbit) camera, with a long lens and the builder's light
+  rig turned with it; its product captions link to their products. Re-bake it
+  alongside the curator
+  (`node scripts/bake-assembly-story.mjs data/assembly/lantern.design.json`).
+  The books and objects are `scripts/build-shelf-props.mjs`
+  (writes one pack, `assets/assembly/props.json`, and `js/assembly/props.js`);
+  do not edit its output. The page loads the story's scripts only when the
+  track comes near, so none of it is on the critical path. `/addons` lands on
+  the section. Section 12 of `docs/assembly-animation.md` has the reasoning,
+  including the close-up and the bar that looked bent.
 - **The words come out as a text file and go back in**:
   `node scripts/assembly-copy.mjs`, then `--apply <file>`. Strings live in the
   `COPY` block of `story.js` and on `data-copy` attributes in the page.
-- **No `?v=`.** The bump script guards `/builder` against a half-stale CDN; this
-  page is not served publicly.
+- **Geometry is versioned like /builder's, and nothing else is.** Every scroll
+  story asks for module bundles at /builder's `?v=` (`GEOMETRY_VERSION` in
+  `js/assembly/scroll-story.js`, and the preloads in `how.html` and this page),
+  because the bundles are cached for a week. The bump script keeps all of them
+  in step and `scripts/test-builder.mjs` checks it.
 
 ```bash
 npm run dev     # http://127.0.0.1:8770/assembly  (?bench=1, ?tier=lite|still|photo)

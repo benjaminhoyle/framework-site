@@ -46,6 +46,13 @@ window.FrameworkAssembly = (function () {
     "use strict";
 
     var GEOMETRY_BASE = '/assets/shelving/modules';
+    /*
+     * /builder's asset version, kept equal to it by
+     * scripts/bump-builder-version.mjs. The bundles are cached for a week, so a
+     * story asking for them unversioned could draw last week's geometry after a
+     * rebuild; asking with the builder's number also shares the builder's cache.
+     */
+    var GEOMETRY_VERSION = '108';
 
     // --------------------------------------------------------------- tiers
 
@@ -255,7 +262,7 @@ window.FrameworkAssembly = (function () {
          * takes time order for itself.
          */
         var ordered = story.keys.slice().sort(function (a, b) { return a.at - b.at; });
-        return ordered.map(function (key) {
+        var resolved = ordered.map(function (key) {
             var stated = key.pieces || {};
             var full = {};
             Object.keys(carried).forEach(function (id) {
@@ -271,9 +278,74 @@ window.FrameworkAssembly = (function () {
                 at: key.at,
                 focus: key.focus || null,
                 padding: key.padding || null,
+                view: key.view || null,
                 pieces: full
             };
         });
+        resolved.tracks = resolveTracks(story);
+        return resolved;
+    }
+
+    /*
+     * Pieces with a timeline of their own.
+     *
+     * Keys ease each segment between two consecutive instants of the whole
+     * story, so every key stops every piece: a piece moving through a key that
+     * belongs to something else slows to nothing there and hurries after. That
+     * is fine for a handful of parts laid end to end and useless for a row of
+     * books arriving a moment apart, where each book's start is a key for all
+     * the others. So a story may give a piece a `track` instead: its own list of
+     * instants, each segment eased on its own (`ease`: inOut, the default, or
+     * in, out, linear), with an offset, a turn in degrees about the piece's
+     * pivot, and whether it is drawn. A tracked piece ignores the keys; the
+     * camera and every untracked piece go on exactly as before.
+     */
+    function resolveTracks(story) {
+        var tracks = {};
+        Object.keys(story.tracks || {}).forEach(function (id) {
+            var off = [0, 0, 0];
+            var turn = 0;
+            var hidden = false;
+            // Whether a lamp is on: it steps like `hidden`, and a lit piece
+            // paints with its `litPalette`.
+            var lit = false;
+            tracks[id] = story.tracks[id].slice().sort(function (a, b) { return a.at - b.at; }).map(function (point) {
+                if (point.off) off = point.off.slice();
+                if (point.turn != null) turn = point.turn;
+                if (point.hidden !== undefined) hidden = point.hidden === true;
+                if (point.lit !== undefined) lit = point.lit === true;
+                return { at: point.at, off: off, turn: turn, hidden: hidden, lit: lit, ease: point.ease || 'inOut' };
+            });
+        });
+        return tracks;
+    }
+
+    var EASES = {
+        inOut: easeInOutCubic,
+        in: function (t) { return t * t * t; },
+        out: function (t) { return 1 - Math.pow(1 - t, 3); },
+        linear: function (t) { return t; }
+    };
+
+    /** A tracked piece at one point: eased within its own segment. */
+    function sampleTrack(track, p) {
+        var first = track[0];
+        if (p <= first.at) return { off: first.off.slice(), turn: first.turn, hidden: first.hidden, lit: first.lit };
+        for (var i = 1; i < track.length; i += 1) {
+            var to = track[i];
+            if (p < to.at) {
+                var from = track[i - 1];
+                var t = (EASES[to.ease] || easeInOutCubic)((p - from.at) / Math.max(1e-9, to.at - from.at));
+                return {
+                    off: [lerp(from.off[0], to.off[0], t), lerp(from.off[1], to.off[1], t), lerp(from.off[2], to.off[2], t)],
+                    turn: lerp(from.turn, to.turn, t),
+                    hidden: from.hidden,
+                    lit: from.lit
+                };
+            }
+        }
+        var last = track[track.length - 1];
+        return { off: last.off.slice(), turn: last.turn, hidden: last.hidden, lit: last.lit };
     }
 
     /**
@@ -292,9 +364,21 @@ window.FrameworkAssembly = (function () {
     function fillCameras(keys) {
         keys.cameras = keys.filter(function (key) { return Boolean(key.focus); });
         if (!keys.cameras.length) throw new Error('assembly: no key states a focus box');
+        /*
+         * A story either never states a `view` or states one on its first
+         * camera key. The first kind is drawn in the builder's locked
+         * isometric, as /how and /assembly are. The second is drawn with the
+         * renderer's orbit camera, a perspective view at an azimuth and an
+         * elevation, so a shot can turn and look up from under a shelf; a
+         * camera key that states no view keeps the one before it.
+         */
+        var angled = Boolean(keys.cameras[0].view);
         keys.cameras.forEach(function (key, index) {
             if (!key.padding) key.padding = index ? keys.cameras[index - 1].padding : 1.05;
+            if (key.view && !angled) throw new Error('assembly: a view is stated at ' + key.at + ' but not on the first camera key');
+            if (angled && !key.view) key.view = keys.cameras[index - 1].view;
         });
+        keys.angled = angled;
         return keys;
     }
 
@@ -357,14 +441,150 @@ window.FrameworkAssembly = (function () {
                     lerp(from.off[0], to.off[0], t),
                     lerp(from.off[1], to.off[1], t),
                     lerp(from.off[2], to.off[2], t)
-                ]
+                ],
+                turn: 0
             };
         });
+        var tracks = keys.tracks || {};
+        Object.keys(tracks).forEach(function (id) { pieces[id] = sampleTrack(tracks[id], p); });
+        var view = null;
+        if (shot.a.view) {
+            view = cut ? cut.view : {
+                azimuthDeg: lerp(shot.a.view.azimuthDeg, shot.b.view.azimuthDeg, ct),
+                elevationDeg: lerp(shot.a.view.elevationDeg, shot.b.view.elevationDeg, ct),
+                fovDeg: lerp(shot.a.view.fovDeg || ORBIT_FOV_DEG, shot.b.view.fovDeg || ORBIT_FOV_DEG, ct)
+            };
+            // A view may set how hard the light falls (renderer LIGHTS.weights);
+            // it blends between shots like the rest of the view.
+            if (!cut && (shot.a.view.light || shot.b.view.light)) {
+                var weightsA = shot.a.view.light || DEFAULT_WEIGHTS;
+                var weightsB = shot.b.view.light || DEFAULT_WEIGHTS;
+                view.light = weightsA.map(function (w, i) { return lerp(w, weightsB[i], ct); });
+            }
+        }
         return {
             focus: cut ? cut.focus : blendFocus(shot.a.focus, shot.b.focus, ct),
             padding: cut ? cut.padding : lerp(shot.a.padding, shot.b.padding, ct),
+            view: view,
             pieces: pieces
         };
+    }
+
+    /*
+     * The angled camera's distance for a focus box.
+     *
+     * fit() frames a box for the isometric, where the frame is a half-height and
+     * distance means nothing. The orbit camera is a perspective, so the same
+     * promise, "this box is in frame on whatever screen there is", is a
+     * distance instead: the box's corners measured along the camera's own
+     * right, up and forward, and the camera stood back far enough that the
+     * nearest face still fits both axes of the field of view. One set of keys
+     * still frames a phone and a monitor alike.
+     */
+    var ORBIT_FOV_DEG = 38;
+    var DEFAULT_WEIGHTS = [0.62, 0.26, 0.07, 0.12];
+
+    function orbitBasis(view) {
+        var az = view.azimuthDeg * Math.PI / 180;
+        var el = view.elevationDeg * Math.PI / 180;
+        var offset = [Math.sin(az) * Math.cos(el), -Math.cos(az) * Math.cos(el), Math.sin(el)];
+        var forward = [-offset[0], -offset[1], -offset[2]];
+        var right = [forward[1], -forward[0], 0];
+        var length = Math.hypot(right[0], right[1]) || 1;
+        right = [right[0] / length, right[1] / length, 0];
+        var up = [
+            right[1] * forward[2] - right[2] * forward[1],
+            right[2] * forward[0] - right[0] * forward[2],
+            right[0] * forward[1] - right[1] * forward[0]
+        ];
+        return { offset: offset, forward: forward, right: right, up: up };
+    }
+
+    function orbitDistance(focus, padding, view, aspect) {
+        var basis = orbitBasis(view);
+        var centre = [(focus[0] + focus[3]) / 2, (focus[1] + focus[4]) / 2, (focus[2] + focus[5]) / 2];
+        var across = 0;
+        var upward = 0;
+        var depth = 0;
+        [focus[0], focus[3]].forEach(function (x) {
+            [focus[1], focus[4]].forEach(function (y) {
+                [focus[2], focus[5]].forEach(function (z) {
+                    var d = [x - centre[0], y - centre[1], z - centre[2]];
+                    across = Math.max(across, Math.abs(d[0] * basis.right[0] + d[1] * basis.right[1] + d[2] * basis.right[2]));
+                    upward = Math.max(upward, Math.abs(d[0] * basis.up[0] + d[1] * basis.up[1] + d[2] * basis.up[2]));
+                    depth = Math.max(depth, Math.abs(d[0] * basis.forward[0] + d[1] * basis.forward[1] + d[2] * basis.forward[2]));
+                });
+            });
+        });
+        var halfV = (view.fovDeg || ORBIT_FOV_DEG) * Math.PI / 360;
+        var halfH = Math.atan(Math.tan(halfV) * aspect);
+        return depth + (padding || 1) * Math.max(upward / Math.tan(halfV), across / Math.tan(halfH), 120);
+    }
+
+    /*
+     * The builder's light rig, turned with the camera.
+     *
+     * The renderer's rig is placed for the builder's one view, front-right and
+     * above, and from there it lights the faces the builder sees. Seen from
+     * under a shelf the same rig lights nothing in the picture, and a coral
+     * board's underside came out brown. So an angled story takes the rig as the
+     * builder's camera sees it (each light's share along that camera's right,
+     * up and towards-the-viewer) and rebuilds it along this camera's: whatever
+     * faces the camera is lit as it would be in the builder.
+     */
+    var builderBasis = null;
+
+    function turnedLights(view) {
+        var renderer = window.FrameworkDesignerRenderer;
+        if (!renderer || !renderer.LIGHTS || !renderer.VIEW_DIRECTION) return null;
+        if (!builderBasis) {
+            var d = renderer.VIEW_DIRECTION;
+            builderBasis = orbitBasis({
+                azimuthDeg: Math.atan2(d[0], -d[1]) * 180 / Math.PI,
+                elevationDeg: Math.asin(d[2]) * 180 / Math.PI
+            });
+        }
+        /*
+         * Below the horizon the rig is the one for the same angle above it,
+         * seen in a mirror: an underside seen from below is lit as a top is
+         * seen from above. Turning alone left a board's underside at a grazing
+         * angle to a key that stays near the camera's own height, and it came
+         * out grey-brown. The mirror comes in over the first six degrees below
+         * level, so a camera passing through the horizon sees no step.
+         */
+        var below = view.elevationDeg < 0 ? Math.min(1, -view.elevationDeg / 6) : 0;
+        var to = orbitBasis({ azimuthDeg: view.azimuthDeg, elevationDeg: Math.abs(view.elevationDeg) });
+        function turn(v) {
+            var along = [builderBasis.right, builderBasis.up, builderBasis.offset].map(function (axis) {
+                return v[0] * axis[0] + v[1] * axis[1] + v[2] * axis[2];
+            });
+            var out = [0, 1, 2].map(function (i) {
+                return along[0] * to.right[i] + along[1] * to.up[i] + along[2] * to.offset[i];
+            });
+            out[2] *= 1 - 2 * below;
+            return out;
+        }
+        return {
+            key: turn(renderer.LIGHTS.key), rim: turn(renderer.LIGHTS.rim), up: turn(renderer.LIGHTS.up),
+            weights: view.light || renderer.LIGHTS.weights || DEFAULT_WEIGHTS
+        };
+    }
+
+    /** Point the renderer at a sampled moment: isometric fit, or the orbit. */
+    function aim(renderer, moment, aspect) {
+        if (!moment.view) {
+            renderer.fit(moment.focus, moment.padding);
+            return;
+        }
+        renderer.setViewMode('orbit');
+        renderer.fit(moment.focus, moment.padding);
+        renderer.setOrbit({
+            azimuthDeg: moment.view.azimuthDeg,
+            elevationDeg: moment.view.elevationDeg,
+            fovDeg: moment.view.fovDeg || ORBIT_FOV_DEG,
+            distanceMm: orbitDistance(moment.focus, moment.padding, moment.view, aspect)
+        });
+        if (renderer.setLighting) renderer.setLighting(turnedLights(moment.view));
     }
 
     /** Fade a window in over its first fifth and out over its last fifth. */
@@ -392,11 +612,38 @@ window.FrameworkAssembly = (function () {
     function loadScene(story) {
         var geometry = window.FrameworkDesignerGeometry;
         var wanted = [];
+        /*
+         * A piece that is not a builder module says where its geometry is:
+         * `base`, a folder of bundles like the builder's, or `pack`, one file
+         * holding many (framework-module-pack@1). Forty books and objects are
+         * one request from a pack instead of forty.
+         */
+        var bases = {};
+        var packs = {};
         story.pieces.forEach(function (piece) {
-            if (wanted.indexOf(piece.moduleId) < 0) wanted.push(piece.moduleId);
+            if (wanted.indexOf(piece.moduleId) < 0) {
+                wanted.push(piece.moduleId);
+                if (piece.pack) packs[piece.moduleId] = piece.pack;
+                else bases[piece.moduleId] = piece.base || GEOMETRY_BASE;
+            }
         });
+        var packRequests = {};
+        function fromPack(url, id) {
+            if (!packRequests[url]) {
+                packRequests[url] = fetch(url).then(function (response) {
+                    if (!response.ok) throw new Error(url + ': HTTP ' + response.status);
+                    return response.json();
+                });
+            }
+            return packRequests[url].then(function (pack) {
+                var header = pack.modules && pack.modules[id];
+                if (!header) throw new Error(url + ' has no module "' + id + '"');
+                return geometry.expand(header);
+            });
+        }
         return Promise.all(wanted.map(function (id) {
-            return geometry.load(GEOMETRY_BASE, id, null).then(function (expanded) {
+            var loading = packs[id] ? fromPack(packs[id], id) : geometry.load(bases[id], id, bases[id] === GEOMETRY_BASE ? GEOMETRY_VERSION : null);
+            return loading.then(function (expanded) {
                 return { id: id, geometry: expanded };
             });
         })).then(function (modules) {
@@ -427,11 +674,55 @@ window.FrameworkAssembly = (function () {
                 id: piece.id,
                 moduleId: piece.moduleId,
                 translation: t,
-                rotationDeg: piece.rot || 0,
-                pivotMm: [t[0] + pivot[0], t[1] + pivot[1]]
+                // A turn is about the piece's own pivot: the lamp's is its post.
+                rotationDeg: (piece.rot || 0) + (state.turn || 0),
+                pivotMm: [t[0] + pivot[0], t[1] + pivot[1]],
+                // A piece with colours of its own (a book) paints with them.
+                palette: piece.palette || null,
+                // A lamp whose track says it is lit glows; see lampFor().
+                glow: (state.lit && piece.glow) || null
             });
         });
         return out;
+    }
+
+    /**
+     * The story's lamp light at one sampled moment, or null while it is off.
+     *
+     * The story gives the bulb and the shade's openings in the lamp's own
+     * millimetres. They are carried into the world exactly as the renderer
+     * carries the lamp (turned about its pivot, then placed), so the light
+     * leaves the shade wherever the lamp happens to be.
+     */
+    function lampFor(story, moment) {
+        var light = story.light;
+        if (!light) return null;
+        var state = moment.pieces[light.piece];
+        if (!state || state.hidden || !state.lit) return null;
+        var piece = null;
+        story.pieces.forEach(function (candidate) {
+            if (candidate.id === light.piece) piece = candidate;
+        });
+        if (!piece) return null;
+        var pivot = piece.pivot || [0, 0];
+        var t = [piece.t[0] + state.off[0], piece.t[1] + state.off[1], piece.t[2] + state.off[2]];
+        var turn = (((piece.rot || 0) + (state.turn || 0)) * Math.PI) / 180;
+        var x = light.bulb[0] - pivot[0];
+        var y = light.bulb[1] - pivot[1];
+        return {
+            bulbMm: [
+                t[0] + pivot[0] + Math.cos(turn) * x - Math.sin(turn) * y,
+                t[1] + pivot[1] + Math.sin(turn) * x + Math.cos(turn) * y,
+                t[2] + light.bulb[2]
+            ],
+            radiusMm: light.radius,
+            belowMm: t[2] + light.below,
+            aboveMm: t[2] + light.above,
+            floorMm: light.floor,
+            color: light.color,
+            reachMm: light.reach,
+            strength: light.strength == null ? 1 : light.strength
+        };
     }
 
     /** Where a pin's dot is right now, in world mm. */
@@ -459,7 +750,20 @@ window.FrameworkAssembly = (function () {
     function captionWords(caption) {
         var nodes = [];
         var heading = document.createElement('h2');
-        heading.textContent = caption.title;
+        /*
+         * A caption that names a product can link to it: the title is the
+         * link. The overlay passes pointer events through to the page so a
+         * swipe over the stage always scrolls; the link alone takes them back
+         * (css/assembly.css), and only while its card is visible.
+         */
+        if (caption.href) {
+            var link = document.createElement('a');
+            link.href = caption.href;
+            link.textContent = caption.title;
+            heading.appendChild(link);
+        } else {
+            heading.textContent = caption.title;
+        }
         nodes.push(heading);
         if (caption.body) {
             var body = document.createElement('p');
@@ -503,15 +807,6 @@ window.FrameworkAssembly = (function () {
             return { spec: pin, line: line, dot: dot, label: label, shown: -1 };
         });
 
-        var rail = document.createElement('div');
-        rail.className = 'fa-rail';
-        var dots = story.captions.map(function () {
-            var dot = document.createElement('span');
-            rail.appendChild(dot);
-            return dot;
-        });
-        overlay.appendChild(rail);
-
         stage.appendChild(overlay);
 
         /*
@@ -537,7 +832,7 @@ window.FrameworkAssembly = (function () {
         }
         fitBand();
 
-        return { root: overlay, captions: captions, pins: pinNodes, dots: dots, fitBand: fitBand };
+        return { root: overlay, captions: captions, pins: pinNodes, fitBand: fitBand };
     }
 
     /*
@@ -553,7 +848,6 @@ window.FrameworkAssembly = (function () {
             caption.node.style.opacity = opacity;
             caption.node.style.transform = 'translate3d(0,' + ((1 - opacity) * 12).toFixed(1) + 'px,0)';
             caption.node.style.visibility = opacity <= 0.01 ? 'hidden' : 'visible';
-            overlay.dots[index].classList.toggle('is-on', opacity > 0.5);
         });
     }
 
@@ -742,7 +1036,9 @@ window.FrameworkAssembly = (function () {
             paintCaptions(overlay, p);
             if (!ready) return;
             renderer.setInstances(instancesFor(story, moment));
-            renderer.fit(moment.focus, moment.padding);
+            if (renderer.setLamp) renderer.setLamp(lampFor(story, moment));
+            var canvas = options.canvas;
+            aim(renderer, moment, (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1));
         }
 
         /*
@@ -913,7 +1209,7 @@ window.FrameworkAssembly = (function () {
                 tier: options.tier, keys: keys.length, modules: scene.modules.length,
                 pixelRatio: function () { return pace.ratio(); },
                 pace: pace,
-                renderer: renderer, story: story, instancesFor: instancesFor,
+                renderer: renderer, story: story, instancesFor: instancesFor, lampFor: lampFor,
                 seek: function (p) { window.scrollTo(0, top + span * clamp01(p)); },
                 at: scrollProgress,
                 measure: measure,
@@ -984,6 +1280,10 @@ window.FrameworkAssembly = (function () {
                 var p = (step.spec.from + step.spec.to) / 2;
                 var moment = sample(keys, p);
                 renderer.setInstances(instancesFor(story, moment));
+                if (renderer.setLamp) renderer.setLamp(lampFor(story, moment));
+                // The orbit's distance is set for the paper's shape; the
+                // snapshot keeps it and takes its framing from the box.
+                if (moment.view) aim(renderer, moment, paper.width / paper.height);
                 // Drawn at the paper's size, not the picture's: the paper is
                 // `density` times larger, and a snapshot taken at CSS size
                 // filled a quarter of it and left the rest grey.
@@ -1051,7 +1351,10 @@ window.FrameworkAssembly = (function () {
             step.className = 'fa-step';
             if (caption.photo) {
                 var picture = document.createElement('img');
-                picture.src = story.photoBase + (thumbs ? 'thumbs/' : '') + caption.photo + '.jpg';
+                // A photograph named by its own path is not a catalogue shot
+                // and has no thumbnail beside it: it is used as it stands.
+                picture.src = caption.photo.charAt(0) === '/' ? caption.photo
+                    : story.photoBase + (thumbs ? 'thumbs/' : '') + caption.photo + '.jpg';
                 picture.alt = caption.photoAlt || caption.title;
                 picture.loading = 'lazy';
                 picture.decoding = 'async';
@@ -1097,6 +1400,10 @@ window.FrameworkAssembly = (function () {
         fillCameras: fillCameras, blendFocus: blendFocus, windowOpacity: windowOpacity,
         // For scripts/test-assembly-story.mjs: the parts that decide what a
         // device is asked to do, testable without a browser.
-        createPace: createPace, isSoftwareRenderer: isSoftwareRenderer, TIERS: TIERS
+        createPace: createPace, isSoftwareRenderer: isSoftwareRenderer, TIERS: TIERS,
+        // For the bench and scripts/test-assembly-story-colors.mjs: the angled
+        // camera, as the page points it.
+        aim: aim, orbitDistance: orbitDistance, sampleTrack: sampleTrack, turnedLights: turnedLights,
+        lampFor: lampFor, ORBIT_FOV_DEG: ORBIT_FOV_DEG
     };
 })();

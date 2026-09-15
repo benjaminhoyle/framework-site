@@ -32,4 +32,25 @@ const updated = source
   .replace(/(\?v=)\d+/g, `$1${next}`);
 
 fs.writeFileSync(PAGE, updated);
+
+/*
+ * The same number wherever else module geometry is asked for. The scroll
+ * stories (/how, /customize, /assembly) load bundles through
+ * js/assembly/scroll-story.js, and /how and /assembly preload them. The bundles
+ * are cached for a week, so an unversioned request can be answered with last
+ * week's geometry, and a preload only helps if its URL is the one the story
+ * then fetches.
+ */
+const ROOT = path.dirname(PAGE);
+const STORY = path.join(ROOT, "js", "assembly", "scroll-story.js");
+const storySource = fs.readFileSync(STORY, "utf8");
+const storyVersion = /(var GEOMETRY_VERSION = ')(\d+)(')/;
+if (!storyVersion.test(storySource)) throw new Error("could not find GEOMETRY_VERSION in js/assembly/scroll-story.js");
+fs.writeFileSync(STORY, storySource.replace(storyVersion, `$1${next}$3`));
+for (const file of ["how.html", "assembly-lab.html"]) {
+  const target = path.join(ROOT, file);
+  const html = fs.readFileSync(target, "utf8");
+  fs.writeFileSync(target, html.replace(/(\/assets\/shelving\/modules\/[a-z0-9_]+\.json)(\?v=\d+)?/g, `$1?v=${next}`));
+}
+
 console.log(`/builder assets are now v${next}`);

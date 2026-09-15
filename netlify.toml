@@ -42,17 +42,31 @@
   status = 200
 
 # The two pages that explain the system. /how carries the assembly story as its
-# hero and is the landing for "build your own"; /colors is the link sent in a
-# WhatsApp reply when someone asks what colors there are.
+# hero and is the landing for "build your own"; /customize, the colors and the
+# add-ons, is the link sent in a WhatsApp reply when someone asks what colors
+# there are or what can go on a shelf.
 [[redirects]]
   from = "/how"
   to = "/how.html"
   status = 200
 
 [[redirects]]
-  from = "/colors"
-  to = "/colors.html"
+  from = "/customize"
+  to = "/customize.html"
   status = 200
+
+# The page was /colors until 2026-09-15, when it took in the add-ons and became
+# /customize. /colors is in replies already sent and is still the natural link
+# for colors, so it lands on the same page, at the top, where the colors are.
+[[redirects]]
+  from = "/colors"
+  to = "/customize"
+  status = 301
+
+[[redirects]]
+  from = "/colors.html"
+  to = "/customize"
+  status = 301
 
 # Three versions of /how were tried in September 2026 (framework-marketing/
 # research/landing-strategy.md, section 4). Ben picked B on 11 September and
@@ -81,15 +95,24 @@
 
 # The page was /colours until 2026-09-11 ("let's always use 'colors'"), and that
 # address is in WhatsApp replies already sent, so it keeps working. The .html
-# form too: there is no file at it any more.
+# form too: there is no file at it any more. Straight to /customize, not
+# through /colors: one hop, not two.
 [[redirects]]
   from = "/colours"
-  to = "/colors"
+  to = "/customize"
   status = 301
 
 [[redirects]]
   from = "/colours.html"
-  to = "/colors"
+  to = "/customize"
+  status = 301
+
+# The add-ons by name: an address a reply can give for the bookend, the lamp and
+# the coat hanger. It lands on /customize at the add-ons section, whose id this
+# fragment is; the page carries no second copy of them.
+[[redirects]]
+  from = "/addons"
+  to = "/customize#addons"
   status = 301
 
 # The assembly story. Reachable and noindex, but linked from nowhere: it is
@@ -166,6 +189,13 @@
   for = "/assets/shelving/modules/*"
   [headers.values]
     Cache-Control = "public, max-age=604800"
+
+# The /customize add-ons story's props, one pack. Not versioned by name, so held
+# for an hour and served stale while it revalidates, like the data files.
+[[headers]]
+  for = "/assets/assembly/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=604800"
 
 [[headers]]
   for = "/assets/shelving/catalog.json"

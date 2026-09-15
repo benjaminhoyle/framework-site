@@ -220,7 +220,7 @@ const REWRITES = [
   [/^\/new-designer(\/[0-9A-Za-z]{0,7})?\/?$/, "/builder.html"], // the old address
   [/^\/assembly\/?$/, "/assembly-lab.html"],
   [/^\/how\/?$/, "/how.html"],
-  [/^\/colours\/?$/, "/colours.html"],
+  [/^\/customize\/?$/, "/customize.html"],
   [/^\/marketing\/?$/, "/marketing.html"]
 ];
 
@@ -964,6 +964,15 @@ const server = http.createServer(async (request, response) => {
     response.writeHead(result.status, { "content-type": "application/json", "cache-control": "no-store" });
     response.end(body);
     return;
+  }
+
+  // The 301s from netlify.toml that a link or a reply actually uses.
+  for (const [pattern, target] of [[/^\/addons\/?$/, "/customize#addons"], [/^\/colou?rs(\.html)?\/?$/, "/customize"]]) {
+    if (pattern.test(url.pathname)) {
+      response.writeHead(301, { location: target, "cache-control": "no-store" });
+      response.end();
+      return;
+    }
   }
 
   let file = url.pathname;

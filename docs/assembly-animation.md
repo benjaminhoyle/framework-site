@@ -4,7 +4,7 @@
 > scroll-driven assembly animation at /assembly, covering the camera, layout
 > rules, and how a story is built and edited.
 > When to read it: before changing the camera, layout, or tier logic, or to
-> check section 12 for what is still untested; the shipped verdict alone is
+> check section 13 for what is still untested; the shipped verdict alone is
 > in the opening lines.
 
 A scroll-driven animation of a Framework shelf assembling itself: the Apple
@@ -329,8 +329,12 @@ label placed to the right of an anchor near the right edge gets clamped back
 over its own dot, and on a phone — a third the width — that is most of them. The
 offset is now treated as a distance and the side is picked at paint time,
 flipping to whichever has room. The dot never moves, so the leader line stays
-honest either way. The progress rail moved off the model's right edge for the
-same reason.
+honest either way.
+
+**There is no progress rail.** A dot per caption sat at the model's right
+edge, and on a phone in a row under it. A row of dots under a picture is what
+a carousel looks like, and it read as something to swipe, so it went, on
+every story.
 
 **The pixel ratio is checked against reality, not guessed from the device.** The
 tier signals are wrong on exactly the hardware they most need to protect: a
@@ -431,7 +435,122 @@ tuned and the tier thresholds are guesses.
 
 ---
 
-## 12. Not done
+## 12. The add-ons on /customize, and the angled camera
+
+The same engine draws a third story: **The Lantern Shelf (3WU3UN2) taking a
+bookend at the right-hand end of each shelf, books on all three, a fourth
+bookend capping the top row, and its lamp**, in the add-ons section of
+`/customize` (and at `/addons`). The two product captions link to their products
+(`caption.href`; the overlay gives the pointer back to the link only).
+
+```
+data/assembly/lantern.design.json    3WU3UN2, with "bookends": 4
+        │  scripts/bake-assembly-story.mjs data/assembly/lantern.design.json
+        ▼
+js/assembly/lantern-shelf.js         GENERATED, with a `bookends` list
+scripts/build-shelf-props.mjs ──▶    assets/assembly/props.json (one pack) + js/assembly/props.js, GENERATED
+        │  js/assembly/story-colors.js   AUTHORED: camera, the row, timing, copy
+        ▼
+js/assembly/scroll-story.js
+```
+
+- **Bookends are baked.** A design carries a count, and the engine's
+  `bookendPlacements` decides the ends /builder would draw; the bake writes
+  those as `bookends`, and every end `legalBookendAnchors` allows as `ends`,
+  named by unit and side (`end_item_003_right`). The story chooses from `ends`,
+  because /builder fills bottom up and the story wants the right-hand end of
+  every shelf. Neither list is written when the design has no bookends, so
+  `curator-shelf.js` is unchanged.
+- **The close-up, and the bar that looked bent.** The square rails under a
+  shelf read as bent and wedge-shaped, most of all from below. Two wrong
+  diagnoses came first, and both are worth knowing so nobody repeats them: it
+  is not the lens, and it is not the Poggendorff illusion of a bar crossing a
+  band. The positions were exact, which is what made the illusion plausible,
+  but the normals were not: the rails were lit as if their corners were
+  round, so every flat face was a gradient. The fix is in the geometry build
+  ("Shading normals that point where the faces point" in
+  `scripts/build-builder-assets.mjs`), so /builder and /how get it too. Dark
+  corner lines drawn over the faces were tried before the cause was found and
+  were rejected as a look. The close-up is on the bottom shelf, which has one
+  rail under its board rather than three, from the side and five degrees below
+  the board, and it lights harder (`view.light`, the renderer's term weights):
+  under the soft builder light a lifted coral tube's bottom and sides were one
+  flat orange.
+- **The angled camera.** A camera key may state
+  `view: { azimuthDeg, elevationDeg, fovDeg }`; if the first camera key does,
+  the story is drawn with the renderer's orbit camera and the engine turns each
+  focus box into a distance for whatever aspect it has (`orbitDistance`).
+  Stories without `view` are drawn exactly as before. The lens is 16 degrees,
+  24 for the close-up: the console's 38 converged like a wide-angle photograph,
+  and near-flat read as a diagram with the far side too large.
+  `renderer.setOrbit` takes the lens (`fovDeg`); `/builder` never passes one.
+- **The colour is the builder's.** Two things made the first version drab. The
+  bake carries the catalogue's finish pair, and `/builder` lifts both before
+  painting (steel by 1.26, boards by 1.07, `shaderPalette` in `app.js`), so the
+  story lifts them too. And the renderer's lights are placed for the builder's
+  one view, so from under a shelf nothing in the picture was lit. The engine
+  now turns the rig with the camera (`turnedLights`, through
+  `renderer.setLighting`), and below the horizon mirrors it, so an underside
+  seen from below is lit as a top is from above. Again `/builder` never calls
+  it, and the fixed rig is `renderer.LIGHTS`.
+- **Tracks.** Keys ease each segment between consecutive instants of the whole
+  story, so every key stops every piece; a row of books arriving a beat apart
+  would stutter. A story may give a piece its own `tracks[id]`: waypoints with
+  an offset, a `turn` about its pivot (the lamp's swing), `hidden`, and a
+  per-segment `ease`. The camera and untracked pieces go on as before.
+- **Bookends come in sideways.** There is 123 mm under a bookend's foot, so
+  none can come up from outside the frame: each slides in along the shelf's
+  length below its bar, stops, and rises 80 mm. The close-up's bookend comes
+  along the end from the front instead, because that camera looks along the
+  shelf and a bookend waiting outside the end would already be in its picture.
+  The capping one is shot from front-left, because a bookend is a plate across
+  the shelf and square on it is a sliver.
+- **The books.** Generated shapes in the builder's own geometry format, meant
+  to read as contemporary African paperbacks: flat spines with one graphic idea
+  each (a colour block, a band, triangles, dots, a chevron, a kente strip) or
+  none at all, cream title bars and marks, a cream page block, two hardbacks,
+  two leaning books and a stack of five lying flat. Colour is per instance
+  (`piece.palette`); a book is two to four draw calls.
+- **The objects and the light.** Once the last bookend is on and the camera is
+  back on the whole shelf, nine simple solids (a vase, bottles, a ball on a
+  plinth, stacked cubes, a pyramid, a bowl of fruit, a plant) slide into the
+  lower rows' open ends or drop onto the open tops with a bounce, in the books'
+  own inks, all clear of the lamp's swing. After the lamp swings back, it comes
+  on, blinks off once and stays on, as a light rather than a colour: a track
+  point sets `lit`, and while it is lit the shade's inside glows flat yellow,
+  its outside brightens (`piece.glow`), and `story.light` switches on
+  `renderer.setLamp`. That is a bulb at the centre of the shade whose light
+  reaches a point only if the line to it leaves through one of the shade's open
+  ends, so it falls as a soft pool on the board and on the objects inside the
+  cone below, and on the arm above; nothing under the board it stands over is
+  lit, and there are no shadows. `scroll-story.js` carries the bulb to wherever
+  the lamp is (`lampFor`). The boards are pale, so the light is at a little over
+  half strength or they turn white. Rays and a sparkle were tried first and
+  were too much; so was simply painting the shade yellow.
+- **Load.** All the props are one pack, `assets/assembly/props.json` (about
+  25 KB gzipped), loaded through `piece.pack` in one request. The page loads the
+  story's six scripts only when the track is within two screens, so a reader
+  who never reaches the add-ons downloads and parses none of it. The top row is capped at both ends
+  and fills its shelf; the lower two stop about halfway so the boards show.
+  Books were tried once on `/assembly` and taken out (section 8); these earn
+  their place because the shelf's subject here is what goes on it. The
+  palette and density were tuned against a vision model's critique of renders
+  (a scratch loop through `/api/ai`, not in the repo).
+- **The lamp's pin.** The geometry's pin is 33 mm; the real one is 10 cm. The
+  camera never goes near the lamp joint, and the lamp pauses 150 mm over its
+  post before the last drop. Scroll on and it swings on its post, 28 degrees
+  one way and 22 the other, and the caption says it pivots.
+- **Reveals are measured.** In a perspective a part sliding along x also
+  slides in depth and leaves the frame slowly, so parts are hidden until the
+  instant they move, from a place `scripts/test-assembly-story-colors.mjs`
+  proves is outside the frame on every aspect from a phone to 21:9. The same
+  test checks nothing passes through anything, part by part.
+- **It starts late.** `/customize` is a short reply page, so nothing is preloaded
+  and the story is started when the track is within a screen and a half.
+
+Re-run both bakes after `make site` in the pipeline.
+
+## 13. Not done
 
 - **A real device pass**, especially inside Instagram's browser (§5, §9). The
   one thing that cannot be checked from here.
