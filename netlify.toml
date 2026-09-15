@@ -276,3 +276,19 @@
 # --- Later phases (DO NOT enable yet: no handlers exist) ---
 # /d/:code       → design short-code resolver (Phase 2)
 # /shelf/:slug   → catalog slug pages (Phase 2)
+
+# The old custom steelwork page (products-services) was the first sitelink under
+# the brand on Google, pointing at work Framework no longer offers. Ben asked on
+# 2026-09-15 for it to go to the shelving. force = true because the file is
+# still on disk, and Netlify serves a file before a redirect otherwise.
+[[redirects]]
+  from = "/products-services.html"
+  to = "/shelving.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/products-services"
+  to = "/shelving.html"
+  status = 301
+  force = true

@@ -115,7 +115,7 @@ const quiet = () => {};
   const flat = html.replace(/^\s+/gm, "");
 
   ok(postPath.endsWith(path.join("blog", "a-shelf-for-a-rented-flat.html")), "slug comes from the filename minus its date");
-  ok(html.includes("<title>A shelf for a rented flat &amp; a move | Framework Designs</title>"), "title is escaped and carries the site name");
+  ok(html.includes("<title>A shelf for a rented flat &amp; a move | Framework Nairobi</title>"), "title is escaped and carries the site name");
   ok(html.includes('<meta name="description" content="A draft that passes every check, for the test.">'), "description meta");
   ok(html.includes('<link rel="canonical" href="https://www.framework.co.ke/blog/a-shelf-for-a-rented-flat.html">'), "canonical");
   ok(html.includes('<meta property="og:title" content="A shelf for a rented flat &amp; a move">'), "og:title");

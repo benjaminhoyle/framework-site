@@ -157,7 +157,6 @@ function loadHeaderAndFooter() {
                 <ul id="nav-menu">
                     <li><a href="index.html">Home</a></li>
                     <li><a href="shelving.html">Shelving</a></li>
-                    <li><a href="products-services.html">Products and Services</a></li>
     <li><a href="${window.buildWhatsAppUrl()}" target="_blank" rel="noopener noreferrer" data-fwk-handoff="header" onclick="trackContactConversion('', {link_target:'header_contact'});">Contact</a></li>            </ul>
             </nav>
             <button id="mobile-menu-toggle" aria-label="Toggle mobile menu">
