@@ -12,9 +12,12 @@
  *    and shrinks as you scroll; `100vh` there is the *large* viewport, so a
  *    100vh stage is taller than the visible area and the caption sits under
  *    Instagram's own toolbar.
- *  - Nothing animates on a timer. Everything is a pure function of scroll
- *    position, so a fling, a rubber-band and a jump to an anchor all land on a
- *    coherent frame rather than on whatever an in-flight transition thought.
+ *  - Nothing in the story animates on a timer. Every frame is a pure function
+ *    of one progress value, which follows the scroll position (eased over
+ *    about a fifth of a second; see scroll-story.js), so a fling, a
+ *    rubber-band and a jump to an anchor all land on a coherent frame rather
+ *    than on whatever an in-flight transition thought. The scroll cue fades on
+ *    a timer, and it is not part of the story.
  */
 
 :root {
@@ -261,6 +264,60 @@ body {
     will-change: opacity, transform;
 }
 
+/* -------------------------------------------------------------- scroll cue */
+
+/*
+ * "Scroll", over a chevron nudging downwards: the intro's own hint, at the foot
+ * of the stage, and only when it is needed. It comes up once the stage has
+ * locked and the reader has stopped, and goes the moment they scroll, so it is
+ * never on top of a story someone is already playing; paintHint() in
+ * scroll-story.js decides. A soft white backing keeps it legible over the
+ * model. Not in `.fa-overlay`'s way: the overlay takes no pointer.
+ */
+.fa-scroll-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 12px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    line-height: 1;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.fa-scroll-hint.is-on {
+    opacity: 1;
+    transition-duration: 0.4s;
+}
+
+.fa-scroll-hint::after {
+    content: "";
+    display: block;
+    width: 7px;
+    height: 7px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    margin-top: -2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .fa-scroll-hint.is-on::after {
+        animation: fa-nudge 2.4s ease-in-out infinite;
+    }
+}
+
 /* ------------------------------------------------------------------ mobile */
 
 @media (max-width: 760px) {
@@ -293,6 +350,10 @@ body {
         border-color: transparent;
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
+    }
+    /* On the model's side of the caption band, not in it. */
+    .fa-scroll-hint {
+        bottom: calc(var(--fa-caption-band, 200px) + 10px);
     }
     .fa-intro, .fa-outro { padding: 14vh 20px; }
 }

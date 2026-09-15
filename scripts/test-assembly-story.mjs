@@ -388,6 +388,26 @@ for (const { file, script } of derived) {
     priced.map((c) => c.body).join(" | "));
 }
 
+// --- the scroll cue and the eased scrub, which every story shares ---------------------
+
+{
+  const engineSource = fs.readFileSync(path.join(ROOT, "js/assembly/scroll-story.js"), "utf8");
+  const styles = fs.readFileSync(path.join(ROOT, "css/assembly.css"), "utf8");
+  check("the stage carries a scroll cue, hidden from screen readers", /className = 'fa-scroll-hint'/.test(engineSource)
+    && /hint\.setAttribute\('aria-hidden', 'true'\)/.test(engineSource) && /textContent = 'Scroll'/.test(engineSource));
+  check("the cue shows only on a locked stage: after a pause before the end, or at once when the reader scrolls back up",
+    /var paused = target < HINT_END && now - movedAt > \(begun \? HINT_AGAIN_MS : HINT_FIRST_MS\)/.test(engineSource)
+    && /var on = locked && \(backTravel > HINT_BACK \|\| paused\)/.test(engineSource)
+    && /else backTravel = 0;/.test(engineSource));
+  check("the cue is invisible until it is switched on", /\.fa-scroll-hint \{[^}]*opacity: 0/.test(styles) && /\.fa-scroll-hint\.is-on \{[^}]*opacity: 1/.test(styles));
+  check("on a phone the cue sits above the caption band", /\.fa-scroll-hint \{\s*bottom: calc\(var\(--fa-caption-band/.test(styles));
+  check("the cue only nudges for readers who have not asked for less motion",
+    /@media \(prefers-reduced-motion: no-preference\) \{\s*\.fa-scroll-hint\.is-on::after \{\s*animation/.test(styles));
+  check("the drawn progress eases toward the scroll position, except for calm and big jumps",
+    /if \(!calm && painted >= 0 && Math\.abs\(target - painted\) < JUMP\)/.test(engineSource) && /var SCRUB_MS = \d+;/.test(engineSource));
+  check("there is no progress rail", !/fa-rail/.test(engineSource) && !/fa-rail/.test(styles));
+}
+
 if (failures) {
   console.error(`\n${failures} assembly-story check${failures === 1 ? "" : "s"} failed`);
   process.exit(1);

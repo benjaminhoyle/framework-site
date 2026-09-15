@@ -183,7 +183,9 @@
 }
 
 @media (max-width: 760px) {
-    .co-track { --fa-track-height: 480vh; }
+    /* Longer on a phone, not shorter: one flick covers a lot of track, and the
+       camera moves need room to be seen. */
+    .co-track { --fa-track-height: 600vh; }
 }
 
 .co > .co-track-shown { margin-top: 18px; }

@@ -52,7 +52,7 @@ window.FrameworkAssembly = (function () {
      * story asking for them unversioned could draw last week's geometry after a
      * rebuild; asking with the builder's number also shares the builder's cache.
      */
-    var GEOMETRY_VERSION = '108';
+    var GEOMETRY_VERSION = '111';
 
     // --------------------------------------------------------------- tiers
 
@@ -807,6 +807,13 @@ window.FrameworkAssembly = (function () {
             return { spec: pin, line: line, dot: dot, label: label, shown: -1 };
         });
 
+        // The scroll cue; runLive's paintHint() decides when it shows.
+        var hint = document.createElement('div');
+        hint.className = 'fa-scroll-hint';
+        hint.setAttribute('aria-hidden', 'true');
+        hint.textContent = 'Scroll';
+        overlay.appendChild(hint);
+
         stage.appendChild(overlay);
 
         /*
@@ -832,7 +839,7 @@ window.FrameworkAssembly = (function () {
         }
         fitBand();
 
-        return { root: overlay, captions: captions, pins: pinNodes, fitBand: fitBand };
+        return { root: overlay, captions: captions, pins: pinNodes, hint: hint, fitBand: fitBand };
     }
 
     /*
@@ -1066,6 +1073,66 @@ window.FrameworkAssembly = (function () {
         // as smooth where 60 dropped frames does not.
         var minInterval = lite ? 32 : 0;
 
+        /*
+         * The drawn progress follows the scroll position rather than jumping to
+         * it: each frame closes most of the gap, over about a fifth of a
+         * second. On a phone one flick can carry the reader through a whole
+         * camera move in a frame or two, and the move is then never seen; eased,
+         * it plays. Every frame is still a pure function of the one progress it
+         * draws, so captions, pins and pieces never disagree. A jump of more
+         * than a third of the story (an anchor, a restored scroll position) is
+         * taken at once rather than played back, and `calm`, for readers who
+         * asked for less motion, is not eased at all.
+         */
+        var SCRUB_MS = 140;
+        var JUMP = 0.33;
+
+        /*
+         * The scroll cue. Some readers on phones reach the locked stage, see a
+         * picture and a caption, and do not think to scroll. So when the stage
+         * is locked and the reader has stopped, the cue comes up: after a moment
+         * while they are still on the opening frame, after a longer pause once
+         * they have moved the story on, and never at the end. It goes the
+         * instant the scroll position moves. Judged from the scroll position
+         * itself, so it costs one comparison a frame.
+         */
+        // Short enough to catch someone who has stopped, long enough not to
+        // flash up between two swipes.
+        var HINT_FIRST_MS = 450;
+        var HINT_AGAIN_MS = 1200;
+        var HINT_BEGUN = 0.04;
+        var HINT_END = 0.97;
+        var movedAt = 0;
+        var lastTarget = -1;
+        var begun = false;
+        var hintOn = false;
+        /*
+         * How far the reader has scrolled back up since they last went down.
+         * Going back up is the plainest sign of someone who has lost the
+         * thread, so it brings the cue up at once, and it stays up until they
+         * scroll down again. A few pixels of wobble at the end of a swipe do
+         * not count.
+         */
+        var HINT_BACK = 0.004;
+        var backTravel = 0;
+
+        function paintHint(now, target) {
+            if (target !== lastTarget) {
+                if (lastTarget >= 0 && target < lastTarget) backTravel += lastTarget - target;
+                else backTravel = 0;
+                lastTarget = target;
+                movedAt = now;
+            }
+            if (target > HINT_BEGUN) begun = true;
+            var locked = window.scrollY >= top - 2 && window.scrollY <= top + span + 2;
+            var paused = target < HINT_END && now - movedAt > (begun ? HINT_AGAIN_MS : HINT_FIRST_MS);
+            var on = locked && (backTravel > HINT_BACK || paused);
+            if (on !== hintOn) {
+                hintOn = on;
+                overlay.hint.classList.toggle('is-on', on);
+            }
+        }
+
         function frame() {
             queued = false;
             if (!running) return;
@@ -1075,7 +1142,13 @@ window.FrameworkAssembly = (function () {
             if (now - lastAt < minInterval) return;
             var elapsed = now - lastAt;
             lastAt = now;
-            var p = scrollProgress();
+            var target = scrollProgress();
+            paintHint(now, target);
+            var p = target;
+            if (!calm && painted >= 0 && Math.abs(target - painted) < JUMP) {
+                p = painted + (target - painted) * (1 - Math.exp(-Math.min(elapsed, 100) / SCRUB_MS));
+                if (Math.abs(target - p) < 0.0004) p = target;
+            }
             // The first frame after a restart has no previous frame to be
             // measured against, so it is neither idle evidence nor slow
             // evidence; `painted` is -1 exactly then.

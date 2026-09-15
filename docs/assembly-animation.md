@@ -336,6 +336,30 @@ edge, and on a phone in a row under it. A row of dots under a picture is what
 a carousel looks like, and it read as something to swipe, so it went, on
 every story.
 
+**A scroll cue, and an eased scrub.** Some readers on phones reached the locked
+stage, saw a picture and a caption, and did not think to scroll. So the stage
+carries the intro's own cue, the word Scroll over a nudging chevron, at the
+foot of the model (just above the caption band on a phone). It comes up when
+the stage is locked and the reader has stopped: after 0.45 seconds while they
+are still on the opening frame, after 1.2 seconds once they have moved the
+story on (3.5 at first, which Ben found too slow; much under a second and it
+flashes up between two swipes), never in the last 3%, and it goes the moment the scroll position
+moves (`paintHint()` in `scroll-story.js`). Scrolling back up is the one
+movement that brings it up rather than sending it away: a reader going
+backwards has most likely lost the thread, so after a few pixels upwards the
+cue shows at once and stays until they scroll down again.
+
+The drawn progress also follows the scroll position rather than jumping to it,
+closing the gap over about a fifth of a second (`SCRUB_MS`; the same idea as a
+numeric `scrub` in GSAP's ScrollTrigger). One flick on a phone could carry a
+reader through a whole camera move in a frame or two, so the change of angle
+into the bookend close-up on /customize was simply not seen there; eased, it
+plays. Every frame is still one progress value, so captions, pins and pieces
+never disagree. A jump of more than a third of the story (an anchor, a restored
+scroll position) is taken at once, and `calm` is not eased. For the same reason
+/customize's track on a phone went from 480vh to 600vh: longer, not shorter,
+where a flick covers the most ground.
+
 **The pixel ratio is checked against reality, not guessed from the device.** The
 tier signals are wrong on exactly the hardware they most need to protect: a
 mid-range Android reports eight cores and no memory at all and lands in `full`;
