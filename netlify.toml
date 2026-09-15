@@ -6,6 +6,16 @@
   publish = "."
   # (no build command: nothing to compile)
 
+# Netlify's "pretty URLs" post-processing rewrites every static link: it drops
+# .html and re-serialises the anchor with single quotes, backslash-escaping the
+# quotes inside an onclick. HTML does not honour a backslash escape, so the
+# attribute ends at the first one and the handler is cut in half. That is why
+# the two designer buttons on /shelving have been firing no customize_product
+# and no CustomizeProduct event. It also rewrote links to extensionless URLs
+# that disagree with the canonicals. Off, so the HTML is served as written.
+[build.processing.html]
+  pretty_urls = false
+
 # --- Legacy shelf-builder entry points -------------------------------------
 # A URL fragment is never sent to Netlify, so these must remain rewrites. Each
 # page redirects itself only when there is no legacy design code in its hash.
@@ -291,4 +301,13 @@
   from = "/products-services"
   to = "/shelving.html"
   status = 301
+  force = true
+
+# The blog template is not a page: it is the file scripts/publish-blog.mjs fills
+# in, so it answers with {{title}} and an unparsable JSON-LD block. It has no
+# noindex, because a noindex in the template would be copied into every post.
+[[redirects]]
+  from = "/blog/template.html"
+  to = "/404.html"
+  status = 404
   force = true

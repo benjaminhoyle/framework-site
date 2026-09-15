@@ -1,6 +1,6 @@
 {
   "schema": "framework-catalog-public@1",
-  "updatedAt": "2026-09-13T20:01:05.902Z",
+  "updatedAt": "2026-09-15T23:23:36.137Z",
   "products": [
     {
       "id": "starter",
@@ -13,7 +13,7 @@
       ],
       "price": "Ksh 6,500",
       "priceValue": 6500,
-      "description": "A low, two-tier unit that works perfectly as a media console, entryway organizer, or low display. Built in our Nairobi workshop from steel and engineered wood, it offers a sturdy foundation you can always expand later.",
+      "description": "A low, two-tier unit that works perfectly as a TV stand, entryway organizer, or low display. Built in our Nairobi workshop from steel and engineered wood, it offers a sturdy foundation you can always expand later.",
       "designerUrl": "https://framework.co.ke/builder/46QCM27"
     },
     {
