@@ -221,7 +221,8 @@ const REWRITES = [
   [/^\/assembly\/?$/, "/assembly-lab.html"],
   [/^\/how\/?$/, "/how.html"],
   [/^\/customize\/?$/, "/customize.html"],
-  [/^\/marketing\/?$/, "/marketing.html"]
+  [/^\/marketing\/?$/, "/marketing.html"],
+  [/^\/shelving\/?$/, "/shelving.html"]
 ];
 
 // --- the gated endpoints, proxied ------------------------------------------
@@ -975,7 +976,9 @@ const server = http.createServer(async (request, response) => {
     }
   }
 
+  // Decoded, as Netlify does, or "shelf%20(18).jpg" never finds "shelf (18).jpg".
   let file = url.pathname;
+  try { file = decodeURIComponent(file); } catch { /* a malformed escape stays as sent, and 404s */ }
   for (const [pattern, target] of REWRITES) {
     if (pattern.test(file)) { file = target; break; }
   }
