@@ -31,6 +31,40 @@ window.ensureWhatsAppMessages = function (root) {
     });
 };
 
+// === Prefill experiment (off by default) ===================================
+// STRATEGY.md's open question: the corpus puts a prefilled opener's "wrote
+// anything at all" at 1-3%, a self-written one at 31-43% (VOICE.md, NEXT.md).
+// Nobody has tested a blank-but-inviting chat against that gap because three
+// rules hold the prefill in place on purpose (this file's AGENTS.md, the link
+// test, ensureWhatsAppMessages above) and breaking that is Ben's call, not a
+// default. This is the switch for that call, not a decision to flip it:
+// - enabled stays false until Ben says otherwise.
+// - It runs AFTER ensureWhatsAppMessages, so the safety net has already put a
+//   real prefilled link in place; this only ever removes it, at runtime,
+//   never in the page source, so scripts/test-whatsapp-links.js keeps passing
+//   untouched and every link still ships safe if this is never turned on.
+// - It only ever touches an anchor explicitly opted in with
+//   data-wa-experiment="<experimentId>" (none are marked yet) — never a
+//   blanket site-wide change.
+// - The link keeps whatever data-fwk-handoff/onclick it already has, so it is
+//   measured through the existing wa_handoff event with no new pipeline code.
+// To run it on one link: set enabled to true below and add
+// data-wa-experiment="how-page-cta" (or your own id, matched to experimentId)
+// to that one anchor. Nothing else changes.
+window.WHATSAPP_PREFILL_EXPERIMENT = {
+    enabled: false,
+    experimentId: 'how-page-cta'
+};
+window.applyWhatsAppPrefillExperiment = function (root) {
+    if (!window.WHATSAPP_PREFILL_EXPERIMENT.enabled) return;
+    var scope = root || document;
+    var id = window.WHATSAPP_PREFILL_EXPERIMENT.experimentId;
+    var links = scope.querySelectorAll('a[data-wa-experiment="' + id + '"]');
+    Array.prototype.forEach.call(links, function (link) {
+        link.setAttribute('href', 'https://wa.me/' + window.WHATSAPP_PHONE);
+    });
+};
+
 window.trackCheckoutConversion = function (url, eventParams = {}) {
     // First track the GA4 event (keep your existing GA4 tracking)
     gtag('event', 'begin_checkout', eventParams);
@@ -93,6 +127,7 @@ window.addEventListener('load', function () {
     setupMobileMenu();
     highlightActivePage();
     ensureWhatsAppMessages(); // safety net: no WhatsApp CTA opens a blank chat
+    applyWhatsAppPrefillExperiment(); // off by default; see definition above
 });
 
 function loadHeaderAndFooter() {
