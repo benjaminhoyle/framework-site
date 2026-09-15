@@ -182,6 +182,8 @@ a template string. Google already executes JS to see any of this. The baked
 array saves one same-origin request to a CDN-cached file — that is its entire
 contribution, and it is not worth what it costs everywhere else.
 
+**Since 2026-09-16:** shelving.html no longer injects Product JSON-LD or microdata. Meta's catalogue reads only feeds/meta-shelving-catalog.csv (its one data source, checked through the Graph API), and Google does not show product results for a page that lists many products.
+
 ---
 
 ## 6. Access, honestly

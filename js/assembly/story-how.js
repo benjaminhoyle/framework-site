@@ -111,7 +111,7 @@
             title: 'One shelf made of five interlocking parts'
         },
         apart: {
-            title: 'Infinitely customizable'
+            title: 'Swap units to change the shape'
         },
         together: {
             title: 'Ready to reconfigure',

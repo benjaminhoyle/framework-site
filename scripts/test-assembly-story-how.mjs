@@ -568,7 +568,7 @@ check("the pins name the slim unit, a post and the shelf",
 const WORDS = {
   "parts.title": "One shelf made of five interlocking parts",
   "parts.body": null,
-  "apart.title": "Infinitely customizable",
+  "apart.title": "Swap units to change the shape",
   "apart.body": null,
   "together.title": "Ready to reconfigure",
   "together.body": "Disassemble the units if you move house or want to change the design."

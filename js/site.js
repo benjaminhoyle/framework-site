@@ -149,14 +149,15 @@ function loadHeaderAndFooter() {
     if (!isDesignerPage) {
         const headerContent = `
             <div class="logo">
-                <a href="index.html">
-                    <img src="/images/global/fwk-icon.png" alt="Framework Designs Logo">
+                <a href="/">
+                    <img src="/images/global/fwk-icon.png" alt="Framework Designs">
                 </a>
             </div>
             <nav>
                 <ul id="nav-menu">
-                    <li><a href="index.html">Home</a></li>
-                    <li><a href="shelving.html">Shelving</a></li>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/shelving.html">Shelving</a></li>
+                    <li><a href="/how">How it works</a></li>
     <li><a href="${window.buildWhatsAppUrl()}" target="_blank" rel="noopener noreferrer" data-fwk-handoff="header" onclick="trackContactConversion('', {link_target:'header_contact'});">Contact</a></li>            </ul>
             </nav>
             <button id="mobile-menu-toggle" aria-label="Toggle mobile menu">
@@ -240,15 +241,17 @@ function highlightActivePage() {
     // Skip if nav-menu doesn't exist (like on designer.html)
     if (!document.getElementById('nav-menu')) return;
 
-    const currentPage = window.location.pathname.split("/").pop() || 'index.html';
-    const navLinks = document.querySelectorAll('#nav-menu a');
+    // Compare paths, so "/" and "/index.html", "/shelving" and "/shelving.html" match their links.
+    const normalise = (p) => {
+        const bare = p.replace(/\.html$/, '');
+        return bare === '/index' ? '/' : bare;
+    };
+    const here = normalise(window.location.pathname);
 
-    navLinks.forEach(link => {
-        if (link.getAttribute('href') === currentPage) {
-            link.classList.add('active');
-        } else {
-            link.classList.remove('active');
-        }
+    document.querySelectorAll('#nav-menu a').forEach(link => {
+        const url = new URL(link.getAttribute('href'), window.location.href);
+        const same = url.origin === window.location.origin && normalise(url.pathname) === here;
+        link.classList.toggle('active', same);
     });
 }
 
