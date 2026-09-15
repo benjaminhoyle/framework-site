@@ -651,6 +651,13 @@ for (const caption of story.captions) {
   }
 }
 
+// --- the loading mark, and a page that closes up if the engine never arrives ----------
+
+check("/how's stage carries the loading mark", /<div class="fa-stage" id="assembly-stage">\s*<canvas[^>]*><\/canvas>\s*<div class="fa-loading" aria-hidden="true">/.test(page)
+  && page.includes('d="M216 332H145V35H442V352L265 529V225L442 48"'));
+check("/how takes the track out if the engine never arrives",
+  /if \(!window\.FrameworkAssembly\) \{\s*var stranded = document\.getElementById\('assembly-track'\);\s*if \(stranded\) stranded\.hidden = true;/.test(page));
+
 if (failures) {
   console.error(`\n${failures} story check${failures === 1 ? "" : "s"} failed`);
   process.exit(1);

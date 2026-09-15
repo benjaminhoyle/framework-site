@@ -268,6 +268,9 @@
         <div class="fa-track co-track" id="addons-track">
             <div class="fa-stage" id="addons-stage">
                 <canvas class="fa-canvas" id="addons-canvas" aria-hidden="true"></canvas>
+                <div class="fa-loading" aria-hidden="true">
+                    <svg viewBox="115 5 357 582" focusable="false"><path class="fa-loading-frame" d="M216 332H145V35H442V352L265 529V225L442 48"/><path class="fa-loading-bar" d="M314 332H420"/></svg>
+                </div>
                 <noscript>
                     <img class="co-track-still" src="/images/shelving/configs/w800/lantern-shelf-emptied.jpg"
                         alt="The Lantern Shelf in Coral, with the lamp arm rising from its right end." width="800" height="800">
@@ -344,8 +347,26 @@
                 var script = document.createElement('script');
                 script.src = SCRIPTS[index];
                 script.onload = function () { load(index + 1, done); };
-                script.onerror = function () { console.error('assembly: could not load ' + SCRIPTS[index]); };
+                script.onerror = function () {
+                    console.error('assembly: could not load ' + SCRIPTS[index]);
+                    giveUp();
+                };
                 document.body.appendChild(script);
+            }
+            /*
+             * A script that never arrives would leave a tall blank stage behind
+             * a loading mark that never settles. The shelf's photograph goes in
+             * its place instead, the one the page shows without JavaScript.
+             */
+            function giveUp() {
+                if (!track.parentNode) return;
+                var still = document.createElement('img');
+                still.className = 'co-track-still';
+                still.src = '/images/shelving/configs/w800/lantern-shelf-emptied.jpg';
+                still.alt = 'The Lantern Shelf in Coral, with the lamp arm rising from its right end.';
+                still.width = 800;
+                still.height = 800;
+                track.parentNode.replaceChild(still, track);
             }
             var started = false;
             function begin() {
@@ -362,6 +383,7 @@
                         }
                     }).catch(function (error) {
                         console.error('assembly:', error);
+                        giveUp();
                     });
                 });
             }

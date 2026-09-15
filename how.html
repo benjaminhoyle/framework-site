@@ -91,12 +91,12 @@
 
     <!-- The six module bundles this shelf is made of, the same list as /how.
          scripts/test-assembly-story-how.mjs checks it against the story. -->
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_base.json?v=111">
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_adapter.json?v=111">
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/slim_extension.json?v=111">
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_booster.json?v=111">
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_extension.json?v=111">
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_extension.json?v=111">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_base.json?v=112">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_adapter.json?v=112">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/slim_extension.json?v=112">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_booster.json?v=112">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_extension.json?v=112">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_extension.json?v=112">
 </head>
 
 <body>
@@ -116,6 +116,9 @@
         <div class="fa-track" id="assembly-track">
             <div class="fa-stage" id="assembly-stage">
                 <canvas class="fa-canvas" id="assembly-canvas" aria-hidden="true"></canvas>
+                <div class="fa-loading" aria-hidden="true">
+                    <svg viewBox="115 5 357 582" focusable="false"><path class="fa-loading-frame" d="M216 332H145V35H442V352L265 529V225L442 48"/><path class="fa-loading-bar" d="M314 332H420"/></svg>
+                </div>
                 <noscript>
                     <div class="fa-caption" style="opacity:1;transform:none;visibility:visible">
                         <h2>One shelf made of five interlocking parts</h2>
@@ -257,7 +260,7 @@
             // is the story's 45% and not a guess from pixels. Passive, and it
             // removes itself after the one report.
             function onScroll() {
-                var live = window.FrameworkAssembly.debug;
+                var live = window.FrameworkAssembly && window.FrameworkAssembly.debug;
                 if (live && typeof live.at === 'function' && live.at() >= HOLD) engaged();
             }
             window.addEventListener('scroll', onScroll, { passive: true });
@@ -281,6 +284,17 @@
                         window.fwk.track('designer_open', { source: 'how', product_id: null });
                     }
                 });
+            }
+
+            /*
+             * The engine did not arrive (a blocked or failed script). Take the
+             * track out rather than leave a tall blank stage behind a loading
+             * mark that never settles; the page closes up around it.
+             */
+            if (!window.FrameworkAssembly) {
+                var stranded = document.getElementById('assembly-track');
+                if (stranded) stranded.hidden = true;
+                return;
             }
 
             window.FrameworkAssembly.start({

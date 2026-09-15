@@ -543,6 +543,11 @@ check("the page links to /how", page.includes('href="/how"'));
   check("/how's box names both the colors and the add-ons", /<a class="pg-colors" href="\/customize">[\s\S]*?colors[\s\S]*?add-ons[\s\S]*?<\/a>/.test(read("how.html")));
   check("the blog's box names both", read("blog/template.html").includes('<a href="/customize">four colors and add-ons</a>'));
 }
+check("the add-ons stage carries the loading mark", /<div class="fa-stage" id="addons-stage">\s*<canvas[^>]*><\/canvas>\s*<div class="fa-loading" aria-hidden="true">/.test(page)
+  && page.includes('d="M216 332H145V35H442V352L265 529V225L442 48"'));
+check("a script that never arrives leaves the shelf's photograph, not a blank stage",
+  /script\.onerror = function \(\) \{[\s\S]*?giveUp\(\);/.test(page) && /track\.parentNode\.replaceChild\(still, track\)/.test(page)
+  && /\.catch\(function \(error\) \{\s*console\.error\('assembly:', error\);\s*giveUp\(\);/.test(page));
 for (const file of ["customize.html","css/colors.css", "js/assembly/story-colors.js", "scripts/test-assembly-story-colors.mjs", "scripts/build-shelf-props.mjs", "scripts/lib/props-geometry.mjs", "data/assembly/lantern.design.json"]) {
   check(`${file} has no em dash`, !read(file).includes("\u2014"));
 }

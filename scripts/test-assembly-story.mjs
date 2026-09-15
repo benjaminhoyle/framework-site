@@ -397,15 +397,58 @@ for (const { file, script } of derived) {
     && /hint\.setAttribute\('aria-hidden', 'true'\)/.test(engineSource) && /textContent = 'Scroll'/.test(engineSource));
   check("the cue shows only on a locked stage: after a pause before the end, or at once when the reader scrolls back up",
     /var paused = target < HINT_END && now - movedAt > \(begun \? HINT_AGAIN_MS : HINT_FIRST_MS\)/.test(engineSource)
-    && /var on = locked && \(backTravel > HINT_BACK \|\| paused\)/.test(engineSource)
+    && /var on = ready && locked && \(backTravel > HINT_BACK \|\| paused\)/.test(engineSource)
     && /else backTravel = 0;/.test(engineSource));
   check("the cue is invisible until it is switched on", /\.fa-scroll-hint \{[^}]*opacity: 0/.test(styles) && /\.fa-scroll-hint\.is-on \{[^}]*opacity: 1/.test(styles));
   check("on a phone the cue sits above the caption band", /\.fa-scroll-hint \{\s*bottom: calc\(var\(--fa-caption-band/.test(styles));
   check("the cue only nudges for readers who have not asked for less motion",
     /@media \(prefers-reduced-motion: no-preference\) \{\s*\.fa-scroll-hint\.is-on::after \{\s*animation/.test(styles));
-  check("the drawn progress eases toward the scroll position, except for calm and big jumps",
-    /if \(!calm && painted >= 0 && Math\.abs\(target - painted\) < JUMP\)/.test(engineSource) && /var SCRUB_MS = \d+;/.test(engineSource));
+  check("the drawn progress eases toward the scroll position, except across big jumps",
+    /if \(painted >= 0 && Math\.abs\(target - painted\) < JUMP\)/.test(engineSource) && /var SCRUB_MS = \d+;/.test(engineSource));
   check("there is no progress rail", !/fa-rail/.test(engineSource) && !/fa-rail/.test(styles));
+}
+
+// --- reduced motion fades through white at a cut; the loading mark; the badge ---------
+
+{
+  const sameShot = (a, b) => a.focus.every((n, i) => n === b.focus[i]) && a.padding === b.padding
+    && (!a.view && !b.view || (a.view && b.view && a.view.azimuthDeg === b.view.azimuthDeg
+      && a.view.elevationDeg === b.view.elevationDeg && (a.view.fovDeg || 0) === (b.view.fovDeg || 0)));
+  let fadesAtCuts = true;
+  let onlyAroundCuts = true;
+  for (let i = 1; i < keys.cameras.length; i += 1) {
+    const a = keys.cameras[i - 1];
+    const b = keys.cameras[i];
+    if (!(b.at > a.at)) continue;
+    const cutAt = (a.at + b.at) / 2;
+    const reach = Math.min(0.02, (b.at - a.at) / 2);
+    const veil = engine.sample(keys, cutAt, true).veil;
+    if (sameShot(a, b) ? veil !== 0 : veil < 0.999) fadesAtCuts = false;
+    for (const p of [cutAt - reach * 1.05, cutAt + reach * 1.05]) {
+      if (p > a.at && p < b.at && engine.sample(keys, p, true).veil > 0.001) onlyAroundCuts = false;
+    }
+  }
+  let neverOutsideCalm = true;
+  for (let step = 0; step <= 1000; step += 1) if (engine.sample(keys, step / 1000).veil !== 0) neverOutsideCalm = false;
+  check("in calm, every camera cut happens with the frame faded out, and a hold never fades", fadesAtCuts);
+  check("in calm, the fade is only around the cut", onlyAroundCuts);
+  check("outside calm, nothing fades", neverOutsideCalm);
+
+  const engineSource = fs.readFileSync(path.join(ROOT, "js/assembly/scroll-story.js"), "utf8");
+  const styles = fs.readFileSync(path.join(ROOT, "css/assembly.css"), "utf8");
+  check("the canvas fades with the veil, and the pins with it", /canvas\.style\.opacity = veil \?/.test(engineSource)
+    && /\* \(1 - \(moment\.veil \|\| 0\)\)/.test(engineSource));
+  check("the loading mark settles once there is a story, and on a failure", /loading\.classList\.add\('is-done'\)/.test(engineSource)
+    && /\}, function \(error\) \{\s*settle\(\);/.test(engineSource));
+  check("the loading mark waits before it draws, and fades instead for less motion",
+    /\.fa-loading-frame \{ animation: fa-loading-frame 2\.4s ease-in-out 0\.4s infinite both; \}/.test(styles)
+    && /@media \(prefers-reduced-motion: reduce\) \{\s*\.fa-loading svg \{ animation: fa-loading-pulse/.test(styles)
+    && /\.fa-loading\.is-done \{ opacity: 0; \}/.test(styles));
+  check("the tier badge is the engine's, on ?bench=1 on any page", /function showBadge\(result\)/.test(engineSource)
+    && /settings\.bench \|\| \/\[\?&\]bench=1\/\.test\(window\.location\.search\)/.test(engineSource));
+  check("the lab's stage carries the loading mark", /<div class="fa-stage" id="assembly-stage">\s*<canvas[^>]*><\/canvas>\s*<div class="fa-loading" aria-hidden="true">/.test(page)
+    && page.includes('d="M216 332H145V35H442V352L265 529V225L442 48"'));
+  check("the lab no longer draws a badge of its own", !/className = 'fa-badge'/.test(page));
 }
 
 if (failures) {

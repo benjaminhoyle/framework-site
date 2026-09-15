@@ -39,12 +39,12 @@
       them. The list must stay in step with js/assembly/curator-shelf.js;
       scripts/test-assembly-story.mjs fails if it drifts.
     -->
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_base.json?v=111">
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_adapter.json?v=111">
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/slim_extension.json?v=111">
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_booster.json?v=111">
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_extension.json?v=111">
-    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_extension.json?v=111">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_base.json?v=112">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_adapter.json?v=112">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/slim_extension.json?v=112">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_booster.json?v=112">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/standard_extension.json?v=112">
+    <link rel="preload" as="fetch" crossorigin href="/assets/shelving/modules/wide_extension.json?v=112">
 </head>
 
 <body>
@@ -66,6 +66,9 @@
     <div class="fa-track" id="assembly-track">
         <div class="fa-stage" id="assembly-stage">
             <canvas class="fa-canvas" id="assembly-canvas" aria-hidden="true"></canvas>
+            <div class="fa-loading" aria-hidden="true">
+                <svg viewBox="115 5 357 582" focusable="false"><path class="fa-loading-frame" d="M216 332H145V35H442V352L265 529V225L442 48"/><path class="fa-loading-bar" d="M314 332H420"/></svg>
+            </div>
             <noscript>
                 <div class="fa-caption" style="opacity:1;transform:none">
                     <h2 data-copy="page.noscriptTitle">Seven parts, one joint.</h2>
@@ -91,30 +94,13 @@
             track: '#assembly-track',
             stage: '#assembly-stage',
             canvas: '#assembly-canvas',
+            // The tier badge (the engine draws it) on localhost as well as on
+            // ?bench=1: this page is a bench before it is anything else.
+            bench: /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname),
             onReady: function (result) {
                 // Bench handle: FrameworkAssembly.debug.seek(0.55) jumps to a
                 // frame without a gesture. Read-only, nothing on the page uses it.
                 window.FrameworkAssembly.debug = result;
-
-                /*
-                 * The tier badge, on localhost or on ?bench=1.
-                 *
-                 * Not on the page a visitor gets: it is a developer's readout,
-                 * and it sits over the model. But it stays reachable on the
-                 * deployed URL, because "which tier did it pick, and why" is the
-                 * one question worth asking on a real phone, and a real phone is
-                 * exactly where a console is hardest to get at.
-                 */
-                var bench = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)
-                    || /[?&]bench=1/.test(window.location.search);
-                if (!bench) return;
-                var badge = document.createElement('div');
-                badge.className = 'fa-badge';
-                badge.innerHTML = 'tier: ' + result.tier + '  (' + (result.why || '') + ')\n'
-                    + ['full', 'lite', 'calm', 'still', 'photo'].map(function (name) {
-                        return '<a href="?bench=1&tier=' + name + '">' + name + '</a>';
-                    }).join('  ');
-                document.body.appendChild(badge);
             },
         }).catch(function (error) {
             console.error('assembly:', error);

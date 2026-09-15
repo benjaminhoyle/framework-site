@@ -264,6 +264,73 @@ body {
     will-change: opacity, transform;
 }
 
+/* ------------------------------------------------------------ loading mark */
+
+/*
+ * The Framework mark drawing itself while the story loads. It is in each
+ * page's markup rather than made by the engine, so it is there before any
+ * script has arrived; the engine adds `is-done` once there is something to
+ * look at, and then hides it. It waits 0.4s before it starts, so a quick load
+ * never shows it at all, and it fades rather than draws for readers who asked
+ * for less motion. 1787 and 106 are the two strokes' lengths in the mark's own
+ * units (its viewBox), traced from images/global/fwk-icon-lg.png.
+ */
+.fa-loading {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    color: var(--muted);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.fa-loading.is-done { opacity: 0; }
+
+.fa-loading svg {
+    display: block;
+    width: 28px;
+    height: 46px;
+    overflow: visible;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 40;
+    stroke-miterlimit: 4;
+}
+
+.fa-loading-frame { stroke-dasharray: 1787; }
+.fa-loading-bar { stroke-dasharray: 106; }
+
+@media (prefers-reduced-motion: no-preference) {
+    .fa-loading svg { animation: fa-loading-cycle 2.4s linear 0.4s infinite both; }
+    .fa-loading-frame { animation: fa-loading-frame 2.4s ease-in-out 0.4s infinite both; }
+    .fa-loading-bar { animation: fa-loading-bar 2.4s ease-in-out 0.4s infinite both; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fa-loading svg { animation: fa-loading-pulse 2s ease-in-out 0.4s infinite both; }
+}
+
+@keyframes fa-loading-cycle {
+    0%, 80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@keyframes fa-loading-frame {
+    0% { stroke-dashoffset: 1787; }
+    55%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes fa-loading-bar {
+    0%, 45% { stroke-dashoffset: 106; }
+    62%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes fa-loading-pulse {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.7; }
+}
+
 /* -------------------------------------------------------------- scroll cue */
 
 /*
@@ -354,6 +421,10 @@ body {
     /* On the model's side of the caption band, not in it. */
     .fa-scroll-hint {
         bottom: calc(var(--fa-caption-band, 200px) + 10px);
+    }
+    /* Centred on the canvas, which stops at the caption band. */
+    .fa-loading {
+        top: calc((100% - var(--fa-caption-band, 200px)) / 2);
     }
     .fa-intro, .fa-outro { padding: 14vh 20px; }
 }

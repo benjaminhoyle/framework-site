@@ -356,9 +356,35 @@ reader through a whole camera move in a frame or two, so the change of angle
 into the bookend close-up on /customize was simply not seen there; eased, it
 plays. Every frame is still one progress value, so captions, pins and pieces
 never disagree. A jump of more than a third of the story (an anchor, a restored
-scroll position) is taken at once, and `calm` is not eased. For the same reason
+scroll position) is taken at once. For the same reason
 /customize's track on a phone went from 480vh to 600vh: longer, not shorter,
 where a flick covers the most ground.
+
+**The loading mark.** Until there is a story to look at, the stage shows the
+Framework mark drawing itself (`.fa-loading`). It is in each page's own markup,
+so it is there before any script has arrived, which matters most on /customize,
+whose scripts load only as the reader nears. It waits 0.4 seconds before it
+starts, so a quick load never shows it, and readers who asked for less motion
+get it fading rather than drawing. `start()` settles it once the first frame
+is up, or the stills or photographs are, or loading failed. If a script never
+arrives at all, /how takes the track out and /customize puts the shelf's
+photograph in its place, rather than leave a tall blank stage.
+
+**Reduced motion fades through white at a cut.** `calm`, which an iPhone with
+Reduce Motion on gets, keeps the pieces moving and cuts the camera, so on
+/customize the change of angle into the bookend close-up was a jump rather
+than a turn, and read as the page skipping. The jump now happens out of sight:
+the frame fades to white over 2% of the story before the cut and back over 2%
+after it (`veil` from `sample()`, worked out by `cutVeil()`), and pins fade with
+it. A fade is not motion, which is why it is the usual stand-in for a camera
+move under reduced motion. `calm` is eased like the other tiers, which is what
+lets a flick show the fade rather than skip straight past it.
+
+**The tier badge is on every story page.** `?bench=1` on /how, /customize or
+/assembly shows which tier the device got and why, with links that force each;
+the lab also shows it on localhost. It moved into `start()` from the lab page,
+because "why does my phone not turn the camera?" gets asked on the pages people
+actually open, and a phone is where a console is hardest to reach.
 
 **The pixel ratio is checked against reality, not guessed from the device.** The
 tier signals are wrong on exactly the hardware they most need to protect: a

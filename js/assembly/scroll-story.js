@@ -52,7 +52,7 @@ window.FrameworkAssembly = (function () {
      * story asking for them unversioned could draw last week's geometry after a
      * rebuild; asking with the builder's number also shares the builder's cache.
      */
-    var GEOMETRY_VERSION = '111';
+    var GEOMETRY_VERSION = '112';
 
     // --------------------------------------------------------------- tiers
 
@@ -415,13 +415,49 @@ window.FrameworkAssembly = (function () {
         return out;
     }
 
+    /*
+     * How far a calm frame has faded to the page's white around a cut.
+     *
+     * A cut is honest, but in the middle of a scroll it is a jolt, and it reads
+     * as the page having skipped something. So a reader who asked for less
+     * motion gets a fade through white instead: the frame fades out over a
+     * short stretch of scroll before the cut and back in after it, and the shot
+     * changes while nothing is showing. A fade is not motion, which is why it
+     * is the usual stand-in for a camera move under reduced motion. Two
+     * identical camera keys are a hold, not a cut, and do not fade.
+     */
+    var CUT_FADE = 0.02;
+
+    function sameShot(a, b) {
+        if (a === b) return true;
+        for (var i = 0; i < 6; i += 1) {
+            if (a.focus[i] !== b.focus[i]) return false;
+        }
+        if (a.padding !== b.padding) return false;
+        if (!a.view || !b.view) return !a.view && !b.view;
+        return a.view.azimuthDeg === b.view.azimuthDeg && a.view.elevationDeg === b.view.elevationDeg
+            && (a.view.fovDeg || 0) === (b.view.fovDeg || 0);
+    }
+
+    function cutVeil(shot, p) {
+        if (sameShot(shot.a, shot.b)) return 0;
+        var length = shot.b.at - shot.a.at;
+        var reach = Math.min(CUT_FADE, length / 2);
+        if (!(reach > 0)) return 0;
+        // The cut is where the eased shot passes halfway, which for a
+        // symmetric ease is halfway through the segment.
+        var x = clamp01(Math.abs(p - (shot.a.at + length / 2)) / reach);
+        return 1 - x * x * (3 - 2 * x);
+    }
+
     /**
      * The state of the story at one point on the timeline.
      *
      * `calm` cuts the camera instead of moving it: the shot changes at the
-     * midpoint between two camera keys rather than travelling between them. The
-     * pieces still move, because they are objects inside a still frame rather
-     * than the frame itself.
+     * midpoint between two camera keys rather than travelling between them, and
+     * `veil` says how far the frame has faded through white around that cut
+     * (see cutVeil). The pieces still move, because they are objects inside a
+     * still frame rather than the frame itself.
      */
     function sample(keys, p, calm) {
         var found = bracket(keys, p);
@@ -429,6 +465,7 @@ window.FrameworkAssembly = (function () {
         var shot = bracket(keys.cameras || keys, p);
         var ct = easeInOutCubic(shot.t);
         var cut = calm ? (ct < 0.5 ? shot.a : shot.b) : null;
+        var veil = calm ? cutVeil(shot, p) : 0;
         var pieces = {};
         Object.keys(found.a.pieces).forEach(function (id) {
             var from = found.a.pieces[id];
@@ -466,6 +503,7 @@ window.FrameworkAssembly = (function () {
             focus: cut ? cut.focus : blendFocus(shot.a.focus, shot.b.focus, ct),
             padding: cut ? cut.padding : lerp(shot.a.padding, shot.b.padding, ct),
             view: view,
+            veil: veil,
             pieces: pieces
         };
     }
@@ -905,7 +943,8 @@ window.FrameworkAssembly = (function () {
     function paintPins(overlay, project, moment, p, width, height) {
         overlay.pins.forEach(function (pin) {
             var band = pinBand(pin.spec, width);
-            var opacity = windowOpacity(p, band.from, band.to);
+            // A pin belongs to the picture, so it fades with it at a calm cut.
+            var opacity = windowOpacity(p, band.from, band.to) * (1 - (moment.veil || 0));
             var at = opacity > 0.01 ? project(pinPoint(pin.spec, moment)) : null;
             if (at) {
                 // Fade out over the last 40px of the frame rather than snapping,
@@ -975,6 +1014,7 @@ window.FrameworkAssembly = (function () {
         var ready = false;
         var moment = null;
         var progress = 0;
+        var shownVeil = 0;
 
         /*
          * Pins are placed from the camera that actually drew the frame, not the
@@ -1046,6 +1086,13 @@ window.FrameworkAssembly = (function () {
             if (renderer.setLamp) renderer.setLamp(lampFor(story, moment));
             var canvas = options.canvas;
             aim(renderer, moment, (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1));
+            // A calm cut fades the picture through white (sample's `veil`);
+            // written only when it changes, which outside a cut is never.
+            var veil = moment.veil || 0;
+            if (veil !== shownVeil && (Math.abs(veil - shownVeil) > 0.002 || veil === 0)) {
+                shownVeil = veil;
+                canvas.style.opacity = veil ? String(Math.round((1 - veil) * 1000) / 1000) : '';
+            }
         }
 
         /*
@@ -1081,8 +1128,9 @@ window.FrameworkAssembly = (function () {
          * it plays. Every frame is still a pure function of the one progress it
          * draws, so captions, pins and pieces never disagree. A jump of more
          * than a third of the story (an anchor, a restored scroll position) is
-         * taken at once rather than played back, and `calm`, for readers who
-         * asked for less motion, is not eased at all.
+         * taken at once rather than played back. `calm` is eased too: easing
+         * adds no movement of its own, and it is what lets a flick show the
+         * fade at a cut rather than skip straight past it.
          */
         var SCRUB_MS = 140;
         var JUMP = 0.33;
@@ -1126,7 +1174,8 @@ window.FrameworkAssembly = (function () {
             if (target > HINT_BEGUN) begun = true;
             var locked = window.scrollY >= top - 2 && window.scrollY <= top + span + 2;
             var paused = target < HINT_END && now - movedAt > (begun ? HINT_AGAIN_MS : HINT_FIRST_MS);
-            var on = locked && (backTravel > HINT_BACK || paused);
+            // Not while the shelf is still loading: the loading mark is up then.
+            var on = ready && locked && (backTravel > HINT_BACK || paused);
             if (on !== hintOn) {
                 hintOn = on;
                 overlay.hint.classList.toggle('is-on', on);
@@ -1145,7 +1194,7 @@ window.FrameworkAssembly = (function () {
             var target = scrollProgress();
             paintHint(now, target);
             var p = target;
-            if (!calm && painted >= 0 && Math.abs(target - painted) < JUMP) {
+            if (painted >= 0 && Math.abs(target - painted) < JUMP) {
                 p = painted + (target - painted) * (1 - Math.exp(-Math.min(elapsed, 100) / SCRUB_MS));
                 if (Math.abs(target - p) < 0.0004) p = target;
             }
@@ -1445,6 +1494,28 @@ window.FrameworkAssembly = (function () {
 
     // ---------------------------------------------------------------- entry
 
+    /*
+     * The tier badge: which tier this device got and why, with a link to force
+     * each. Only on ?bench=1, or where the page asks for it (the lab does, on
+     * localhost): it sits over the model and is a developer's readout. It
+     * lives here rather than in one page because "which tier did my phone
+     * get?" is asked of whichever page the phone is on, and a phone is exactly
+     * where a console is hardest to get at.
+     */
+    function showBadge(result) {
+        var badge = document.createElement('div');
+        badge.className = 'fa-badge';
+        badge.appendChild(document.createTextNode('tier: ' + result.tier + '  (' + (result.why || '') + ')\n'));
+        TIERS.forEach(function (name, index) {
+            if (index) badge.appendChild(document.createTextNode('  '));
+            var link = document.createElement('a');
+            link.href = '?bench=1&tier=' + name;
+            link.textContent = name;
+            badge.appendChild(link);
+        });
+        document.body.appendChild(badge);
+    }
+
     function start(settings) {
         var story = window.FrameworkAssemblyStory;
         var track = document.querySelector(settings.track);
@@ -1461,10 +1532,29 @@ window.FrameworkAssembly = (function () {
         var run = decided.tier === 'photo' ? runPhoto(options, decided.why)
             : decided.tier === 'still' ? runStill(options)
                 : runLive(options);
+        /*
+         * The loading mark (`.fa-loading`, in the page's own markup so it is
+         * there before any of this has downloaded) goes once there is a story
+         * to look at: the live shelf's first frame, the stills, the photographs,
+         * or a failure. The still and photo tiers replace the track, and the
+         * mark with it, so for them this finds nothing to do.
+         */
+        function settle() {
+            var loading = stage.querySelector('.fa-loading');
+            if (!loading) return;
+            loading.classList.add('is-done');
+            window.setTimeout(function () { loading.hidden = true; }, 600);
+        }
         return run.then(function (result) {
-            result.why = decided.why;
+            settle();
+            // A fallback says why it fell back; otherwise the tier's own reason.
+            result.why = result.why || decided.why;
+            if (settings.bench || /[?&]bench=1/.test(window.location.search)) showBadge(result);
             if (settings.onReady) settings.onReady(result);
             return result;
+        }, function (error) {
+            settle();
+            throw error;
         });
     }
 
