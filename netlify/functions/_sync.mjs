@@ -48,6 +48,17 @@ const now = () => new Date().toISOString();
 export const CREATE_ORDERS_FROM = '2026-08-31';
 
 /**
+ * The day an exempt client being charged VAT starts to count as a mistake.
+ *
+ * `VAT Exempt` on Base - Clients carries no date, so a client ticked today may
+ * have ordinary invoices from before anyone knew. Those are history, not
+ * errors; only invoices from this date on are checked in that direction. The
+ * other direction — no VAT charged to a client nobody ticked — has no floor,
+ * because an exempt invoice is always a deliberate act somebody can explain.
+ */
+export const VAT_EXEMPT_CHECK_FROM = '2026-09-16';
+
+/**
  * The order status a newly created order starts in. Ben's rule, 2026-08-31:
  * partly or fully paid means the workshop can start, merely sent does not.
  *
@@ -309,6 +320,8 @@ export function orderFieldsFromInvoice(full, m, clientRecId, firstPayment) {
   if (m.hasDeliveryLine) fields['Delivery - Charged Client (ex VAT)'] = m.deliveryExVat;
   const etims = cfv(cf, 'cf_etims_invoice_number');
   if (etims) fields['eTIMS Invoice Number'] = String(etims);
+  const vat = zoho.invoiceVat(full);
+  if (vat) fields['Invoice VAT'] = vat;
   return fields;
 }
 
@@ -339,13 +352,17 @@ export function lineFieldsFromInvoice(m, products, orderRecId, factor = 1) {
   return (m.lines || []).map((li) => {
     const product = byZohoId.get(String(li.item_id || '').trim());
     const colour = (li.item_custom_fields || []).find((c) => c.api_name === 'cf_color')?.value;
+    const quantity = Number(li.quantity) || 1;
+    const value = zoho.lineValue(li) * factor;
     const fields = {
       Order: [orderRecId],
-      Quantity: Number(li.quantity) || 1,
+      Quantity: quantity,
       // Priced from the invoice on the way in, so the order reconciles on the
       // very first pass rather than reporting itself short until the next one.
-      'Zoho Unit Rate': zoho.round2(li.rate * factor),
-      'Zoho Line Total': zoho.round2(li.rate * li.quantity * factor)
+      // VAT-inclusive at the standard rate whatever the line was taxed at — see
+      // `lineValue` for why an exempt sale is stated like any other.
+      'Zoho Unit Rate': zoho.round2(value / quantity),
+      'Zoho Line Total': zoho.round2(value)
     };
     if (product) fields.Item = [product.id];
     else fields['Other Item Name'] = stripLegacy(li.name) || 'Custom Item';
@@ -665,6 +682,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
   // guesses — the same join the push endpoint uses to avoid minting a second
   // contact for somebody who already has one.
   const clientByContact = new Map();
+  const clientById = new Map(clients.map((c) => [c.id, c]));
   for (const c of clients) {
     const id = String(c.fields['Zoho Contact ID'] || '').trim();
     if (id) clientByContact.set(id, c);
@@ -763,8 +781,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
         // An invoice-level discount is spread across the lines, exactly as it is
         // for an order that already exists — otherwise a discounted order would
         // be created reconciling to the wrong total on the very next pass.
-        const gross = (m.lines || []).reduce((n, li) => n + li.rate * li.quantity, 0);
-        const factor = apportionFactor(gross, m.discount);
+        const factor = apportionFactor(m.goods, m.discount);
         writes.creates.push({
           invoice: num,
           customer: full.customer_name,
@@ -870,6 +887,41 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       });
     }
 
+    // -- VAT: how the invoice was taxed, and whether that fits the client
+    //
+    // `Invoice VAT` is Zoho's fact, overwritten whenever it differs — the same
+    // footing as the eTIMS number. `VAT Exempt` on the client is Airtable's,
+    // and the sync never writes it: it is somebody's knowledge (a diplomat, an
+    // exemption certificate), and ticking it from an invoice would let one
+    // mistyped line declare a person exempt.
+    const vat = zoho.invoiceVat(full);
+    if (vat && order.fields['Invoice VAT'] !== vat) {
+      writes.orders.push({
+        id: order.id, orderId: order.fields['Order ID'],
+        was: order.fields['Invoice VAT'] ?? null, now: vat,
+        fields: { 'Invoice VAT': vat }
+      });
+    }
+    const clientRec = clientById.get((order.fields['Client Name'] || [])[0])
+      || clientByContact.get(String(full.customer_id || ''));
+    const clientExempt = Boolean(clientRec?.fields?.['VAT Exempt']);
+    if (vat === 'Mixed') {
+      add(WARN, 'vat-matches-client', `${num} is part exempt`, {
+        invoice: num, orderRecIds: [order.id],
+        detail: 'Some lines on this invoice carry VAT and some are exempt. A client is either exempt or not, so one set of lines is probably wrong — and once the invoice is pushed to eTIMS it can only be corrected with a credit note.'
+      });
+    } else if (vat === 'Exempt' && clientRec && !clientExempt) {
+      add(WARN, 'vat-matches-client', `${num} charged no VAT to ${clientRec.fields.Name}`, {
+        invoice: num, orderRecIds: [order.id],
+        detail: `The invoice is VAT-exempt but ${clientRec.fields.Name} is not ticked VAT Exempt in Base - Clients. Tick it if they are exempt, so the next invoice is raised the same way; otherwise the invoice needs VAT.`
+      });
+    } else if (vat === 'Standard' && clientExempt && String(full.date) >= VAT_EXEMPT_CHECK_FROM) {
+      add(WARN, 'vat-matches-client', `${num} charged VAT to exempt ${clientRec.fields.Name}`, {
+        invoice: num, orderRecIds: [order.id],
+        detail: `${clientRec.fields.Name} is ticked VAT Exempt, but this invoice charges VAT. Correct it before it is pushed to eTIMS — after that it takes a credit note. If they are no longer exempt, untick the client.`
+      });
+    }
+
     // -- invoiced line prices: match Zoho lines to Airtable lines by product
     // Group the invoice's goods by Zoho item id where there is one, and by name
     // only where there is not. The id is what makes three years of renames a
@@ -878,11 +930,11 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     const zByKey = new Map();
     for (const li of m.lines) {
       const k = li.item_id || `name:${stripLegacy(li.name)}`;
-      const prev = zByKey.get(k) || { qty: 0, total: 0, rate: li.rate, name: stripLegacy(li.name) };
+      const prev = zByKey.get(k) || { qty: 0, total: 0, name: stripLegacy(li.name) };
       zByKey.set(k, {
         qty: prev.qty + li.quantity,
-        total: prev.total + li.rate * li.quantity,
-        rate: li.rate, name: prev.name
+        total: prev.total + zoho.lineValue(li),
+        name: prev.name
       });
     }
     const zByName = new Map();
@@ -922,7 +974,9 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
         // (that is how zero-rated freebies were recorded before this existed),
         // so deriving the "before" from the catalogue overstates the change.
         wasSubtotal: zoho.round2(num1(al.fields.Subtotal) || 0),
-        fields: { 'Zoho Line Total': want, 'Zoho Unit Rate': zoho.round2(z.rate * factor) }
+        // Per unit across every invoice line for this product, so two lines at
+        // different prices give their average rather than whichever came last.
+        fields: { 'Zoho Line Total': want, 'Zoho Unit Rate': zoho.round2(z.qty ? z.total * factor / z.qty : 0) }
       };
       if (have == null) {
         // Backfill. Filling a field that has never held a value changes nothing
@@ -984,7 +1038,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       // carries five, worth 14,000, which is exactly the shortfall that made
       // 88_Michael-Lotem_Yahel look like four missing decorations.
       const nameless = (m.lines || []).filter((l) => !String(l.name || '').trim());
-      const namelessValue = zoho.round2(nameless.reduce((n, l) => n + l.rate * l.quantity, 0));
+      const namelessValue = zoho.round2(nameless.reduce((n, l) => n + zoho.lineValue(l), 0));
 
       // Bespoke work cannot reconcile, by construction, on either side.
       //

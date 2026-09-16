@@ -175,6 +175,11 @@ function fakePush(body) {
     const fee = body.pickup ? 0 : (Number(String(body.delivery_fee ?? '').replace(/[^0-9.]/g, '')) || 0);
     const feeTyped = !body.pickup && String(body.delivery_fee || '').trim();
     fakeInvoice += 1;
+    // Mirrors the real rule: exempt only when the client is flagged AND the box
+    // was left ticked, so every result-screen branch can be seen.
+    const flagged = Boolean((FAKE_CLIENTS.find((c) => c.contact_id === String(body.contact_id)) || {}).vat_exempt);
+    const exempt = flagged && body.vat_exempt === true;
+    const ex = (n) => (exempt ? Math.round(n / 1.16 * 100) / 100 : n);
     return {
       ok: true,
       invoice_number: `INV${fakeInvoice}`,
@@ -182,9 +187,12 @@ function fakePush(body) {
       status: 'draft',
       url: 'https://books.zoho.com/app/000#/invoices/0',
       lines: 3 + (fee ? 1 : 0),
-      computed_total: 47500 + fee,
-      goods_total: 47500,
-      delivery_total: fee,
+      computed_total: ex(47500) + ex(fee),
+      goods_total: ex(47500),
+      delivery_total: ex(fee),
+      vat_exempt: exempt,
+      vat_exempt_declined: flagged && !exempt,
+      vat_saving: exempt ? Math.round((47500 + fee - ex(47500) - ex(fee)) * 100) / 100 : 0,
       client: {
         contact_id: body.contact_id || 'new', name, created,
         airtable: created ? { ok: true, created: true, record_id: 'recFAKE' } : null

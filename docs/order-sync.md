@@ -336,28 +336,50 @@ and all.
 
 ### VAT exempt
 
-`Base - Clients.VAT Exempt` is a checkbox, and it is **Airtable's outright** —
-nothing syncs it, in either direction.
+Decided 2026-09-16, after Ben reimbursed exempt clients by editing invoices by
+hand. An exempt client pays the price less VAT; the business earns the same.
 
-That is not a gap left for later; it is what the data says. Zoho models a real
-exemption as `is_taxable: false` on the contact, and **no contact in the books
-has it** — all 374 are taxable, split only between `vat_registered` (116) and
-`vat_not_registered` (258), which is a statement about the *customer's* own
-registration and not about whether we charge them VAT. There is nothing to
-reconcile to, so a field pretending to mirror one would be a field that is
-always false for the wrong reason.
+**Who is exempt is Airtable's.** `Base - Clients.VAT Exempt` is ticked by a
+person and nothing writes it — ticking it from an invoice would let one mistyped
+line declare somebody exempt. Zoho records the exemption per LINE (the `EXEMPT`
+reason, id `4099765000001069010`), never on the contact, and that is left as it is.
 
-What it is instead is the standing fact somebody knows and Zoho does not: a
-mission, an NGO, an exemption certificate in a drawer. The order form reads it
-and says so when the client is chosen, because the moment an invoice is raised
-is the moment it matters and the person raising it is not usually the person who
-knows. Nothing acts on it automatically — deciding what an exempt invoice looks
-like is an accounting decision, not a sync one.
+**How an exempt invoice looks** — the shape of INV640304, INV640361, INV640426
+and INV640439: every line, delivery included, at the VAT-inclusive price ÷ 1.16
+(six decimals, `5603.448276`), `tax_id` empty, the EXEMPT reason set. A
+tax-inclusive invoice stays tax-inclusive.
 
-If it should ever *drive* invoicing, the next step is `is_taxable: false` on the
-Zoho contact and a tax exemption reason beside it, and at that point the same
-question the phone number answered has to be answered again: who owns it, and
-what happens when the two disagree.
+**The order form raises them.** When the chosen client is ticked, the form shows
+a *VAT exempt* box, on by default. The rep can untick it for one invoice and
+cannot tick it for anyone Airtable has not; the endpoint re-reads the flag
+rather than trusting the browser, and a new client is never exempt (tick them in
+Base - Clients first). Quote drift is measured before the exemption, on the
+prices the builder quoted. The draft Zoho returns is **checked**, line by line —
+the exemption had only ever been set in Zoho's screen, never through the API, so
+a line that comes back taxed is a red warning on the result screen, not a
+silent 16% on an exempt client.
+
+**The reconciler records and checks it.** `Orders - Pipeline.Invoice VAT` is
+Zoho's fact — `Standard`, `Exempt` or `Mixed` — overwritten when it differs.
+`vat-matches-client` warns when:
+
+| Invoice | Client ticked? | Warns |
+|---|---|---|
+| Mixed | either | always — a client is exempt or not (INV640259 is one) |
+| Exempt | no | always — tick the client, or the invoice needs VAT |
+| Standard | yes | only for invoices dated from `VAT_EXEMPT_CHECK_FROM` (2026-09-16); older ones are history |
+
+**Revenue is like for like.** Every line is stated as Zoho's ex-VAT `item_total`
+× 1.16, so an exempt Standard Base is 6,500 in Airtable like any other, not
+5,603.45. Airtable revenue therefore means *income ex VAT, stated VAT-inclusive*;
+what a client actually paid is Zoho's (and `Balance to Pay`'s). See "Line
+values" under Traps for why `item_total` rather than `rate`.
+
+**Unproven: pushing an exempt invoice to eTIMS.** None of the exempt invoices has
+been pushed. Push one and watch it before relying on it — line discounts turned
+out to break the push (see the eTIMS notes), and exemption is a different code
+path in Zoho's payload. Also a question for the accountant: whether these clients
+are *exempt* or *zero-rated* supplies, which file differently on the VAT return.
 
 ### Correcting a client
 
@@ -691,9 +713,10 @@ no Zoho twin by design.
 
 A line matching nothing keeps its Zoho name in `Other Item Name` rather than
 being dropped or guessed at — the applet's own fallback column. Delivery never
-appears: it is a field on the order, not a line on it. An invoice-level discount
-is apportioned across the lines on the way in, or a discounted order would be
-created reporting itself short on the very next pass, forever.
+appears: it is a field on the order, not a line on it. Lines are priced on the
+way in exactly as the reconciler prices them afterwards (`lineValue`), or a
+discounted or exempt order would be created reporting itself short on the very
+next pass, forever.
 
 ### Creations run last, and one order at a time
 
@@ -874,10 +897,21 @@ Each of these cost a wrong answer while building this.
 - **`last_payment_date` is the *last* one.** Wrong for the 17 split-payment
   invoices. Use `/invoices/{id}/payments` and take the earliest; it works under
   `invoices.READ`, so no extra scope.
-- **The org is tax-inclusive.** A line's `rate` is VAT-inclusive; `item_total` is
-  ex-VAT. Goods use `rate`; the delivery field deliberately holds ex-VAT and uses
-  `item_total`. Swapping them is a silent 16% error, so `money()` is the only
-  place it is decided.
+- **Line values come from `item_total`, never `rate`** (changed 2026-09-16).
+  `rate` is the VAT-inclusive price only on an ordinary tax-inclusive invoice.
+  On an exempt line it is the ex-VAT price; on a tax-exclusive invoice
+  (INV640439) it is ex-VAT too; and it is the price BEFORE a line discount.
+  Every discount in the books (24 invoices) is a line discount, and Zoho's
+  `discount_total` is ex-VAT and includes the delivery line's discount — so the
+  old `rate × qty − discount_total` spread a gift across every line and
+  overstated the order by the VAT on it (246_Fadhuma's thirteen free bookends read
+  as 10,723 of revenue). `item_total` is ex-VAT and after the line's discount on
+  every invoice shape, so `lineValue = item_total × 1.16` is one rule for all of
+  them. The switch rewrote 66 lines on 17 orders: the five exempt orders up,
+  most discounted ones slightly down, the free lines to 0.
+- **The delivery field is ex-VAT on purpose**, `item_total` as it stands, to be
+  compared against the driver's rate. `money()` is the only place either
+  figure is derived.
 - **Airtable `= BLANK()` is true for numeric 0.** A zero-rated line would fall
   back to catalogue price. `Subtotal` uses `{Zoho Line Total} & "" = ""`.
 - **Renaming an Airtable client rewrites Order IDs** —
@@ -1027,10 +1061,9 @@ rather than diagnosed. The next nightly full pass settles it for free; do not
 spend a 350-call pass on it by hand.
 
 ### Open decisions
-- [ ] Should `VAT Exempt` drive anything? Today it is a flag the order form
-      reports and nothing acts on, because Zoho records no exemption against any
-      contact. Making it real means `is_taxable: false` and an exemption reason
-      on the Zoho contact, and answering who owns it — see "VAT exempt".
+- [x] `VAT Exempt` drives the order form's drafts, and the reconciler checks
+      invoices against it (2026-09-16) — see "VAT exempt". Still open: push one
+      exempt invoice to eTIMS and watch it.
 - [ ] eTIMS field in Airtable — Zoho-owned, one-way, nothing blocks on it
 - [ ] Quotes vs draft-as-quote (would need the PDF template redone)
 - [ ] `sku = module_id` — needs `is_sku_enabled` switched on in Zoho

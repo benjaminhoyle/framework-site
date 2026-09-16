@@ -3537,11 +3537,17 @@
     pinStack.appendChild(pinField);
     pinStack.appendChild(make("small", "nd-subtext", "The client's own PIN, only if they need it on the invoice"));
 
-    // Airtable's flag, shown and not editable. It is a standing fact about a
-    // client — an NGO, a mission, an exemption certificate — and the person who
-    // knows it is not usually the person raising the invoice, so the form
-    // reports it and stays out of the way.
-    const exempt = make("p", "nd-note");
+    // Airtable's flag decides who is exempt; the form never can. It appears only
+    // for a client already ticked in Base - Clients, on by default, so the rep
+    // can decline it for one invoice and cannot grant it to anybody. The server
+    // re-reads the flag rather than trusting this box.
+    const exemptBox = make("input", null);
+    exemptBox.type = "checkbox";
+    const exemptStack = make("div", "nd-staff-stack");
+    exemptStack.appendChild(exemptBox);
+    exemptStack.appendChild(make("small", "nd-subtext",
+      "Marked exempt in Airtable. Every line, delivery included, is raised at the price less 16% VAT. Untick to charge VAT on this invoice."));
+    const exempt = staffRow("VAT exempt", exemptStack);
     exempt.hidden = true;
 
     const firstName = staffInput("text", "First name");
@@ -3616,6 +3622,7 @@
       addressField.disagree(null);
       pinField.disagree(null);
       exempt.hidden = true;
+      exemptBox.checked = false;
       showCombo();
       combo.focusInput();
       say("");
@@ -3629,6 +3636,7 @@
       addressField.disagree(null);
       pinField.disagree(null);
       exempt.hidden = true;
+      exemptBox.checked = false;
       showChosen();
       say(`Invoicing ${entry.name}. Fetching what we have on file…`);
       const detail = await callPush({ action: "client", contact_id: entry.contact_id });
@@ -3644,11 +3652,9 @@
         prefill(address, detail.address) ? "address" : null,
         prefill(pin, detail.pin) ? "KRA PIN" : null
       ].filter(Boolean);
-      // A standing fact about the client, said where the invoice is raised.
-      // Nothing here acts on it — Zoho decides what is charged — but somebody
-      // about to raise a VAT invoice for an exempt client should know before
-      // they press the button, not after.
-      exempt.textContent = "This client is marked VAT exempt in Airtable — check how the invoice should be raised.";
+      // Said where the invoice is raised, because the person who knows a client
+      // is exempt is not usually the person raising it.
+      exemptBox.checked = Boolean(detail.vat_exempt);
       exempt.hidden = !detail.vat_exempt;
       // Where the two records already hold different real values, say so. The
       // save reconciles them either way; this is about reconciling them to the
@@ -3668,6 +3674,9 @@
       chosen = null;
       creating = true;
       newGroup.hidden = false;
+      // A new client has no Airtable record to be exempt in yet.
+      exempt.hidden = true;
+      exemptBox.checked = false;
       // The name already typed into the search box is almost always the new
       // client's, so split it rather than making them type it a second time.
       const parts = String(typed || "").split(/\s+/).filter(Boolean);
@@ -3759,7 +3768,8 @@
           window_start: from.value,
           window_end: until.value,
           pickup: pickup.checked,
-          delivery_fee: pickup.checked ? null : fee.value
+          delivery_fee: pickup.checked ? null : fee.value,
+          vat_exempt: !exempt.hidden && exemptBox.checked
         });
         if (!out || !out.ok) return say(pushProblem(out), true);
         showResult(body, title, out);
@@ -3841,6 +3851,14 @@
     wrap.appendChild(make("p", "nd-note",
       `Raised for ${who}: ${out.lines} line${out.lines === 1 ? "" : "s"}, ${formatKsh(out.computed_total)}${
         out.delivery_total ? ` (including ${formatKsh(out.delivery_total)} delivery)` : ""}.`));
+
+    if (out.vat_exempt) {
+      wrap.appendChild(make("p", "nd-note",
+        `Raised VAT-exempt: ${formatKsh(out.vat_saving)} less than with VAT. Check every line reads Exempt in Zoho before sending — a pushed eTIMS invoice cannot be edited.`));
+    } else if (out.vat_exempt_declined) {
+      wrap.appendChild(make("p", "nd-note",
+        `${who} is marked VAT exempt in Airtable, but this invoice was raised with VAT as asked.`));
+    }
 
     if (out.client && out.client.created) {
       const at = out.client.airtable;

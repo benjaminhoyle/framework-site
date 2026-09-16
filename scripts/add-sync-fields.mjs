@@ -32,7 +32,8 @@ const TABLES = {
  *
  * `Balance to Pay` cannot be derived: Airtable has no idea what has been paid,
  * only what was sold. `KRA PIN` and `VAT Exempt` are facts about a person and
- * belong on the person, not on each of their orders.
+ * belong on the person, not on each of their orders. `Invoice VAT` is the
+ * opposite: a fact about one invoice, which a person's orders need not share.
  */
 const WANTED = [
   {
@@ -66,6 +67,23 @@ const WANTED = [
       + 'certificate. Airtable owns this outright: nothing in Zoho records it, and '
       + 'nothing syncs it. The shelf designer shows it when the client is chosen, so '
       + 'whoever raises the invoice knows before they press the button.'
+  },
+  {
+    // Added 2026-09-16. A select rather than a checkbox because INV640259 is
+    // genuinely part exempt, and a checkbox would have to call that one thing.
+    table: 'orders',
+    name: 'Invoice VAT',
+    type: 'singleSelect',
+    options: { choices: [
+      { name: 'Standard', color: 'grayLight2' },
+      { name: 'Exempt', color: 'greenLight2' },
+      { name: 'Mixed', color: 'orangeLight2' }
+    ] },
+    description:
+      'How the Zoho invoice was taxed, written by the order sync: Standard (16% VAT), '
+      + 'Exempt (no line carries VAT) or Mixed (some lines do, some do not — almost '
+      + 'certainly a mistake). Revenue on the order is stated VAT-inclusive either way, so '
+      + 'an exempt sale reads like for like. Do not edit — the next pass overwrites it.'
   }
 ];
 

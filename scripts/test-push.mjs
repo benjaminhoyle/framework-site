@@ -9,7 +9,7 @@ import {
   zohoItemName, finishLabel, groupDesign, buildLineItems, linesTotal, quoteDrift,
   deliveryLine, goodsLines, samePhone, sameAddress, contactDetails, contactName,
   contactUpdate, newContactPayload, airtableClientPatch, clientDisagreement, moneyValue,
-  samePin, normalisePin
+  samePin, normalisePin, exemptLines, exemptionProblems, VAT_EXEMPTION_ID
 } from '../netlify/functions/_push.mjs';
 import { draftInvoicePayload } from '../netlify/functions/_zoho.mjs';
 
@@ -489,6 +489,39 @@ test('a comma-separated fee reaches the invoice as a line', () => {
   const line = deliveryLine(CATALOGUE, '2,500');
   assert.equal(line.rate, 2500);
   assert.equal(line.item_id, 'it_delivery');
+});
+
+// ---- VAT exempt ----------------------------------------------------------
+test('an exempt draft prices every line, delivery too, the way Ben raised INV640426', () => {
+  const { line_items } = buildLineItems([
+    { moduleId: 'standard_base', finish: 'sage', quantity: 2 },
+    { moduleId: 'standard_extension', finish: 'coral', quantity: 1 }
+  ], CATALOGUE);
+  line_items.push(deliveryLine(CATALOGUE, 2000));
+  const out = exemptLines(line_items);
+  assert.deepEqual(out.map((li) => li.rate), [5603.448276, 4741.37931, 1724.137931]);
+  assert.ok(out.every((li) => li.tax_id === '' && li.tax_exemption_id === VAT_EXEMPTION_ID));
+  // 17,672: what the client paid on INV640426, and what we earn on 20,500.
+  assert.equal(Math.round(linesTotal(out)), 17672);
+  assert.equal(out[0].item_custom_fields[0].value, 'Sage', 'the colour still rides on the line');
+  assert.equal(line_items[0].rate, 6500, 'the ordinary lines are not mutated');
+});
+
+test('quote drift is measured before the exemption, so an exempt order is not "under quote"', () => {
+  const { line_items } = buildLineItems([{ moduleId: 'standard_base', finish: 'sage', quantity: 1 }], CATALOGUE);
+  assert.equal(quoteDrift(goodsLines(line_items), 6500), null);
+  assert.notEqual(quoteDrift(goodsLines(exemptLines(line_items)), 6500), null, 'which is why the order matters');
+});
+
+test('a draft Zoho returned with VAT still on a line is caught', () => {
+  const ok = { line_items: [{ name: 'Standard Base', tax_percentage: 0, tax_exemption_id: VAT_EXEMPTION_ID }] };
+  const taxed = { line_items: [
+    { name: 'Standard Base', tax_percentage: 16, tax_id: 't16', tax_exemption_id: '' },
+    { name: 'Delivery Fees', tax_percentage: 0, tax_exemption_id: '' }
+  ] };
+  assert.deepEqual(exemptionProblems(ok), []);
+  assert.deepEqual(exemptionProblems(taxed), ['Standard Base', 'Delivery Fees']);
+  assert.deepEqual(exemptionProblems(null), []);
 });
 
 console.log(`test-push: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);

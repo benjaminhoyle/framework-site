@@ -20,6 +20,8 @@
 //      that. A module the contract cannot price is still sellable if Zoho has a
 //      rate for it.
 
+import { VAT_RATE } from './_zoho.mjs';
+
 /**
  * The Zoho item name for a builder module id.
  *
@@ -185,6 +187,62 @@ export function deliveryLine(zohoItems, amountKsh) {
  * reps to ignore the one warning that means something.
  */
 export const goodsLines = (line_items) => line_items.filter((li) => !isDeliveryName(li.name));
+
+/* -------------------------------------------------------------- VAT exempt --
+ *
+ * An exempt client is invoiced the way Ben raised INV640304, INV640361 and
+ * INV640426 by hand: every line — goods AND delivery — at the price less VAT,
+ * carrying Zoho's EXEMPT reason. The client pays 17,672 where an ordinary
+ * client pays 20,500, and the business earns the same 17,672 either way. Only
+ * the tax changes.
+ *
+ * Who is exempt is Airtable's fact (`Base - Clients.VAT Exempt`); the form
+ * cannot make a client exempt, only decline to apply it for one invoice.
+ */
+
+/**
+ * Zoho's "EXEMPT" tax exemption, as it sits on every exempt line in the books.
+ * One org, one reason, so a constant — reading it live needs a settings scope
+ * this credential deliberately lacks. If it is ever replaced in Zoho, the push
+ * says so: `exemptionProblems` checks the draft Zoho hands back.
+ */
+export const VAT_EXEMPTION_ID = '4099765000001069010';
+
+const round6 = (n) => Math.round(n * 1e6) / 1e6;
+
+/**
+ * The same lines, raised VAT-exempt.
+ *
+ * The rate keeps six decimals, as Zoho stored it on the hand-raised invoices:
+ * 6,500 / 1.16 is 5,603.448276, which Zoho totals to 5,603.45. Rounding to two
+ * places first would be off by a shilling on a line of five.
+ *
+ * `tax_id` is sent empty so the item's own General Rate is not applied beside
+ * the exemption.
+ */
+export function exemptLines(line_items, exemptionId = VAT_EXEMPTION_ID) {
+  return line_items.map((li) => ({
+    ...li,
+    rate: round6(li.rate / (1 + VAT_RATE)),
+    tax_id: '',
+    tax_exemption_id: exemptionId
+  }));
+}
+
+/**
+ * The lines of a created draft that did NOT come back exempt.
+ *
+ * The exemption has only ever been applied by hand in the Zoho screen, never
+ * through the API, so the draft Zoho returns is checked rather than trusted. A
+ * line still carrying VAT is a draft that would bill an exempt client 16% on
+ * top — worth a red line on the result screen, and worth finding before it is
+ * sent rather than after it is pushed to eTIMS.
+ */
+export function exemptionProblems(invoice) {
+  return (invoice && invoice.line_items || [])
+    .filter((li) => Number(li.tax_percentage) > 0 || !String(li.tax_exemption_id || '').trim())
+    .map((li) => li.name || 'a line');
+}
 
 /* ----------------------------------------------------------------- clients --
  *

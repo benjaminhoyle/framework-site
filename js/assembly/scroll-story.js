@@ -52,7 +52,7 @@ window.FrameworkAssembly = (function () {
      * story asking for them unversioned could draw last week's geometry after a
      * rebuild; asking with the builder's number also shares the builder's cache.
      */
-    var GEOMETRY_VERSION = '114';
+    var GEOMETRY_VERSION = '115';
 
     // --------------------------------------------------------------- tiers
 

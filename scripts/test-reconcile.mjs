@@ -9,7 +9,8 @@
 import assert from 'node:assert/strict';
 import {
   reconcile, canonicalItem, matchProducts, hhmmToSeconds, seedDelivery, daysApart, unmatchedLines,
-  orderStatusFor, cfv, orderFieldsFromInvoice, lineFieldsFromInvoice, resolveClient, CREATE_ORDERS_FROM
+  orderStatusFor, cfv, orderFieldsFromInvoice, lineFieldsFromInvoice, resolveClient, CREATE_ORDERS_FROM,
+  VAT_EXEMPT_CHECK_FROM
 } from '../netlify/functions/_sync.mjs';
 
 let passed = 0;
@@ -159,26 +160,141 @@ await test('a zero-rated line is written as 0, not as catalogue price', async ()
   assert.equal(r.pending.lines[0].now, 0);
 });
 
-// ---- invoice-level discounts ------------------------------------------
-await test('an invoice-level discount is apportioned onto the line', async () => {
+// ---- discounts ---------------------------------------------------------
+await test('a line discount lands on its own line, not smeared across the order', async () => {
+  // 246_Fadhuma, INV640374: thirteen bookends given away at 100%, everything
+  // else full price. Zoho reports that as a LINE discount, already inside the
+  // bookends' item_total, with an ex-VAT `discount_total` of 11,206.90 beside
+  // it. Taking that figure off the VAT-inclusive goods total spread the gift
+  // across every line and left the order 1,793 above what was paid.
   const r = await run({
-    ...backfillWorld,
-    invoices: [invoice('INV1', [zline('Standard Base', 2, 6500)], { discount_total: 1300 })]
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    products: [
+      { id: 'p1', fields: { Name: 'Standard Extension', Price: 5500, Status: 'Active', 'Zoho Item ID': 'z1' } },
+      { id: 'p2', fields: { Name: 'Bookend', Price: 1000, Status: 'Active', 'Zoho Item ID': 'z2' } }
+    ],
+    lines: [line('l1', '1_A', 'p1', { Quantity: 4 }), line('l2', '1_A', 'p2', { Quantity: 13 })],
+    invoices: [invoice('INV1', [
+      zline('Standard Extension', 4, 5500, 'z1'),
+      { ...zline('Bookend', 13, 1000, 'z2'), discount: '100.00%', discount_amount: 11206.9, item_total: 0 }
+    ], { discount_total: 11206.9, discount_type: 'item_level' })]
   });
-  assert.equal(r.pending.lines[0].now, 11700); // 13000 - 1300
+  const now = Object.fromEntries(r.pending.lines.map((w) => [w.product, w.now]));
+  assert.deepEqual(now, { 'Standard Extension': 22000, Bookend: 0 });
+  assert.equal(r.projection[0].projected, r.projection[0].target, 'and it reconciles');
 });
 
-await test('a discount is apportioned even when lines carry item ids', async () => {
-  // The discount is divided across ALL goods, not just the lines that happen to
-  // lack an id — dividing by the remainder leaves it silently unapplied.
+await test('a percentage discount on goods and delivery keeps its delivery share out of goods', async () => {
+  // 305_Burn-Toast-Limited, INV640431: 15% off everything, delivery included.
+  // The old arithmetic took the delivery line's discount off the goods too.
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    products: [{ id: 'p1', fields: { Name: 'Wide Base', Price: 8000, Status: 'Active', 'Zoho Item ID': 'z1' } }],
+    lines: [line('l1', '1_A', 'p1', { Quantity: 1 })],
+    invoices: [invoice('INV1', [
+      { ...zline('Wide Base', 1, 8000, 'z1'), item_total: 5862.07 },
+      { ...zline('Delivery Fees', 1, 2000), item_total: 1465.52 }
+    ], { discount_total: 1293.1, discount_type: 'item_level' })]
+  });
+  assert.equal(r.pending.lines[0].now, 6800); // 8000 less 15%
+  assert.equal(writesTo(r, 'orders', 'Delivery - Charged Client (ex VAT)')[0].now, 1465.52);
+});
+
+await test('an invoice-level discount is apportioned across goods and delivery, ex-VAT', async () => {
+  // None in the books yet — every discount so far is a line discount — but
+  // Zoho allows one. It is taken before tax across every line, delivery too.
   const r = await run({
     orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
     products: [{ id: 'p1', fields: { Name: 'Standard Base', Price: 6500, Status: 'Active', 'Zoho Item ID': 'z1' } }],
-    lines: [line('l1', '1_A', 'p1', { Quantity: 2, Subtotal: 13000 })],
-    invoices: [invoice('INV1', [zline('Standard Base', 2, 6500, 'z1')], { discount_total: 1300 })]
+    lines: [line('l1', '1_A', 'p1', { Quantity: 2 })],
+    invoices: [invoice('INV1', [
+      { ...zline('Standard Base', 2, 6500, 'z1'), item_total: 11206.9 },
+      { ...zline('Delivery Fees', 1, 2000), item_total: 1724.14 }
+    ], { discount_total: 1293.1, discount_type: 'entity_level' })]
   });
+  // 1,293.10 is 10% of the 12,931.04 ex-VAT total, so each part keeps 90%.
   assert.equal(r.pending.lines[0].now, 11700);
+  assert.equal(writesTo(r, 'orders', 'Delivery - Charged Client (ex VAT)')[0].now, 1551.73);
   assert.equal(r.projection[0].projected, r.projection[0].target, 'and it still reconciles');
+});
+
+// ---- VAT-exempt sales ---------------------------------------------------
+const exempt = (name, quantity, vatInclusivePrice, item_id) => ({
+  name, quantity, item_id, rate: vatInclusivePrice / 1.16,
+  item_total: Math.round(vatInclusivePrice * quantity / 1.16 * 100) / 100,
+  tax_id: '', tax_percentage: 0, tax_exemption_id: 'ex1', tax_exemption_code: 'EXEMPT', item_custom_fields: []
+});
+const taxed = (name, quantity, rate, item_id) => ({ ...zline(name, quantity, rate, item_id), tax_id: 't16', tax_percentage: 16 });
+const vatWorld = (lines, { exemptClient = false, date = '2026-08-05', status = 'Delivered', held } = {}) => ({
+  orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Client Name': ['c1'], 'Order Status': status, ...(held ? { 'Invoice VAT': held } : {}) })],
+  clients: [{ id: 'c1', fields: { Name: 'Rocco', 'Zoho Contact ID': '900', ...(exemptClient ? { 'VAT Exempt': true } : {}) } }],
+  products: [{ id: 'p1', fields: { Name: 'Standard Base', Price: 6500, Status: 'Active', 'Zoho Item ID': 'z1' } }],
+  lines: [line('l1', '1_A', 'p1', { Quantity: 2 })],
+  invoices: [invoice('INV1', lines, { customer_id: '900', date })]
+});
+
+await test('an exempt sale reads like for like: VAT-inclusive, as any other sale', async () => {
+  // INV640426: 5,603.45 a Standard Base, no VAT. We earned what an ordinary
+  // 6,500 sale earns, so Airtable says 6,500 — or exempt orders look 14% smaller.
+  const r = await run(vatWorld([exempt('Standard Base', 2, 6500, 'z1'), exempt('Delivery Fees', 1, 2000)], { exemptClient: true }));
+  assert.equal(r.pending.lines[0].now, 13000);
+  assert.equal(r.pending.lines[0].fields['Zoho Unit Rate'], 6500);
+  assert.equal(writesTo(r, 'orders', 'Delivery - Charged Client (ex VAT)')[0].now, 1724.14, 'delivery is ex-VAT already, so unchanged');
+  assert.equal(writesTo(r, 'orders', 'Invoice VAT')[0].now, 'Exempt');
+  assert.equal(of(r, 'vat-matches-client').length, 0, 'an exempt client invoiced exempt is correct');
+});
+
+await test('an ordinary sale reads exactly as it always has', async () => {
+  const r = await run(vatWorld([taxed('Standard Base', 2, 6500, 'z1')]));
+  assert.equal(r.pending.lines[0].now, 13000);
+  assert.equal(writesTo(r, 'orders', 'Invoice VAT')[0].now, 'Standard');
+  assert.equal(of(r, 'vat-matches-client').length, 0);
+});
+
+await test('Invoice VAT already right is not written again', async () => {
+  const r = await run(vatWorld([taxed('Standard Base', 2, 6500, 'z1')], { held: 'Standard' }));
+  assert.equal(writesTo(r, 'orders', 'Invoice VAT').length, 0);
+});
+
+await test('an exempt invoice for a client nobody ticked is a warning, and never ticks them', async () => {
+  const r = await run(vatWorld([exempt('Standard Base', 2, 6500, 'z1')]));
+  const f = of(r, 'vat-matches-client');
+  assert.equal(f.length, 1);
+  assert.match(f[0].event, /charged no VAT to Rocco/);
+  assert.equal(r.pending.clients.filter((w) => 'VAT Exempt' in w.fields).length, 0, 'the client flag is Airtable-owned');
+});
+
+await test('a part-exempt invoice is a warning whoever the client is', async () => {
+  // INV640259 has one Wide Base taxed and the rest exempt.
+  const r = await run(vatWorld([taxed('Standard Base', 1, 6500, 'z1'), exempt('Standard Base', 1, 6500, 'z1')], { exemptClient: true }));
+  assert.equal(writesTo(r, 'orders', 'Invoice VAT')[0].now, 'Mixed');
+  assert.match(of(r, 'vat-matches-client')[0].event, /part exempt/);
+});
+
+await test('VAT charged to an exempt client is a warning from the check date on', async () => {
+  const r = await run(vatWorld([taxed('Standard Base', 2, 6500, 'z1')], { exemptClient: true, date: VAT_EXEMPT_CHECK_FROM }));
+  assert.match(of(r, 'vat-matches-client')[0].event, /charged VAT to exempt Rocco/);
+});
+
+await test('VAT charged to an exempt client BEFORE the check date is history, not a fault', async () => {
+  const r = await run(vatWorld([taxed('Standard Base', 2, 6500, 'z1')], { exemptClient: true, date: '2026-01-10' }));
+  assert.equal(of(r, 'vat-matches-client').length, 0);
+});
+
+await test('a VAT warning marks the order itself', async () => {
+  const r = await run(vatWorld([exempt('Standard Base', 2, 6500, 'z1')]));
+  assert.equal(writesTo(r, 'orders', 'Sync Status')[0].now, 'Warning');
+});
+
+await test('a created order carries the invoice VAT and like-for-like lines', async () => {
+  const r = await run({
+    clients: [{ id: 'c1', fields: { Name: 'Rocco', 'Zoho Contact ID': '900' } }],
+    products: [{ id: 'p1', fields: { Name: 'Standard Base', Status: 'Active', 'Zoho Item ID': 'z1' } }],
+    invoices: [invoice('INV1', [exempt('Standard Base', 1, 6500, 'z1')], { customer_id: '900', date: '2026-09-10', status: 'paid' })]
+  });
+  const p = r.pending.creates[0].preview;
+  assert.equal(p.order['Invoice VAT'], 'Exempt');
+  assert.equal(p.lines[0]['Zoho Line Total'], 6500);
 });
 
 // ---- protecting work in progress ---------------------------------------
@@ -975,11 +1091,24 @@ await test('an invoice discount is spread across the created lines', async () =>
   const r = await run({
     clients: [client('c1', '900')],
     products: [{ id: 'p1', fields: { Name: 'Wide Base', Status: 'Active', 'Zoho Item ID': 'z1' } }],
-    invoices: [invoice('INV1', [zline('Wide Base', 1, 10000, 'z1')], {
-      customer_id: '900', date: '2026-09-10', status: 'paid', discount_total: 1000
+    invoices: [invoice('INV1', [{ ...zline('Wide Base', 1, 10000, 'z1'), item_total: 8620.69 }], {
+      customer_id: '900', date: '2026-09-10', status: 'paid', discount_total: 862.07, discount_type: 'entity_level'
     })]
   });
   assert.equal(r.pending.creates[0].preview.lines[0]['Zoho Line Total'], 9000);
+});
+
+await test('a line discount on a created order is already in the line', async () => {
+  const r = await run({
+    clients: [client('c1', '900')],
+    products: [{ id: 'p1', fields: { Name: 'Wide Base', Status: 'Active', 'Zoho Item ID': 'z1' } }],
+    invoices: [invoice('INV1', [{ ...zline('Wide Base', 1, 10000, 'z1'), item_total: 7758.62 }], {
+      customer_id: '900', date: '2026-09-10', status: 'paid', discount_total: 862.07, discount_type: 'item_level'
+    })]
+  });
+  const l = r.pending.creates[0].preview.lines[0];
+  assert.equal(l['Zoho Line Total'], 9000, 'not discounted twice');
+  assert.equal(l['Zoho Unit Rate'], 9000);
 });
 
 // ---- the display-format trap ------------------------------------------

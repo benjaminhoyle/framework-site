@@ -5,7 +5,7 @@
 // line, and that legacy item names still match today's products.
 
 import assert from 'node:assert/strict';
-import { money, round2 } from '../netlify/functions/_zoho.mjs';
+import { money, round2, lineValue, lineVat, invoiceVat } from '../netlify/functions/_zoho.mjs';
 import { stripLegacy, apportionFactor } from '../netlify/functions/_sync.mjs';
 
 let passed = 0;
@@ -15,9 +15,9 @@ const test = (name, fn) => {
 };
 
 // --- money(): the tax-inclusive trap -----------------------------------
-// The org is tax-inclusive, so `rate` is what the customer sees and
-// `item_total` is ex-VAT. Goods must use rate; delivery must use item_total.
-// Swapping them is a silent 16% error in opposite directions.
+// `item_total` is ex-VAT on every invoice. Goods are stated VAT-inclusive, as
+// item_total x 1.16; delivery stays ex-VAT. Swapping them is a silent 16%
+// error in opposite directions.
 const invoice = {
   discount_total: 0,
   line_items: [
@@ -27,8 +27,39 @@ const invoice = {
   ]
 };
 
-test('goods total uses the VAT-inclusive rate', () => {
+test('goods total is VAT-inclusive', () => {
   assert.equal(money(invoice).goods, 17500); // 6500 + 2*5500
+});
+
+// --- like for like, whatever the line was taxed at ---------------------
+test('an exempt line is worth what the same taxed line is worth', () => {
+  // INV640426: the rate dropped to 5,603.45 and no VAT charged. We earned
+  // exactly what a 6,500 sale earns, so Airtable must say 6,500.
+  const exempt = { rate: 5603.448276, quantity: 1, item_total: 5603.45, tax_percentage: 0, tax_exemption_code: 'EXEMPT' };
+  const taxed = { rate: 6500, quantity: 1, item_total: 5603.45, tax_percentage: 16, tax_id: 't16' };
+  assert.equal(round2(lineValue(exempt)), 6500);
+  assert.equal(round2(lineValue(taxed)), 6500);
+});
+
+test('a tax-exclusive invoice line is grossed up, not taken at its rate', () => {
+  // INV640439 is tax-exclusive: there `rate` is already ex-VAT.
+  assert.equal(round2(lineValue({ rate: 4741.38, quantity: 2, item_total: 9482.76 })), 11000);
+});
+
+test('a line discount is already inside the value', () => {
+  // INV640431: 15% off a Wide Base.
+  assert.equal(round2(lineValue({ rate: 8000, quantity: 1, discount: '15.00%', item_total: 5862.07 })), 6800);
+});
+
+test('lines and invoices say how they were taxed', () => {
+  assert.equal(lineVat({ tax_percentage: 16, tax_id: 't16' }), 'taxed');
+  assert.equal(lineVat({ tax_percentage: 0, tax_id: '', tax_exemption_id: 'ex1', tax_exemption_code: 'EXEMPT' }), 'exempt');
+  assert.equal(lineVat({ tax_percentage: 0, tax_id: '' }), 'untaxed');
+  const t = { tax_percentage: 16, tax_id: 't16' }, e = { tax_exemption_code: 'EXEMPT' };
+  assert.equal(invoiceVat({ line_items: [t, t] }), 'Standard');
+  assert.equal(invoiceVat({ line_items: [e, e] }), 'Exempt');
+  assert.equal(invoiceVat({ line_items: [t, e] }), 'Mixed');
+  assert.equal(invoiceVat({ line_items: [{ tax_percentage: 0 }] }), null, 'pre-registration invoices are not called Standard');
 });
 
 test('delivery uses the ex-VAT item_total, not the rate', () => {

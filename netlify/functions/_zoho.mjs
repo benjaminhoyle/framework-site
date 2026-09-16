@@ -268,14 +268,79 @@ export async function updateContact(id, payload) {
   return (d && d.contact) || null;
 }
 
+/** Kenya's standard VAT rate — the one Airtable's revenue figures are stated at. */
+export const VAT_RATE = 0.16;
+
+/**
+ * What one invoice line is worth in Airtable: Zoho's ex-VAT amount, plus VAT at
+ * the standard rate. The same rule for every line, whatever it was taxed at.
+ *
+ * Airtable's revenue has always read VAT-inclusive — a Standard Base is 6,500 —
+ * and every total, margin and ad-return figure built on it assumes that. So the
+ * basis stays VAT-inclusive, and what changes is where the number comes from.
+ * It used to be `rate`, which is only the VAT-inclusive price on an ordinary
+ * tax-inclusive invoice. Two kinds of invoice broke that:
+ *
+ * - **VAT-exempt.** The rate is dropped to the ex-VAT price (5,603.45) and the
+ *   line carries no tax. The client paid less, and we earned exactly what an
+ *   ordinary sale earns. Read off `rate`, that sale looked 14% smaller than an
+ *   identical one; read this way it is 6,500 like the other. Like for like is
+ *   Ben's call, 2026-09-16.
+ * - **Discounted.** Every discount in the books is a LINE discount, and `rate`
+ *   is the price BEFORE it. `discount_total` is ex-VAT and includes discounts
+ *   on the delivery line, so taking it off a VAT-inclusive goods total was
+ *   wrong in two ways at once. `item_total` is after the line's own discount.
+ *
+ * `item_total` is ex-VAT on every invoice shape in the books — tax-inclusive,
+ * tax-exclusive, taxed or exempt — which is what makes one rule possible.
+ * Multiplying it back up loses at most a cent to rounding.
+ *
+ * So Airtable revenue = income ex VAT x 1.16. It is not what the client paid;
+ * `Balance to Pay` and Zoho are the places for that.
+ */
+export const lineValue = (li) => (Number(li.item_total) || 0) * (1 + VAT_RATE);
+
+/**
+ * How one line was taxed. `taxed` carries VAT. `exempt` deliberately carries
+ * none — Zoho's exemption, or a 0% tax if one is ever set up for zero-rating,
+ * since the client pays no VAT either way. `untaxed` has neither, which is how
+ * the 2023 invoices from before VAT registration look, and nothing since.
+ */
+export function lineVat(li) {
+  if (Number(li.tax_percentage) > 0) return 'taxed';
+  if (String(li.tax_exemption_id || li.tax_exemption_code || li.tax_id || '').trim()) return 'exempt';
+  return 'untaxed';
+}
+
+/**
+ * How the invoice as a whole was taxed, as Airtable's `Invoice VAT` holds it.
+ *
+ * `Mixed` is a real invoice, not a hypothetical: INV640259 has one Wide Base
+ * taxed and the rest exempt. Null when no line is taxed or exempt, so a
+ * pre-registration invoice is left alone rather than called Standard.
+ */
+export function invoiceVat(inv) {
+  const kinds = new Set((inv.line_items || []).map(lineVat));
+  if (kinds.has('exempt') && kinds.has('taxed')) return 'Mixed';
+  if (kinds.has('exempt')) return 'Exempt';
+  if (kinds.has('taxed')) return 'Standard';
+  return null;
+}
+
 /**
  * The goods total actually charged, and the delivery charged, from one invoice.
  *
- * The org is **tax-inclusive**: a line's `rate` is the VAT-inclusive figure the
- * customer sees, and `item_total` is ex-VAT. Airtable holds catalogue prices
- * inclusive, so goods use `rate`; the delivery field deliberately holds ex-VAT,
- * so it uses `item_total`. Getting these two the wrong way round is a silent
- * 16% error, so they are derived in exactly one place.
+ * Goods are on Airtable's VAT-inclusive basis (see `lineValue`); the delivery
+ * field deliberately holds ex-VAT, so it is `item_total` as it stands, to be
+ * compared against the driver's rate. Mixing these up is a silent 16% error, so
+ * they are derived in exactly one place.
+ *
+ * `discount` is only ever an INVOICE-level discount, restated on the goods
+ * basis. Line discounts are already inside `item_total`. Zoho applies an
+ * invoice-level discount before tax, across every line including delivery, so
+ * goods and delivery each take their share. No invoice in the books has one
+ * (all 24 discounted invoices use line discounts, checked 2026-09-16), so this
+ * branch is covered by tests rather than by history.
  */
 export function money(inv) {
   const lines = inv.line_items || [];
@@ -284,11 +349,15 @@ export function money(inv) {
   // is not quietly counted as goods and left out of the delivery margin.
   const isDelivery = (li) => /^delivery/i.test(String(li.name || '').trim());
   const goods = lines.filter((li) => !isDelivery(li));
+  const exVat = (ls) => ls.reduce((n, li) => n + (Number(li.item_total) || 0), 0);
+  const allExVat = exVat(lines);
+  const invoiceDiscount = inv.discount_type === 'entity_level' ? Number(inv.discount_total) || 0 : 0;
+  const kept = allExVat > 0 ? Math.max(0, 1 - invoiceDiscount / allExVat) : 1;
   return {
-    goods: round2(goods.reduce((n, li) => n + li.rate * li.quantity, 0)),
-    deliveryExVat: round2(lines.filter(isDelivery).reduce((n, li) => n + li.item_total, 0)),
+    goods: round2(goods.reduce((n, li) => n + lineValue(li), 0)),
+    deliveryExVat: round2(exVat(lines.filter(isDelivery)) * kept),
     hasDeliveryLine: lines.some(isDelivery),
-    discount: round2(Number(inv.discount_total) || 0),
+    discount: round2(exVat(goods) * (1 - kept) * (1 + VAT_RATE)),
     lines: goods
   };
 }

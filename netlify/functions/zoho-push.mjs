@@ -46,8 +46,9 @@ import { refusePush } from './_auth.mjs';
 import { TABLES, all, patch, create } from './_airtable.mjs';
 import {
   groupDesign, buildLineItems, linesTotal, quoteDrift,
-  deliveryLine, goodsLines, moneyValue, contactDetails, contactName, contactUpdate,
-  newContactPayload, airtableClientPatch, clientDisagreement, normalisePin
+  deliveryLine, goodsLines, isDeliveryName, moneyValue, contactDetails, contactName, contactUpdate,
+  newContactPayload, airtableClientPatch, clientDisagreement, normalisePin,
+  exemptLines, exemptionProblems
 } from './_push.mjs';
 import * as zoho from './_zoho.mjs';
 
@@ -248,10 +249,9 @@ async function client(contactId) {
     // invoice, so where the two differ Airtable is the one that has been
     // reconciled recently; and where Zoho is blank, Airtable is the only copy.
     pin: airtableSide.pin || zohoSide.pin,
-    // Read-only, and deliberately so: Airtable owns this one outright. Zoho has
-    // no exemption recorded against any contact, so there is nothing to
-    // reconcile it to — but the moment somebody raises an invoice is the moment
-    // it matters, so it is said here rather than left in a table nobody opens.
+    // Airtable owns this outright, and the form cannot change it. What the form
+    // CAN do is decline it for one invoice; the push re-reads the flag rather
+    // than trusting the browser, so a stale page cannot make somebody exempt.
     vat_exempt: Boolean(row && row.fields['VAT Exempt']),
     zoho: reachedZoho ? { phone: zohoSide.phone, address: zohoSide.address, pin: zohoSide.pin } : null,
     airtable: row ? airtableSide : null,
@@ -282,7 +282,7 @@ async function search(query) {
 
 async function push({ code, contact_id, new_client, rep, phone, address, kra_pin, delivery_date,
                       delivery_date_status, window_start, window_end,
-                      pickup, delivery_fee, notes }) {
+                      pickup, delivery_fee, notes, vat_exempt }) {
   const upper = String(code || '').toUpperCase();
   if (!CODE_RE.test(upper)) return json({ ok: false, error: 'bad_code' }, 422);
   if (!rep) return json({ ok: false, error: 'no_rep' }, 422);
@@ -324,6 +324,24 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
     // so.
     warnings.push(`The delivery fee "${String(delivery_fee).slice(0, 20)}" was not a usable amount, so no delivery line was added.`);
   }
+
+  // Quote drift is measured NOW, on the ordinary VAT-inclusive prices, because
+  // that is what the builder quoted. Measured after the exemption below it
+  // would report every exempt order as 14% under its quote.
+  const drift = quoteDrift(goodsLines(line_items), stored.total_ksh);
+
+  // VAT exempt only when Airtable says the client is AND the rep left it on.
+  // Both, and the flag re-read here: the browser's copy may be a page loaded
+  // before somebody changed it, and a new client has no Airtable record to be
+  // exempt in yet — tick them in Base - Clients first.
+  const flaggedExempt = Boolean(contact_id)
+    && Boolean((await clientRow(String(contact_id)))?.fields?.['VAT Exempt']);
+  const exempt = flaggedExempt && vat_exempt === true;
+  if (vat_exempt === true && !flaggedExempt) {
+    warnings.push('This client is not marked VAT Exempt in Airtable, so the invoice was raised with VAT. Tick them in Base - Clients first if they are exempt.');
+  }
+  const standardTotal = linesTotal(line_items);
+  const invoiceLines = exempt ? exemptLines(line_items) : line_items;
 
   // Either an existing client, or one created here and now. Creating the contact
   // BEFORE the invoice is deliberate: an invoice needs a customer_id, so there is
@@ -392,7 +410,7 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
 
   const invoice = await zoho.createDraftInvoice({
     customer_id: customerId,
-    line_items,
+    line_items: invoiceLines,
     custom_fields,
     ...(notes ? { notes: String(notes).slice(0, 500) } : {})
   });
@@ -467,7 +485,15 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
     if (known) clientName = known.name;
   }
 
-  const goods = goodsLines(line_items);
+  if (exempt) {
+    const missed = exemptionProblems(invoice);
+    if (missed.length) {
+      warnings.push(`Zoho did not mark ${missed.length === invoice.line_items.length ? 'the lines' : missed.join(', ')} VAT exempt. Open the draft and set ${missed.length === 1 ? 'that line' : 'each line'} to Exempt before sending it.`);
+    }
+  }
+
+  const goods = goodsLines(invoiceLines);
+  const deliverySent = invoiceLines.find((li) => isDeliveryName(li.name));
   return json({
     ok: true,
     invoice_number: invoice.invoice_number,
@@ -475,10 +501,14 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
     status: invoice.status,
     total: invoice.total,
     url: `https://books.zoho.com/app/${process.env.ZOHO_ORG_ID}#/invoices/${invoice.invoice_id}`,
-    lines: line_items.length,
-    computed_total: linesTotal(line_items),
+    lines: invoiceLines.length,
+    computed_total: linesTotal(invoiceLines),
     goods_total: linesTotal(goods),
-    delivery_total: delivery && !delivery.unknown ? linesTotal([delivery]) : 0,
+    delivery_total: deliverySent ? linesTotal([deliverySent]) : 0,
+    // What the rep tells the client: the total without VAT, and what that saved.
+    vat_exempt: exempt,
+    vat_exempt_declined: flaggedExempt && !exempt,
+    vat_saving: exempt ? Math.round((standardTotal - linesTotal(invoiceLines)) * 100) / 100 : 0,
     client: { contact_id: customerId, name: clientName, created, airtable: airtableClient },
     contact_saved: contactSaved,
     client_saved: clientSaved,
@@ -488,7 +518,7 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
     // normal thing to invoice at today's rate, and reps zero-rate on purpose.
     // Goods only — the builder never quoted delivery, so including it would
     // report a discrepancy on every delivered order.
-    drift: quoteDrift(goods, stored.total_ksh),
+    drift,
     unknown
   });
 }
