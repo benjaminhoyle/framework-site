@@ -378,8 +378,10 @@ values" under Traps for why `item_total` rather than `rate`.
 **Unproven: pushing an exempt invoice to eTIMS.** None of the exempt invoices has
 been pushed. Push one and watch it before relying on it — line discounts turned
 out to break the push (see the eTIMS notes), and exemption is a different code
-path in Zoho's payload. Also a question for the accountant: whether these clients
-are *exempt* or *zero-rated* supplies, which file differently on the VAT return.
+path in Zoho's payload.
+
+**Exempt, not zero-rated** — Ben, 2026-09-16. So the EXEMPT reason is the right
+one, and a 0% "zero-rated" tax must not be substituted for it.
 
 ### Correcting a client
 
