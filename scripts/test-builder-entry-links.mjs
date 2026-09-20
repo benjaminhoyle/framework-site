@@ -62,15 +62,25 @@ const redirects = read("netlify.toml").split("[[redirects]]").slice(1);
  */
 const retiredEntries = ["designer", "simplified-designer", "sandbox"];
 for (const entry of retiredEntries) {
-  const block = redirects.find((part) => part.includes(`from = "/${entry}"`));
-  assert.ok(block, `/${entry}: retired, but it still needs a redirect for links already out there`);
-  assert.ok(block.includes('to = "/builder"'), `/${entry}: should send people to /builder`);
-  assert.match(block, /status\s*=\s*301/, `/${entry}: should be a redirect, not a rewrite -- the address must correct itself`);
   assert.equal(
     fs.existsSync(path.join(ROOT, `${entry}.html`)),
     false,
     `${entry}.html: retired, and a rewrite target that exists again would shadow the redirect`
   );
+  /*
+   * Both spellings. While the page existed, /entry.html resolved to the file on
+   * its own and only the extensionless form needed a rule -- so deleting the
+   * file leaves the .html address 404ing with nothing to say it should not.
+   * That spelling is the one older catalogue data carries, because
+   * import-shelving-product and catalog-package both rewrite "/designer#" to
+   * "designer.html#", and it is what Google has had years to index.
+   */
+  for (const from of [`/${entry}`, `/${entry}.html`]) {
+    const block = redirects.find((part) => part.includes(`from = "${from}"`));
+    assert.ok(block, `${from}: retired, but it still needs a redirect for links already out there`);
+    assert.ok(block.includes('to = "/builder"'), `${from}: should send people to /builder`);
+    assert.match(block, /status\s*=\s*301/, `${from}: should be a redirect, not a rewrite -- the address must correct itself`);
+  }
 }
 
 // /diy is not retired: it is a live entry point that opens Simple.
