@@ -307,7 +307,14 @@
     future: [],
     selectedId: null,
     activeModuleId: null, // Advanced: the piece whose placements are on screen
+    // Whether anything has been placed since that piece was chosen. It is the
+    // difference between "Cancel" (I have not started) and "Done" (I have, and
+    // I am finished), which are not the same offer.
+    placedSinceChoose: false,
     previewCandidateId: null, // Advanced: the placement currently ghosted
+    taughtPlacing: false, // whether the two-tap preview has been explained once
+    recentModuleIds: [], // the add sheet's chips, newest first, this visit only
+    showTrimmed: false, // whether the add sheet lists the shortened cuts too
     candidates: [],
     candidateContext: null,
     candidateCache: new Map(),
@@ -473,6 +480,7 @@
     updateHistoryButtons();
     ui.selectedId = null;
     ui.activeModuleId = null;
+    ui.placedSinceChoose = false;
     if (ui.mode === "simple") ui.simple = deriveSimpleSpec(ui.design) || ui.simple;
     refresh({ fit: true });
   }
@@ -492,7 +500,14 @@
     // people try two or three before settling, and closing the menu each time
     // means finding the piece again.
     if (!settings.keepSelection) ui.selectedId = null;
-    ui.activeModuleId = null;
+    // Placing is the other exception, in Advanced: a part is a thing you have a
+    // quantity of, and dropping it after every one cost a round trip through a
+    // two-dozen-row sheet per booster. `placeCandidate` is the only caller that
+    // asks to keep it; every other edit still ends the placement.
+    if (!settings.keepModule) {
+      ui.activeModuleId = null;
+      ui.placedSinceChoose = false;
+    }
     refresh(settings);
     return true;
   }
@@ -828,13 +843,42 @@
     }
     updateStageActions();
     positionOverlays();
+    // Labelled markers and the action menu are centred and clamped from their
+    // measured size, which only exists once they are in the document.
+    window.requestAnimationFrame(measureOverlays);
   }
 
-  function addOverlay(node, pointMm, offset) {
+  function addOverlay(node, pointMm, offset, options) {
     dom.overlay.appendChild(node);
-    overlayItems.push({ node, pointMm, offset: offset || [0, 0] });
+    overlayItems.push({
+      node,
+      pointMm,
+      offset: offset || [0, 0],
+      // A wide overlay -- a labelled marker, the action menu -- is centred on
+      // its anchor and then kept inside the frame, because .nd-stage clips and
+      // an overlay half off the edge loses the button nearest that edge. A bare
+      // disc needs neither: it is 38px and centred by its own margin.
+      wide: Boolean(options && options.wide)
+    });
     return node;
   }
+
+  /**
+   * Re-place the wide overlays once they have been laid out.
+   *
+   * There is one of them -- the action menu -- so its size is read at the
+   * moment it is clamped rather than cached. Caching looked cheaper and was
+   * wrong: Red Hat Display loads with `display: swap`, so a menu measured
+   * before the webfont arrives is clamped from fallback metrics, and the button
+   * nearest the frame edge can still be cut off.
+   */
+  function measureOverlays() {
+    if (overlayItems.some((item) => item.wide)) positionOverlays();
+  }
+
+  // Clear of the frame edge, and of the bottom bar's furniture.
+  const OVERLAY_INSET_PX = 8;
+  const OVERLAY_BOTTOM_INSET_PX = 62;
 
   function positionOverlays() {
     if (!ui.renderer) return;
@@ -849,6 +893,22 @@
       // the wrong place on the shelf.
       const visible = x > -40 && y > -40 && x < width + 40 && y < height + 40;
       item.node.style.visibility = visible ? "visible" : "hidden";
+      if (item.wide) {
+        const w = item.node.offsetWidth;
+        const h = item.node.offsetHeight;
+        if (!w) continue;
+        const left = Math.min(
+          Math.max(x - w / 2, OVERLAY_INSET_PX),
+          Math.max(OVERLAY_INSET_PX, width - w - OVERLAY_INSET_PX)
+        );
+        const top = Math.min(
+          Math.max(y - h / 2, OVERLAY_INSET_PX),
+          Math.max(OVERLAY_INSET_PX, height - h - OVERLAY_BOTTOM_INSET_PX)
+        );
+        item.node.style.left = `${Math.round(left)}px`;
+        item.node.style.top = `${Math.round(top)}px`;
+        continue;
+      }
       item.node.style.left = `${Math.round(x)}px`;
       item.node.style.top = `${Math.round(y)}px`;
     }
@@ -1240,27 +1300,14 @@
     });
   }
 
-  /**
-   * The "+" affordances: one at each end of the run, and one above each stack.
-   *
-   * Each carries every piece that legally fits at that spot, so tapping it
-   * opens a short list instead of the app guessing.
-   */
-  /** Clear space between the existing run and where this unit would stand. */
-  function sideGapMm(candidate, side) {
-    const design = engine.designBounds(ui.catalog, ui.design);
-    if (!design) return 0;
-    const box = candidateBounds(candidate);
-    return Math.max(0, Math.round(side === "right" ? box[0] - design[3] : design[0] - box[3]));
-  }
-
   /*
    * Spacing between neighbouring units, named rather than measured.
    *
-   * The engine offers four spacings, and listing them as "43 cm gap" made the
-   * picker a wall of numbers nobody was choosing between. Naming them turns it
-   * into a decision -- and it becomes a second step, so choosing a piece stays a
-   * list of pieces.
+   * Listing them as "43 cm gap" made a wall of numbers nobody was choosing
+   * between; a size is a decision. These name Advanced's placement markers,
+   * which is the only interface that offers a gapped spacing at all -- and, for
+   * a long time, the only one that never said which of its four identical discs
+   * was which. The centimetres survive in each marker's label.
    *
    * The engine leaves 30mm of working clearance even between touching units, so
    * anything at or under that is "against its neighbour", not a gap.
@@ -1276,155 +1323,204 @@
   }
 
   /**
-   * One picker row per piece. Where a piece can go at more than one spacing, the
-   * row opens a short second picker of named spacings instead of placing it.
+   * Which way a candidate leaves the unit it was placed against, snapped to a
+   * world axis.
+   *
+   * This is what replaced comparing the candidate's X against the design's
+   * envelope. A run created by turning a corner runs along Y, so on an L every
+   * continuation of the second run had an X between the design's min and max,
+   * was classified as neither side, and was thrown away -- which is why a
+   * Standard L would not take a fourth Standard unit while offering Wide and
+   * Deep, whose extra depth happened to push them past the envelope.
    */
-  function sideOption(entry) {
-    const spacings = (entry.spacings || []).slice().sort((a, b) => a.gapMm - b.gapMm);
-    if (spacings.length < 2) {
-      return { module: entry.module, onPick: () => placeCandidate(entry.candidate) };
-    }
-    return {
-      module: entry.module,
-      note: `${spacings.length} spacings`,
-      onPick: () => openPicker(`${moduleLabel(entry.module)}: spacing`, spacings.map((spacing, index) => ({
-        module: entry.module,
-        label: gapName(index),
-        note: isTouching(spacing.gapMm) ? "against its neighbour" : `${mmToCm(spacing.gapMm)} cm clear`,
-        hidePrice: true,
-        onPick: () => placeCandidate(spacing.candidate)
-      })))
-    };
+  function outwardFrom(host, candidate) {
+    const board = engine.boardBounds(ui.catalog, host);
+    const box = candidateBounds(candidate);
+    const delta = [
+      (box[0] + box[3]) / 2 - (board[0] + board[3]) / 2,
+      (box[1] + box[4]) / 2 - (board[1] + board[4]) / 2
+    ];
+    // Which axis the new unit actually gets past the host on, not merely which
+    // way its centre lies. A corner unit turned off a long side sits well along
+    // the run as well as beside it, so its centre can be further away on the
+    // axis it still overlaps -- and keyed by that axis it became a marker of
+    // its own, on the far face, a metre from where the piece lands.
+    const clears = [0, 1].filter((axis) => box[axis] >= board[axis + 3] || box[axis + 3] <= board[axis]);
+    const axis = clears.length === 1
+      ? clears[0]
+      : (Math.abs(delta[0]) >= Math.abs(delta[1]) ? 0 : 1);
+    return { axis, sign: delta[axis] < 0 ? -1 : 1 };
   }
 
-  function buildAddButtons() {
-    const groupedSide = { left: [], right: [] };
-    const groupedTop = new Map();
-    // Turns get their own buttons, one per corner the design offers, because a
-    // turn is not "further along this run" -- it is a second run starting.
-    const groupedCorner = new Map();
-    const groupedNormal = new Map();
-    const { rootOf, groups } = engine.stacksOf(ui.design);
+  /** Does this piece run across the unit it meets, rather than along with it? */
+  function isTurn(module, host, candidate) {
+    const turned = Math.abs(candidateRotation(module, candidate) - (host.rotationDeg || 0)) % 180;
+    return turned >= 45 && turned <= 135;
+  }
 
-    const baseXs = ui.design.instances
-      .filter((instance) => ui.catalog.modules[instance.moduleId].role === "base")
-      .map((instance) => instance.originWorldMm[0]);
-    const minX = baseXs.length ? Math.min.apply(null, baseXs) : 0;
-    const maxX = baseXs.length ? Math.max.apply(null, baseXs) : 0;
+  /**
+   * The "+" affordances: one at each free end of a run, and one above each
+   * stack. Each carries every piece that legally fits there, so tapping it opens
+   * a list instead of the app guessing.
+   *
+   * One marker per end, not one per kind of placement. Carrying on along a run
+   * and turning off it are two answers to the same question -- "what happens at
+   * this end of the shelf" -- and splitting them into two discs 145mm apart put
+   * the only two colliding markers in the tool at every end of every design,
+   * closing from 29px to 18px as the shelf grew and the camera pulled back.
+   * They are not two affordances near each other; they are one drawn twice.
+   */
+  function buildAddButtons() {
+    const ends = new Map();
+    const groupedTop = new Map();
+    const { rootOf, groups } = engine.stacksOf(ui.design);
+    const hostById = new Map(ui.design.instances.map((instance) => [instance.id, instance]));
+    const firstBase = [];
 
     ui.candidateCache.forEach((candidates, id) => {
       const module = ui.catalog.modules[id];
       for (const candidate of candidates) {
-        if (module.role === "base") {
-          if (!baseXs.length) {
-            groupedSide.right.push({ module, candidate });
-            continue;
-          }
-          if (/^corner/.test(candidate.placement.basePlacementKind || "")) {
-            // One button per corner, not per piece: every piece that could turn
-            // this corner is worked out from the same unit and the same side.
-            const key = `${candidate.placement.nextTo}:${candidate.placement.cornerPort || candidate.placement.basePlacementKind}`;
-            if (!groupedCorner.has(key)) groupedCorner.set(key, []);
-            const turns = groupedCorner.get(key);
-            const existing = turns.findIndex((entry) => entry.module.id === id);
-            if (existing < 0) turns.push({ module, candidate });
-            else if (candidate.placement.cornerFace === "normal") turns[existing] = { module, candidate };
-            continue;
-          }
-          const side = candidate.originWorldMm[0] > maxX ? "right" : candidate.originWorldMm[0] < minX ? "left" : null;
-          if (!side) {
-            if (/^adjacent(_stack)?_normal$/.test(candidate.placement.basePlacementKind || "")) {
-              const key = `normal:${candidate.placement.nextTo || candidate.id}`;
-              if (!groupedNormal.has(key)) groupedNormal.set(key, []);
-              const options = groupedNormal.get(key);
-              if (!options.some((entry) => entry.module.id === id)) options.push({ module, candidate });
-            }
-            continue;
-          }
-          const gap = sideGapMm(candidate, side);
-          let entry = groupedSide[side].find((option) => option.module.id === id);
-          if (!entry) {
-            entry = { module, candidate, gapMm: gap, side, spacings: [] };
-            groupedSide[side].push(entry);
-          }
-          // One row per piece, with its spacings collected behind it. Simple and
-          // Standard only ever butt units together, so they keep just the
-          // nearest; Advanced offers the lot as a second step.
-          if (ui.mode === "advanced" || isTouching(gap)) {
-            if (!entry.spacings.some((spacing) => Math.abs(spacing.gapMm - gap) < 10)) {
-              entry.spacings.push({ gapMm: gap, candidate });
-            }
-          }
-          if (gap < entry.gapMm) {
-            entry.candidate = candidate;
-            entry.gapMm = gap;
-          }
-        } else {
+        if (module.role !== "base") {
           const consumed = candidate.consumedSockets || [];
           if (!consumed.length) continue;
           const roots = new Set(consumed.map((socket) => rootOf(socket.instanceId)));
           // A piece spanning two stacks has no single "above this stack" home.
           if (roots.size !== 1) continue;
-          const root = consumed[0] && rootOf(consumed[0].instanceId);
+          const root = rootOf(consumed[0].instanceId);
           if (!groupedTop.has(root)) groupedTop.set(root, []);
           const options = groupedTop.get(root);
           if (!options.some((entry) => entry.module.id === id)) options.push({ module, candidate });
+          continue;
+        }
+        const host = hostById.get(candidate.placement.nextTo);
+        if (!host) {
+          // The first unit of an empty shelf answers to no host.
+          if (!firstBase.some((entry) => entry.module.id === id)) firstBase.push({ module, candidate });
+          continue;
+        }
+        const out = outwardFrom(host, candidate);
+        const key = `${host.id}:${out.axis}:${out.sign}`;
+        if (!ends.has(key)) ends.set(key, { host, out, straight: [], turns: [] });
+        const end = ends.get(key);
+        const list = isTurn(module, host, candidate) ? end.turns : end.straight;
+        const gapMm = endGapMm(host, out, candidate);
+        const existing = list.find((entry) => entry.module.id === id);
+        if (!existing) list.push({ module, candidate, gapMm });
+        else if (gapMm < existing.gapMm) {
+          // Flexible butts units together; where the engine offers the same
+          // piece at several spacings the nearest is the one it means.
+          existing.candidate = candidate;
+          existing.gapMm = gapMm;
         }
       }
     });
 
-    const designBounds = engine.designBounds(ui.catalog, ui.design);
-    ["left", "right"].forEach((side) => {
-      const options = groupedSide[side];
-      if (!options.length) return;
-      // Anchor on whichever option is nearest the current run, so the button
-      // sits where the new unit would actually appear.
-      const anchor = options.reduce((best, entry) => (entry.gapMm < best.gapMm ? entry : best));
-      const spot = centreOf(candidateBounds(anchor.candidate));
-      // Level with the middle of the existing run rather than the middle of the
-      // new unit. In an isometric view those differ, and the low one lands in
-      // the bottom-right corner underneath the zoom controls.
-      if (designBounds) spot[2] = (designBounds[2] + designBounds[5]) / 2;
-      const label = ui.design.instances.length ? "Add a unit here" : "Start your shelf";
-      addOverlay(plusButton(label, options.map(sideOption)), spot);
-    });
+    if (firstBase.length) {
+      const spot = centreOf(candidateBounds(firstBase[0].candidate));
+      addOverlay(plusButton("Start your shelf", firstBase.map(placeRow)), spot);
+    }
 
-    groupedCorner.forEach((options) => {
-      if (!options.length) return;
-      const spot = centreOf(candidateBounds(options[0].candidate));
-      if (designBounds) spot[2] = (designBounds[2] + designBounds[5]) / 2;
-      addOverlay(plusButton("Turn a corner here", options.map((entry) => ({
-        module: entry.module,
-        onPick: () => placeCandidate(entry.candidate)
-      }))), spot);
-    });
-
-    groupedNormal.forEach((options) => {
-      if (!options.length) return;
-      const spot = centreOf(candidateBounds(options[0].candidate));
-      if (designBounds) spot[2] = (designBounds[2] + designBounds[5]) / 2;
-      addOverlay(plusButton("Add a unit here", options.map((entry) => ({
-        module: entry.module,
-        onPick: () => placeCandidate(entry.candidate)
-      }))), spot);
+    ends.forEach((end) => {
+      if (!end.straight.length && !end.turns.length) return;
+      const options = endOptions(end);
+      const stack = groups.get(rootOf(end.host.id)) || [end.host.id];
+      addOverlay(
+        // No search box, ever: an end sheet is one row per unit family plus
+        // the corner, which is eight today and one family from tripping the
+        // threshold in the mode whose whole promise is that you were never
+        // supposed to know a part's name.
+        plusButton("Add a unit here", options, { search: false }),
+        endAnchor(end, stack),
+        outwardPush(end.out, MARKER_PUSH_PX)
+      );
     });
 
     groups.forEach((ids, root) => {
       const options = groupedTop.get(root);
       if (!options || !options.length) return;
-      const bounds = stackBounds(ids);
+      // Lamps excluded: a lamp stands 76cm over the shelf it lights, and a
+      // marker floating up there points at nothing anyone is building on.
+      const bounds = stackBounds(ids, { excludeLamps: true });
       if (!bounds) return;
       addOverlay(
-        plusButton("Add on top", options.map((entry) => ({
-          module: entry.module,
-          onPick: () => placeCandidate(entry.candidate)
-        }))),
+        plusButton("Add on top", options.map(placeRow)),
         [(bounds[0] + bounds[3]) / 2, (bounds[1] + bounds[4]) / 2, bounds[5]],
-        [0, -26]
+        [0, -MARKER_PUSH_PX]
       );
     });
   }
 
+  /** The gap between the end being built on and where the new unit would stand. */
+  function endGapMm(host, out, candidate) {
+    const board = engine.boardBounds(ui.catalog, host);
+    const box = candidateBounds(candidate);
+    const edge = out.sign > 0 ? board[out.axis + 3] : board[out.axis];
+    return Math.max(0, Math.round(out.sign > 0 ? box[out.axis] - edge : edge - box[out.axis + 3]));
+  }
+
+  function placeRow(entry) {
+    return { module: entry.module, onPick: () => placeCandidate(entry.candidate) };
+  }
+
+  /**
+   * One end's sheet, in up to two sections.
+   *
+   * The corner unit is a row in the first section, not a button of its own: it
+   * is an ordinary unit with a longer shelf, and placing one turns nothing --
+   * it is what a later turn comes off. It wore "Turn a corner here" and then
+   * left the shelf visibly unchanged, which is the sharpest version of the
+   * complaint that the markers do not say what they do.
+   */
+  function endOptions(end) {
+    const straight = end.straight.map((entry) => Object.assign(placeRow(entry), {
+      note: entry.module.family === "corner" ? "a longer shelf, to turn off later" : null
+    }));
+    // The same unit can appear in both sections -- in line, and turned -- so
+    // the turned one says so in its name rather than only in a note under it.
+    const turns = end.turns.map((entry) => Object.assign(placeRow(entry), {
+      label: `${moduleLabel(entry.module)}, turned`,
+      note: "starts a second run"
+    }));
+    if (!turns.length) return straight;
+    if (!straight.length) return turns;
+    return [{ heading: "Along this run" }]
+      .concat(straight, [{ heading: "Turn a corner" }], turns);
+  }
+
+  /**
+   * Where an end marker stands: on the end face of the last real unit, level
+   * with its own stack.
+   *
+   * It used to stand at the centre of the unit that does not exist yet, at the
+   * design's mid-height. Both were wrong. The phantom unit is outside
+   * designBounds, which is what renderer.fit() frames, so on a 375px phone all
+   * four side markers projected off-stage and positionOverlays hid them --
+   * leaving "Add on top" as the only affordance in the mode. And the mid-height
+   * put a marker for a one-level unit up beside a three-level one.
+   */
+  function endAnchor(end, stackIds) {
+    const board = engine.boardBounds(ui.catalog, end.host);
+    const other = end.out.axis === 0 ? 1 : 0;
+    const stack = stackBounds(stackIds, { excludeLamps: true }) || board;
+    const point = [];
+    point[end.out.axis] = end.out.sign > 0 ? board[end.out.axis + 3] : board[end.out.axis];
+    point[other] = (board[other] + board[other + 3]) / 2;
+    point[2] = (stack[2] + stack[5]) / 2;
+    return point;
+  }
+
+  /**
+   * A fixed screen-space nudge off the model, along the world axis the marker
+   * points down. Pixels rather than millimetres so the gap between the shelf and
+   * its marker is the same at every zoom.
+   */
+  const MARKER_PUSH_PX = 26;
+
+  function outwardPush(out, distancePx) {
+    if (!ui.renderer) return [0, 0];
+    const direction = axisScreenDirection(out.axis, (point) => ui.renderer.project(point));
+    return [direction.x * out.sign * distancePx, direction.y * out.sign * distancePx];
+  }
   function stackBounds(ids, options) {
     const set = new Set(ids);
     const skipLamps = Boolean(options && options.excludeLamps);
@@ -1444,19 +1540,33 @@
   }
 
   /**
-   * `options` are passed to the picker unchanged, so a caller can give a row its
-   * own action -- opening a second picker of spacings, say -- rather than every
-   * row meaning "place this now". (Rebuilding them here is what silently
-   * discarded the spacing sub-picker.)
+   * A marker that opens a list rather than placing something.
+   *
+   * `options` are passed to the picker unchanged, so a caller can give a row
+   * its own action, or a section its own heading, rather than every row meaning
+   * "place this now". (Rebuilding them here is what silently discarded the
+   * spacing sub-picker.)
+   *
+   * It is a bare disc and stays one. Drawing the label on it was tried: the
+   * markers became pills reading "Add here" and "Add on top", which is more
+   * legible and, on an L-shaped design at 375px, covered the shelf. The model
+   * is the product. What a marker means comes from where it stands and from the
+   * title of the sheet it opens; `label` is the accessible name and the desktop
+   * tooltip, and that is where it belongs.
+   *
+   * The ring marks the ones that open a list, because in Advanced they sit
+   * beside markers that place on the second tap, and two identical discs doing
+   * two different things is the fault this whole pass set out to remove.
    */
-  function plusButton(label, options) {
-    const button = make("button", "nd-plus", "+");
+  function plusButton(label, options, settings) {
+    const button = make("button", "nd-plus is-menu", "+");
     button.type = "button";
     button.title = label;
     button.setAttribute("aria-label", label);
+    button.setAttribute("aria-haspopup", "dialog");
     button.addEventListener("click", (event) => {
       event.stopPropagation();
-      openPicker(label, options);
+      openPicker(label, options, settings);
     });
     return button;
   }
@@ -1474,7 +1584,16 @@
     } catch (error) {
       console.error(error);
     }
-    if (commit(next, { fit: true })) track("designer_place", { module: candidate.moduleId, mode: ui.mode });
+    // Advanced keeps the piece in hand and frames the spots that are left, so
+    // the next one of the same part is two taps rather than a sheet away. The
+    // framing has to be the candidates' rather than the design's, or the
+    // remaining markers land outside a camera fitted to the shelf alone and
+    // positionOverlays hides them.
+    const keep = ui.mode === "advanced" && Boolean(next);
+    // Set before the commit, because refresh() draws the button that reads it.
+    if (keep) ui.placedSinceChoose = true;
+    const options = keep ? { fit: "candidates", keepModule: true } : { fit: true };
+    if (commit(next, options)) track("designer_place", { module: candidate.moduleId, mode: ui.mode });
   }
 
   /**
@@ -1494,21 +1613,122 @@
   // without hiding a real choice.
   const CANDIDATE_MERGE_MM = 120;
 
-  function buildCandidateMarkers() {
-    const candidates = ui.candidateCache.get(ui.activeModuleId) || [];
-    const module = ui.catalog.modules[ui.activeModuleId];
-    const placed = [];
-    for (const candidate of candidates) {
+  /**
+   * The distinct places a piece can go: the raw candidates, with near-duplicates
+   * merged the way the markers merge them.
+   *
+   * Shared with the add sheet, because the sheet used to count raw candidates
+   * and promise nine spots where the model then drew eight.
+   */
+  function distinctSpots(candidates) {
+    const kept = [];
+    for (const candidate of candidates || []) {
       const bounds = candidateBounds(candidate);
       const point = [
         (bounds[0] + bounds[3]) / 2,
         (bounds[1] + bounds[4]) / 2,
         candidate.supportPlaneZ + 40
       ];
-      if (placed.some((other) => Math.hypot(other[0] - point[0], other[1] - point[1], other[2] - point[2]) < CANDIDATE_MERGE_MM)) {
+      if (kept.some((other) => Math.hypot(other.point[0] - point[0], other.point[1] - point[1], other.point[2] - point[2]) < CANDIDATE_MERGE_MM)) {
         continue;
       }
-      placed.push(point);
+      kept.push({ candidate, point, bounds });
+    }
+    return kept;
+  }
+
+  /**
+   * Group the places that differ only in how much air is left beside the run.
+   *
+   * Advanced is the only interface that offers a gapped spacing at all, and it
+   * drew each one as its own disc: eight identical markers for a Standard Base
+   * on the default design, four per side, all titled "Put the Standard Base
+   * here". On a 375px phone the four on one side sat inside 53px of screen with
+   * gaps of 10px between 38px discs -- four different answers no thumb could
+   * choose between.
+   *
+   * They are one decision, so they get one marker, and the spacing becomes the
+   * short named list the picker was written for: a size, not a measurement,
+   * because "43 cm" and "70 cm" is not a choice anybody makes by reading. The
+   * centimetres are on each row, where there is room for them.
+   */
+  function spacingGroups(kept) {
+    const groups = new Map();
+    const hostById = new Map(ui.design.instances.map((instance) => [instance.id, instance]));
+    for (const entry of kept) {
+      // Keyed by the end being built on, exactly as the Flexible markers are.
+      // Keyed by the design's envelope instead -- "is this box left of the
+      // whole shelf, or right of it" -- this was the same fault that stopped a
+      // corner-turned run being extended: a second run along Y has every one of
+      // its spacings inside the envelope, so none of them grouped and the blob
+      // of near-identical discs came back on exactly the design that needed it.
+      const host = hostById.get(entry.candidate.placement && entry.candidate.placement.nextTo);
+      if (!host) continue;
+      const out = outwardFrom(host, entry.candidate);
+      entry.gapMm = endGapMm(host, out, entry.candidate);
+      const key = `${host.id}:${out.axis}:${out.sign}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(entry);
+    }
+    // An end with one place has nothing to tell apart, so it stays an ordinary
+    // marker and keeps the ghost.
+    for (const key of Array.from(groups.keys())) {
+      const list = groups.get(key).sort((first, second) => first.gapMm - second.gapMm);
+      if (list.length < 2) groups.delete(key);
+      else groups.set(key, list);
+    }
+    return groups;
+  }
+
+  /** The rows behind a spacing marker: nearest first, named by size. */
+  function spacingRows(module, list) {
+    let rank = 1;
+    return list.map((entry) => {
+      const touching = isTouching(entry.gapMm);
+      return {
+        module,
+        label: touching ? GAP_NAMES[0] : gapName(rank++),
+        note: touching ? "against its neighbour" : `${mmToCm(entry.gapMm)} cm clear`,
+        hidePrice: true,
+        onPick: () => placeCandidate(entry.candidate)
+      };
+    });
+  }
+
+  /**
+   * The spots that will actually carry a marker: the ungrouped ones, plus the
+   * nearest of each spacing group.
+   *
+   * The camera reads the same list. Framing every raw candidate instead drew
+   * the shelf at a quarter of the stage on a phone, because the widest gapped
+   * placement reaches most of a unit's width past the run and no longer has a
+   * marker of its own to justify the room.
+   */
+  function markerPlan(moduleId) {
+    const placed = distinctSpots(ui.candidateCache.get(moduleId) || []);
+    const groups = spacingGroups(placed);
+    const grouped = new Set();
+    groups.forEach((list) => list.forEach((entry) => grouped.add(entry)));
+    const singles = placed.filter((entry) => !grouped.has(entry));
+    const anchors = singles.concat(Array.from(groups.values()).map((list) => list[0]));
+    return { groups, singles, anchors };
+  }
+
+  function buildCandidateMarkers() {
+    const module = ui.catalog.modules[ui.activeModuleId];
+    const { groups, singles, anchors } = markerPlan(ui.activeModuleId);
+    const placed = anchors;
+
+    groups.forEach((list) => {
+      // Anchored on the nearest of the group, which is where the piece lands if
+      // the spacing is left alone.
+      const label = `Put the ${moduleLabel(module)} on this side`;
+      addOverlay(plusButton(label, spacingRows(module, list)), list[0].point);
+    });
+
+    for (const entry of singles) {
+      const candidate = entry.candidate;
+      const point = entry.point;
       const button = make("button", "nd-plus", "+");
       button.type = "button";
       button.title = `Put the ${moduleLabel(module)} here`;
@@ -1543,9 +1763,17 @@
       addOverlay(button, point);
     }
     markConfirm(ui.previewCandidateId);
-    setHint(placed.length
-      ? `Tap a + to preview the ${moduleLabel(module)} there, then tap again to place it.`
-      : `The ${moduleLabel(module)} does not fit anywhere yet.`);
+    if (!placed.length) {
+      setHint(`The ${moduleLabel(module)} does not fit on this shelf yet.`);
+    } else if (singles.length && !ui.taughtPlacing) {
+      // The two-tap preview is not guessable, and the marker teaches it the
+      // moment it turns into a tick. So it is said once and then trusted --
+      // and only where there is a marker that behaves that way. Where every
+      // marker on screen opens a list of spacings instead, the sentence would
+      // be describing a gesture none of them answer to.
+      ui.taughtPlacing = true;
+      setHint(`Tap a + to try the ${moduleLabel(module)} there. Tap again to place it.`);
+    }
   }
 
   /**
@@ -1555,19 +1783,40 @@
    * the reframe only happened once one of them was previewed.
    */
   function fitToCandidates(moduleId) {
-    const candidates = ui.candidateCache.get(moduleId) || [];
-    if (!candidates.length) return;
+    const bounds = candidateFrame(moduleId);
+    if (!bounds) return;
+    // Only move a camera that needs moving. With a piece kept in hand this runs
+    // after every placement, and re-framing a view that already showed
+    // everything reads as the shelf flinching each time you put a part down.
+    if (ui.renderer.containsBounds(bounds)) return;
+    ui.renderer.fit(bounds, ui.dimensionsOn ? DIMENSION_FIT_PADDING : null);
+  }
+
+  /**
+   * The shelf plus the points its markers stand on.
+   *
+   * The points, not the boxes the pieces would occupy. A marker is a 38px disc
+   * and only its anchor has to be on screen; framing whole phantom units --
+   * each a unit's width beyond the run, in up to four directions -- drew the
+   * shelf at a quarter of a portrait stage. Where a piece would land off-screen
+   * `showGhost` widens the view at the moment it is previewed, which is when
+   * that actually matters.
+   */
+  function candidateFrame(moduleId) {
+    const { anchors } = markerPlan(moduleId);
+    if (!anchors.length) return null;
     const union = engine.designBounds(ui.catalog, ui.design);
-    const bounds = union ? union.slice() : null;
-    for (const candidate of candidates) {
-      const box = candidateBounds(candidate);
-      if (!bounds) continue;
+    // An empty shelf has no bounds of its own, so the first piece's own box is
+    // the frame. Returning null here left the camera on the empty-scene
+    // fallback while the marker sat somewhere else.
+    const bounds = (union || anchors[0].bounds).slice();
+    for (const entry of anchors) {
       for (let axis = 0; axis < 3; axis += 1) {
-        bounds[axis] = Math.min(bounds[axis], box[axis]);
-        bounds[axis + 3] = Math.max(bounds[axis + 3], box[axis + 3]);
+        bounds[axis] = Math.min(bounds[axis], entry.point[axis]);
+        bounds[axis + 3] = Math.max(bounds[axis + 3], entry.point[axis]);
       }
     }
-    ui.renderer.fit(bounds, ui.dimensionsOn ? DIMENSION_FIT_PADDING : null);
+    return bounds;
   }
 
   /** Show the chosen piece translucently exactly where it would land. */
@@ -1691,17 +1940,12 @@
       return;
     }
     const bounds = engine.instanceBounds(ui.catalog, instance);
-    ui.actionMenu = addOverlay(menu, centreOf(bounds), [0, 0]);
-    // Centre the menu on the piece once it has a measured width.
-    window.requestAnimationFrame(() => {
-      if (!ui.actionMenu) return;
-      const rect = ui.actionMenu.getBoundingClientRect();
-      const item = overlayItems.find((entry) => entry.node === ui.actionMenu);
-      if (item) {
-        item.offset = [-rect.width / 2, -rect.height / 2];
-        positionOverlays();
-      }
-    });
+    // Centred on the piece and kept inside the frame. In Advanced the menu is
+    // five buttons and about 320px wide, and the stage clips: pan a shelf so a
+    // piece sits left of centre and Swap was drawn off the edge of the stage
+    // and could not be reached, with nothing to say it was there.
+    ui.actionMenu = addOverlay(menu, centreOf(bounds), [0, 0], { wide: true });
+    window.requestAnimationFrame(measureOverlays);
   }
 
   /*
@@ -2016,7 +2260,28 @@
           body.appendChild(make("p", "nd-list-empty", config.emptyLabel || "Nothing fits here yet."));
           return;
         }
-        if (options.length > 8) {
+        const chips = config.chips || [];
+        if (chips.length) {
+          const strip = make("div", "nd-chips");
+          strip.setAttribute("aria-label", "Recently used");
+          for (const chip of chips) {
+            const button = make("button", "nd-chip", chip.label || moduleLabel(chip.module));
+            button.type = "button";
+            button.addEventListener("click", () => {
+              closePicker();
+              chip.onPick();
+            });
+            strip.appendChild(button);
+          }
+          body.appendChild(strip);
+        }
+
+        // Headings are not rows, and a section break is not a reason to put a
+        // keyboard on the screen. Flexible never reaches this: its lists are
+        // what fits at one place, and a search box there would be an admission
+        // that the buyer was supposed to know a part's name.
+        const rows = options.filter((option) => !option.heading).length;
+        if (config.search !== false && rows > 8) {
           const search = make("input", "nd-search");
           search.type = "search";
           search.placeholder = config.searchLabel || "Search pieces";
@@ -2045,6 +2310,7 @@
     // Rows are not always modules -- the colour sheet uses the same list -- so
     // everything about the module is optional from here down.
     const matches = options.filter((option) => {
+      if (option.heading) return !needle; // a filtered list is one flat list
       if (!needle) return true;
       const module = option.module;
       const haystack = module
@@ -2052,11 +2318,17 @@
         : String(option.label || "");
       return haystack.toLowerCase().indexOf(needle) >= 0;
     });
-    if (!matches.length) {
+    if (!matches.some((option) => !option.heading)) {
       list.appendChild(make("p", "nd-list-empty", "Nothing matches."));
       return;
     }
     for (const option of matches) {
+      // A heading separates two kinds of answer to one question -- carrying on
+      // along a run, or turning off it -- without making them two markers.
+      if (option.heading) {
+        list.appendChild(make("h3", "nd-list-heading", option.heading));
+        continue;
+      }
       const row = make("button", "nd-list-row");
       row.type = "button";
       if (option.selected) row.setAttribute("aria-pressed", "true");
@@ -2072,8 +2344,11 @@
       }
       row.appendChild(make("b", null, option.label || moduleLabel(option.module)));
       if (option.note) row.appendChild(make("small", "nd-list-note", option.note));
-      if (!option.hidePrice && option.module) {
-        row.appendChild(make("small", null, option.module.priceKsh != null ? formatKsh(option.module.priceKsh) : "on request"));
+      // A row is usually a module, but not always: the bookend is an accessory
+      // and carries its price directly.
+      const price = option.module ? option.module.priceKsh : option.price;
+      if (!option.hidePrice && (option.module || option.price != null)) {
+        row.appendChild(make("small", null, price != null ? formatKsh(price) : "on request"));
       }
       row.addEventListener("click", () => {
         closePicker();
@@ -2834,6 +3109,7 @@
       }
     ));
     field.appendChild(make("small", "nd-subtext", bookendFitNote()));
+
     return field;
   }
 
@@ -2979,21 +3255,151 @@
    */
 
   /** Advanced: every piece that fits somewhere right now, as picker rows. */
+  /*
+   * How wide a piece is, where width is the choice being made.
+   *
+   * This is the part of "what does it look like" a row can answer for free, and
+   * it is what separates a Standard Base from a Compact one. It is only said
+   * for the pieces that span a bay: a booster is a 20mm column riser, and
+   * "2 cm" beside its name reads as a mistake rather than a fact.
+   */
+  const SPANNING_ROLES = ["base", "extension", "adapter"];
+
+  function widthNote(module) {
+    if (SPANNING_ROLES.indexOf(module.role) < 0) return null;
+    const width = module.dimensionsMm && module.dimensionsMm[0];
+    return width ? `${mmToCm(width)} cm` : null;
+  }
+
+  function spotsNote(module) {
+    const count = distinctSpots(ui.candidateCache.get(module.id) || []).length;
+    return count ? `${count} spot${count === 1 ? "" : "s"}` : null;
+  }
+
+  function pieceRow(module) {
+    return {
+      module,
+      note: [widthNote(module), spotsNote(module)].filter(Boolean).join(" · "),
+      onPick: () => chooseModule(module.id)
+    };
+  }
+
+  /**
+   * The pieces that fit, with the shortened cuts kept out of the way.
+   *
+   * Sixteen modules in the catalogue are a shortened cut of another and carry
+   * its `canonicalId` and its price; the only thing that differs is the width.
+   * Listed flat they doubled half the families -- "Wide Base" immediately above
+   * "Wide Base (Trimmed)" at the same price -- and took the sheet to two dozen
+   * rows on the default design.
+   *
+   * They are hidden behind one row at the foot of the list rather than folded
+   * into a length sub-choice, because folding put a second tap in front of the
+   * cut almost everybody wants in order to shorten a list they were scrolling
+   * once. This way the common case stays one tap, the list is a third shorter,
+   * and the trade user who wants the short cut pays one tap per sheet.
+   *
+   * A trimmed cut whose full unit does not fit is never hidden: for some
+   * families the short cut is the product the shop sells, and hiding it would
+   * hide a piece with nothing standing in for it.
+   */
   function addPieceOptions() {
-    return tierModules(ui.mode)
-      .filter((module) => (ui.candidateCache.get(module.id) || []).length)
-      .map((module) => {
-        const count = (ui.candidateCache.get(module.id) || []).length;
-        return {
-          module,
-          note: `${count} spot${count === 1 ? "" : "s"}`,
-          onPick: () => chooseModule(module.id)
-        };
+    const offered = tierModules(ui.mode)
+      .filter((module) => (ui.candidateCache.get(module.id) || []).length);
+    const shown = new Set(offered.map((module) => module.id));
+    const hidden = [];
+    const rows = [];
+    for (const module of offered) {
+      const coveredByItsFullCut = module.trimmed
+        && module.canonicalId
+        && shown.has(module.canonicalId);
+      if (coveredByItsFullCut && !ui.showTrimmed) {
+        hidden.push(module);
+        continue;
+      }
+      rows.push(pieceRow(module));
+    }
+    if (hidden.length) {
+      rows.push({
+        label: `Show ${hidden.length} shortened cut${hidden.length === 1 ? "" : "s"}`,
+        hidePrice: true,
+        foot: true,
+        note: "same price, narrower",
+        onPick: () => { ui.showTrimmed = true; openAddSheet(); }
       });
+    } else if (ui.showTrimmed && offered.some((module) => module.trimmed)) {
+      rows.push({
+        label: "Hide the shortened cuts",
+        hidePrice: true,
+        foot: true,
+        onPick: () => { ui.showTrimmed = false; openAddSheet(); }
+      });
+    }
+    return rows;
+  }
+
+  /**
+   * The pieces reached for most recently, as a row of chips above the list.
+   *
+   * Keeping a piece in hand across placements (see `placeCandidate`) removes
+   * the repeat of the SAME part; this removes the repeat of alternating ones,
+   * which is what building a run actually is -- base, shelf, base, shelf.
+   * Filtered through the same test as the rows, because a chip offering a piece
+   * that no longer fits would be the only dead control on the screen.
+   */
+  function recentOptions() {
+    return ui.recentModuleIds
+      .map((id) => ui.catalog.modules[id])
+      .filter((module) => module && moduleAllowed(module, ui.mode)
+        && (ui.candidateCache.get(module.id) || []).length)
+      .map((module) => ({ module, onPick: () => chooseModule(module.id) }));
+  }
+
+  /**
+   * The bookend's row in the add sheet: a piece you can buy, listed with the
+   * pieces you can buy, rather than a number in a settings sheet.
+   */
+  function bookendRow() {
+    const accessory = ui.catalog.accessories && ui.catalog.accessories.bookend;
+    if (!accessory) return null;
+    const count = ui.design.bookends || 0;
+    return {
+      label: accessory.label || "Bookend",
+      note: count ? `${count} on the shelf` : null,
+      price: accessory.priceKsh,
+      onPick: openBookendSheet
+    };
+  }
+
+  /**
+   * The bookend stepper, reached from the sheet of things you can add.
+   *
+   * Bookends are not pieces -- the design carries a count and the engine fills
+   * the ends that can take one, bottom up -- so they are not placed and there
+   * is nothing on the model to point at. But they are something a buyer buys,
+   * and having them only behind the options button meant the one accessory in
+   * the catalogue was the one thing not listed with the rest. The control is
+   * the same control, in a second place.
+   */
+  function openBookendSheet() {
+    openSheet({
+      title: "Bookends",
+      live: true,
+      render: (body) => body.appendChild(bookendField())
+    });
   }
 
   function openAddSheet() {
-    openPicker("Add a piece", addPieceOptions(), {
+    const bookend = bookendRow();
+    // The bookend is a thing you can buy and belongs with them; the trimmed
+    // toggle is about the list itself, so it stays at the foot of it.
+    const pieces = addPieceOptions();
+    const foot = pieces.filter((row) => row.foot);
+    const options = pieces.filter((row) => !row.foot)
+      .concat(bookend ? [bookend] : [])
+      .concat(foot);
+    openPicker("Add a piece", options, {
+      chips: recentOptions(),
       emptyLabel: ui.design.instances.length
         ? "Nothing else will fit on this design."
         : "Nothing to add yet. One moment."
@@ -3010,17 +3416,35 @@
    */
   function chooseModule(moduleId) {
     ui.activeModuleId = moduleId;
+    ui.placedSinceChoose = false;
     ui.selectedId = null;
+    rememberModule(moduleId);
     ensureGeometry([moduleId]);
     fitToCandidates(moduleId);
     syncScene();
     buildOverlay();
   }
 
+  /**
+   * The pieces reached for most recently, newest first.
+   *
+   * Session-only and never serialised: a design is not the list of parts
+   * somebody tried on the way to it. Kept short because the chips are one row
+   * and a row that scrolls is a second list.
+   */
+  const RECENT_LIMIT = 3;
+
+  function rememberModule(moduleId) {
+    ui.recentModuleIds = [moduleId]
+      .concat(ui.recentModuleIds.filter((id) => id !== moduleId))
+      .slice(0, RECENT_LIMIT);
+  }
+
   /** Back out of placing, without backing out of the design. */
   function cancelAdd() {
     if (!ui.activeModuleId) return;
     ui.activeModuleId = null;
+    ui.placedSinceChoose = false;
     setHint(null);
     buildOverlay();
   }
@@ -3035,15 +3459,23 @@
    * lit up.
    */
   function updateStageActions() {
-    const placing = Boolean(ui.activeModuleId && ui.catalog.modules[ui.activeModuleId]);
+    const holding = ui.catalog.modules[ui.activeModuleId] || null;
+    const placing = Boolean(holding);
+    // Three states, not two. "Cancel" is the right offer while nothing has been
+    // placed; once something has, the same button means "I have finished with
+    // this part", and offering to cancel reads as offering to undo the piece
+    // just put down.
+    const done = placing && ui.placedSinceChoose;
     // The front view is for looking: it cannot project a placement marker, so
     // there is nothing for the "+" to open onto.
     dom.add.hidden = ui.mode !== "advanced" || isPerspective();
-    dom.add.classList.toggle("is-cancel", placing);
-    dom.addLabel.textContent = placing ? "Cancel" : "Add a piece";
-    const label = placing
-      ? `Cancel adding the ${moduleLabel(ui.catalog.modules[ui.activeModuleId])}`
-      : "Add a piece";
+    dom.add.classList.toggle("is-cancel", placing && !done);
+    dom.add.classList.toggle("is-done", done);
+    const what = holding ? moduleLabel(holding) : "piece";
+    dom.addLabel.textContent = done ? "Done" : placing ? "Cancel" : "Add a piece";
+    const label = done
+      ? `Finished placing the ${what}`
+      : placing ? `Cancel adding the ${what}` : "Add a piece";
     dom.add.setAttribute("aria-label", label);
     dom.add.title = label;
 
@@ -3977,25 +4409,46 @@
   // ------------------------------------------------------------------ modes --
 
   /*
-   * What to do here, said once per interface per visit.
+   * The one thing on this screen nothing else says.
    *
-   * Flexible and Advanced have no control column to explain themselves in, and
-   * the two are worked differently enough that arriving in one from the other
-   * without a word is a puzzle: the "+" markers someone just learned to use
-   * are not there any more.
+   * It used to be two sentences per interface, and the first of each told
+   * people what the "+" markers do. On a phone that sentence was not merely
+   * redundant, it was wrong: four of Flexible's five markers projected
+   * off-stage and were hidden, so it named affordances that were not there.
+   * The markers now stay on screen and open a sheet that titles itself, and
+   * Advanced's button has said "Add a piece" in words all along.
+   *
+   * What is left is the one fact the interface cannot show: that the drawing
+   * is tappable. Nothing else on the page hints at it -- there is no hover on
+   * touch, no outline and no cursor, and the shelf looks like a picture of a
+   * shelf. Said once, to each person, in both interfaces.
    */
-  const MODE_HINTS = {
-    standard: "Tap a + on the model to add a unit or a shelf on top. Tap any piece to swap or remove it.",
-    advanced: "Tap + to choose a piece, then tap where it goes. Tap any piece already there to change or remove it."
-  };
-  const hinted = new Set();
+  const BUILD_HINT = "Tap any piece on the shelf to change or remove it.";
+  const HINT_SEEN_KEY = "fwk_builder_hinted";
+
+  /*
+   * Once per person, not once per page load.
+   *
+   * The commonest way into this page is a share link or a /builder/CODE path
+   * in a fresh tab, so a flag in page memory meant somebody iterating on one
+   * design was told the same thing every time they opened it. A throw on read
+   * means "not seen", which shows it again; a throw on write means it shows
+   * again next time. Both are the right way to fail. Follows js/gate.js.
+   */
+  function hintAlreadySeen() {
+    try { return window.localStorage.getItem(HINT_SEEN_KEY) === "1"; } catch (error) { return false; }
+  }
+
+  function rememberHintSeen() {
+    try { window.localStorage.setItem(HINT_SEEN_KEY, "1"); } catch (error) { /* private mode */ }
+  }
 
   function applyMode(mode, options) {
     const next = MODES.indexOf(mode) >= 0 ? mode : "simple";
     const previous = ui.mode;
-    if (MODE_HINTS[next] && !hinted.has(next)) {
-      hinted.add(next);
-      setHint(MODE_HINTS[next]);
+    if (next !== "simple" && !hintAlreadySeen()) {
+      rememberHintSeen();
+      setHint(BUILD_HINT);
     }
     ui.mode = next;
     dom.app.dataset.mode = next;
@@ -4005,6 +4458,7 @@
     });
     ui.selectedId = null;
     ui.activeModuleId = null;
+    ui.placedSinceChoose = false;
     if (options && options.silent) {
       // keepDesign is the "stay put" path out of the Simple confirmation: the
       // interface has to be put back on screen, just without rebuilding.
@@ -4036,11 +4490,20 @@
    * touch.
    */
   function confirmSimpleRebuild(spec, rebuilt, previousMode) {
-    const losing = ui.design.instances.length - rebuilt.instances.length;
-    const pieces = losing === 1 ? "1 piece that Simple cannot describe" : `${losing} pieces that Simple cannot describe`;
+    // The rebuild can be larger as well as smaller than what is on screen: a
+    // run with an extension on one stack and not the other comes back as a
+    // full rectangle, which ADDS a piece. Counting one way and saying
+    // "removed" put "-1 pieces that Simple cannot describe" in front of
+    // somebody who had done nothing stranger than build two uneven bays.
+    const difference = ui.design.instances.length - rebuilt.instances.length;
+    const size = `${spec.width} unit${spec.width === 1 ? "" : "s"} wide and ${spec.levels} high`;
+    const count = (n) => `${n} piece${n === 1 ? "" : "s"}`;
+    const consequence = difference > 0
+      ? `${count(difference)} it cannot describe will be removed.`
+      : `It will be filled out to match, which adds ${count(-difference)}.`;
     openConfirm({
-      title: "Simple view only shows plain runs",
-      body: `This design uses ${pieces}. Switching rebuilds it as ${spec.width} unit${spec.width === 1 ? "" : "s"} wide and ${spec.levels} high, and ${losing === 1 ? "that piece" : "those pieces"} will be removed.`,
+      title: "Simple only builds plain runs",
+      body: `Switching rebuilds this shelf as ${size}. ${consequence}`,
       confirmLabel: "Rebuild it",
       cancelLabel: "Stay in " + (MODE_LABELS[previousMode] || previousMode),
       onConfirm: () => {
@@ -4059,6 +4522,19 @@
   function refresh(options) {
     const settings = options || {};
     computeCandidateCache();
+
+    // A piece held over from the last placement may have run out of places to
+    // go. Put it down here, before the overlay is built, so the user is never
+    // left holding something with no markers and a button offering to finish.
+    if (ui.activeModuleId && !(ui.candidateCache.get(ui.activeModuleId) || []).length) {
+      const spent = ui.catalog.modules[ui.activeModuleId];
+      const placed = ui.placedSinceChoose;
+      ui.activeModuleId = null;
+      ui.placedSinceChoose = false;
+      if (placed && spent) {
+        setHint(`That was the last ${moduleLabel(spent)} that fits. Tap Add a piece for another.`);
+      }
+    }
 
     ui.renderer.setPalette(shaderPalette(currentFinish()));
 
@@ -4091,7 +4567,13 @@
     // the camera, so re-framing afterwards would place them for the old view.
     // Only explicit framing actions and additions resize the view. Rotating,
     // removing, swapping and recolouring preserve the user's camera exactly.
-    if (settings.fit) {
+    //
+    // "candidates" is the framing for a piece still in hand: the shelf plus
+    // everywhere it could still go, which is a wider box than the shelf and is
+    // the only one that keeps the remaining markers on screen.
+    if (settings.fit === "candidates" && ui.activeModuleId) {
+      fitToCandidates(ui.activeModuleId);
+    } else if (settings.fit) {
       ui.renderer.fit(null, ui.dimensionsOn ? DIMENSION_FIT_PADDING : null);
     } else {
       ui.renderer.invalidate();
@@ -4274,6 +4756,7 @@
         if (ui.previewCandidateId) return clearGhost();
         if (ui.activeModuleId || ui.selectedId) {
           ui.activeModuleId = null;
+          ui.placedSinceChoose = false;
           ui.selectedId = null;
           syncScene();
           buildOverlay();
@@ -4367,7 +4850,17 @@
         clearGhost();
         return;
       }
-      cancelAdd();
+      // Tapping a piece means "that one", not "nothing". Advanced now keeps a
+      // part in hand across placements, so without this the gesture the mode
+      // depends on — tap a piece to swap, rotate or remove it — would cost a
+      // trip to the button first.
+      const onPiece = ui.renderer.pick(clientX, clientY);
+      ui.activeModuleId = null;
+      ui.placedSinceChoose = false;
+      ui.selectedId = onPiece || null;
+      setHint(null);
+      syncScene();
+      buildOverlay();
       return;
     }
     const hit = ui.renderer.pick(clientX, clientY);
