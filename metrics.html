@@ -173,6 +173,16 @@
        platform, it is a fault state, and it ships with a ⚠ in the legend so the
        colour never carries the meaning alone. */
     :root { --p-ig:#3987e5; --p-fb:#d95926; --p-other:#4a5261; }
+    /* Google is a CHANNEL, not one of Meta's placements, and it wears a hue no
+       other mark on this surface uses so it reads as "other money" wherever it
+       appears — in the spend row's three cuts and in the arrivals row below
+       them. Magenta rather than any Google brand colour: the brand's blue is
+       this chart's Instagram, its green is a paid order, and its yellow is the
+       Audience Network fault state. Validated the same way the pairs above
+       were — worst-case ΔE 16.2 against every other hue here (placements,
+       --warning, the ad-cut teal, --good, both message hues) under normal,
+       protan and deutan vision. */
+    :root { --p-goog:#c64ba6; }
     /* Message volume gets its own two hues rather than borrowing the funnel
        ramp: a row about who is doing the talking is not a funnel stage. Violet
        is unused elsewhere, so the client's half of an exchange can never be
@@ -352,13 +362,15 @@
     // alert, which renders above.
 
     // ---------- day by day (the daily check-in) ----------
-    // Three measures that share an x-axis but NOT a y-scale, drawn as aligned
-    // small multiples. Stacking KES on top of session counts would sum to
-    // nothing real, and a second y-axis is the one chart mistake never worth
-    // making — so each row keeps its own scale and the days stay in register.
+    // Measures that share an x-axis but NOT a y-scale, drawn as aligned small
+    // multiples. Stacking KES on top of session counts would sum to nothing
+    // real, and a second y-axis is the one chart mistake never worth making — so
+    // each row keeps its own scale and the days stay in register.
     //
-    // Every stack here is a true part-to-whole: placements sum to that day's
-    // spend, depth segments sum to that day's sessions.
+    // Every stack here is a true part-to-whole: placements plus Google sum to
+    // that day's spend, and depth segments and arrival channels each sum to that
+    // day's sessions — which is why those two rows share one scale and one band
+    // height. They are the same bar, sliced twice.
 
     // Fixed order, never cycled. Anything Meta reports that isn't Instagram,
     // Facebook or Audience Network folds into "Other" rather than earning a new
@@ -398,6 +410,32 @@
       { k:'engage',  l:'Engaged',          c:'var(--f3)' },
       { k:'handoff', l:'WhatsApp handoff', c:'var(--f4)' }
     ];
+    // Where the visitors came from. The same bar as the row above — one session,
+    // one bucket, summing to that bucket's sessions — sliced by channel instead
+    // of by depth, which is why it is drawn at the same height and on the same
+    // scale. The two rows are one silhouette read twice: how far they got, and
+    // who sent them.
+    //
+    // Hues carry the channel, not the row: Meta keeps the blue it wears in the
+    // spend row (Instagram is the only placement this account buys), Google
+    // keeps its magenta from the same row, and "not tagged" is the slate the
+    // chats row already uses for an unknown source — so a big grey band reads as
+    // absence of evidence rather than as a channel worth celebrating.
+    //
+    // "Not tagged" is the honest label. It is mostly organic and direct, but it
+    // also holds paid clicks whose tags were stripped on the way here, so
+    // calling it "organic" would be a claim the data cannot support.
+    var ARRIVALS = [
+      { k:'meta',    l:'From Meta',   c:'var(--p-ig)' },
+      { k:'google',  l:'From Google', c:'var(--p-goog)' },
+      { k:'unknown', l:'Not tagged',  c:'var(--p-other)' }
+    ];
+    // Google's money in the spend row. One segment, drawn on top in every cut:
+    // Placement, Ad and Audience are Meta's own breakdowns of Meta's money, and
+    // inventing a Google "placement" or a Google "ad set" to slice it by would
+    // be a category this account does not have. The row is total spend either
+    // way, which is the number the month is judged on.
+    var GOOGLE_SPEND = { k:'google', l:'Google Search', c:'var(--p-goog)' };
 
     function foldPlacement(p) {
       var out = { instagram:0, facebook:0, other:0, audience_network:0 };
@@ -522,11 +560,15 @@
 
     // Row labels and legends live INSIDE the svg, so a row's title can never
     // drift out of register with the band it names.
-    // Five bands, 32px of air above each for its header. The last one is money in,
+    // Six bands, 32px of air above each for its header. The last one is money in,
     // added 2026-08-11: it is the only row measured in KES rather than counts, so
     // it gets its own baseline rather than being folded into the chats row above.
-    var DGEO = { W:1000, L:4, H:508,
-                 rows:[{ y:20, h:84 }, { y:136, h:84 }, { y:252, h:56 }, { y:340, h:56 }, { y:428, h:56 }] };
+    // Arrivals, added 2026-09-17, sits directly under Visitors and gets the SAME
+    // band height, because the two are the same total on the same scale — put it
+    // in a shorter band and the eye reads a drop in traffic that isn't there.
+    var DGEO = { W:1000, L:4, H:624,
+                 rows:[{ y:20, h:84 }, { y:136, h:84 }, { y:252, h:84 },
+                       { y:368, h:56 }, { y:456, h:56 }, { y:544, h:56 }] };
 
     // How many buckets each grain shows, and what one bucket is called.
     var GRAINS = {
@@ -562,8 +604,10 @@
         var b = byKey[k];
         if (!b) {
           b = byKey[k] = { key:k, day:d.day, first:d.day, last:d.day, spend:0, placement:{}, byAd:{}, byAdset:{},
+                           googleCost:0, googleSpend:0, googleClicks:0, googleImpressions:0, totalSpend:0,
                            metaClicks:0, metaLanding:0, metaConvos:0, sessions:0,
                            depth:{ arrive:0, product:0, engage:0, handoff:0 },
+                           arrivedFrom:{ meta:0, google:0, unknown:0 },
                            newChats:0, source:{ site:0, whatsapp_ad:0, unknown:0 },
                            messages:{ in:0, out:0 }, msgDays:0,
                            quoted:0, sales:0, revenue:0, orderValues:[], dayCount:0 };
@@ -572,6 +616,9 @@
         b.last = d.day; b.dayCount++;
         b.spend += d.spend || 0; b.metaClicks += d.metaClicks || 0;
         b.metaLanding += d.metaLanding || 0; b.metaConvos += d.metaConvos || 0;
+        b.googleCost += d.googleCost || 0; b.googleSpend += d.googleSpend || 0;
+        b.totalSpend += d.totalSpend || 0;
+        b.googleClicks += d.googleClicks || 0; b.googleImpressions += d.googleImpressions || 0;
         b.sessions += d.sessions || 0; b.newChats += d.newChats || 0;
         b.quoted += d.quoted || 0; b.sales += d.sales || 0; b.revenue += d.revenue || 0;
         // Rolled up, a week's bar is still one cell per order — which is the point
@@ -582,6 +629,7 @@
         for (var ak in (d.byAd || {})) b.byAd[ak] = (b.byAd[ak] || 0) + d.byAd[ak];
         for (var qk in (d.byAdset || {})) b.byAdset[qk] = (b.byAdset[qk] || 0) + d.byAdset[qk];
         for (var dk in b.depth) b.depth[dk] += (d.depth && d.depth[dk]) || 0;
+        for (var ak2 in b.arrivedFrom) b.arrivedFrom[ak2] += (d.arrivedFrom && d.arrivedFrom[ak2]) || 0;
         for (var sk in b.source) b.source[sk] += (d.source && d.source[sk]) || 0;
         b.messages.in += (d.messages && d.messages.in) || 0;
         b.messages.out += (d.messages && d.messages.out) || 0;
@@ -592,6 +640,9 @@
       });
       order.forEach(function (b) {
         b.spend = Math.round(b.spend * 100) / 100;
+        b.googleCost = Math.round(b.googleCost * 100) / 100;
+        b.googleSpend = Math.round(b.googleSpend * 100) / 100;
+        b.totalSpend = Math.round(b.totalSpend * 100) / 100;
         b.revenue = Math.round(b.revenue * 100) / 100;
         b.orderValues.sort(function (x, y) { return y - x; }); // largest anchors the stack
 
@@ -668,7 +719,9 @@
       var xOf = function (i) { return L + col * i + (col - barW) / 2; };
       var cov = dailyCoverage(D2, ds, n);
 
-      var maxSpend = niceMax(Math.max.apply(null, ds.map(function (d) { return d.spend || 0; })));
+      // Both channels, not Meta's alone: the row is scaled to the money that
+      // actually left the building.
+      var maxSpend = niceMax(Math.max.apply(null, ds.map(function (d) { return d.totalSpend || d.spend || 0; })));
       var maxSess  = niceMax(Math.max.apply(null, ds.map(function (d) { return d.sessions || 0; })));
       var maxChat  = niceMax(Math.max.apply(null, ds.map(function (d) { return d.newChats || 0; })));
       var maxMsg   = niceMax(Math.max.apply(null, ds.map(function (d) {
@@ -688,15 +741,19 @@
         svg.push('<rect x="' + (L + col*a) + '" y="' + band.y + '" width="' + (col*(b-a+1)) +
                  '" height="' + band.h + '" fill="url(#nodata)" opacity=".3"/>');
       };
-      if (cov.siteFrom > 0) hatch(R[1], 0, Math.min(cov.siteFrom, n) - 1);
-      if (cov.convThru < n - 1) hatch(R[2], Math.max(cov.convThru + 1, 0), n - 1);
+      // Both session rows are blind over the same span, and for the same reason.
+      if (cov.siteFrom > 0) {
+        hatch(R[1], 0, Math.min(cov.siteFrom, n) - 1);
+        hatch(R[2], 0, Math.min(cov.siteFrom, n) - 1);
+      }
+      if (cov.convThru < n - 1) hatch(R[3], Math.max(cov.convThru + 1, 0), n - 1);
       // Message coverage is not a leading or trailing span — a week nobody ran
       // the scrape leaves a hole in the MIDDLE. Hatch each run of uncovered
       // buckets, so a collection gap can never be read as a quiet stretch.
       for (var mi = 0; mi < n; mi++) {
         if (ds[mi].msgDays > 0) continue;
         var mj = mi; while (mj + 1 < n && ds[mj + 1].msgDays === 0) mj++;
-        hatch(R[3], mi, mj);
+        hatch(R[4], mi, mj);
         mi = mj;
       }
 
@@ -727,7 +784,15 @@
           var full = (s.v / max) * band.h;
           var yTop = band.y + band.h - ((s.y0 + s.v) / max) * band.h;
           var isTop = si === parts.length - 1;
-          var off = isTop ? 0 : GAP;
+          // The gap never eats a segment whole. A full 2px off a 1.4px segment
+          // left nothing to draw AND a 1.4px hole where it should have been, so
+          // the bar floated off its own baseline — which reads as the axis being
+          // wrong rather than as a small quantity. The arrivals row made this
+          // routine: one Meta visitor in a bucket of thirty is exactly that
+          // segment. Keep a pixel of ink and give the gap whatever is left over.
+          // This is not a pixel floor: the segment still renders smaller than a
+          // pixel when that is what it is, and the total stays true.
+          var off = isTop ? 0 : Math.min(GAP, Math.max(0, full - 1));
           if (ri != null) {
             (SEGS[ri] = SEGS[ri] || {});
             (SEGS[ri][i] = SEGS[ri][i] || []).push({ l:s.l, v:s.v, c:s.c, top:yTop + off, bot:yTop + full });
@@ -748,9 +813,17 @@
       // Fall back to the cut that is always present and say what happened.
       var cutEmpty = !SPEND.items.length;
       if (cutEmpty) { cut = 'placement'; SPEND = spendSeries(ds, cut); }
+      // Google's money rides on top of Meta's own split in whichever cut is
+      // showing. Only when there is some: a permanent empty legend entry would
+      // say the channel is running and producing nothing, which is a different
+      // claim from "it is not running".
+      var googleSpent = ds.some(function (d) { return (d.googleSpend || 0) > 0; });
+      var SPEND_ITEMS = googleSpent ? SPEND.items.concat([GOOGLE_SPEND]) : SPEND.items;
       ds.forEach(function (d, i) {
         var p = SPEND.pick(d[cut]);
-        var total = stack(R[0], i, SPEND.items.map(function (s) { return { c:s.c, l:s.l, v:p[s.k] || 0 }; }), maxSpend, 0);
+        var segs = SPEND.items.map(function (s) { return { c:s.c, l:s.l, v:p[s.k] || 0 }; });
+        if (googleSpent) segs.push({ c:GOOGLE_SPEND.c, l:GOOGLE_SPEND.l, v:d.googleSpend || 0 });
+        var total = stack(R[0], i, segs, maxSpend, 0);
         if (total === 0) svg.push('<line x1="' + xOf(i) + '" y1="' + (R[0].y + R[0].h) + '" x2="' + (xOf(i)+barW) +
           '" y2="' + (R[0].y + R[0].h) + '" stroke="var(--line)" stroke-width="2"/>');
       });
@@ -759,7 +832,24 @@
         if (i < cov.siteFrom) return;
         stack(R[1], i, DEPTHS.map(function (s) { return { c:s.c, l:s.l, v:(d.depth && d.depth[s.k]) || 0 }; }), maxSess, 1);
       });
-      // Row 3 — new chats split by where they came from. A green dot used to sit
+      // Row 3 — the same visitors, by the channel that sent them. Same scale as
+      // the row above (maxSess), so the two bars are the same height and only
+      // their composition differs — which is the entire comparison.
+      //
+      // A payload synced before this split existed carries no `arrivedFrom` at
+      // all, and the band would draw empty under a full legend with no hint why.
+      // Same treatment as a missing spend cut: nothing is drawn and the note
+      // below says which snapshot is at fault.
+      var arrivalsEmpty = !ds.some(function (d) {
+        return d.arrivedFrom && (d.arrivedFrom.meta || d.arrivedFrom.google || d.arrivedFrom.unknown);
+      }) && ds.some(function (d) { return (d.sessions || 0) > 0; });
+      if (!arrivalsEmpty) {
+        ds.forEach(function (d, i) {
+          if (i < cov.siteFrom) return;
+          stack(R[2], i, ARRIVALS.map(function (s) { return { c:s.c, l:s.l, v:(d.arrivedFrom && d.arrivedFrom[s.k]) || 0 }; }), maxSess, 2);
+        });
+      }
+      // Row 4 — new chats split by where they came from. A green dot used to sit
       // above this row marking a day with a sale; removed 2026-08-16, because the
       // Paid row below already carries every sale at its true size, and the dot
       // was misleading twice over: it was binary where the money is not, and
@@ -767,24 +857,24 @@
       // conversation usually started weeks to the left.
       ds.forEach(function (d, i) {
         if (i <= cov.convThru) {
-          stack(R[2], i, SOURCES.map(function (t) { return { c:t.c, l:t.l, v:(d.source && d.source[t.k]) || 0 }; }), maxChat, 2);
+          stack(R[3], i, SOURCES.map(function (t) { return { c:t.c, l:t.l, v:(d.source && d.source[t.k]) || 0 }; }), maxChat, 3);
         }
       });
-      // Row 4 — messages exchanged, in threads of any age. The first three rows
-      // all count things that happen once, at the start; a period where nobody
+      // Row 5 — messages exchanged, in threads of any age. Every row above
+      // counts something that happens once, at the start; a period where nobody
       // new arrives but the team is deep in negotiation with five existing
       // buyers is identical to a dead one on every other row.
       ds.forEach(function (d, i) {
         if (!d.msgDays) return; // hatched above — no run covered this bucket
-        var total = stack(R[3], i, MSGDIRS.map(function (t) { return { c:t.c, l:t.l, v:(d.messages && d.messages[t.k]) || 0 }; }), maxMsg, 3);
-        if (total === 0) svg.push('<line x1="' + xOf(i) + '" y1="' + (R[3].y + R[3].h) + '" x2="' + (xOf(i)+barW) +
-          '" y2="' + (R[3].y + R[3].h) + '" stroke="var(--line)" stroke-width="2"/>');
+        var total = stack(R[4], i, MSGDIRS.map(function (t) { return { c:t.c, l:t.l, v:(d.messages && d.messages[t.k]) || 0 }; }), maxMsg, 4);
+        if (total === 0) svg.push('<line x1="' + xOf(i) + '" y1="' + (R[4].y + R[4].h) + '" x2="' + (xOf(i)+barW) +
+          '" y2="' + (R[4].y + R[4].h) + '" stroke="var(--line)" stroke-width="2"/>');
       });
 
       // Date axis — every other day, so ticks never collide. Today is named
       // rather than dated: its bars are a partial day and shouldn't be read as a
       // finished one.
-      // Row 5 — money in, one cell per ORDER rather than one bar per day.
+      // Row 6 — money in, one cell per ORDER rather than one bar per day.
       //
       // Height is the day's revenue, and the cells that make it up are the
       // individual orders, largest at the baseline. One colour throughout: the
@@ -800,8 +890,8 @@
         var vals = d.orderValues || [];
         if (!vals.length) {
           // An explicit "nothing arrived", so an empty day is visibly measured.
-          svg.push('<line x1="' + xOf(i) + '" y1="' + (R[4].y + R[4].h) + '" x2="' + (xOf(i) + barW) +
-                   '" y2="' + (R[4].y + R[4].h) + '" stroke="var(--line)" stroke-width="2"/>');
+          svg.push('<line x1="' + xOf(i) + '" y1="' + (R[5].y + R[5].h) + '" x2="' + (xOf(i) + barW) +
+                   '" y2="' + (R[5].y + R[5].h) + '" stroke="var(--line)" stroke-width="2"/>');
           return;
         }
         // The gap adapts to the stack. A month can hold sixteen orders in a 56px
@@ -810,14 +900,14 @@
         // venetian blinds. Shrink the gap until it costs at most a fifth of the
         // bar, and hold it CONSTANT within that stack: one width per bar is what
         // makes neighbouring segments read as separate rather than striped.
-        var totalPx = (d.revenue / maxPaid) * R[4].h;
+        var totalPx = (d.revenue / maxPaid) * R[5].h;
         var gap = GAP;
         while (gap > 0 && (vals.length - 1) * gap > totalPx * 0.2) gap -= 1;
 
         var acc = 0;
         vals.forEach(function (v, j) {
-          var full = (v / maxPaid) * R[4].h;
-          var yTop = R[4].y + R[4].h - ((acc + v) / maxPaid) * R[4].h;
+          var full = (v / maxPaid) * R[5].h;
+          var yTop = R[5].y + R[5].h - ((acc + v) / maxPaid) * R[5].h;
           var isTop = j === vals.length - 1;
           // No pixel floor. A floor looks kind and lies: sixteen sub-pixel cells
           // each rounded up to 1px make the bar a quarter taller than the money
@@ -857,7 +947,7 @@
       // not say which segment the pointer was actually over. These are scoped to
       // the row, and the handler resolves the exact cell from the pointer's y.
       // The Paid row keeps its own per-order hit rects and is skipped here.
-      [0, 1, 2, 3].forEach(function (ri) {
+      [0, 1, 2, 3, 4].forEach(function (ri) {
         ds.forEach(function (d, i) {
           svg.push('<rect class="rhit" data-ri="' + ri + '" data-di="' + i + '" x="' + (L + col*i) +
                    '" y="' + R[ri].y + '" width="' + col + '" height="' + R[ri].h + '" fill="transparent"/>');
@@ -880,17 +970,34 @@
         });
         svg.push('<g class="hdr">' + out.join('') + '</g>');
       };
-      rowHead(R[0], 'Spend', maxSpend, 'kes', SPEND.items);
+      rowHead(R[0], 'Spend', maxSpend, 'kes', SPEND_ITEMS);
       rowHead(R[1], 'Visitors', maxSess, 'num', DEPTHS);
-      rowHead(R[2], 'New chats', maxChat, 'num', SOURCES);
-      rowHead(R[3], 'Messages', maxMsg, 'num', MSGDIRS);
+      rowHead(R[2], 'Arrived from', maxSess, 'num', arrivalsEmpty ? [] : ARRIVALS);
+      rowHead(R[3], 'New chats', maxChat, 'num', SOURCES);
+      rowHead(R[4], 'Messages', maxMsg, 'num', MSGDIRS);
       // No legend: one series, so the row label already names what is plotted and
       // a single-swatch box would just restate it.
-      rowHead(R[4], 'Paid', maxPaid, 'kes', []);
+      rowHead(R[5], 'Paid', maxPaid, 'kes', []);
 
       // Notes only where a row genuinely cannot speak — not decoration.
       var notes = [];
       if (cov.siteFrom > 0) notes.push('Visitor tracking began ' + fmtDay(D2.siteEventsFrom) + ' — earlier ' + G.unit + ' were not measured, not empty.');
+      // Google's series only reaches back as far as the sync asked Google for.
+      // A bar to the left of that is Meta-only because nobody looked, which is a
+      // different thing from a day Google did not spend — and the difference
+      // matters most in the month view, where a single bar can straddle the
+      // boundary.
+      if (googleSpent && D2.googleSpendFrom && ds.length && (ds[0].first || ds[0].day) < D2.googleSpendFrom) {
+        notes.push('Google spend is counted from ' + fmtDay(D2.googleSpendFrom) +
+          ' — the window the sync asks Google for. Earlier ' + G.unit + ' show Meta only.');
+      }
+      // Dollars are never added to shillings. If the rate is missing the Google
+      // money is simply absent from the bar, and that has to be said out loud.
+      if (D2.googleSpendConverted === false && ds.some(function (d) { return (d.googleCost || 0) > 0; })) {
+        notes.push('<b>Google spend is missing from the ' + G.unit + ' above</b> — the account bills in ' +
+          esc((D.google && D.google.currency && D.google.currency.account) || 'another currency') +
+          ' and there is no usable rate to convert it. Set <b>fx.rate</b> in framework-ops/google/terms.json.');
+      }
       if (cov.convThru < n - 1) notes.push('Conversations pulled through ' + fmtDay(D2.conversationsThrough) + ' — run <b>run.command</b> to fill in the rest.');
       // Message counts come from scraped transcripts, so they only exist for
       // periods a run actually covered. Hatching says WHERE; this says why, and
@@ -936,6 +1043,9 @@
       if (cutEmpty) {
         notes.push('No ' + (CUTS[view.spendCut] || '').toLowerCase() + ' breakdown in this snapshot — showing placement. ' +
                    'Run the sync to collect it.');
+      }
+      if (arrivalsEmpty) {
+        notes.push('<b>Arrived from</b> is empty because this snapshot predates it — run the sync to collect it.');
       }
       if (grain !== 'day' && cov.siteFrom < n && D2.siteEventsFrom && (ds[cov.siteFrom].first || '') < D2.siteEventsFrom) {
         notes.push('The ' + G.one + ' beginning ' + fmtDay(ds[cov.siteFrom].first) + ' is only part-tracked — visitors are counted from ' + fmtDay(D2.siteEventsFrom) + '.');
@@ -1635,8 +1745,8 @@
       dailyHover();
     }
 
-    // One tooltip for all three rows: the rows are aligned so they can be read
-    // as one day, so hovering reports the whole day rather than one measure.
+    // One tooltip for every row: the rows are aligned so they can be read as one
+    // day, and each hover names the exact cell under the pointer.
     // Each figure carries its change against the mean of the 7 days before it —
     // that comparison is the entire point of checking this daily.
     function dailyHover() {
@@ -1646,6 +1756,10 @@
       var cut = activeCut(), SPEND = spendSeries(ds, cut);
       var tip = document.getElementById('tip');
       var cov = dailyCoverage(D2, ds, n);
+      // Re-derived here rather than shared with dailyChart: this function builds
+      // its own series from `view`, and a tooltip disagreeing with the bar under
+      // the cursor about whether a row has data is worse than either state.
+      var arrivalsMissing = !ds.some(function (d) { return !!d.arrivedFrom; });
 
       // Today is still in progress. Comparing a few hours against a run of whole
       // days would show a scary minus every morning and mean nothing, so today
@@ -1720,10 +1834,19 @@
       // actually over. These resolve the exact cell, brighten it, dim the rest of
       // that bar, and report that one number with the bucket total for context.
       var ROWMETA = [
-        { l:'Spend', unit:'kes', get:function (d) { return d.spend || 0; },
+        // Both channels. A segment's share has to be a share of the whole bar,
+        // and the bar is the total.
+        { l:'Spend', unit:'kes', get:function (d) { return d.totalSpend || d.spend || 0; },
           ok:function () { return true; } },
         { l:'Visitors', unit:'num', get:function (d) { return d.sessions || 0; },
           ok:function (i) { return i >= cov.siteFrom; }, absent:'not tracked yet' },
+        // The same total as Visitors, by design — see the row itself. Two
+        // different absences, and they need different words: before tracking
+        // there were no arrivals to attribute, whereas a payload from before
+        // this split existed has arrivals it simply never filed.
+        { l:'Arrived from', unit:'num', get:function (d) { return d.sessions || 0; },
+          ok:function (i) { return !arrivalsMissing && i >= cov.siteFrom; },
+          absent:arrivalsMissing ? 'not in this snapshot — run the sync' : 'not tracked yet' },
         { l:'New chats', unit:'num', get:function (d) { return d.newChats || 0; },
           ok:function (i) { return i <= cov.convThru; }, absent:'not counted yet' },
         { l:'Messages', unit:'num',
@@ -1801,8 +1924,24 @@
           }
           var dl = delta(i, meta.get, meta.ok);
           if (dl) h += '<div class="sub">' + dl + ' vs the prior 7</div>';
-          if (ri === 3 && d.msgDays != null && d.dayCount && d.msgDays < d.dayCount) {
+          if (ri === 4 && d.msgDays != null && d.dayCount && d.msgDays < d.dayCount) {
             h += '<div class="sub" style="color:var(--muted)">covers ' + d.msgDays + ' of ' + d.dayCount + ' days</div>';
+          }
+          if (ri === 2 && hit && hit.l === 'Not tagged') {
+            // The grey band is usually the biggest thing on this row and the one
+            // most easily misread as "organic". Said here, on the segment it is
+            // about, rather than under every hover on the row.
+            h += '<div class="sub" style="color:var(--muted)">Organic and direct traffic, plus any paid ' +
+                 'click that lost its tags on the way here.</div>';
+          }
+          if (ri === 0 && (d.googleSpend || 0) > 0) {
+            // Each channel's own clicks against its own money. Meta's line below
+            // counts conversations started because its live ads go to WhatsApp;
+            // Google's go to the site, so its clicks are the ones that matter.
+            h += '<div class="sub">Google ' + kes(d.googleSpend) + ' · ' + num(d.googleClicks || 0) + ' click' +
+                 ((d.googleClicks || 0) === 1 ? '' : 's') +
+                 (d.googleClicks ? ' · ' + kes(Math.round(d.googleSpend / d.googleClicks)) + ' each' : '') +
+                 '</div>';
           }
           // Audience Network is a fault state, not a category, so its warning
           // follows the reader into the Ad and Audience cuts, where the placement
@@ -1816,7 +1955,8 @@
             // click-to-WhatsApp its clicks are not supposed to reach the site at
             // all. Clicks against conversations started is the funnel that exists.
             if (d.metaClicks) {
-              h += '<div class="sub">' + num(d.metaClicks) + ' clicks · ' +
+              h += '<div class="sub">' + (d.googleSpend ? 'Meta ' + kes(d.spend) + ' · ' : '') +
+                   num(d.metaClicks) + ' clicks · ' +
                    num(d.metaConvos || 0) + ' conversation' + ((d.metaConvos || 0) === 1 ? '' : 's') +
                    (d.metaConvos ? ' · ' + kes(Math.round(d.spend / d.metaConvos)) + ' each' : '') + '</div>';
             }
