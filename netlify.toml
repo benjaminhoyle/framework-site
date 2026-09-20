@@ -16,27 +16,35 @@
 [build.processing.html]
   pretty_urls = false
 
-# --- Legacy shelf-builder entry points -------------------------------------
-# A URL fragment is never sent to Netlify, so these must remain rewrites. Each
-# page redirects itself only when there is no legacy design code in its hash.
+# --- Retired shelf-builder entry points ------------------------------------
+# The 2D designer and the sandbox were retired on 2026-09-20; /builder is the
+# only shelf tool now. These were rewrites because a URL fragment never reaches
+# Netlify, so each page had to read its own legacy design code and redirect
+# itself. Nothing is left to read it: the four /designer links that existed in
+# the order history were converted to /builder codes by hand and written back
+# to those orders, and none of the 200 client records carried one.
+#
+# 301 rather than a rewrite, so the address corrects itself. An old fragment
+# rides along untouched and /builder ignores what it cannot decode, which is
+# the right outcome: a stale link opens the current tool rather than an error.
 [[redirects]]
   from = "/designer"
-  to = "/designer.html"
-  status = 200
+  to = "/builder"
+  status = 301
 
 [[redirects]]
   from = "/simplified-designer"
-  to = "/simplified-designer.html"
-  status = 200
+  to = "/builder"
+  status = 301
+
+[[redirects]]
+  from = "/sandbox"
+  to = "/builder"
+  status = 301
 
 [[redirects]]
   from = "/diy"
   to = "/diy.html"
-  status = 200
-
-[[redirects]]
-  from = "/sandbox"
-  to = "/sandbox.html"
   status = 200
 
 # --- Preserve current clean URLs -------------------------------------------

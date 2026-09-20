@@ -49,25 +49,41 @@ for (const file of htmlFiles()) {
 }
 
 const redirects = read("netlify.toml").split("[[redirects]]").slice(1);
-const legacyEntries = new Map([
-  ["designer", "flexible"],
-  ["simplified-designer", "simple"],
-  ["diy", "simple"],
-  ["sandbox", "advanced"]
-]);
-for (const [entry, mode] of legacyEntries) {
-  const block = redirects.find((part) => part.includes(`from = "/${entry}"`));
-  assert.ok(block, `/${entry}: extensionless rewrite missing`);
-  assert.ok(block.includes(`to = "/${entry}.html"`), `/${entry}: should serve its compatibility page`);
-  assert.match(block, /status\s*=\s*200/, `/${entry}: should preserve the hash for the page to inspect`);
 
-  const html = read(`${entry}.html`);
-  assert.match(html, /if\s*\(\s*!location\.hash\s*\)/, `${entry}.html: redirect must only run without a code`);
-  assert.ok(
-    html.includes(`location.replace('/builder.html?mode=${mode}')`),
-    `${entry}.html: code-free entry should open ${mode} mode`
+/*
+ * Retired on 2026-09-20. These were rewrites to a compatibility page that read
+ * its own hash, because a URL fragment never reaches Netlify and the old
+ * designer kept the whole design in one. The four links that existed in the
+ * order history were converted to /builder codes and written back, so there is
+ * nothing left for a page to read -- and a page that no longer exists cannot be
+ * rewritten to. The assertion is inverted rather than deleted: a rewrite
+ * quietly reinstated against a missing file serves a 404 to an address people
+ * still have.
+ */
+const retiredEntries = ["designer", "simplified-designer", "sandbox"];
+for (const entry of retiredEntries) {
+  const block = redirects.find((part) => part.includes(`from = "/${entry}"`));
+  assert.ok(block, `/${entry}: retired, but it still needs a redirect for links already out there`);
+  assert.ok(block.includes('to = "/builder"'), `/${entry}: should send people to /builder`);
+  assert.match(block, /status\s*=\s*301/, `/${entry}: should be a redirect, not a rewrite -- the address must correct itself`);
+  assert.equal(
+    fs.existsSync(path.join(ROOT, `${entry}.html`)),
+    false,
+    `${entry}.html: retired, and a rewrite target that exists again would shadow the redirect`
   );
 }
+
+// /diy is not retired: it is a live entry point that opens Simple.
+const diy = redirects.find((part) => part.includes('from = "/diy"'));
+assert.ok(diy, "/diy: extensionless rewrite missing");
+assert.ok(diy.includes('to = "/diy.html"'), "/diy: should serve its page");
+assert.match(diy, /status\s*=\s*200/, "/diy: should stay a rewrite");
+const diyHtml = read("diy.html");
+assert.match(diyHtml, /if\s*\(\s*!location\.hash\s*\)/, "diy.html: redirect must only run without a code");
+assert.ok(
+  diyHtml.includes("location.replace('/builder.html?mode=simple')"),
+  "diy.html: code-free entry should open simple mode"
+);
 
 const catalog = JSON.parse(read("catalog.json"));
 for (const product of catalog.products.filter((entry) => entry.active !== false && entry.designerUrl)) {

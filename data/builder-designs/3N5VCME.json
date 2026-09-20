@@ -1,0 +1,61 @@
+{
+  "ok": true,
+  "code": "3N5VCME",
+  "hash": "WzEsImFkdmFuY2VkIiwiY2hhcmNvYWwiLDAsWyJzdGFuZGFyZF9iYXNlIl0sW1swLDAsMCwwLDAsW11dLFswLDEwMTAsMCwwLDAsW11dLFswLDIwMjAsMCwwLDAsW11dXV0",
+  "design": {
+    "schemaVersion": 1,
+    "finish": "charcoal",
+    "bookends": 0,
+    "instances": [
+      {
+        "id": "item_001",
+        "type": "standard_base",
+        "originWorldMm": [
+          0,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor"
+        }
+      },
+      {
+        "id": "item_002",
+        "type": "standard_base",
+        "originWorldMm": [
+          1010,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor",
+          "basePlacementKind": "adjacent_right",
+          "nextTo": "item_001"
+        }
+      },
+      {
+        "id": "item_003",
+        "type": "standard_base",
+        "originWorldMm": [
+          2020,
+          0,
+          0
+        ],
+        "rotationDeg": 0,
+        "placement": {
+          "method": "floor",
+          "basePlacementKind": "adjacent_right",
+          "nextTo": "item_002"
+        }
+      }
+    ]
+  },
+  "mode": "advanced",
+  "finish": "charcoal",
+  "pieces": 3,
+  "total_ksh": 19500,
+  "created_at": "2026-09-20T15:05:32.952Z",
+  "source_designer_link": "ported from a /designer hash on 2026-09-20, order 113_Gioia-Shah"
+}
