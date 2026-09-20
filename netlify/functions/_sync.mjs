@@ -62,6 +62,28 @@ export function orderStatusFor(invoiceStatus) {
 }
 
 /**
+ * Was anything charged for this order?
+ *
+ * The Airtable field was called `Free / Heavy Discount` until 2026-09-20, and
+ * the name was the whole problem: "free" and "heavily discounted" are two
+ * different facts, and the base recorded both with one tick that zeroes the
+ * revenue and leaves the scaled units at full value. So a shelf sold at a tenth
+ * of list counted as a whole shelf's worth of business with no money against
+ * it, which is 8.95 scaled units of the chart as of that date. `Discount` on
+ * the line is what a reduced price is for: it takes the revenue and the units
+ * down together. The tick now means only what `Zero Charge` says.
+ *
+ * Both names are read because the field cannot be renamed until this is
+ * deployed: the moment the base changes, a reader that knows only the old name
+ * sees `undefined` and reports every sample and internal build as an order
+ * missing its invoice. Once the rename has been made and a full pass is clean,
+ * the fallback can go.
+ */
+export function zeroCharge(fields) {
+  return Boolean(fields['Zero Charge'] ?? fields['Free / Heavy Discount']);
+}
+
+/**
  * A custom field's real value, not the one Zoho formatted for display.
  *
  * Every custom field comes back three times: `cf_delivery_date` is
@@ -517,14 +539,14 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     }
   }
 
-  // ---- check: an order without an invoice must be Free/Heavy or Internal
+  // ---- check: an order without an invoice must be Zero Charge or Internal
   for (const o of orders) {
     if (String(o.fields['Zoho Invoice'] || '').trim()) continue;
-    if (o.fields['Free / Heavy Discount']) continue;
+    if (zeroCharge(o.fields)) continue;
     if (String(o.fields['Order ID'] || '').includes('Internal')) continue;
     add(ERROR, 'order-needs-invoice', `${o.fields['Order ID']} has no invoice`, {
       orderRecIds: [o.id],
-      detail: 'An order with no Zoho invoice must be Free / Heavy Discount or Internal. This is neither, so either it was never invoiced or the pointer is missing.'
+      detail: 'An order with no Zoho invoice must be Zero Charge or Internal. This is neither, so either it was never invoiced or the pointer is missing.'
     });
   }
 
@@ -799,6 +821,29 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     // would silently exclude almost the entire pipeline from the backfill.
     const inProduction = ['Production Launched', 'Pending Delivery', 'Pending Client Collect']
       .includes(order.fields['Order Status']);
+
+    // -- Zero Charge and a real invoice are contradictory
+    //
+    // The tick means nothing was charged, and `Subtotal` is zeroed by it, so
+    // such an order reads as no revenue however much was invoiced. That is the
+    // whole reason the tick and the line `Discount` percent stopped being two
+    // ways of saying one thing, so it is worth a check rather than a line in a
+    // document. Three orders were sitting like this on 2026-09-20, hiding
+    // 29,000 of 2025 income.
+    //
+    // Goods only, and never a draft or a void. `249_Pocket-Libraries` is the
+    // shape that matters: the shelving was given away and only the 1,500
+    // delivery was billed, which is Zero Charge behaving exactly as intended.
+    // `247_Makena` is the other: a zero-total draft against a giveaway. Firing
+    // on either would make this a check people scroll past, and it sits beside
+    // the ones they must not.
+    if (zeroCharge(order.fields) && full.status !== 'void'
+        && zoho.round2(m.goods - m.discount) > 0) {
+      add(ERROR, 'zero-charge-has-invoice', `${order.fields['Order ID']} is Zero Charge but ${num} charged for goods`, {
+        invoice: num, orderRecIds: [order.id],
+        detail: `${num} charges ${zoho.round2(m.goods - m.discount)} for goods, and this order is ticked Zero Charge, so its revenue reads zero. If money changed hands, untick it and put the reduction on the lines as a Discount percent, which takes the scaled units down with the revenue. If nothing was charged for goods, the invoice does not belong on this order.`
+      });
+    }
 
     // -- delivery charge: the sync owns this field outright
     if (m.hasDeliveryLine) {

@@ -77,17 +77,108 @@ await test('one order per invoice is silent', async () => {
 });
 
 // ---- order-needs-invoice ----------------------------------------------
-await test('an uninvoiced order is an error unless it is free or internal', async () => {
+await test('an uninvoiced order is an error unless it is zero charge or internal', async () => {
   const r = await run({
     orders: [
       order('1_Paying'),                                       // no invoice — a gap
-      order('2_Gift', { 'Free / Heavy Discount': true }),      // legitimate
+      order('2_Gift', { 'Zero Charge': true }),                // legitimate
       order('3_Internal')                                      // legitimate
     ]
   });
   const f = of(r, 'order-needs-invoice');
   assert.equal(f.length, 1, 'only the paying order should be flagged');
   assert.equal(f[0].event, '1_Paying has no invoice');
+});
+
+// The field was `Free / Heavy Discount` until 2026-09-20. Both names are read
+// so the rename can be deployed before the base changes rather than after: a
+// reader that knows only the new name would, for the minutes between, report
+// every sample and internal build as an order missing its invoice.
+await test('the old field name still excuses an uninvoiced order', async () => {
+  const r = await run({ orders: [order('2_Gift', { 'Free / Heavy Discount': true })] });
+  assert.equal(of(r, 'order-needs-invoice').length, 0);
+});
+
+await test('an order ticked under both names is still just zero charge', async () => {
+  const r = await run({
+    orders: [order('2_Gift', { 'Zero Charge': true, 'Free / Heavy Discount': true })]
+  });
+  assert.equal(of(r, 'order-needs-invoice').length, 0);
+  assert.equal(of(r, 'zero-charge-has-invoice').length, 0);
+});
+
+// ---- zero-charge-has-invoice -------------------------------------------
+// The whole policy is that the tick means no sale and `Discount` on the line
+// means a reduced one. An order that is both is the old ambiguity surviving:
+// its revenue reads zero however much the invoice says, because `Subtotal` is
+// zeroed by the tick.
+const goodsInvoice = (num, extra = {}) =>
+  invoice(num, [zline('Standard Base', 1, 6500, 'z1')], extra);
+
+await test('zero charge against an invoice that charged for goods is an error', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Zero Charge': true })],
+    invoices: [goodsInvoice('INV1')]
+  });
+  const f = of(r, 'zero-charge-has-invoice');
+  assert.equal(f.length, 1);
+  assert.equal(f[0].severity, 'Error');
+  assert.match(f[0].detail, /Discount percent/);
+});
+
+await test('zero charge under the old name is the same error', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Free / Heavy Discount': true })],
+    invoices: [goodsInvoice('INV1')]
+  });
+  assert.equal(of(r, 'zero-charge-has-invoice').length, 1);
+});
+
+// 249_Pocket-Libraries: the shelving was given away and only the 1,500 delivery
+// was billed. Zero Charge is exactly right there, and an error on it would be a
+// permanent one nobody can clear.
+await test('a delivery-only invoice on a zero charge order is silent', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Zero Charge': true })],
+    invoices: [invoice('INV1', [zline('Delivery Fees', 1, 1500, 'zd')])]
+  });
+  assert.equal(of(r, 'zero-charge-has-invoice').length, 0);
+});
+
+// 247_Makena: a giveaway invoiced at nothing, one Standard Base written down to
+// zero. `rate` and `item_total` are both zeroed here on purpose, because the two
+// are read by different vintages of `money()` — `rate x quantity` before
+// 2026-09-16, `item_total x 1.16` after — and a line that is free is free under
+// either. Do not express this as a `discount_total` instead: that is an
+// entity-level field, a fully discounted LINE does not touch it, and the old
+// reading of it is the 16% error `lineValue` was introduced to end.
+await test('a goods line written down to nothing is silent', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Zero Charge': true })],
+    invoices: [invoice('INV1', [zline('Standard Base', 1, 0, 'z1')])]
+  });
+  assert.equal(of(r, 'zero-charge-has-invoice').length, 0);
+});
+
+await test('a void invoice on a zero charge order is silent', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Zero Charge': true })],
+    invoices: [goodsInvoice('INV1', { status: 'void' })]
+  });
+  assert.equal(of(r, 'zero-charge-has-invoice').length, 0);
+});
+
+await test('an invoiced order that charged something is silent', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1' })],
+    invoices: [goodsInvoice('INV1')]
+  });
+  assert.equal(of(r, 'zero-charge-has-invoice').length, 0);
+});
+
+await test('a zero charge order with no invoice is silent', async () => {
+  const r = await run({ orders: [order('2_Gift', { 'Zero Charge': true })] });
+  assert.equal(of(r, 'zero-charge-has-invoice').length, 0);
 });
 
 // ---- catalogue-prices-agree -------------------------------------------

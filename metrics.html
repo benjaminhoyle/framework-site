@@ -270,6 +270,10 @@
     var num = function (n) { return (Number(n)||0).toLocaleString('en-US'); };
     var show = function (h) { document.getElementById('main').innerHTML = h; };
     var D = null, view = { filter:'spending', group:'ad', win:'30d', sort:'spend30', dir:-1, q:'', month:null, trendTable:false, grain:'day', spendCut:'placement' };
+    // What the Zoho/Airtable reconciler is complaining about. Fetched after the
+    // dashboard, never blocking it: this is a corner of the page, and a books
+    // check that cannot be reached must not take the ad numbers down with it.
+    var SYNC = null;
 
     document.getElementById('navCatalog').href = '/catalog.html';
 
@@ -282,8 +286,17 @@
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       })
-      .then(function (d) { D = d; boot(); })
+      .then(function (d) { D = d; boot(); syncFindings(); })
       .catch(function (e) { show('<div class="msg">' + esc(e.message) + '</div>'); });
+
+    // Second, smaller fetch. Any failure leaves SYNC null and syncLine() draws
+    // nothing, so an unreachable books check costs the page a line, not a load.
+    function syncFindings() {
+      FrameworkGate.fetch('/api/sync-findings')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (s) { if (s && s.ok) { SYNC = s; render(); } })
+        .catch(function () {});
+    }
 
     // ---- flag presentation: short label + severity, never colour alone ----
     // Severity ranks by "is this costing me money right now", because only one
@@ -324,7 +337,7 @@
         '<span style="color:' + col + '">● ' + lbl + '</span>' +
         '<span style="color:var(--muted)"> · ' + gen.toLocaleString() + '</span>';
 
-      var h = alerts() + dailyChart() + scaledChart() + adTable() + googleSearch() + openerTable() + audienceTable() + funnels() + trend() + footerPanels();
+      var h = alerts() + syncLine() + dailyChart() + scaledChart() + adTable() + googleSearch() + openerTable() + audienceTable() + funnels() + trend() + footerPanels();
       show(h);
       wire();
     }
@@ -353,6 +366,37 @@
         return '<div class="alert ' + cls + '"><span class="ic">' + ic + '</span><span><b>' +
           esc(String(x.code).replace(/_/g,' ')) + '</b>' + esc(x.message) + '</span></div>';
       }).join('');
+    }
+
+    // ---------- the books check ----------
+    // One line for `Sync - Log`, the reconciler's own findings. It had no reader
+    // anywhere until 2026-09-20, the day three reissued invoices each grew a
+    // second order and put three delivered shelves back in the production queue.
+    // `invoice-claimed-once` caught it within the hour and nobody was looking.
+    //
+    // Clear is a corner mark next to the other quiet flags, not a green banner;
+    // anything open is one alert row carrying the check names and counts, which
+    // is enough to know whether to open Airtable. The detail of the worst check
+    // rides along as hover text rather than on the page, because it can name a
+    // customer and this page is read over someone's shoulder often enough.
+    function syncLine() {
+      if (!SYNC) return '';
+      var m = document.getElementById('minor');
+      var when = SYNC.lastChecked ? new Date(SYNC.lastChecked).toLocaleString() : 'unknown';
+      if (!SYNC.openTotal) {
+        if (m) m.innerHTML += '<span title="Zoho and Airtable agreed at ' + esc(when) + '">⛭ books clear</span>';
+        return '';
+      }
+      var checks = SYNC.checks || [];
+      var cls = SYNC.worst === 'Error' ? 'critical' : SYNC.worst === 'Warning' ? 'warn' : 'info';
+      var ic  = SYNC.worst === 'Error' ? '⛔' : SYNC.worst === 'Warning' ? '⚠' : 'ⓘ';
+      var named = checks.slice(0, 4).map(function (c) {
+        return esc(String(c.check).replace(/-/g, ' ')) + ' ' + num(c.count);
+      }).join(' · ');
+      var rest = checks.length > 4 ? ' · +' + num(checks.length - 4) + ' more' : '';
+      return '<div class="alert ' + cls + '" title="' + esc((checks[0] && checks[0].sample) || '') + '">' +
+        '<span class="ic">' + ic + '</span><span><b>Books sync: ' + num(SYNC.openTotal) +
+        ' open in Airtable Sync - Log</b>' + named + rest + ' · checked ' + esc(when) + '</span></div>';
     }
 
     // The verdict banner, the money chain and the Meta-vs-site trust check lived

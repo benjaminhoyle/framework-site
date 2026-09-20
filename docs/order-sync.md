@@ -359,6 +359,81 @@ Zoho contact and a tax exemption reason beside it, and at that point the same
 question the phone number answered has to be answered again: who owns it, and
 what happens when the two disagree.
 
+### Zero Charge, and what a discount is for
+
+Decided 2026-09-20, after three 2025 orders were found holding 29,000 of income
+that the pipeline recorded as given away.
+
+Two fields said overlapping things, and the overlap was in the name. The order
+carried **`Free / Heavy Discount`**, a checkbox, and the line carried
+**`Discount`**, a percent. "Free" and "heavily discounted" are different facts,
+and the base recorded both with the tick.
+
+They are not interchangeable, because they do different things to the numbers:
+
+| | revenue | scaled units |
+|---|---|---|
+| the tick | zeroed, through `Subtotal` | **untouched** |
+| a line `Discount` | reduced in proportion | reduced in proportion |
+
+`Subtotal` is `IF(AND({Order}, {Free / Heavy Discount (from Order)} = 0), ...,
+0)` and `Scaled Total` is `{Scaled Unit Value} * {Quantity} * (1 - {Discount})`,
+which never mentions the tick. So a shelf sold at a tenth of list, recorded with
+the tick, counted as a whole shelf's worth of business with no money against it.
+On 2026-09-20 that was **8.95 scaled units in the Valid Orders view**, 8.00 of
+them in 2026-01 against a month of 63.2.
+
+**The rule.** The tick means **nothing was charged and nothing will be**: no
+invoice, no revenue, no units. It is the absence of a sale, which is why
+`order-needs-invoice` excuses it. Samples, replacements, internal builds,
+photoshoot pieces. It is called **`Zero Charge`**.
+
+A sale at less than catalogue is a sale: it carries its Zoho invoice, and the
+reduction goes on the lines as a `Discount` percent, which takes the revenue and
+the scaled units down together. Where the order form raised the invoice nothing
+is typed at all, because the reconciler writes `Zoho Line Total` from what was
+actually charged and `Subtotal` follows it. `Discount` is for the orders that
+predate the form, and for a line genuinely given away inside a paid one.
+
+`zero-charge-has-invoice` holds the line between them. It fires only on an
+invoice that charged for **goods**, never on a draft, a void, or a
+delivery-only invoice: `249_Pocket-Libraries` is shelving given away with the
+1,500 delivery billed, which is the tick behaving exactly as intended, and
+`247_Makena` is a giveaway against a zero-total draft.
+
+**Still open: the units do not follow the tick.** `Orders - Line Items.Scaled
+Total` would become the exact parallel of `Subtotal` beside it, same guard and
+same test, so the two fields agree by construction instead of by anyone
+remembering to keep them in step:
+
+```
+IF( AND({Order}, {Free / Heavy Discount (from Order)} = 0),
+    {Scaled Unit Value (from Item)} * {Quantity} * (1 - {Discount}),
+    0 )
+```
+
+`= 0` rather than a bare truth test, and the `{Order}` guard, because that is
+the idiom `Subtotal` already uses on this base and is known to behave on an
+empty lookup. **The lookup is called `Free / Heavy Discount (from Order)` until
+the rename below is run**, at which point it becomes `Zero Charge (from Order)`
+and this formula has to say so. Airtable renames a lookup independently of its
+source, which is why `rename-zero-charge.js` does both.
+
+Airtable's schema API can create a field but cannot change an existing one's
+formula (it accepts only name and description), so this is a change somebody
+makes in the interface, and it moves 8.95 units out of months already reported.
+`framework-marketing/research/g6-scaled-total.md` raised the same gap from the
+other end and reached the same formula. Ben's call, and STRATEGY.md's "no free
+or discounted units" wording follows it.
+
+**The rename is ordered.** `_sync.mjs` reads the field through `zeroCharge()`,
+which accepts both names, and that has to be deployed **before** the base
+changes: a build that knows only `Free / Heavy Discount` sees `undefined` the
+moment it is renamed and reports all 26 ticked orders as missing an invoice.
+`framework-ops/src/rename-zero-charge.js` does the rename, asks the live
+reconciler for one incremental pass, and puts the old name back if that pass
+disagrees.
+
 ### Correcting a client
 
 Choosing a client reads **both** live records. Prefill prefers Zoho and falls
@@ -671,6 +746,37 @@ Two more places a duplicate could get in, both closed:
   and `Order ID` is `Order Code & "_" & Client Name` — so two rows for one person
   means orders that look interchangeable and are not.
 
+### The hole that is left: an invoice replaced by a new number
+
+The defence keys on the number, so it only holds while the order and the invoice
+agree on what that number is. Replace the invoice and the new number is claimed
+by nobody.
+
+That is not hypothetical. On **2026-09-20** three invoices were deleted and
+reissued: a draft cannot take a payment, and leaving draft is what pushes eTIMS,
+so recording three payments meant three new numbers. The next pass did exactly
+what it is built to do and created an order for each. Three shelves delivered on
+the 16th reappeared as `To Launch Production` — the entire In Progress view was
+orders the workshop had already sent out — and one customer's Ksh 44,000 was
+counted twice in the month. `invoice-claimed-once` caught it inside the hour;
+nobody was reading the table it wrote to, which is the other half of the fix
+(see **Checks**, below).
+
+**When an invoice has to be replaced:**
+
+1. **Void it, do not delete it.** A voided invoice keeps its number, so no order
+   is left pointing at nothing. Deleting is how `179_Emmanuelle-Rukundo` came to
+   point at `INV640313`, which has not existed since 2025.
+2. **Move the order onto the new number** in `Zoho Invoice`, before the next
+   pass. The claim is read fresh every time, so an order carrying the new number
+   is the whole defence.
+3. **If a clone already exists**, delete the clone, not the original: keep the
+   record holding the production and delivery history, which is the older one.
+   Delete its line items too — they are its own rows, so check `Order` on each
+   line first, then set `Payment Received` on the original.
+
+The check keeps firing until the base agrees, which is the point.
+
 ### Matching or creating the customer
 
 By `Zoho Contact ID` first, which is exact. Then by name, collapsed and
@@ -740,6 +846,18 @@ Together: **58 findings to 25, errors 13 to 7, warnings 20 to 4** — and the
 `line-totals-match-invoice` errors now name the products, so "revenue 41600 vs
 55600" reads "4 x Small Steel Decoration on the order but not the invoice".
 
+**Somebody has to see them.** For three weeks the findings were correct, current
+and unread: `Sync - Log` had no reader outside Airtable, not metrics.html, not
+marketing.html, not framework-ops. The day the reissue clones landed, the check
+that caught them changed nothing, because the table it wrote to was not on
+anyone's path. Since 2026-09-20 `GET /api/sync-findings` (gated with the same
+key as `/api/dashboard`) summarises the open rows — counts per check, worst
+severity, newest detail — and the Funnel Monitor draws one line of it above the
+charts: a corner mark reading "books clear" when there is nothing open, and a
+single alert row naming the checks when there is. Anyone who wants the rows
+still opens the table; the page only has to make "something is open" hard to
+walk past.
+
 **Findings close themselves.** A FULL pass **that actually ran** marks Open rows
 it no longer sees as Resolved. Two conditions, both load-bearing. Only a full
 pass: an incremental one looks at two hours of invoices, so a finding it does not
@@ -760,6 +878,7 @@ option waiting for it since the beginning.
 | `line-totals-match-invoice` | Error | Line totals sum to the invoice goods total, once they carry invoiced prices |
 | `catalogue-prices-agree` | Error | Live Zoho item and live Airtable product prices match |
 | `client-listed-once` | Error | No two Base - Clients rows share a contact id or a name |
+| `zero-charge-has-invoice` | Error | A Zero Charge order is not carrying an invoice that charged for goods |
 | `order-created` | Info / Error | An invoice became an order, or could not |
 | `line-has-order` | Warning | Every line item belongs to an order |
 | `metadata-drift` | Warning | Airtable records a payment the books have never seen |
