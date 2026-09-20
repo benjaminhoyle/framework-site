@@ -91,8 +91,8 @@ cuts would be identical.
       KSh 9,000", placing one takes the total from 12,000 to 21,000 and the
       breakdown reads "Deep Spacer Base ×1 KSh 9,000"; Simple on Deep units
       still builds Deep Base + Deep Extension.
-- [x] **Zoho Books item** — `item_id 4099765000004135002`, org Framework
-      Designs Ltd. 811293790. Name `Deep Spacer Base`, active, rate 9000 (the
+- [x] **Zoho Books item** — `item_id 4099765000004135002` in the Framework
+      Designs Ltd. org. Name `Deep Spacer Base`, active, rate 9000 (the
       org is tax-inclusive), account Sales `4099765000000076169`, `item_type
       sales`, `product_type goods`, `is_taxable true`, sales tax rule
       `4099765000001069048` (General Rate 16%, KRA).

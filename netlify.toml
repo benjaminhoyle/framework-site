@@ -251,6 +251,13 @@
 # --- Keep internal-only paths out of the public site ---
 # These live in the repo for handoff/tooling but must not be served.
 # force = true makes the redirect win over the real static file.
+#
+# A 404 here is not the same as a file being absent. publish = "." means the
+# whole repo is the deploy, so Netlify's secret scanner reads these files even
+# though nobody can fetch them: a deploy failed on "Exposed secrets detected:
+# ZOHO_ORG_ID" because a doc under /docs quoted the org id in passing. Never
+# write the VALUE of a Netlify environment variable into a tracked file, not
+# even one that 404s.
 [[redirects]]
   from = "/docs/*"
   to = "/404.html"
