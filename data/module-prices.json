@@ -1,0 +1,8 @@
+{
+  "schema": "framework-module-prices@1",
+  "currency": "KSh",
+  "note": "Prices for module types the old 2D designer never carried. Historically the only record of a unit price was an entry in DesignerEngine.moduleFilenames in js/designer-engine.js, which also needs two isometric SVGs per module for a page that is being retired. This file is the plain record that replaces it: a module type and what it sells for, VAT-inclusive, as everywhere else. scripts/build-canonical-prices.mjs reads both and fails if they disagree, so the two can coexist while the designer's entries are migrated across.",
+  "prices": {
+    "deep_spacer_base": 9000
+  }
+}

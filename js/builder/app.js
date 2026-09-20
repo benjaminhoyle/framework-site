@@ -57,6 +57,23 @@
     standard: ["base", "extension", "spacer", "hanger", "top_bar", "lamp"]
   };
 
+  /*
+   * Pieces that exist in the catalogue but are only offered in Advanced.
+   *
+   * `deep_spacer_base` is a deep base carrying no shelves -- four legs to the
+   * floor and the bracing a spacer has, so a run can start at desk height. It
+   * is a base by role, which is the problem: computeSiteVariants() picks ONE
+   * module per family and role as the one the site sells, and a second
+   * untrimmed `deep:base` would be in the running to become that one. Which of
+   * the two won would come down to catalogue order, and the losing case sells
+   * every Simple deep shelf with no shelves in it.
+   *
+   * Naming it here keeps it out of that pick, which is also what makes it
+   * Advanced-only: moduleAllowed() needs a module to be the site's variant
+   * before Simple or Flexible will offer it.
+   */
+  const ADVANCED_ONLY = new Set(["deep_spacer_base"]);
+
   // Unit families, in the order the current site presents them. "Trimmed"
   // variants are shortened cuts of the same unit and only appear in Advanced.
   const FAMILY_LABELS = {
@@ -493,6 +510,7 @@
   function simpleVariant(family, role, trimmed) {
     const modules = Object.values(ui.catalog.modules)
       .filter((module) =>
+        !ADVANCED_ONLY.has(module.id) &&
         module.family === family &&
         module.role === role &&
         Boolean(module.trimmed) === Boolean(trimmed) &&
@@ -628,6 +646,7 @@
     const chosen = new Map(); // "family:role" -> module id
     const groups = new Map();
     for (const module of Object.values(ui.catalog.modules)) {
+      if (ADVANCED_ONLY.has(module.id)) continue;
       const key = `${module.family || ""}:${module.role}`;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(module);

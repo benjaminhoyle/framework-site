@@ -17,6 +17,10 @@ import { resolveSiteAlias } from '../../framework-renderer/shared/framework-conf
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SITE = path.resolve(HERE, '..');
 const ENGINE = path.join(SITE, 'js/designer-engine.js');
+// Module types the 2D designer never carried. Its entries need two isometric
+// SVGs each, for a page being retired, so a new module would otherwise have to
+// be drawn into a dead tool before it could be priced.
+const EXTRA = path.join(SITE, 'data/module-prices.json');
 const VOCAB = path.resolve(SITE, '../framework-renderer/shared/module-vocabulary.json');
 const OUT = path.resolve(SITE, '../framework-renderer/shared/prices.json');
 
@@ -45,6 +49,17 @@ function build() {
     else if (byType[type] !== m.price) conflicts.push({ type, prices: [byType[type], m.price], from: m.id });
   }
 
+  // The explicit file, merged on the same terms: first writer wins and a
+  // disagreement is a conflict, so neither source can quietly override the
+  // other while both exist.
+  const extra = fs.existsSync(EXTRA) ? JSON.parse(fs.readFileSync(EXTRA, 'utf8')) : { prices: {} };
+  for (const [type, price] of Object.entries(extra.prices || {})) {
+    if (typeof price !== 'number') continue;
+    if (!typeSet.has(type)) { unmapped.push(`${type} (data/module-prices.json)`); continue; }
+    if (byType[type] === undefined) byType[type] = price;
+    else if (byType[type] !== price) conflicts.push({ type, prices: [byType[type], price], from: 'data/module-prices.json' });
+  }
+
   if (conflicts.length) {
     throw new Error(`Price conflicts across orientations: ${JSON.stringify(conflicts)}`);
   }
@@ -53,7 +68,7 @@ function build() {
   return {
     schema: 'framework-prices@1',
     currency: 'KSh',
-    generatedFrom: path.relative(path.resolve(SITE, '..'), ENGINE),
+    generatedFrom: [ENGINE, EXTRA].map((file) => path.relative(path.resolve(SITE, '..'), file)).join(' + '),
     generatedAt: new Date().toISOString().slice(0, 10),
     note: 'Price is per module type, independent of finish/orientation. Types not sold individually (hardware, model-pending, or site-unlisted) are absent — treat missing as unpriced, not free.',
     unmapped,
