@@ -42,6 +42,26 @@
   to = "/builder"
   status = 301
 
+# The .html forms as well. While the pages existed these resolved on their own,
+# so links to them were never routed and it is not obvious they need to be now:
+# scripts/import-shelving-product.mjs and scripts/catalog-package.mjs both
+# rewrite a "/designer#" into "designer.html#", so that spelling is the one in
+# older catalogue data, and Google has been given years to index it.
+[[redirects]]
+  from = "/designer.html"
+  to = "/builder"
+  status = 301
+
+[[redirects]]
+  from = "/simplified-designer.html"
+  to = "/builder"
+  status = 301
+
+[[redirects]]
+  from = "/sandbox.html"
+  to = "/builder"
+  status = 301
+
 [[redirects]]
   from = "/diy"
   to = "/diy.html"
