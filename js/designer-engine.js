@@ -1,4 +1,22 @@
-// designer-engine.js - Core functionality for the shelving designer
+// designer-engine.js — no longer a page script. Read at BUILD TIME only.
+//
+// This ran the 2D designer at /designer, which was retired on 2026-09-20 along
+// with /simplified-designer and /sandbox. Nothing serves it to a browser any
+// more, and the module SVGs it names in `imagePath` are deleted. It survives
+// because three build scripts still read it, and each needs a different part:
+//
+//   scripts/build-canonical-prices.mjs   the unit prices on moduleFilenames.
+//     Still the record for 44 of the 45 priced module types; the 45th lives in
+//     data/module-prices.json, which is where new ones go — a module should not
+//     have to be drawn into a retired tool before it can be priced.
+//   scripts/build-builder-assets.mjs     the THEME_* palettes, which are what
+//     /builder draws its finishes with.
+//   scripts/designer-hash-to-config.mjs  the anchor table, which is the only
+//     thing that can still read an old /designer link.
+//
+// So: do not delete it because it looks like dead page code, and do not add
+// anything to it that a page would need. Migrating the three readers onto
+// plain data files would free it, and that is the change worth making.
 
 // Create a global object to hold all shared functionality
 window.DesignerEngine = {};

@@ -70,6 +70,7 @@
     "deep_extension_trimmed": "deep_extension",
     "deep_hanger": "deep_hanger",
     "deep_spacer": "deep_spacer",
+    "deep_spacer_base": "deep_spacer_base",
     "deep_top_bar": "deep_top_bar",
     "lamp": "lamp",
     "slim_base": "slim_base",
@@ -94,7 +95,7 @@
     "wide_spacer": "wide_spacer",
     "wide_top_bar": "wide_top_bar"
   },
-  "contentHash": "de439f350c062cd475e025171d2fe39ab925dca30ebf092f1c85150d8b0e8cfb",
+  "contentHash": "f92aecf05f8b390b7538d9ee22e5d6e8537f274c18df3b2f6396daef7ab9cace",
   "finishes": [
     {
       "displayName": "Marine",
@@ -137,7 +138,7 @@
       "steelLabel": "Coral steel"
     }
   ],
-  "generatedAt": "2026-09-15T08:44:37Z",
+  "generatedAt": "2026-09-20T11:07:47Z",
   "modules": {
     "booster_adapter": {
       "bboxMm": [
@@ -9289,6 +9290,238 @@
       "widthKind": "wide",
       "widthSpanMm": 1143.0
     },
+    "deep_spacer_base": {
+      "bboxMm": [
+        -10.0,
+        -10.0,
+        0.0,
+        1153.0,
+        436.999,
+        435.0
+      ],
+      "bottomRequiredColumnsMm": [],
+      "canonicalId": "deep_spacer_base",
+      "depthKind": "deep",
+      "depthRowsMm": [
+        0.0,
+        426.999
+      ],
+      "dimensionsMm": [
+        1163.0,
+        446.999,
+        435.0
+      ],
+      "family": "deep",
+      "glb": "/generated/assets/modules/glb/deep_spacer_base.glb",
+      "horizontalBoxes": [
+        {
+          "bbox": [
+            10.0,
+            407.0,
+            78.0,
+            1133.0,
+            427.0,
+            98.0
+          ],
+          "kind": "horizontal"
+        },
+        {
+          "bbox": [
+            10.0,
+            407.0,
+            383.0,
+            1133.0,
+            427.0,
+            403.0
+          ],
+          "kind": "horizontal"
+        },
+        {
+          "bbox": [
+            -10.0,
+            0.0,
+            78.0,
+            10.0,
+            426.999,
+            98.0
+          ],
+          "kind": "horizontal"
+        },
+        {
+          "bbox": [
+            -10.0,
+            0.0,
+            383.0,
+            10.0,
+            426.999,
+            403.0
+          ],
+          "kind": "horizontal"
+        },
+        {
+          "bbox": [
+            1133.0,
+            0.0,
+            78.0,
+            1153.0,
+            426.999,
+            98.0
+          ],
+          "kind": "horizontal"
+        },
+        {
+          "bbox": [
+            1133.0,
+            0.0,
+            383.0,
+            1153.0,
+            426.999,
+            403.0
+          ],
+          "kind": "horizontal"
+        }
+      ],
+      "id": "deep_spacer_base",
+      "isCorner": false,
+      "label": "Deep Spacer Base",
+      "role": "base",
+      "sockets": [
+        {
+          "confidence": 0.94,
+          "id": "floor_x0000_y0000",
+          "kind": "floor",
+          "local_mm": [
+            0.0,
+            0.0,
+            13.0
+          ],
+          "normalized_mm": [
+            0,
+            0,
+            0
+          ],
+          "source_geometry": "leg"
+        },
+        {
+          "confidence": 0.94,
+          "id": "floor_x0000_y0427",
+          "kind": "floor",
+          "local_mm": [
+            0.0,
+            426.999,
+            13.0
+          ],
+          "normalized_mm": [
+            0,
+            427,
+            0
+          ],
+          "source_geometry": "leg"
+        },
+        {
+          "confidence": 0.94,
+          "id": "floor_x1143_y0000",
+          "kind": "floor",
+          "local_mm": [
+            1143.0,
+            0.0,
+            13.0
+          ],
+          "normalized_mm": [
+            1143,
+            0,
+            0
+          ],
+          "source_geometry": "leg"
+        },
+        {
+          "confidence": 0.94,
+          "id": "floor_x1143_y0427",
+          "kind": "floor",
+          "local_mm": [
+            1143.0,
+            426.999,
+            13.0
+          ],
+          "normalized_mm": [
+            1143,
+            427,
+            0
+          ],
+          "source_geometry": "leg"
+        },
+        {
+          "confidence": 0.94,
+          "id": "top_x0000_y0000",
+          "kind": "top",
+          "local_mm": [
+            0.0,
+            0.0,
+            435.0
+          ],
+          "normalized_mm": [
+            0,
+            0,
+            0
+          ],
+          "source_geometry": "leg"
+        },
+        {
+          "confidence": 0.94,
+          "id": "top_x0000_y0427",
+          "kind": "top",
+          "local_mm": [
+            0.0,
+            426.999,
+            435.0
+          ],
+          "normalized_mm": [
+            0,
+            427,
+            0
+          ],
+          "source_geometry": "leg"
+        },
+        {
+          "confidence": 0.94,
+          "id": "top_x1143_y0000",
+          "kind": "top",
+          "local_mm": [
+            1143.0,
+            0.0,
+            435.0
+          ],
+          "normalized_mm": [
+            1143,
+            0,
+            0
+          ],
+          "source_geometry": "leg"
+        },
+        {
+          "confidence": 0.94,
+          "id": "top_x1143_y0427",
+          "kind": "top",
+          "local_mm": [
+            1143.0,
+            426.999,
+            435.0
+          ],
+          "normalized_mm": [
+            1143,
+            427,
+            0
+          ],
+          "source_geometry": "leg"
+        }
+      ],
+      "topColumnsMm": [
+        0.0,
+        1143.0
+      ],
+      "widthKind": "wide",
+      "widthSpanMm": 1143.0
+    },
     "deep_top_bar": {
       "bboxMm": [
         -12.0,
@@ -15013,8 +15246,8 @@
   },
   "prices": {
     "currency": "KSh",
-    "generatedAt": "2026-07-06",
-    "generatedFrom": "framework-site/js/designer-engine.js",
+    "generatedAt": "2026-09-20",
+    "generatedFrom": "framework-site/js/designer-engine.js + framework-site/data/module-prices.json",
     "note": "Price is per module type, independent of finish/orientation. Types not sold individually (hardware, model-pending, or site-unlisted) are absent \u2014 treat missing as unpriced, not free.",
     "prices": {
       "bookend": 1000,
@@ -15034,6 +15267,7 @@
       "deep_extension": 9500,
       "deep_hanger": 7000,
       "deep_spacer": 6000,
+      "deep_spacer_base": 9000,
       "lamp": 4500,
       "slim_base": 6000,
       "slim_base_trimmed": 6000,
@@ -15131,7 +15365,7 @@
     "connectors": "generated/connectors/module-connectors.json",
     "validationReport": "generated/validation/module-validation-report.json"
   },
-  "sourceSha256": "0af65bbf406182d09b6232e336df64f2ac1044e67bbcfa2ed515db1a16e62f8e",
+  "sourceSha256": "310ab0762cfc2f68d0d59526f0a22c4d26dfe2781518c001d1d9a2ce7085f770",
   "units": "millimeters",
   "validationConfigs": [
     {
@@ -15472,6 +15706,27 @@
         }
       ],
       "output_name": "deep-hanger-stack"
+    },
+    {
+      "description": "deep spacer base carries an extension: a base with no shelves of its own",
+      "id": "deep-spacer-base-extension",
+      "modules": [
+        {
+          "id": "base",
+          "placement": "floor",
+          "type": "deep_spacer_base",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "id": "extension",
+          "on": "base",
+          "type": "deep_extension_trimmed",
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "output_name": "deep-spacer-base-extension"
     },
     {
       "description": "deep spacer behaves like a same-depth extension",
@@ -15998,13 +16253,13 @@
     }
   ],
   "validationSummary": {
-    "config_count": 31,
+    "config_count": 32,
     "failed": 0,
-    "passed": 31
+    "passed": 32
   },
   "vocabulary": {
     "dimsNote": "dims are raw Rhino bbox extents in mm [width, depth]; height_mm subtracts stack_overlap_mm for non-base roles (vertical only). bbox_height_mm is the untrimmed extent.",
-    "generatedAt": "2026-08-16",
+    "generatedAt": "2026-09-20",
     "generatedFrom": "generated/manifests/rhino-module-manifest.json",
     "hardwareExcluded": [
       "end_flat",
@@ -16496,6 +16751,22 @@
         "status": "active",
         "trimmed": false,
         "type": "deep_spacer"
+      },
+      {
+        "dims": {
+          "bbox_height_mm": 435,
+          "depth_mm": 446.999,
+          "height_mm": 435,
+          "stack_overlap_mm": 0,
+          "width_mm": 1163
+        },
+        "displayName": "Deep Spacer Base",
+        "family": "deep",
+        "rhinoBlockId": "deep_spacer_base",
+        "role": "base",
+        "status": "active",
+        "trimmed": false,
+        "type": "deep_spacer_base"
       },
       {
         "dims": {

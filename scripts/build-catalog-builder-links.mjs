@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const engine = require('../js/builder/engine.js');
@@ -139,7 +139,7 @@ function addConfiguredModule(catalog, state, spec, built, defaultFinish, product
   return next;
 }
 
-function stateFromConfig(catalog, config) {
+export function stateFromConfig(catalog, config) {
   const defaultFinish = config.defaultFinish || 'sage';
   let state = engine.createState(catalog, { finish: defaultFinish, bookends: 0 });
   const built = new Map();
@@ -159,7 +159,7 @@ function toBase64Url(text) {
     .replace(/=+$/, '');
 }
 
-function encodeDesign(state, mode = 'advanced') {
+export function encodeDesign(state, mode = 'advanced') {
   const types = [];
   const typeIndex = new Map();
   const idIndex = new Map();
@@ -258,4 +258,7 @@ function main() {
   console.log(JSON.stringify(report, null, 2));
 }
 
-main();
+// Only when run directly. The two exports above let a one-off — porting an old
+// /designer link, say — reuse the config-to-builder-state placement rather than
+// keeping a second copy of them.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
