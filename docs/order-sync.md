@@ -407,17 +407,16 @@ same test, so the two fields agree by construction instead of by anyone
 remembering to keep them in step:
 
 ```
-IF( AND({Order}, {Free / Heavy Discount (from Order)} = 0),
+IF( AND({Order}, {Zero Charge (from Order)} = 0),
     {Scaled Unit Value (from Item)} * {Quantity} * (1 - {Discount}),
     0 )
 ```
 
 `= 0` rather than a bare truth test, and the `{Order}` guard, because that is
 the idiom `Subtotal` already uses on this base and is known to behave on an
-empty lookup. **The lookup is called `Free / Heavy Discount (from Order)` until
-the rename below is run**, at which point it becomes `Zero Charge (from Order)`
-and this formula has to say so. Airtable renames a lookup independently of its
-source, which is why `rename-zero-charge.js` does both.
+empty lookup. The lookup is called `Zero Charge (from Order)` since the rename below.
+Airtable renames a lookup independently of its source, which is why
+`rename-zero-charge.js` does both.
 
 Airtable's schema API can create a field but cannot change an existing one's
 formula (it accepts only name and description), so this is a change somebody
@@ -426,13 +425,16 @@ makes in the interface, and it moves 8.95 units out of months already reported.
 other end and reached the same formula. Ben's call, and STRATEGY.md's "no free
 or discounted units" wording follows it.
 
-**The rename is ordered.** `_sync.mjs` reads the field through `zeroCharge()`,
-which accepts both names, and that has to be deployed **before** the base
-changes: a build that knows only `Free / Heavy Discount` sees `undefined` the
-moment it is renamed and reports all 26 ticked orders as missing an invoice.
-`framework-ops/src/rename-zero-charge.js` does the rename, asks the live
-reconciler for one incremental pass, and puts the old name back if that pass
-disagrees.
+**The rename was ordered, and is done.** `_sync.mjs` reads the field through
+`zeroCharge()`, which accepts both names, and that had to be deployed **before**
+the base changed: a build that knew only `Free / Heavy Discount` would see
+`undefined` the moment it was renamed and report all 26 ticked orders as missing
+an invoice. `framework-ops/src/rename-zero-charge.js` did the rename on
+2026-09-20, asked the live reconciler for one incremental pass, and would have
+put the old name back had that pass disagreed; it came back Clean. Both
+`Orders - Pipeline.Zero Charge` and the `Zero Charge (from Order)` lookup on
+Orders - Line Items carry the new name, and every formula followed by itself
+because Airtable stores field references by id.
 
 ### Correcting a client
 
