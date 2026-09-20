@@ -320,6 +320,9 @@ export function orderFieldsFromInvoice(full, m, clientRecId, firstPayment) {
   if (m.hasDeliveryLine) fields['Delivery - Charged Client (ex VAT)'] = m.deliveryExVat;
   const etims = cfv(cf, 'cf_etims_invoice_number');
   if (etims) fields['eTIMS Invoice Number'] = String(etims);
+  const einvoice = zoho.etims(full);
+  if (einvoice.status) fields['eTIMS Status'] = einvoice.status;
+  if (einvoice.link) fields['eTIMS Receipt Link'] = einvoice.link;
   const vat = zoho.invoiceVat(full);
   if (vat) fields['Invoice VAT'] = vat;
   return fields;
@@ -877,6 +880,13 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
 
     // -- eTIMS: added to the invoice after the sale, so it arrives late and
     //    always from Zoho. Nothing downstream waits on it.
+    //
+    // Three separate facts, and only the first is the old one. The NUMBER is a
+    // receipt from the control unit Ben used before Zoho became one, and no
+    // invoice will ever gain another. The STATUS and the RECEIPT LINK come from
+    // Zoho's e-invoicing block, and they are how anybody now answers "did this
+    // reach KRA?" — every push is a manual click, so the answer is not
+    // predictable from anything else on the order.
     const etims = full.custom_field_hash?.cf_etims_invoice_number
       ?? full.cf_etims_invoice_number ?? null;
     if (etims && String(order.fields['eTIMS Invoice Number'] || '') !== String(etims)) {
@@ -884,6 +894,36 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
         id: order.id, orderId: order.fields['Order ID'],
         was: order.fields['eTIMS Invoice Number'] ?? null, now: String(etims),
         fields: { 'eTIMS Invoice Number': String(etims) }
+      });
+    }
+
+    // Written silently, like the balance: a push is a thing somebody did on
+    // purpose, so recording it is news to nobody and a log row per invoice per
+    // push would drown the rows that need acting on.
+    const einvoice = zoho.etims(full);
+    if (einvoice.status && order.fields['eTIMS Status'] !== einvoice.status) {
+      writes.orders.push({
+        id: order.id, orderId: order.fields['Order ID'],
+        was: order.fields['eTIMS Status'] ?? null, now: einvoice.status,
+        fields: { 'eTIMS Status': einvoice.status }
+      });
+    }
+    // A state Zoho has invented since this was written. Said once, because the
+    // alternative is a strict patch failing the whole batch for every order in
+    // it — and because a new eTIMS state is worth somebody knowing about.
+    if (einvoice.code && !einvoice.status) {
+      add(WARN, 'etims-status-unknown', `${num} reports eTIMS state "${einvoice.code}"`, {
+        invoice: num, orderRecIds: [order.id],
+        detail: `Zoho returned an e-invoicing status this sync does not know, so eTIMS Status was left as it was. Add it to ETIMS_STATUS in _zoho.mjs and to the Airtable field's options.`
+      });
+    }
+    // Never cleared once set: KRA's receipt page is the proof a push happened,
+    // and an invoice that stops reporting one has not become un-pushed.
+    if (einvoice.link && String(order.fields['eTIMS Receipt Link'] || '') !== einvoice.link) {
+      writes.orders.push({
+        id: order.id, orderId: order.fields['Order ID'],
+        was: order.fields['eTIMS Receipt Link'] ?? null, now: einvoice.link,
+        fields: { 'eTIMS Receipt Link': einvoice.link }
       });
     }
 

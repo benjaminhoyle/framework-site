@@ -268,6 +268,45 @@ export async function updateContact(id, payload) {
   return (d && d.contact) || null;
 }
 
+/**
+ * Zoho's e-invoicing state for one invoice, as Airtable holds it.
+ *
+ * Zoho went live as a KRA control unit on 2026-09-04 and nothing pushes
+ * unattended, so "has this reached KRA?" is a real question about every invoice.
+ * A pushed one comes back with `status: "pushed"` and a receipt URL to KRA's own
+ * page — and, on the new device, with NO receipt number and no control code at
+ * all (verified on INV640456, the first exempt invoice pushed, 2026-09-20). So
+ * the old `eTIMS Invoice Number` field stays blank from here on: it holds
+ * receipts 1-247 from the previous control unit and nothing else ever again.
+ *
+ * The status is mapped rather than passed through, so an unknown state from Zoho
+ * is reported instead of silently becoming an Airtable option nobody chose —
+ * patches are strict on purpose (see `_airtable.mjs`), and a select option we
+ * have not seen would fail the whole batch, every order in it.
+ */
+const ETIMS_STATUS = new Map([
+  ['yet_to_be_pushed', 'Not pushed'],
+  ['pushed', 'Pushed'],
+  ['failed', 'Failed'],
+  ['cancelled', 'Cancelled'],
+  ['in_progress', 'In progress']
+]);
+
+export function etims(inv) {
+  const d = (inv && inv.einvoice_details) || {};
+  const code = String(d.status || '').trim();
+  const link = String(d.qr_code || '').trim();
+  return {
+    code,
+    // Null for a state we have never seen, so the caller reports it rather than
+    // writing it. Blank is different: an invoice Zoho has said nothing about.
+    status: code ? (ETIMS_STATUS.get(code) ?? null) : null,
+    // KRA's own receipt page, present only once a push has succeeded — so it
+    // doubles as the proof a customer can be sent.
+    link: /^https?:\/\//.test(link) ? link : ''
+  };
+}
+
 /** Kenya's standard VAT rate — the one Airtable's revenue figures are stated at. */
 export const VAT_RATE = 0.16;
 

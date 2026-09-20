@@ -1111,6 +1111,71 @@ await test('a line discount on a created order is already in the line', async ()
   assert.equal(l['Zoho Unit Rate'], 9000);
 });
 
+// ---- eTIMS ---------------------------------------------------------------
+const pushed = {
+  status: 'pushed',
+  qr_code: 'https://etims.kra.go.ke/common/link/etims/receipt/indexEtimsReceiptData?Data=P052106593G01ZYWVCE6QRKSQVB7A'
+};
+const etimsWorld = (einvoice_details, held = {}) => ({
+  orders: [order('1_A', { 'Zoho Invoice': 'INV1', ...held })],
+  invoices: [invoice('INV1', [], { einvoice_details })]
+});
+
+await test('a pushed invoice puts its state and KRA receipt link on the order', async () => {
+  // INV640456, the first exempt invoice to reach KRA. Every push is a manual
+  // click in Zoho, so this is the only way an order can say it happened.
+  const r = await run(etimsWorld(pushed));
+  assert.equal(writesTo(r, 'orders', 'eTIMS Status')[0].now, 'Pushed');
+  assert.equal(writesTo(r, 'orders', 'eTIMS Receipt Link')[0].now, pushed.qr_code);
+  assert.equal(r.findings.length, 0, 'a push is news to nobody — it must not put a row in the log');
+});
+
+await test('an unpushed invoice says so rather than staying blank', async () => {
+  const r = await run(etimsWorld({ status: 'yet_to_be_pushed' }));
+  assert.equal(writesTo(r, 'orders', 'eTIMS Status')[0].now, 'Not pushed');
+  assert.equal(writesTo(r, 'orders', 'eTIMS Receipt Link').length, 0, 'no push, no receipt');
+});
+
+await test('a state already recorded is not written again', async () => {
+  const r = await run(etimsWorld(pushed, { 'eTIMS Status': 'Pushed', 'eTIMS Receipt Link': pushed.qr_code }));
+  assert.equal(writesTo(r, 'orders', 'eTIMS Status').length, 0);
+  assert.equal(writesTo(r, 'orders', 'eTIMS Receipt Link').length, 0);
+});
+
+await test('a state Zoho has invented is reported, never written', async () => {
+  // Patches are strict, so an unknown select option would fail the whole batch
+  // — every order in it, not just this one.
+  const r = await run(etimsWorld({ status: 'partially_pushed' }, { 'eTIMS Status': 'Pushed' }));
+  assert.equal(writesTo(r, 'orders', 'eTIMS Status').length, 0);
+  const f = of(r, 'etims-status-unknown');
+  assert.equal(f.length, 1);
+  assert.match(f[0].event, /partially_pushed/);
+});
+
+await test('an invoice with no e-invoicing block at all is left alone, quietly', async () => {
+  const r = await run(etimsWorld(undefined));
+  assert.equal(writesTo(r, 'orders', 'eTIMS Status').length, 0);
+  assert.equal(of(r, 'etims-status-unknown').length, 0);
+});
+
+await test('a junk receipt link is not written as one', async () => {
+  const r = await run(etimsWorld({ status: 'pushed', qr_code: 'Scan the QR code' }));
+  assert.equal(writesTo(r, 'orders', 'eTIMS Receipt Link').length, 0);
+  assert.equal(writesTo(r, 'orders', 'eTIMS Status')[0].now, 'Pushed');
+});
+
+await test('a created order carries the eTIMS state it was pushed with', async () => {
+  const r = await run({
+    clients: [{ id: 'c1', fields: { Name: 'Someone', 'Zoho Contact ID': '900' } }],
+    invoices: [invoice('INV1', [], {
+      customer_id: '900', date: '2026-09-20', status: 'paid', einvoice_details: pushed
+    })]
+  });
+  const o = r.pending.creates[0].preview.order;
+  assert.equal(o['eTIMS Status'], 'Pushed');
+  assert.equal(o['eTIMS Receipt Link'], pushed.qr_code);
+});
+
 // ---- the display-format trap ------------------------------------------
 await test('a custom field is read unformatted, or a date field gets "04 Sep 2026"', () => {
   // Both of these were live bugs in seedDelivery until 2026-08-31.

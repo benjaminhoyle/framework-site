@@ -383,6 +383,36 @@ path in Zoho's payload.
 **Exempt, not zero-rated** — Ben, 2026-09-16. So the EXEMPT reason is the right
 one, and a 0% "zero-rated" tax must not be substituted for it.
 
+### eTIMS on the order
+
+Three fields, and only the first is the old one.
+
+| Field | What it is |
+|---|---|
+| `eTIMS Invoice Number` | a receipt number from the control unit used **before** Zoho became one. Receipts 1–247, Mar 2024 – Aug 2026, and no invoice will ever gain another. |
+| `eTIMS Status` | `Not pushed` / `Pushed` / `In progress` / `Failed` / `Cancelled`, from Zoho's e-invoicing block |
+| `eTIMS Receipt Link` | KRA's own receipt page for the invoice — the proof of fiscalisation a customer can be sent |
+
+**Why the status is worth a field.** Nothing pushes unattended: every push is a
+click in Zoho, and a pushed invoice can no longer be edited — a correction needs
+a credit note. So "did this reach KRA?" is a real question about every invoice
+and cannot be derived from anything else on the order.
+
+**The new device returns no receipt number at all.** Verified on INV640456, the
+first exempt invoice pushed (2026-09-20): a pushed invoice carries
+`einvoice_details.status = "pushed"` and a `qr_code` URL, with `control_code` and
+`stamped_date` both empty and `cf_etims_invoice_number` untouched. That is why
+the link, not a number, is what gets stored.
+
+**An unknown status is reported, never written.** `ETIMS_STATUS` in `_zoho.mjs`
+maps Zoho's codes to the Airtable options. Patches are strict — no typecast — so
+a state Zoho invents later would fail the whole batch, every order in it. Instead
+the sync leaves the field as it is and raises `etims-status-unknown` naming the
+code. Adding it means one line there and one option on the field.
+
+Both are written silently, like the balance: a push is a thing somebody did on
+purpose, so a log row per invoice per push would drown the rows worth acting on.
+
 ### Correcting a client
 
 Choosing a client reads **both** live records. Prefill prefers Zoho and falls
@@ -1066,7 +1096,8 @@ spend a 350-call pass on it by hand.
 - [x] `VAT Exempt` drives the order form's drafts, and the reconciler checks
       invoices against it (2026-09-16) — see "VAT exempt". Still open: push one
       exempt invoice to eTIMS and watch it.
-- [ ] eTIMS field in Airtable — Zoho-owned, one-way, nothing blocks on it
+- [x] eTIMS on the order — `eTIMS Status` and `eTIMS Receipt Link`, written by
+      the sync (2026-09-20). See "eTIMS on the order" above.
 - [ ] Quotes vs draft-as-quote (would need the PDF template redone)
 - [ ] `sku = module_id` — needs `is_sku_enabled` switched on in Zoho
 - [ ] Margin: apply a hand-set percent to actual revenue, or recompute from

@@ -33,7 +33,8 @@ const TABLES = {
  * `Balance to Pay` cannot be derived: Airtable has no idea what has been paid,
  * only what was sold. `KRA PIN` and `VAT Exempt` are facts about a person and
  * belong on the person, not on each of their orders. `Invoice VAT` is the
- * opposite: a fact about one invoice, which a person's orders need not share.
+ * opposite: a fact about one invoice, which a person's orders need not share, as
+ * are the two eTIMS fields beside it.
  */
 const WANTED = [
   {
@@ -84,6 +85,35 @@ const WANTED = [
       + 'Exempt (no line carries VAT) or Mixed (some lines do, some do not — almost '
       + 'certainly a mistake). Revenue on the order is stated VAT-inclusive either way, so '
       + 'an exempt sale reads like for like. Do not edit — the next pass overwrites it.'
+  },
+  {
+    // Added 2026-09-20. Every push to KRA is a manual click in Zoho, so whether
+    // one happened is not derivable from anything else on the order.
+    table: 'orders',
+    name: 'eTIMS Status',
+    type: 'singleSelect',
+    options: { choices: [
+      { name: 'Not pushed', color: 'grayLight2' },
+      { name: 'Pushed', color: 'greenLight2' },
+      { name: 'In progress', color: 'yellowLight2' },
+      { name: 'Failed', color: 'redLight2' },
+      { name: 'Cancelled', color: 'orangeLight2' }
+    ] },
+    description:
+      "Whether this order's Zoho invoice has been pushed to KRA, written by the order "
+      + 'sync from Zoho e-invoicing. Nothing pushes on its own — it is a manual click in '
+      + 'Zoho, and a pushed invoice can no longer be edited. Do not edit here; the next '
+      + 'pass overwrites it. The names must match ETIMS_STATUS in _zoho.mjs.'
+  },
+  {
+    table: 'orders',
+    name: 'eTIMS Receipt Link',
+    type: 'url',
+    description:
+      "KRA's own receipt page for this invoice, written by the order sync once the push "
+      + 'succeeds. This is the proof of fiscalisation a customer can be sent. Blank means '
+      + 'no successful push. The new control unit returns no receipt NUMBER at all — '
+      + 'eTIMS Invoice Number holds only receipts from the device used before 2026-09-04.'
   }
 ];
 
