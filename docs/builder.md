@@ -160,6 +160,37 @@ origin a few millimetres past the envelope. A buyer who had built an L out of
 Standard units could not add another Standard unit to it, with no error and no
 row to say so.
 
+### One end can belong to two units
+
+An end is keyed by the unit it is built on, and that is not quite the identity
+of an end: the unit at the end of a run and the one beside it both offer the
+same gap in the same direction. Left unmerged that drew two markers 2px apart
+on an L in Flexible, and 7px apart in Advanced -- the fault this whole pass
+exists to remove, rebuilt one level down. Ends that face the same way and whose
+anchors are within a unit's width (`SAME_END_MM`) are folded into one, keeping
+the nearest offer of each piece.
+
+The outward push is clamped, too. The anchor is on the shelf and inside the
+frame by construction, but 26 screen pixels of push can still carry the disc
+past the edge: on an L at 320px it took two of three markers 5px over and most
+of their touch slop with them. A pushed marker is pulled back to keep its whole
+target on screen, which is not the case the "hide rather than clamp" rule was
+written for -- it still points at its own end, from 11px nearer to it.
+
+### What the camera frames while a piece is in hand
+
+`candidateFrame` frames **the boxes of the markers that ghost, and the points of
+the markers that open a list.** Both halves are load-bearing:
+
+- Framing every candidate's whole box drew the shelf at a third of a portrait
+  stage, because a gapped placement reaches most of a unit's width past the run
+  and its marker is one disc.
+- Framing only the points was worse in a way that does not show in a
+  screenshot: `showGhost` re-fits when a preview lands outside the view, so the
+  first tap of a two-tap gesture moved every marker out from under the thumb.
+  A marker that ghosts needs its piece framed; a marker that opens a list needs
+  only itself.
+
 ### Advanced keeps the piece in hand
 
 `commit` clears `ui.activeModuleId` for every edit except a placement in

@@ -280,9 +280,13 @@ button { cursor: pointer; }
    stand beside markers that place on the second tap, so the difference has to
    be visible before the tap -- that is the whole complaint this pass started
    from. A second ring, not a second colour: it reads as "there is more behind
-   this one" and costs two pixels. */
+   this one" and costs two pixels.
+
+   Opaque, for the same reason the border above is literal white: at 32% it
+   composited to rgb(33,35,35) over the Charcoal finish, which is to say it
+   vanished on exactly the shelf that needed it most. */
 .nd-plus.is-menu {
-  box-shadow: 0 0 0 2px rgba(36, 93, 95, .32), 0 2px 8px rgba(32, 36, 36, .3);
+  box-shadow: 0 0 0 2px var(--nd-accent), 0 2px 8px rgba(32, 36, 36, .3);
 }
 
 /* Advanced: the marker whose placement is currently previewed in 3D. Tapping it
@@ -892,7 +896,7 @@ a.nd-button {
 .nd-chips::-webkit-scrollbar { display: none; }
 .nd-chip {
   flex: 0 0 auto;
-  min-height: 36px;
+  min-height: var(--nd-tap);
   padding: 0 12px;
   border: 1px solid var(--nd-accent);
   border-radius: 999px;

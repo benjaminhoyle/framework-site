@@ -858,7 +858,8 @@
       // its anchor and then kept inside the frame, because .nd-stage clips and
       // an overlay half off the edge loses the button nearest that edge. A bare
       // disc needs neither: it is 38px and centred by its own margin.
-      wide: Boolean(options && options.wide)
+      wide: Boolean(options && options.wide),
+      push: Boolean(options && options.push)
     });
     return node;
   }
@@ -893,6 +894,18 @@
       // the wrong place on the shelf.
       const visible = x > -40 && y > -40 && x < width + 40 && y < height + 40;
       item.node.style.visibility = visible ? "visible" : "hidden";
+      if (visible && item.push) {
+        // The anchor is on the shelf and inside the frame; it is the outward
+        // push that can carry the disc past the edge, which on an L at 320px
+        // clipped two of three markers by 5px and took most of the touch slop
+        // with them. Pulling the disc back is not the case the "hide rather
+        // than clamp" rule was written for -- it still points at its own end,
+        // 11px nearer to it.
+        const half = MARKER_HALF_PX;
+        item.node.style.left = `${Math.round(Math.min(Math.max(x, half), Math.max(half, width - half)))}px`;
+        item.node.style.top = `${Math.round(Math.min(Math.max(y, half), Math.max(half, height - half)))}px`;
+        continue;
+      }
       if (item.wide) {
         const w = item.node.offsetWidth;
         const h = item.node.offsetHeight;
@@ -1417,23 +1430,44 @@
 
     if (firstBase.length) {
       const spot = centreOf(candidateBounds(firstBase[0].candidate));
-      addOverlay(plusButton("Start your shelf", firstBase.map(placeRow)), spot);
+      addOverlay(plusButton("Start your shelf", firstBase.map(placeRow), { search: false }), spot);
     }
 
+    // Two units can share one end of a run: the unit at the end and the one
+    // beside it both offer the same gap, so the host is not on its own the
+    // identity of an end. Unmerged, an L drew two markers 2px apart, which is
+    // the fault this whole pass exists to remove, rebuilt one level down.
+    const placedEnds = [];
     ends.forEach((end) => {
       if (!end.straight.length && !end.turns.length) return;
-      const options = endOptions(end);
       const stack = groups.get(rootOf(end.host.id)) || [end.host.id];
+      const anchor = endAnchor(end, stack);
+      const same = placedEnds.find((other) => other.end.out.axis === end.out.axis
+        && other.end.out.sign === end.out.sign
+        && Math.hypot(
+          other.anchor[0] - anchor[0],
+          other.anchor[1] - anchor[1],
+          other.anchor[2] - anchor[2]
+        ) < SAME_END_MM);
+      if (same) {
+        mergeEnd(same.end, end);
+        return;
+      }
+      placedEnds.push({ end, anchor });
+    });
+
+    for (const placed of placedEnds) {
       addOverlay(
         // No search box, ever: an end sheet is one row per unit family plus
         // the corner, which is eight today and one family from tripping the
         // threshold in the mode whose whole promise is that you were never
         // supposed to know a part's name.
-        plusButton("Add a unit here", options, { search: false }),
-        endAnchor(end, stack),
-        outwardPush(end.out, MARKER_PUSH_PX)
+        plusButton("Add a unit here", endOptions(placed.end), { search: false }),
+        placed.anchor,
+        outwardPush(placed.end.out, MARKER_PUSH_PX),
+        { push: true }
       );
-    });
+    }
 
     groups.forEach((ids, root) => {
       const options = groupedTop.get(root);
@@ -1443,11 +1477,26 @@
       const bounds = stackBounds(ids, { excludeLamps: true });
       if (!bounds) return;
       addOverlay(
-        plusButton("Add on top", options.map(placeRow)),
+        plusButton("Add on top", options.map(placeRow), { search: false }),
         [(bounds[0] + bounds[3]) / 2, (bounds[1] + bounds[4]) / 2, bounds[5]],
-        [0, -MARKER_PUSH_PX]
+        [0, -MARKER_PUSH_PX],
+        { push: true }
       );
     });
+  }
+
+  /** Fold one end's offers into another's, keeping the nearest of each piece. */
+  function mergeEnd(into, from) {
+    for (const key of ["straight", "turns"]) {
+      for (const entry of from[key]) {
+        const existing = into[key].find((other) => other.module.id === entry.module.id);
+        if (!existing) into[key].push(entry);
+        else if (entry.gapMm < existing.gapMm) {
+          existing.candidate = entry.candidate;
+          existing.gapMm = entry.gapMm;
+        }
+      }
+    }
   }
 
   /** The gap between the end being built on and where the new unit would stand. */
@@ -1483,6 +1532,11 @@
     }));
     if (!turns.length) return straight;
     if (!straight.length) return turns;
+    // Each turned row already says "<Unit>, turned" and "starts a second run",
+    // so a heading over a single one of them is the same fact a third time,
+    // for a band of type in a sheet that scrolls. It earns its place only when
+    // it is gathering more than one row.
+    if (turns.length < 2) return straight.concat(turns);
     return [{ heading: "Along this run" }]
       .concat(straight, [{ heading: "Turn a corner" }], turns);
   }
@@ -1515,6 +1569,9 @@
    * its marker is the same at every zoom.
    */
   const MARKER_PUSH_PX = 26;
+  // The disc's radius plus its invisible slop ring, which is what has to stay
+  // inside the frame for the marker to be fully tappable.
+  const MARKER_HALF_PX = 25;
 
   function outwardPush(out, distancePx) {
     if (!ui.renderer) return [0, 0];
@@ -1559,7 +1616,7 @@
    * two different things is the fault this whole pass set out to remove.
    */
   function plusButton(label, options, settings) {
-    const button = make("button", "nd-plus is-menu", "+");
+    const button = make("button", `nd-plus${settings && settings.menu ? " is-menu" : ""}`, "+");
     button.type = "button";
     button.title = label;
     button.setAttribute("aria-label", label);
@@ -1670,15 +1727,37 @@
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(entry);
     }
+    // Two units can share one end of a run -- the unit at the end and the one
+    // beside it both offer the same gap -- so `host.id` is not on its own the
+    // identity of an end. Ends that face the same way and whose nearest spots
+    // are within a unit's width of each other are the same end, and were
+    // drawing two markers 7px apart on an L.
+    const merged = new Map();
+    for (const [key, list] of Array.from(groups.entries())) {
+      list.sort((first, second) => first.gapMm - second.gapMm);
+      const facing = key.slice(key.indexOf(":"));
+      const near = Array.from(merged.keys()).find((other) => other.endsWith(facing)
+        && Math.hypot(
+          merged.get(other)[0].point[0] - list[0].point[0],
+          merged.get(other)[0].point[1] - list[0].point[1],
+          merged.get(other)[0].point[2] - list[0].point[2]
+        ) < SAME_END_MM);
+      if (near) merged.get(near).push(...list);
+      else merged.set(key, list);
+    }
     // An end with one place has nothing to tell apart, so it stays an ordinary
     // marker and keeps the ghost.
-    for (const key of Array.from(groups.keys())) {
-      const list = groups.get(key).sort((first, second) => first.gapMm - second.gapMm);
-      if (list.length < 2) groups.delete(key);
-      else groups.set(key, list);
+    for (const key of Array.from(merged.keys())) {
+      const list = merged.get(key).sort((first, second) => first.gapMm - second.gapMm);
+      if (list.length < 2) merged.delete(key);
+      else merged.set(key, list);
     }
-    return groups;
+    return merged;
   }
+
+  // A unit's width, near enough: two spots closer than this, facing the same
+  // way, are the same end of the same run seen from two of its units.
+  const SAME_END_MM = 400;
 
   /** The rows behind a spacing marker: nearest first, named by size. */
   function spacingRows(module, list) {
@@ -1723,7 +1802,11 @@
       // Anchored on the nearest of the group, which is where the piece lands if
       // the spacing is left alone.
       const label = `Put the ${moduleLabel(module)} on this side`;
-      addOverlay(plusButton(label, spacingRows(module, list)), list[0].point);
+      // The ring only in Advanced, and only here: these sit beside markers
+      // that place on the second tap, and that is the difference it marks. In
+      // Flexible every marker opens a list, so a ring on all of them would
+      // distinguish nothing and just add weight over the shelf.
+      addOverlay(plusButton(label, spacingRows(module, list), { menu: true }), list[0].point);
     });
 
     for (const entry of singles) {
@@ -1803,18 +1886,28 @@
    * that actually matters.
    */
   function candidateFrame(moduleId) {
-    const { anchors } = markerPlan(moduleId);
-    if (!anchors.length) return null;
+    const plan = markerPlan(moduleId);
+    if (!plan.anchors.length) return null;
     const union = engine.designBounds(ui.catalog, ui.design);
     // An empty shelf has no bounds of its own, so the first piece's own box is
     // the frame. Returning null here left the camera on the empty-scene
     // fallback while the marker sat somewhere else.
-    const bounds = (union || anchors[0].bounds).slice();
-    for (const entry of anchors) {
+    const bounds = (union || plan.anchors[0].bounds).slice();
+    const widen = (box) => {
       for (let axis = 0; axis < 3; axis += 1) {
-        bounds[axis] = Math.min(bounds[axis], entry.point[axis]);
-        bounds[axis + 3] = Math.max(bounds[axis + 3], entry.point[axis]);
+        bounds[axis] = Math.min(bounds[axis], box[axis]);
+        bounds[axis + 3] = Math.max(bounds[axis + 3], box[axis + 3]);
       }
+    };
+    // A marker that ghosts on its first tap needs the whole piece framed, or
+    // showGhost widens the view at that tap and every marker moves out from
+    // under the thumb halfway through a two-tap gesture. A marker that opens a
+    // list needs only its own anchor on screen: framing the phantom units
+    // behind it drew the shelf at a third of a portrait stage.
+    for (const entry of plan.singles) widen(entry.bounds);
+    for (const entry of plan.anchors) {
+      if (plan.singles.indexOf(entry) >= 0) continue;
+      widen([entry.point[0], entry.point[1], entry.point[2], entry.point[0], entry.point[1], entry.point[2]]);
     }
     return bounds;
   }
@@ -2311,6 +2404,7 @@
     // everything about the module is optional from here down.
     const matches = options.filter((option) => {
       if (option.heading) return !needle; // a filtered list is one flat list
+      if (option.foot) return true; // the row that reveals more rows always shows
       if (!needle) return true;
       const module = option.module;
       const haystack = module
@@ -4446,7 +4540,12 @@
   function applyMode(mode, options) {
     const next = MODES.indexOf(mode) >= 0 ? mode : "simple";
     const previous = ui.mode;
-    if (next !== "simple" && !hintAlreadySeen()) {
+    // Never over the top of something the page is already saying. A dead share
+    // link reports itself at boot and then applyMode ran in the same tick, so
+    // the one arrival that most needs its error -- somebody following a stale
+    // link out of WhatsApp -- was the one arrival that never saw it, because
+    // they are also a first-time visitor.
+    if (next !== "simple" && !hintAlreadySeen() && dom.hint.hidden) {
       rememberHintSeen();
       setHint(BUILD_HINT);
     }
