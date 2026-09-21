@@ -354,6 +354,23 @@ button { cursor: pointer; }
 .nd-stage-tools svg { width: 17px; height: 17px; }
 
 /*
+ * A landscape phone's stage is about 270px tall, and five 38px tools stacked
+ * from the top reach 224px -- 8px into the options button standing at the foot
+ * of the same edge. On a short stage the rail becomes two columns, hugging the
+ * frame (rtl puts the first tool on the right), which lands zoom in and zoom out
+ * side by side and ends the rail at 136px. Portrait phones never reach this.
+ */
+@media (max-height: 460px) {
+  .nd-stage-tools {
+    display: grid;
+    grid-template-columns: repeat(2, 38px);
+    gap: 6px;
+    direction: rtl;
+  }
+  .nd-stage-tools button { direction: ltr; }
+}
+
+/*
  * What the tool says back: a confirmation, or a refusal.
  *
  * A pill of the same family as .nd-busy below, because the two are the same
@@ -383,6 +400,9 @@ button { cursor: pointer; }
   color: #fff;
   font-size: .85rem;
   line-height: 1.4;
+  /* Balanced, or the first-run sentence leaves "it." alone on a second line
+     at 375px. Ignored where unsupported, which only costs the widow back. */
+  text-wrap: balance;
   box-shadow: 0 2px 10px rgba(32, 36, 36, .28);
   pointer-events: none;
 }
@@ -536,18 +556,40 @@ button { cursor: pointer; }
 .nd-fab-add.is-cancel .nd-fab-cross { display: inline; }
 .nd-fab-add.is-done .nd-fab-tick { display: inline; }
 
+/* The quiet pair at the bottom right: options, and bookends. White and muted
+   because they finish a design rather than build it -- the accent fill belongs
+   to the one control that adds pieces. */
+.nd-fab-gear,
+.nd-fab-quiet {
+  background: rgba(255, 255, 255, .95);
+  color: var(--nd-muted);
+  border: 1px solid var(--nd-line);
+  box-shadow: 0 1px 6px rgba(32, 36, 36, .16);
+}
+.nd-fab-gear:hover,
+.nd-fab-quiet:hover { color: var(--nd-ink); }
+
 /* Round and unlabelled: it holds settings, and its icon says so on its own. */
 .nd-fab-gear {
   right: 12px;
   width: var(--nd-tap);
   padding: 0;
   justify-content: center;
-  background: rgba(255, 255, 255, .95);
-  color: var(--nd-muted);
-  border: 1px solid var(--nd-line);
-  box-shadow: 0 1px 6px rgba(32, 36, 36, .16);
 }
-.nd-fab-gear:hover { color: var(--nd-ink); }
+
+/* Beside the gear, close enough to read as the pair they are. 6px rather than
+   the 12px the pair keeps from the frame: at 320px in Advanced the Add button
+   ends at x=146, and with a wide fallback face loaded before Red Hat Display
+   arrives an 8px gap left only 10px between the two -- less than a thumb's
+   margin for error between "add a piece" and "bookends". */
+.nd-fab-bookends {
+  right: calc(12px + var(--nd-tap) + 6px);
+  /* 13px, not the 15 a symmetric pill would take: in a wide fallback face the
+     Add button's "Add a piece" outgrows its 134px minimum, and the gap between
+     the two fell to 9px. */
+  padding: 0 13px;
+  white-space: nowrap;
+}
 
 /* The label is the affordance on a phone — "+" alone does not say what it adds
    — but it costs nothing on a wide screen either, so it always shows. */

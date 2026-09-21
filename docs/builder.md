@@ -499,10 +499,41 @@ and delivered like the rest, they are simply not in the picture, and
 `bookendFitNote` says so under the stepper rather than the stepper refusing.
 
 The control is the same stepper everywhere: Simple's column, and the options
-sheet behind the gear in Flexible and Advanced. Advanced additionally lists
-**Bookend** as a row in its "Add a piece" sheet, which opens that same stepper —
-it is the one thing in the catalogue a buyer can buy, and having it only behind
-an options button made it the one thing not listed with the rest.
+sheet behind the gear in Flexible and Advanced. Flexible and Advanced also carry
+a **"Bookends" pill beside the gear**, which opens a sheet holding just that
+stepper, and Advanced lists **Bookend** as a row in its "Add a piece" sheet too.
+
+The pill is the answer to "bookends are hard to find", and each of its details
+is a choice that was argued, not a default:
+
+- **A word, not a glyph.** There is no convention for "bookend", and at 20px any
+  drawing of one reads as books — which on a shelf designer means what goes on
+  the shelf, not something you buy. On a phone there is no tooltip to rescue it.
+- **The gear's treatment, not the Add button's.** White, muted, a hairline
+  border. Bookends finish a design; the accent fill belongs to the one control
+  that builds it.
+- **No count on it.** A saturated numeral on a corner is how phones say
+  "unread", and it would appear only after the buyer acts, announcing their own
+  action back to them. The model draws the bookends, the sheet counts them, and
+  "What is in it" prices them. A fixed label also never changes width.
+- **Hidden where there is nothing to offer**: in Simple (the column has it), and
+  on a shelf with no end that takes a bookend — empty, or all trimmed units —
+  unless a count is already set, so what was ordered can always be taken off.
+- **6px from the gear, not 8.** At 320px in Advanced the Add button ends at
+  x=146; with a wide fallback face loaded before the webfont, "Add a piece"
+  outgrows its 134px minimum and the gap between the two fell to 9px. At 6px,
+  with 13px of side padding, it is 13px at worst and 19px once the font loads.
+
+The corner it stands in was measured empty after a fit on a single unit, the
+default, a 6-unit run and an L, at 320, 375, landscape and desktop: the model
+reaches the button row only on the left, under Advanced's Add button.
+
+**On a short stage the tool rail becomes two columns.** A landscape phone's
+stage is about 250px tall, and the five 38px tools stacked from the top reached
+8px into the gear at the foot of the same edge. Under 460px of viewport height
+the rail is a two-column grid hugging the frame, which ends it at 136px and
+puts zoom out and zoom in side by side. That collision predated the pill; it
+was found measuring the corner the pill went into.
 
 They do have a model: `assets/shelving/modules/bookend.json`, drawn by
 `bookendSceneEntries` and fetched the moment the count goes above zero. The
