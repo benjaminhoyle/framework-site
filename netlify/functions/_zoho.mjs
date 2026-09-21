@@ -147,6 +147,11 @@ export function invoices({ since } = {}) {
   return pageAll('/invoices', 'invoices', since ? { last_modified_time: since } : {});
 }
 
+/** Invoices created on or after a date (yyyy-mm-dd), newest pages included. */
+export function invoicesCreatedSince(date) {
+  return pageAll('/invoices', 'invoices', { created_date_start: date });
+}
+
 /**
  * One invoice in full.
  *

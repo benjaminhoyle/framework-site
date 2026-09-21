@@ -4381,6 +4381,10 @@
   function pushProblem(out) {
     if (!out) return "Could not raise it — check your connection and try again.";
     if (out.error === "nothing_priceable") return "None of these pieces are sellable in Zoho yet.";
+    if (out.error === "already_raised") {
+      return `This design is already on ${out.invoice_number || "an invoice"}${
+        out.customer ? " for " + out.customer : ""}. Open that one in Zoho rather than raising it twice.`;
+    }
     if (out.error === "client_exists") return "Zoho already has a client with that name. Search for them in the list instead.";
     if (out.error === "client_failed") return `The client could not be created${out.detail ? ": " + out.detail : "."}`;
     if (out.error === "no_customer") return "Choose a client, or add a new one.";

@@ -59,13 +59,54 @@ export const CREATE_ORDERS_FROM = '2026-08-31';
 export const VAT_EXEMPT_CHECK_FROM = '2026-09-16';
 
 /**
+ * The day people stopped making orders by hand. Ben's call, 2026-09-21: once
+ * this sync made orders from invoices awaiting approval, a person making the
+ * same order by hand risked a second order for one invoice. From here on every
+ * order comes from this sync, which ticks `Created by Sync` on each one, so an
+ * order made after this date without the tick was made by a person and is
+ * reported as `order-made-by-hand`.
+ */
+export const HAND_ORDERS_STOPPED = '2026-09-22';
+
+/**
+ * An invoice raised and submitted, waiting on Zoho's approval step. Ben's
+ * process from 2026-09-21: the client pays and the order is confirmed before
+ * approval, so these are real orders, not quotes. Zoho will not record a
+ * payment against one, so money that arrives first sits on the customer as
+ * unused credit until someone approves the invoice and applies it.
+ */
+const AWAITING_APPROVAL = ['pending_approval', 'approved'];
+
+/**
+ * Money the client has paid that Zoho is holding off the invoice because the
+ * invoice is not approved yet. Zero for every other status: once an invoice is
+ * approved and sent, a payment is recorded against it and the balance says so.
+ *
+ * The credit belongs to the customer, not the invoice, so a client with two
+ * unapproved invoices has it counted against both. Rare enough to accept; the
+ * balance corrects itself the moment the credit is applied.
+ */
+export function heldCredit(full) {
+  if (!AWAITING_APPROVAL.includes(full.status)) return 0;
+  return Number(full.contact?.unused_customer_credits) || 0;
+}
+
+/** What is still to collect: the invoice balance, less credit held for it. */
+export function balanceToPay(full) {
+  const balance = Number(full.balance) || 0;
+  return zoho.round2(Math.max(0, balance - heldCredit(full)));
+}
+
+/**
  * The order status a newly created order starts in. Ben's rule, 2026-08-31:
  * partly or fully paid means the workshop can start, merely sent does not.
+ * An invoice awaiting approval counts as paid when credit is held for it.
  *
  * Returns null for anything else — draft and void have no order to be, and a
  * status Zoho invents later must not quietly become "start building this".
  */
-export function orderStatusFor(invoiceStatus) {
+export function orderStatusFor(invoiceStatus, credit = 0) {
+  if (AWAITING_APPROVAL.includes(invoiceStatus)) return credit > 0 ? 'To Launch Production' : 'Invoice Sent';
   if (invoiceStatus === 'paid' || invoiceStatus === 'partially_paid') return 'To Launch Production';
   // `viewed` is `sent` plus a read receipt, and `overdue` is `sent` plus time.
   if (['sent', 'viewed', 'overdue', 'unpaid'].includes(invoiceStatus)) return 'Invoice Sent';
@@ -322,12 +363,15 @@ export function seedDelivery(order, cf) {
 export function orderFieldsFromInvoice(full, m, clientRecId, firstPayment) {
   const cf = full.custom_field_hash || {};
   const fields = {
-    'Order Status': orderStatusFor(full.status),
+    // The record of who made it. A person never ticks this, so an order
+    // without it was made by hand; see HAND_ORDERS_STOPPED.
+    'Created by Sync': true,
+    'Order Status': orderStatusFor(full.status, heldCredit(full)),
     'Client Name': [clientRecId],
     // The invoice date, which is what the applet used for "Order Received" too.
     'Order Received': String(full.date),
     'Zoho Invoice': full.invoice_number,
-    'Balance to Pay': zoho.round2(Number(full.balance) || 0)
+    'Balance to Pay': balanceToPay(full)
   };
   if (firstPayment) fields['Payment Received'] = firstPayment;
   const design = cfv(cf, 'cf_design_details') || cfv(cf, 'cf_design_code');
@@ -572,6 +616,23 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     });
   }
 
+  // ---- check: an order made by hand after the sync took over making them
+  // Reported, never touched: the order may well be right, and it may be the
+  // only one for its invoice. What it risks is a second order once this sync
+  // reaches the same invoice, which `invoice-claimed-once` would then catch
+  // after the fact; this says so the moment the hand-made one appears.
+  for (const o of orders) {
+    if (o.fields['Created by Sync'] === true) continue;
+    const made = String(o.createdTime || '');
+    if (!made || made.slice(0, 10) < HAND_ORDERS_STOPPED) continue;
+    const inv = String(o.fields['Zoho Invoice'] || '').trim();
+    add(INFO, 'order-made-by-hand', `${o.fields['Order ID']} was made by hand`, {
+      ...(inv ? { invoice: inv } : {}),
+      orderRecIds: [o.id],
+      detail: `Created ${made.slice(0, 16).replace('T', ' ')} UTC without Created by Sync. Orders come from the sync since ${HAND_ORDERS_STOPPED}, so check there is not a second order for the same invoice, then Acknowledge this.`
+    });
+  }
+
   // ---- check: live catalogue prices agree (full passes only) -----------
   if (zItems) {
     const liveZ = new Map(zItems.filter((i) => i.status === 'active').map((i) => [i.name, i]));
@@ -770,7 +831,7 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       // check was reporting were Custom Projects. Two thirds of a list being
       // things that are fine is how a list stops being read.
       const workType = cfv(full.custom_field_hash, 'cf_work_type');
-      const wantStatus = orderStatusFor(full.status);
+      const wantStatus = orderStatusFor(full.status, heldCredit(full));
 
       // -- create it, when everything about it is unambiguous
       //
@@ -783,8 +844,8 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       //   window job or a picture frame has no order to be, which is why the
       //   Info check below has always filtered the same way.
       //
-      //   Paid, part-paid or sent — never a draft, never a void. A draft is a
-      //   quote somebody is still editing.
+      //   Paid, part-paid, sent or awaiting approval — never a draft, never a
+      //   void. A draft is a quote somebody is still editing.
       //
       //   Dated on or after CREATE_ORDERS_FROM, so a year of finished history
       //   does not materialise as live orders overnight.
@@ -914,8 +975,9 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     // "nothing is owed", which is the fact the delivery team needs — and it is
     // what stops the driver's message asking for money on a settled order.
     // Drafts never reach here, so an invoice nobody has issued yet stays blank
-    // rather than claiming its total is due.
-    const balance = zoho.round2(Number(full.balance) || 0);
+    // rather than claiming its total is due. One awaiting approval has any
+    // credit the client paid taken off, since Zoho cannot apply it yet.
+    const balance = balanceToPay(full);
     const heldBalance = order.fields['Balance to Pay'];
     if (heldBalance == null || Math.abs(heldBalance - balance) > 0.02) {
       writes.orders.push({

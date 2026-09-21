@@ -8,7 +8,7 @@
 > question.
 
 **In short:**
-1. The push endpoint creates a Zoho draft invoice from a design; it never writes Airtable.
+1. The push endpoint creates a Zoho draft invoice from a design; it never writes Airtable. It refuses a design already on a non-void invoice raised in the last two days, so a retry after a timeout cannot raise it twice.
 2. The reconciler is the only thing that writes Airtable, comparing state each pass, not events.
 3. Money, prices and line items come from Zoho; production status, delivery scheduling and VAT exempt status come from Airtable.
 4. Delivery date, phone, address and KRA PIN are seeded from Zoho once, then owned by Airtable; a correction to an existing fact is written to both live records.
@@ -775,7 +775,7 @@ Four conditions, each somebody's decision rather than a technicality:
 | | |
 |---|---|
 | `cf_work_type` is `Shelving` | Orders - Pipeline **is** the shelving pipeline. A window job or a picture frame has no order to be, which is why `paid-invoice-no-order` has always filtered the same way. The applet had no such filter — its filter was a human ticking boxes. |
-| Paid, part-paid, or sent | Ben's rule, 2026-08-31: paid or part-paid starts as **To Launch Production**, merely sent as **Invoice Sent**. Never a draft — that is a quote somebody is still editing — and never a void. |
+| Paid, part-paid, sent, or awaiting approval | Ben's rule, 2026-08-31: paid or part-paid starts as **To Launch Production**, merely sent as **Invoice Sent**. Never a draft — that is a quote somebody is still editing — and never a void. Since 2026-09-21 an invoice submitted for approval (`pending_approval`, `approved`) counts too: clients pay and orders are confirmed before approval. Zoho cannot apply a payment to an unapproved invoice, so the customer's unused credit is read as paid: any credit starts the order as **To Launch Production**, and comes off `Balance to Pay`. |
 | Dated on or after `CREATE_ORDERS_FROM` | A fixed date in the code, not "today" computed at runtime: a floor that moves with the clock is not a floor. New invoices only, so a year of finished history does not materialise as live orders overnight. |
 | Nothing already claims the invoice number | The whole duplicate defence. |
 
@@ -937,6 +937,7 @@ option waiting for it since the beginning.
 | `client-listed-once` | Error | No two Base - Clients rows share a contact id or a name |
 | `zero-charge-has-invoice` | Error | A Zero Charge order is not carrying an invoice that charged for goods |
 | `order-created` | Info / Error | An invoice became an order, or could not |
+| `order-made-by-hand` | Info | An order created on or after 2026-09-22 without `Created by Sync`. Since then every order comes from the sync, which ticks that box on each one it makes (Ben, 2026-09-21), so this one was made by a person. Check it is not a second order for the same invoice, then Acknowledge. |
 | `line-has-order` | Warning | Every line item belongs to an order |
 | `metadata-drift` | Warning | Airtable records a payment the books have never seen |
 | `metadata-drift` | Info | A payment date corrected by more than a week — applied, and worth a glance |

@@ -9,7 +9,7 @@ import {
   zohoItemName, finishLabel, groupDesign, buildLineItems, linesTotal, quoteDrift,
   deliveryLine, goodsLines, samePhone, sameAddress, contactDetails, contactName,
   contactUpdate, newContactPayload, airtableClientPatch, clientDisagreement, moneyValue,
-  samePin, normalisePin, exemptLines, exemptionProblems, VAT_EXEMPTION_ID
+  samePin, normalisePin, exemptLines, exemptionProblems, VAT_EXEMPTION_ID, alreadyRaised
 } from '../netlify/functions/_push.mjs';
 import { draftInvoicePayload } from '../netlify/functions/_zoho.mjs';
 
@@ -522,6 +522,19 @@ test('a draft Zoho returned with VAT still on a line is caught', () => {
   assert.deepEqual(exemptionProblems(ok), []);
   assert.deepEqual(exemptionProblems(taxed), ['Standard Base', 'Delivery Fees']);
   assert.deepEqual(exemptionProblems(null), []);
+});
+
+// ---- one design, one invoice -------------------------------------------
+test('a design already on an invoice is found, so a retry cannot raise it twice', () => {
+  const list = [
+    { invoice_number: 'INV1', status: 'void', cf_design_code: '48HNPRK' },
+    { invoice_number: 'INV2', status: 'pending_approval', cf_design_code: '48HNPRK', customer_name: 'Jessica Horn' },
+    { invoice_number: 'INV3', status: 'draft', custom_field_hash: { cf_design_code: 'ABCDEFG' } }
+  ];
+  assert.equal(alreadyRaised(list, '48hnprk').invoice_number, 'INV2', 'a void one does not count');
+  assert.equal(alreadyRaised(list, 'ABCDEFG').invoice_number, 'INV3', 'read from the hash too');
+  assert.equal(alreadyRaised(list, 'ZZZZZZZ'), null);
+  assert.equal(alreadyRaised([], '48HNPRK'), null);
 });
 
 console.log(`test-push: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);

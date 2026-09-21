@@ -499,3 +499,24 @@ export function contactUpdate(contact, { phone, address, pin, today }) {
     replaced
   };
 }
+
+/**
+ * An invoice already raised for this design, if there is one.
+ *
+ * A push that times out after Zoho has raised the invoice looks like a failure
+ * to the rep, and the natural thing is to press again. Nothing else stops that
+ * second press from raising a second invoice, so the push looks first. Void
+ * invoices do not count: voiding one and raising it again is deliberate.
+ *
+ * Read from the LIST response, which carries `cf_design_code` at the top level
+ * as well as in the hash; either is accepted.
+ */
+export function alreadyRaised(invoices, code) {
+  const want = String(code || '').toUpperCase();
+  if (!want) return null;
+  return (invoices || []).find((inv) => {
+    if (inv.status === 'void') return false;
+    const have = inv.cf_design_code ?? inv.custom_field_hash?.cf_design_code;
+    return String(have || '').toUpperCase() === want;
+  }) || null;
+}

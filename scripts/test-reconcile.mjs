@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import {
   reconcile, canonicalItem, matchProducts, hhmmToSeconds, seedDelivery, daysApart, unmatchedLines,
   orderStatusFor, cfv, orderFieldsFromInvoice, lineFieldsFromInvoice, resolveClient, CREATE_ORDERS_FROM,
-  VAT_EXEMPT_CHECK_FROM
+  VAT_EXEMPT_CHECK_FROM, HAND_ORDERS_STOPPED
 } from '../netlify/functions/_sync.mjs';
 
 let passed = 0;
@@ -1080,6 +1080,62 @@ await test('a sent invoice creates an order the workshop is not told to build', 
   assert.equal(orderStatusFor('viewed'), 'Invoice Sent');
   assert.equal(orderStatusFor('draft'), null, 'a draft is a quote somebody is still editing');
   assert.equal(orderStatusFor('void'), null);
+});
+
+await test('an invoice awaiting approval creates an order, and paid credit starts it', async () => {
+  // Ben's process from 2026-09-21: the client pays and the order is confirmed
+  // before Zoho approves the invoice. Zoho cannot apply a payment to it yet, so
+  // the money sits on the customer as unused credit.
+  assert.equal(orderStatusFor('pending_approval'), 'Invoice Sent');
+  assert.equal(orderStatusFor('approved'), 'Invoice Sent');
+  assert.equal(orderStatusFor('pending_approval', 12000), 'To Launch Production');
+  assert.equal(orderStatusFor('sent', 12000), 'Invoice Sent', 'credit only counts before approval');
+
+  const r = await run({
+    clients: [client('c1', '900')],
+    invoices: [invoice('INV1', [], {
+      customer_id: '900', date: '2026-09-21', status: 'pending_approval',
+      total: 12000, balance: 12000, contact: { unused_customer_credits: 12000 }
+    })]
+  });
+  assert.equal(r.pending.creates.length, 1);
+  assert.equal(r.pending.creates[0].preview.order['Order Status'], 'To Launch Production');
+  assert.equal(r.pending.creates[0].preview.order['Balance to Pay'], 0, 'the driver must not ask for money already paid');
+});
+
+await test('credit held for an unapproved invoice comes off an existing order balance', async () => {
+  const r = await run({
+    orders: [order('1_A', { 'Zoho Invoice': 'INV1', 'Balance to Pay': 12000 })],
+    invoices: [invoice('INV1', [], {
+      status: 'pending_approval', balance: 12000, contact: { unused_customer_credits: 5000 }
+    })]
+  });
+  const w = writesTo(r, 'orders', 'Balance to Pay');
+  assert.equal(w.length, 1);
+  assert.equal(w[0].fields['Balance to Pay'], 7000);
+});
+
+await test('an order the sync makes is marked as made by the sync', async () => {
+  const r = await run({
+    clients: [client('c1', '900')],
+    invoices: [invoice('INV1', [], { customer_id: '900', date: '2026-09-22', status: 'paid' })]
+  });
+  assert.equal(r.pending.creates[0].preview.order['Created by Sync'], true);
+});
+
+await test('an order made by hand after the cutover is reported, and nothing older is', async () => {
+  const day = (d) => `${d}T09:00:00.000Z`;
+  const r = await run({
+    orders: [
+      { ...order('1_Hand', { 'Zoho Invoice': 'INV1' }), createdTime: day(HAND_ORDERS_STOPPED) },
+      { ...order('2_Sync', { 'Zoho Invoice': 'INV2', 'Created by Sync': true }), createdTime: day(HAND_ORDERS_STOPPED) },
+      { ...order('3_Old', { 'Zoho Invoice': 'INV3' }), createdTime: day('2026-09-01') },
+      order('4_NoTime', { 'Zoho Invoice': 'INV4' })
+    ]
+  });
+  const hand = of(r, 'order-made-by-hand');
+  assert.equal(hand.length, 1);
+  assert.match(hand[0].event, /1_Hand/);
 });
 
 await test('a draft, a void and a non-Shelving invoice create nothing', async () => {
