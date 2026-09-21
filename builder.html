@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="/css/builder.css?v=145">
+    <link rel="stylesheet" href="/css/builder.css?v=149">
 
     <!--
       Nothing can render until the catalogue arrives, and the app's own scripts
@@ -36,7 +36,7 @@
         // with a stale catalogue silently loses whatever the catalogue gained,
         // which is exactly what a CDN or a browser cache will hand you a few
         // minutes after a deploy. Bump this whenever any of them changes.
-        window.frameworkDesignerVersion = '145';
+        window.frameworkDesignerVersion = '149';
         window.frameworkDesignerCatalog =
             fetch('/assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
                 .then(function (response) {
@@ -112,16 +112,21 @@
                 <div class="nd-overlay" id="nd-overlay"></div>
 
                 <div class="nd-stage-tools">
-                    <button type="button" id="nd-zoom-in" aria-label="Zoom in">
+                    <!-- Feather's zoom-in / zoom-out. A bare "+" and "-" in the rail read
+                         as add and remove, which on a page whose whole job is adding
+                         pieces is the wrong thing for a camera control to say. -->
+                    <button type="button" id="nd-zoom-in" aria-label="Zoom in" title="Zoom in">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" aria-hidden="true">
-                            <path d="M12 5v14M5 12h14" />
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35M11 8v6M8 11h6" />
                         </svg>
                     </button>
-                    <button type="button" id="nd-zoom-out" aria-label="Zoom out">
+                    <button type="button" id="nd-zoom-out" aria-label="Zoom out" title="Zoom out">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" aria-hidden="true">
-                            <path d="M5 12h14" />
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35M8 11h6" />
                         </svg>
                     </button>
                     <button type="button" id="nd-dimensions" aria-label="Show dimensions" aria-pressed="false"
@@ -140,7 +145,7 @@
                             <circle cx="12" cy="12" r="3" />
                         </svg>
                     </button>
-                    <button type="button" id="nd-fit" aria-label="Fit shelf to view">
+                    <button type="button" id="nd-fit" aria-label="Fit shelf to view" title="Fit shelf to view">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
@@ -178,6 +183,24 @@
                         <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
                     </svg>
                 </button>
+
+                <!--
+                  Bookends, beside the options. The one thing a buyer can add
+                  that has no place on the model: the design carries a count and
+                  the engine fills the shelf's ends bottom up, so there is no
+                  marker to put one at. It was only reachable inside the options
+                  sheet, where nothing on screen said it existed.
+
+                  A word, not a glyph: there is no convention for "bookend", and
+                  at 20px any drawing of one reads as books, which on a shelf
+                  designer means what goes on the shelf. The gear's own quiet
+                  treatment, not the Add button's fill, and a label that never
+                  changes -- the model already draws the bookends, so a count
+                  here would be the one saturated thing in the corner,
+                  announcing the buyer's own action back to them.
+                -->
+                <button type="button" class="nd-fab nd-fab-quiet nd-fab-bookends" id="nd-bookends"
+                    aria-haspopup="dialog" title="Add bookends to the shelf" hidden>Bookends</button>
 
                 <div class="nd-fallback" id="nd-fallback" hidden>
                     <strong id="nd-fallback-title">Loading the designer…</strong>
@@ -291,11 +314,11 @@
         </div>
     </div>
 
-    <script src="/js/builder/engine.js?v=145" defer></script>
-    <script src="/js/builder/geometry.js?v=145" defer></script>
-    <script src="/js/builder/renderer.js?v=145" defer></script>
-    <script src="/js/builder/present.js?v=145" defer></script>
-    <script src="/js/builder/app.js?v=145" defer></script>
+    <script src="/js/builder/engine.js?v=149" defer></script>
+    <script src="/js/builder/geometry.js?v=149" defer></script>
+    <script src="/js/builder/renderer.js?v=149" defer></script>
+    <script src="/js/builder/present.js?v=149" defer></script>
+    <script src="/js/builder/app.js?v=149" defer></script>
 
     <!--
       Analytics loads after the designer is interactive. On a mid-range phone

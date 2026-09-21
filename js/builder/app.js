@@ -282,6 +282,7 @@
     add: el("nd-add"),
     addLabel: el("nd-add-label"),
     customise: el("nd-customise"),
+    bookends: el("nd-bookends"),
     modal: el("nd-modal"),
     modalTitle: el("nd-modal-title"),
     modalBody: el("nd-modal-body"),
@@ -3576,6 +3577,14 @@
     // Simple keeps these in its control column, because that column is Simple's
     // whole interface and a colour is the choice people most want to see.
     dom.customise.hidden = ui.mode === "simple";
+
+    // Simple has the stepper in its column. Elsewhere the button is offered only
+    // where it can do something the buyer will see: a shelf of trimmed units,
+    // or an empty one, has no end that takes a bookend, and a button opening
+    // onto "none shown" would be an offer the shelf cannot accept. A count
+    // already set keeps it, so what was ordered can always be taken back off.
+    dom.bookends.hidden = ui.mode === "simple"
+      || (!(ui.design.bookends > 0) && !engine.legalBookendAnchors(ui.catalog, ui.design).length);
   }
 
   /**
@@ -4754,6 +4763,7 @@
       else openAddSheet();
     });
     dom.customise.addEventListener("click", openCustomiseSheet);
+    dom.bookends.addEventListener("click", openBookendSheet);
 
     dom.breakdownToggle.addEventListener("click", () => {
       ui.breakdownOpen = !ui.breakdownOpen;
