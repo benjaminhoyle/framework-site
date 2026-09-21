@@ -501,22 +501,32 @@ export function contactUpdate(contact, { phone, address, pin, today }) {
 }
 
 /**
- * An invoice already raised for this design, if there is one.
+ * An invoice already raised for this design and this client, if there is one.
  *
  * A push that times out after Zoho has raised the invoice looks like a failure
  * to the rep, and the natural thing is to press again. Nothing else stops that
  * second press from raising a second invoice, so the push looks first. Void
  * invoices do not count: voiding one and raising it again is deliberate.
  *
+ * The same client, not just the same code. A code is worked out from the shelf
+ * itself, so two people who design the same shelf share it: 24P1KB2, one
+ * Standard Base and one Standard Extension in Coral, was first saved on 24
+ * August and ordered by Jessica Horn on 21 September. The client is the
+ * contact picked (`customerId`), or for a new one the name typed (`name`),
+ * which is what a retry after a timeout would carry.
+ *
  * Read from the LIST response, which carries `cf_design_code` at the top level
  * as well as in the hash; either is accepted.
  */
-export function alreadyRaised(invoices, code) {
+export function alreadyRaised(invoices, code, { customerId = null, name = null } = {}) {
   const want = String(code || '').toUpperCase();
   if (!want) return null;
+  const norm = (v) => String(v || '').trim().toLowerCase().replace(/\s+/g, ' ');
   return (invoices || []).find((inv) => {
     if (inv.status === 'void') return false;
     const have = inv.cf_design_code ?? inv.custom_field_hash?.cf_design_code;
-    return String(have || '').toUpperCase() === want;
+    if (String(have || '').toUpperCase() !== want) return false;
+    if (customerId) return String(inv.customer_id || '') === String(customerId);
+    return Boolean(norm(name)) && norm(inv.customer_name) === norm(name);
   }) || null;
 }

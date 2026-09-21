@@ -298,12 +298,15 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
   const stored = await getStore('design').get(upper, { type: 'json' });
   if (!stored || !stored.design) return json({ ok: false, error: 'code_not_found' }, 404);
 
-  // One design, one invoice. Checked before anything is created, the contact
+  // One design, one invoice, per client. Checked before anything is created, the contact
   // included: a retry for a new client would otherwise stop at `client_exists`
   // and send the rep off to pick the client and push a third time. Two days
   // back covers a retry, and one list call is all it costs.
   const since = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10);
-  const earlier = alreadyRaised(await zoho.invoicesCreatedSince(since), upper);
+  const earlier = alreadyRaised(await zoho.invoicesCreatedSince(since), upper, {
+    customerId: contact_id ? String(contact_id) : null,
+    name: contact_id ? null : contactName(new_client && new_client.first_name, new_client && new_client.last_name)
+  });
   if (earlier) {
     return json({
       ok: false, error: 'already_raised',

@@ -324,6 +324,9 @@
     search: "",
     actionMenu: null,
     savedCode: null, // the last design saved, so a repeat costs no second write
+    // The code this page was opened from, and the design as it opened. A design
+    // saved unchanged keeps that code rather than minting a second one.
+    openedDesign: null,
     breakdownOpen: false,
     // The sheet on screen, kept so an edit made inside one redraws it. A colour
     // picked in the options sheet changes the swatch that was pressed, and
@@ -2765,7 +2768,19 @@
    * small and grey: it is not clickable in a chat, it is there so that when we
    * look back through a conversation we can tell which designs a client saw.
    */
+  /**
+   * The design's code. A hash of the design itself, except for a design opened
+   * from its link and left as it was, which keeps the code it was opened under.
+   *
+   * Reopening drops placement details the hash covers, so an untouched design
+   * used to come back under a new code: Jessica Horn's chat had 24P1KB2 and her
+   * invoice 48HNPRK for one shelf, and the page's own WhatsApp message said
+   * 48HNPRK too. One code per shelf on screen keeps the link in the chat, the
+   * message and the invoice the same.
+   */
   function designCode() {
+    const opened = ui.openedDesign;
+    if (opened && opened.shelf === shelfOf(encodeDesign())) return opened.code;
     return engine.designCode(ui.design);
   }
 
@@ -3067,6 +3082,8 @@
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(Object.assign({
+        // An unchanged design opened from its link saves under that code, which
+        // the server already holds and treats as a repeat.
         code: designCode(),
         hash: encodeDesign(),
         design: engine.serializeState(ui.design),
@@ -3079,6 +3096,20 @@
       if (!response.ok || !body.ok) throw new Error(body.error || `HTTP ${response.status}`);
       return body.code;
     }));
+  }
+
+  /**
+   * The shelf in an encoded design, without the mode it is being viewed in. A
+   * rep who opens a client's Simple design in Advanced has not changed it.
+   */
+  function shelfOf(encoded) {
+    try {
+      const payload = JSON.parse(fromBase64Url(encoded));
+      payload.splice(1, 1);
+      return JSON.stringify(payload);
+    } catch (error) {
+      return encoded;
+    }
   }
 
   function loadSavedDesign(code, options) {
@@ -3114,6 +3145,8 @@
         ui.future.length = 0;
         updateHistoryButtons();
         applyMode(ui.mode, { silent: true });
+        // Before the redraw, which writes the code into the page's links.
+        ui.openedDesign = { code, shelf: shelfOf(encodeDesign()) };
         refresh({ fit: true });
       })
       .catch((error) => {

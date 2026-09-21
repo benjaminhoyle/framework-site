@@ -524,17 +524,27 @@ test('a draft Zoho returned with VAT still on a line is caught', () => {
   assert.deepEqual(exemptionProblems(null), []);
 });
 
-// ---- one design, one invoice -------------------------------------------
-test('a design already on an invoice is found, so a retry cannot raise it twice', () => {
+// ---- one design, one invoice, per client -------------------------------
+test('a retry for the same client is found, so it cannot raise the invoice twice', () => {
   const list = [
-    { invoice_number: 'INV1', status: 'void', cf_design_code: '48HNPRK' },
-    { invoice_number: 'INV2', status: 'pending_approval', cf_design_code: '48HNPRK', customer_name: 'Jessica Horn' },
-    { invoice_number: 'INV3', status: 'draft', custom_field_hash: { cf_design_code: 'ABCDEFG' } }
+    { invoice_number: 'INV1', status: 'void', cf_design_code: '48HNPRK', customer_id: 'c1', customer_name: 'Jessica Horn' },
+    { invoice_number: 'INV2', status: 'pending_approval', cf_design_code: '48HNPRK', customer_id: 'c1', customer_name: 'Jessica Horn' },
+    { invoice_number: 'INV3', status: 'draft', custom_field_hash: { cf_design_code: 'ABCDEFG' }, customer_id: 'c2', customer_name: 'Someone Else' }
   ];
-  assert.equal(alreadyRaised(list, '48hnprk').invoice_number, 'INV2', 'a void one does not count');
-  assert.equal(alreadyRaised(list, 'ABCDEFG').invoice_number, 'INV3', 'read from the hash too');
-  assert.equal(alreadyRaised(list, 'ZZZZZZZ'), null);
-  assert.equal(alreadyRaised([], '48HNPRK'), null);
+  assert.equal(alreadyRaised(list, '48hnprk', { customerId: 'c1' }).invoice_number, 'INV2', 'a void one does not count');
+  assert.equal(alreadyRaised(list, 'ABCDEFG', { customerId: 'c2' }).invoice_number, 'INV3', 'read from the hash too');
+  // A new client, retried: the contact was made on the first press, the rep's form still has the name.
+  assert.equal(alreadyRaised(list, '48HNPRK', { name: '  jessica   horn ' }).invoice_number, 'INV2');
+  assert.equal(alreadyRaised(list, 'ZZZZZZZ', { customerId: 'c1' }), null);
+  assert.equal(alreadyRaised([], '48HNPRK', { customerId: 'c1' }), null);
+});
+
+test('the same shelf for a different client is not a duplicate', () => {
+  // A code is the shelf, not the person: two clients can order 24P1KB2 in one week.
+  const list = [{ invoice_number: 'INV2', status: 'sent', cf_design_code: '24P1KB2', customer_id: 'c1', customer_name: 'Jessica Horn' }];
+  assert.equal(alreadyRaised(list, '24P1KB2', { customerId: 'c9' }), null);
+  assert.equal(alreadyRaised(list, '24P1KB2', { name: 'Mary Mukuria' }), null);
+  assert.equal(alreadyRaised(list, '24P1KB2', {}), null, 'no client at all matches nothing');
 });
 
 console.log(`test-push: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);
