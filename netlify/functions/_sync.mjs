@@ -84,11 +84,13 @@ export function orderStatusFor(invoiceStatus) {
  * the line is what a reduced price is for: it takes the revenue and the units
  * down together. The tick now means only what `Zero Charge` says.
  *
- * Both names are read because the field cannot be renamed until this is
- * deployed: the moment the base changes, a reader that knows only the old name
- * sees `undefined` and reports every sample and internal build as an order
- * missing its invoice. Once the rename has been made and a full pass is clean,
- * the fallback can go.
+ * Both names are read because the rename could not happen until this was
+ * deployed: the moment the base changed, a reader that knew only the old name
+ * would see `undefined` and report every sample and internal build as an order
+ * missing its invoice. The base was renamed on 2026-09-20 once this was live,
+ * verified by an incremental pass that came back Clean. The fallback stays
+ * anyway, because it is one `??` and it is what makes rolling this build back
+ * survivable.
  */
 export function zeroCharge(fields) {
   return Boolean(fields['Zero Charge'] ?? fields['Free / Heavy Discount']);

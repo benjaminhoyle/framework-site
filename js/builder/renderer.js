@@ -902,6 +902,7 @@ window.FrameworkDesignerRenderer = (function () {
         if (!bounds) {
           state.target = [400, 130, 300];
           state.halfHeight = 700;
+          state.camera = viewProjection(state);
           requestFrame(state);
           return;
         }
@@ -926,6 +927,12 @@ window.FrameworkDesignerRenderer = (function () {
         }
         const aspect = state.width / Math.max(1, state.height);
         state.halfHeight = Math.max(halfHeight, halfWidth / aspect, 120) * (padding || FIT_PADDING);
+        // Publish the new camera now rather than at the next frame. project()
+        // and containsBounds() read state.camera, and the overlay is laid out
+        // in the same tick a fit happens in -- so without this the "+" markers
+        // are placed for the camera that is about to be replaced, and flick
+        // into position one frame later.
+        state.camera = viewProjection(state);
         requestFrame(state);
       },
 

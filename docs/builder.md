@@ -16,8 +16,16 @@ carries across switches (see "Switching down to Simple" below).
 | | Controls | Placement rules |
 |---|---|---|
 | **Simple** | a control column: unit type, width, height, colour, lamp, bookends | Design is generated from the spec — a plain run. Mirrors `/simplified-designer`. |
-| **Standard** | in-viewport `+` buttons, a limited set of pieces, tap a piece to swap/remove | Units may only butt directly against each other. Mirrors `/designer`. |
+| **Flexible** | one in-viewport `+` per free run end and per stack, each opening what fits there; tap a piece to swap/remove | Units may only butt directly against each other. Mirrors `/designer`. |
 | **Advanced** | every piece, from a searchable sheet, with a placement count each; rotate | Also offers the gapped unit spacing that bridging spans need. |
+
+**The difference in one sentence: Flexible starts from a place on the shelf and
+asks what can go there; Advanced starts from a piece in the catalogue and asks
+where it can go.** Everything below follows from which half of that question the
+person already has the answer to. A capability belongs in Flexible if it can be
+decided by looking at one spot on the model and is finished when the piece
+lands; it belongs in Advanced if it needs the catalogue, the invoice, or a plan
+that spans more than one placement.
 
 ### Where the controls live
 
@@ -43,10 +51,19 @@ Consequences worth knowing:
   interface *is* a form. Flexible and Advanced build on the model, so the model
   gets the whole screen and the column's contents move into a sheet.
 - **Advanced puts no `+` markers on the model until a piece is chosen.** Showing
-  every legal spot for every piece at once is unreadable at 47 pieces, several
+  every legal spot for every piece at once is unreadable at 52 pieces, several
   of which fit in a dozen places. Choosing the piece first cuts it to the spots
   that matter. Flexible keeps its standing `+` anchors, because offering the few
-  places a unit can go *is* Flexible's guidance.
+  places a unit can go *is* Flexible's guidance. The deeper reason is the
+  sentence above: Advanced's user has already answered the question Flexible's
+  `+` asks, so a standing marker would be asking them something they know.
+- **The markers are bare discs and carry no drawn label.** They were tried as
+  labelled pills, and on an L-shaped design at 375px the six of them covered the
+  shelf. The model is the product; anything drawn over it has to earn the pixels
+  against what it hides, measured on the busiest design somebody would really
+  build rather than on the two-piece default. What a marker means comes from
+  where it stands — beside a run end, or over a stack — and from the title of
+  the sheet it opens.
 - **The `+` becomes the cancel for the decision it opened.** One control, one
   place, for "I am adding something" and "no I am not"; a separate cancel
   somewhere else is a second thing to find while the first is still lit up.
@@ -69,12 +86,26 @@ everything and keeps the "(Trimmed)" suffix so the two can be told apart.
 
 ### Corners
 
-A run can turn. Standard and Advanced offer a **Turn a corner here** button at
-either end of any run; taking it starts a second run at right angles to the
-first, and everything stacked on it is turned to match, because a turned base
-presents a turned socket rectangle and only a turned extension meets it. That is
-`/designer`'s rule — a corner extension belongs on a corner base of the same
-orientation — arrived at through the sockets rather than by matching a suffix.
+A run can turn. In Flexible the end marker's sheet has a second section,
+**Turn the corner here**, holding the placements that actually rotate something;
+taking one starts a second run at right angles to the first, and everything
+stacked on it is turned to match, because a turned base presents a turned socket
+rectangle and only a turned extension meets it. That is `/designer`'s rule — a
+corner extension belongs on a corner base of the same orientation — arrived at
+through the sockets rather than by matching a suffix.
+
+The section exists because the corner used to have a `+` of its own, and that
+was wrong twice over. It sat 145mm from the run-end `+` in world space, which
+under the locked isometric is a few pixels: the two discs were the only pair in
+the tool that ever collided, at both ends of every design, closing from 29px to
+18px as a run grew from three bases to six and the camera pulled back to fit it.
+And its label lied. `buildAddButtons` preferred the candidate whose
+`cornerFace` is `normal`, which runs *along* the existing run — so pressing
+"Turn a corner here" placed a corner unit in line and nothing turned. Both faces
+are now offered and named for what they do: the in-line one is a row in
+**Carry on along this run**, noted as a longer shelf a run can turn off, and the
+turned one is the row in **Turn the corner here**. A corner can be turned in one
+tap from a single base, which the engine always supported.
 
 The **corner unit** is the piece meant to sit at the join. It is an ordinary
 straight unit whose shelf is about a shelf board longer than a standard one, and
@@ -86,6 +117,125 @@ the frame, and placing against those leaves a visible notch in the corner.
 
 Simple has no corners: it builds one plain run, and a run of corner units is not
 a thing anyone wants.
+
+### Where a run end's marker stands, and why it is not on the new unit
+
+Flexible's end markers are anchored on **the outward board face of the last real
+unit**, level with that stack's own mid-height, and pushed 26 screen pixels
+further out along the run. Pixels rather than millimetres, so the gap between
+the shelf and its marker is the same at every zoom.
+
+They used to be anchored on the centre of the unit that does not exist yet, at
+the design's mid-height, and both halves of that were wrong:
+
+- The phantom unit is outside `designBounds`, which is what `renderer.fit`
+  frames. `positionOverlays` hides rather than clamps anything projecting past
+  the stage, so on a 375px phone **all four side markers were
+  `visibility: hidden`** and "Add on top" was the only affordance in the whole
+  mode — and `refresh({ fit: true })` re-framed after every edit, so they went
+  away again after every placement. Anchoring on the shelf puts them inside the
+  fit by construction. Framing the union of the design and every pending marker
+  was the other option and was rejected: it needs about twice the padding and
+  draws the shelf at little over half its size on a phone.
+- The design's mid-height is not the marker's height. On a run whose stacks are
+  different heights it put the marker for a one-level unit up beside a
+  three-level one.
+
+`stackBounds` is asked to exclude lamps for the same reason: a lamp stands 76cm
+over the shelf it lights and was dragging "Add on top" up into the air with it.
+
+### Which end is which, and the bug that hid for a while
+
+A base candidate's end is keyed by **the unit it was placed against, plus the
+world axis and sign it leaves that unit on** (`outwardFrom`). It used to be
+decided by comparing the candidate's X against the min and max X of the design's
+bases — which works only while every run lies along X.
+
+A second run created by a corner runs along **Y**. Every legal continuation of
+it therefore had an X between the design's min and max, was classified as
+neither side, and was dropped. The effect in the page: on a Standard L, the end
+of the second run offered **Wide Base and Deep Base and not Standard** — the two
+that survived did so by accident, because their greater depth pushed their
+origin a few millimetres past the envelope. A buyer who had built an L out of
+Standard units could not add another Standard unit to it, with no error and no
+row to say so.
+
+### One end can belong to two units
+
+An end is keyed by the unit it is built on, and that is not quite the identity
+of an end: the unit at the end of a run and the one beside it both offer the
+same gap in the same direction. Left unmerged that drew two markers 2px apart
+on an L in Flexible, and 7px apart in Advanced -- the fault this whole pass
+exists to remove, rebuilt one level down. Ends that face the same way and whose
+anchors are within a unit's width (`SAME_END_MM`) are folded into one, keeping
+the nearest offer of each piece.
+
+The outward push is clamped, too. The anchor is on the shelf and inside the
+frame by construction, but 26 screen pixels of push can still carry the disc
+past the edge: on an L at 320px it took two of three markers 5px over and most
+of their touch slop with them. A pushed marker is pulled back to keep its whole
+target on screen, which is not the case the "hide rather than clamp" rule was
+written for -- it still points at its own end, from 11px nearer to it.
+
+### What the camera frames while a piece is in hand
+
+`candidateFrame` frames **the boxes of the markers that ghost, and the points of
+the markers that open a list.** Both halves are load-bearing:
+
+- Framing every candidate's whole box drew the shelf at a third of a portrait
+  stage, because a gapped placement reaches most of a unit's width past the run
+  and its marker is one disc.
+- Framing only the points was worse in a way that does not show in a
+  screenshot: `showGhost` re-fits when a preview lands outside the view, so the
+  first tap of a two-tap gesture moved every marker out from under the thumb.
+  A marker that ghosts needs its piece framed; a marker that opens a list needs
+  only itself.
+
+### Advanced keeps the piece in hand
+
+`commit` clears `ui.activeModuleId` for every edit except a placement in
+Advanced, which passes `keepModule`. A part is a thing you have a quantity of,
+and dropping it after every one cost a round trip through a two-dozen-row sheet
+per booster.
+
+Three things follow and all three are load-bearing:
+
+- **The camera has to frame the candidates, not the design.** `refresh` takes
+  `fit: "candidates"` for this. Framing the shelf alone pushes the surviving
+  markers outside the stage, where `positionOverlays` hides them — the same
+  fault as the side markers above, imported into the other mode.
+- **The button needs a third state.** "Add a piece" → "Cancel" (nothing placed
+  yet) → **"Done"**. After a placement, offering to cancel reads as offering to
+  undo the part just put down.
+- **A tap on a piece has to still mean that piece.** Tapping the model while
+  holding a part used to cancel the placement silently; now it puts the part
+  down *and* selects what was tapped, because the mode is otherwise in the
+  holding state indefinitely and the tap-to-swap gesture would be behind a trip
+  to the button.
+
+The piece is dropped automatically when it runs out of places to go, with a line
+saying which piece and why, rather than leaving somebody holding something with
+no markers and a button offering to finish.
+
+### Naming the spacings instead of drawing them four times
+
+Advanced is the only interface that offers gapped placements at all
+(`adjacentBasesOnly` is false only there). It used to draw each one as its own
+disc: a Standard Base on the default design was **eight identical markers**,
+four per side, every one titled "Put the Standard Base here". On a 375px phone
+the four on one side sat inside 53 pixels with 10px between 38px discs — four
+different answers no thumb could choose between.
+
+They are one decision, so they get one marker per side, and the spacing is the
+short named list `GAP_NAMES` was always written for: a size, not a measurement,
+because "43 cm" against "70 cm" is not a choice anybody makes by reading. The
+centimetres are on the row, where there is room. That picker existed and was
+unreachable — it was only ever called from `buildAddButtons`, which
+`buildOverlay` does not run in Advanced.
+
+A side with one place keeps its ordinary marker and its ghost: there is nothing
+to tell it apart from, and naming it would be labelling the only door in the
+room.
 
 ### Normalising the spacing
 
@@ -332,6 +482,33 @@ repeat POST must not replace the arrival details of whoever created it.
   no separate "create a link" button: nobody ever wanted a link for its own
   sake, they wanted to send a picture or an order.
 
+## Bookends
+
+A bookend is not a piece. The design carries a **count**, and
+`bookendPlacements` fills the legal ends bottom up, as many as the count. That
+is load-bearing rather than incidental: `serializeState` carries the count and
+nothing else about them, which is what keeps every design code that was ever
+shared resolving to the same shelf, and `scripts/test-bookend-placement.mjs`
+asserts that key list exactly. So the ends cannot be picked individually without
+moving every code in every WhatsApp thread — no anchor key survives both a
+share-link round trip (which re-mints instance ids) and `normaliseSpacing`
+(which moves units off the socket grid).
+
+Asking for more bookends than the shelf has ends is allowed. Those are priced
+and delivered like the rest, they are simply not in the picture, and
+`bookendFitNote` says so under the stepper rather than the stepper refusing.
+
+The control is the same stepper everywhere: Simple's column, and the options
+sheet behind the gear in Flexible and Advanced. Advanced additionally lists
+**Bookend** as a row in its "Add a piece" sheet, which opens that same stepper —
+it is the one thing in the catalogue a buyer can buy, and having it only behind
+an options button made it the one thing not listed with the rest.
+
+They do have a model: `assets/shelving/modules/bookend.json`, drawn by
+`bookendSceneEntries` and fetched the moment the count goes above zero. The
+scene entries deliberately carry `boundsMm: null`, so a bookend is neither what
+the camera frames nor what a tap hit-tests.
+
 ## Colours
 
 Two palettes, deliberately separate, joined by `siteTheme` in the pipeline's
@@ -482,9 +659,6 @@ designer-page exclusion list.
 
 ## Not done yet
 
-- **Bookends** are priced and included in the WhatsApp order, but have no 3D
-  model in the pipeline (`status: model-pending`), so they do not appear in the
-  view.
 - **Eight pieces have no price** and read "on request": `booster_adapter`,
   `broad_hanger`, `broad_spacer`, `broad_top_bar`, `compact_top_bar`,
   `deep_top_bar`, `slim_spacer`, `slim_top_bar`. A trimmed cut inherits its full
@@ -506,6 +680,32 @@ designer-page exclusion list.
 - **The old `/new-designer` address is a 301** to `/builder`, because links with
   a design in the fragment are in WhatsApp threads. It can go once those have
   aged out; the fragment rides along until then.
+
+## What the page says back
+
+`setHint` is the one channel the tool talks on, and it carries three kinds of
+message: a confirmation of something that was just done, a refusal, and a
+system failure. It is a dark pill above the floating buttons, of the same family
+as `.nd-busy` — opaque, because it used to be grey type on 92% white, which over
+a Charcoal shelf composited to about `#eee` and put the text at 4.28:1, so the
+same sentence passed or failed depending on where the shelf happened to be
+framed. Its inset is derived from the buttons' own inset and height rather than
+the 66px that used to encode them by hand.
+
+**There is one onboarding sentence, shown once per person:** *"Tap any piece on
+the shelf to change or remove it."* It is the one fact the interface cannot
+show. There is no hover on touch, no outline and no cursor, so the shelf looks
+like a picture of a shelf; every other affordance is a labelled control.
+
+It used to be two sentences per interface, and the first of each described the
+`+` markers. On a phone that sentence was not merely redundant, it was wrong —
+it named four affordances that were hidden off-stage. The flag also lived in
+page memory, so it fired on every load, and the commonest way into this page is
+a share link or a `/builder/CODE` path in a fresh tab: somebody iterating on one
+design was told the same thing every time they opened it. It is now
+`fwk_builder_hinted` in `localStorage`, wrapped the way `js/gate.js` wraps its
+own, where a throw on read means "not seen" and a throw on write means it shows
+once more.
 
 ## History
 
@@ -531,3 +731,16 @@ now does better, and the third was a link nobody made except on the way to
 sending one. The order form behind Staff login was rebuilt in the same pass;
 `docs/order-sync.md` covers it, including the three copies of a client's phone
 number and which two of them have to agree.
+
+In September 2026 both upper interfaces had a pass over how they are worked.
+Flexible went from a `+` per placement family to **one per free run end**, which
+removed the only pair of markers in the tool that ever collided, folded the
+corner into that end's sheet as two named sections, and fixed a run created by a
+corner not being extendable at all. The markers moved onto the shelf so they
+stop being hidden on a phone. Advanced **keeps a piece in hand** across
+placements, merged its four spacing discs per side into one marker over the
+named picker that had been unreachable since it was written, hid the shortened
+cuts behind one row, and gained a strip of the pieces most recently reached for.
+The onboarding hint became one sentence shown once per person. Labelled pill
+markers were tried in Flexible in the same pass and taken out again: they read
+well and covered the shelf, which is the trade this page never makes.
