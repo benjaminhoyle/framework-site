@@ -42,9 +42,18 @@ const FALLBACK_IMAGE = '/images/shelving/configs/asymmetric-display-emptied.jpg'
 
 export default async (req, context) => {
   const url = new URL(req.url);
+  /*
+   * Three ways in, because the code arrives three ways: /d/<CODE> from a link
+   * the team pastes, ?code= from the form on /d (a GET form, so it works with
+   * no JavaScript), and the bare path when the route matched without a param.
+   * A bare /d is not a miss, it is somebody holding a code and no link, so it
+   * gets the form rather than the 404.
+   */
   const raw = (context && context.params && context.params.code)
+    || url.searchParams.get('code')
     || url.pathname.replace(/^\/d\/?/, '').replace(/\/$/, '');
-  const code = String(raw || '').toUpperCase();
+  const code = String(raw || '').trim().toUpperCase();
+  if (!code) return openAnother();
   if (!CODE_RE.test(code)) return notFound();
 
   const origin = assetOrigin(req);
@@ -331,6 +340,51 @@ function render(design) {
 `;
 }
 
+/*
+ * /d on its own: the door for a code that arrived without a link. A customer
+ * has the code on the picture their shelf came in, or on a quote; the team has
+ * it on the staff screen. Both then have to type framework.co.ke/d/<CODE> from
+ * memory, which is the sort of thing that works for us and not for them.
+ *
+ * A GET form, so it needs no JavaScript and no new endpoint: it submits to /d
+ * with ?code=, which the handler above reads as the code.
+ */
+function openAnother() {
+  return new Response(`<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open a saved design | Framework Nairobi</title>
+<meta name="description" content="Open any Framework design by its code to see its size, its price and how it stands in your own room.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/css/styles.css"><link rel="stylesheet" href="/css/pages.css">
+<link rel="stylesheet" href="/css/design.css">
+<script src="/js/site.js" defer></script></head>
+<body><main class="pg dp">
+<h1>Open a saved design</h1>
+<p>Every shelf we design has a seven character code. Enter it to see that shelf
+   at its real size, with its price, and to stand it in your own room.</p>
+<form class="dp-find" method="get" action="/d">
+  <label class="dp-find-label" for="dp-code">Design code</label>
+  <input class="dp-find-input" id="dp-code" name="code" type="text" inputmode="latin"
+         autocapitalize="characters" autocomplete="off" spellcheck="false"
+         maxlength="7" size="7" placeholder="1F6HMTB" aria-describedby="dp-find-note" required>
+  <button class="dp-find-go" type="submit">Open it</button>
+</form>
+<p class="dp-find-note" id="dp-find-note">The code is printed on the picture of your shelf and on your quote.</p>
+<div class="pg-doors">
+  <a class="pg-door" href="/shelving.html"><b>See the designs</b><span>Sizes and prices for every shelf we make</span></a>
+  <a class="pg-door pg-door-dark" href="/builder"><b>Design one</b><span>Build a shelf and get its own code</span></a>
+</div>
+</main></body></html>
+`, {
+    status: 200,
+    headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=600' }
+  });
+}
+
 function notFound() {
   return new Response(`<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
@@ -345,7 +399,9 @@ function notFound() {
 <h1>That design could not be found</h1>
 <p>The code may have been mistyped. Design codes are seven characters, as printed
    on the picture the shelf came in.</p>
-<div class="pg-doors"><a class="pg-door pg-door-dark" href="/builder"><b>Design one</b>
+<div class="pg-doors"><a class="pg-door" href="/d"><b>Try another code</b>
+<span>Seven characters, from your picture or your quote</span></a>
+<a class="pg-door pg-door-dark" href="/builder"><b>Design one</b>
 <span>Build a shelf and get its own code</span></a></div>
 </main></body></html>
 `, {
@@ -378,4 +434,4 @@ function notFound() {
  * rules forbid.
  */
 
-export const config = { path: '/d/:code' };
+export const config = { path: ['/d/:code', '/d'] };

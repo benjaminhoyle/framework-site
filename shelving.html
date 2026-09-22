@@ -1497,6 +1497,9 @@
               </svg>
               <span>Customise</span>
             </a>
+            <a id="lb-design-page" href="#" class="shelf-designer-link">
+              See it in your room &rarr;
+            </a>
             <a id="lb-designer-link" href="/builder.html?mode=flexible" class="shelf-designer-link">
               Open in shelf designer &rarr;
             </a>
@@ -1828,6 +1831,42 @@
       var customizeMsg = "Hello, I'd like to develop a custom design for my space based on " + config.title + ".\n\n" + shareUrl;
       document.getElementById('lb-order').href = 'https://wa.me/254783891005?text=' + encodeURIComponent(orderMsg);
       document.getElementById('lb-customize').href = 'https://wa.me/254783891005?text=' + encodeURIComponent(customizeMsg);
+      /*
+       * The design page for this product, when it has a code. It is the one
+       * link here that answers "how big is it, really": /d/<CODE> states the
+       * size first and stands the shelf in the room at full size through the
+       * phone's camera. Catalogue products carry designCode (25 of 27 today);
+       * the two without it simply do not show the link.
+       */
+      var designPageEl = document.getElementById('lb-design-page');
+      /*
+       * The code comes off designerUrl, not off a designCode field: the
+       * published catalogue at /data/catalog.json carries the first and not the
+       * second (the publish step writes designerUrl for all but one product and
+       * drops designCode), and deriving it here means this link cannot fall out
+       * of step with the builder link beside it.
+       */
+      var designCode = config.designCode
+        || (String(config.designerUrl || '').match(/\/builder\/([0-9A-Za-z]{7})(?:[/?#]|$)/) || [])[1]
+        || '';
+      if (designCode) {
+        designPageEl.href = '/d/' + encodeURIComponent(designCode);
+        designPageEl.hidden = false;
+        designPageEl.onclick = function () {
+          if (window.fwk) {
+            window.fwk.track('design_page_open', {
+              product_id: config.id,
+              design_code: designCode,
+              source: 'lightbox'
+            });
+          }
+        };
+      } else {
+        designPageEl.removeAttribute('href');
+        designPageEl.hidden = true;
+        designPageEl.onclick = null;
+      }
+
       var designerLinkEl = document.getElementById('lb-designer-link');
       if (config.designerUrl) {
         designerLinkEl.href = config.designerUrl;

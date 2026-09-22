@@ -150,3 +150,58 @@ model-viewer:not(:defined) {
 /* Nothing that has not been decided yet is shown. The script turns exactly one
    of the AR button and the panel on once it knows which the device is. */
 [hidden] { display: none !important; }
+
+/* /d on its own: a code and a way in. The input is short because the code is
+   seven characters, and wide enough that seven characters never scroll inside
+   it; the letterspacing is there so a person reading a code off a picture can
+   check it against the field a character at a time. */
+.dp-find {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin: 24px 0 10px;
+}
+
+.dp-find-label {
+    flex-basis: 100%;
+    font-size: var(--t-small);
+    font-weight: 500;
+    color: var(--ink-soft, #55605b);
+}
+
+.dp-find-input {
+    flex: 0 1 11ch;
+    padding: 11px 14px;
+    border: 1px solid var(--ink);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: var(--t-body);
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dp-find-go {
+    padding: 11px 24px;
+    border: 1px solid var(--ink);
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    font-family: inherit;
+    font-size: var(--t-body);
+    font-weight: 700;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.dp-find-go:hover, .dp-find-go:focus { background: #2f3a35; }
+
+.dp-find-note {
+    margin: 0 0 8px;
+    font-size: var(--t-small);
+    color: var(--ink-soft, #55605b);
+}

@@ -1030,6 +1030,12 @@ const server = http.createServer(async (request, response) => {
       { params: { code: designPage[1] } });
     return;
   }
+  // `/d` on its own is the second route the function declares: the form for a
+  // code that arrived without a link, and the ?code= it submits to.
+  if (url.pathname === "/d" || url.pathname === "/d/") {
+    await runFunction(designPageHandler, request, response, url, { params: {} });
+    return;
+  }
   if (url.pathname === "/api/design-glb" || /^\/api\/design-glb\/[^/]*\.glb$/.test(url.pathname)) {
     await runFunction(designGlbHandler, request, response, url, {});
     return;

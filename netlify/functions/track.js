@@ -25,9 +25,12 @@ import { getStore } from '@netlify/blobs';
 // `dims.design_code`. Apart is the interesting reading -- a large gap is AR
 // failing to launch on the phones our customers actually hold, which is the one
 // thing that cannot be found out from a desktop.
+// `design_page_open` is the catalogue lightbox's link to /d/<CODE>: a product
+// view that wanted the size and the room, which is a different intent from
+// opening the builder and worth telling apart from it.
 const EVENTS = new Set([
   'arrive', 'product_view', 'engage', 'wa_handoff', 'catalog_impression', 'designer_open',
-  'ar_open', 'ar_placed',
+  'ar_open', 'ar_placed', 'design_page_open',
 ]);
 const CODE_RE = /^[0-9A-HJKMNP-TV-Z]{6}$/; // Crockford Base32, uppercase, no I/L/O/U
 const MAX_BODY = 8 * 1024; // drop anything oversized
