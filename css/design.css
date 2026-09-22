@@ -1,0 +1,152 @@
+/*
+ * /d/<CODE> — one saved design, at full size.
+ *
+ * Loaded after css/styles.css (the header and footer js/site.js injects) and
+ * css/pages.css, which is where the tokens, the six type roles, the WhatsApp ask
+ * and the doors come from. Everything here is either the 3D viewer, which those
+ * stylesheets know nothing about, or the two lines of fact under the title.
+ *
+ * The page is one column at every width. It is opened almost entirely on a
+ * phone, from a WhatsApp message, by somebody standing in the room the shelf is
+ * for; a second column would put the thing they came for below the fold on the
+ * device that matters and above it on the device that does not.
+ */
+
+.dp {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: clamp(24px, 5vw, 48px) 24px clamp(56px, 8vw, 88px);
+}
+
+.dp > * + * { margin-top: 20px; }
+
+/* The title is the size, because "will it fit" is the question AR answers and
+   the one the room cannot be measured for from a chat. The code sits above it
+   in the small role: it is how the shelf is referred to, not what it is. */
+.dp h1 { margin-bottom: 10px; }
+
+.dp .dp-small { margin-bottom: 6px; }
+
+/* Finish, depth and piece count on one line, muted; the price on its own, in
+   the body role, because a price is read and not footnoted (css/pages.css). */
+.dp-facts { color: var(--muted); margin: 0; }
+.dp-price { margin: 4px 0 0; font-weight: 700; }
+
+/* --------------------------------------------------------------- the model */
+
+/*
+ * A 4:3 stage with the same wash and radius as a photograph on /how or
+ * /customize, so the shelf arrives in the shape the rest of the site puts a
+ * shelf in, and no taller than about what a hand holds up.
+ *
+ * `height: auto` is not decoration. <model-viewer>'s own :host rule sets
+ * `width: 300px; height: 150px`, and a page rule that gives it a width and an
+ * aspect-ratio without also releasing that height leaves it 150px tall with the
+ * shelf squeezed into a letterbox: aspect-ratio is ignored the moment height is
+ * something other than auto.
+ */
+.dp-stage {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    max-height: 72vh;
+    background: var(--wash);
+    border-radius: var(--radius);
+    /* The turntable is the interaction; the browser's own pan-and-zoom on top
+       of it makes the page fight the model on a touch screen. */
+    touch-action: pan-y;
+    --poster-color: transparent;
+    --progress-bar-color: var(--accent);
+    --progress-mask: var(--wash);
+}
+
+/* Before the custom element upgrades, the tag is an unknown inline element with
+   no box. Without this the page jumps by most of a screen when it loads. */
+model-viewer:not(:defined) {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    max-height: 72vh;
+    background: var(--wash);
+    border-radius: var(--radius);
+}
+
+/* The one line inside the stage while the model is on its way, and the one that
+   replaces it if it never arrives. */
+.dp-stage-note {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--t-small);
+    text-align: center;
+    max-width: 24ch;
+}
+
+/* ---------------------------------------------------------------- the ask */
+
+/*
+ * The AR button: the same pill as .pg-wa, which is the site's one button, under
+ * the picture rather than floating on top of the shelf.
+ *
+ * It is shown only where AR can launch, and js/design.js decides that from
+ * model-viewer's own `canActivateAR` -- the component knows about WebXR, Scene
+ * Viewer and Quick Look, and no user-agent test this page could write knows
+ * whether a phone has the sensors. The component's own floating cube is
+ * suppressed by an empty, hidden element in its ar-button slot.
+ */
+.dp-ar-slot { display: none; }
+
+.dp-ar {
+    display: inline-block;
+    padding: 15px 28px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    font-family: inherit;
+    font-size: var(--t-body);
+    font-weight: 700;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.dp-ar:hover, .dp-ar:focus { background: #000; }
+
+.dp-ar:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* What stands in for the button where AR cannot run: inside Instagram's and
+   Facebook's browsers, which is where most of the site's phone traffic lands,
+   and on a phone without ARCore. A panel rather than a sentence, because it is
+   an instruction to do something, and it carries the one control that makes the
+   instruction followable. */
+.dp-elsewhere {
+    background: var(--wash);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+}
+
+.dp-elsewhere p { margin: 0 0 12px; max-width: 42ch; }
+
+.dp-copy {
+    padding: 11px 20px;
+    border: 1px solid var(--ink);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: var(--t-body);
+    font-weight: 700;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.dp-copy:hover, .dp-copy:focus { background: #eaeeec; }
+
+/* Nothing that has not been decided yet is shown. The script turns exactly one
+   of the AR button and the panel on once it knows which the device is. */
+[hidden] { display: none !important; }

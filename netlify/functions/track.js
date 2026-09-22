@@ -18,8 +18,16 @@ import { getStore } from '@netlify/blobs';
 // either existed and never widened. That silently zeroed the whole seen→opened
 // denominator in the Catalog Manager: `seen`, `seenAboveFold`, `impressionsBySlot`
 // and `designerOpens` were structurally incapable of being anything but 0.
+//
+// `ar_open` and `ar_placed` are /d/<CODE>'s two checkpoints and they are a pair:
+// the first is somebody tapping "see it on your wall", the second is
+// <model-viewer> reporting the shelf standing on a surface. Both carry
+// `dims.design_code`. Apart is the interesting reading -- a large gap is AR
+// failing to launch on the phones our customers actually hold, which is the one
+// thing that cannot be found out from a desktop.
 const EVENTS = new Set([
   'arrive', 'product_view', 'engage', 'wa_handoff', 'catalog_impression', 'designer_open',
+  'ar_open', 'ar_placed',
 ]);
 const CODE_RE = /^[0-9A-HJKMNP-TV-Z]{6}$/; // Crockford Base32, uppercase, no I/L/O/U
 const MAX_BODY = 8 * 1024; // drop anything oversized

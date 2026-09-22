@@ -696,7 +696,20 @@ export function priceOf(catalog, state) {
 export function shelfSizeMm(catalog, state) {
   const shelfOnly = state.instances.filter((instance) =>
     (catalog.modules[instance.moduleId] || {}).role !== "lamp");
-  return boundsToSize(engine.designBounds(catalog, shelfOnly.length ? { instances: shelfOnly } : state));
+  const bounds = engine.designBounds(catalog, shelfOnly.length ? { instances: shelfOnly } : state);
+  const size = boundsToSize(bounds);
+  /*
+   * Height is measured from the floor, not across the box, because that is what
+   * /builder quotes: app.js's heightAboveFloor is `Math.max(0, bounds[5])`.
+   * Every base unit's box reaches 13mm below the placement plane -- the foot's
+   * pad -- so the two differ by 13mm on every design with a base in it, and a
+   * page that said 164cm beside a builder that says 163 would be two tools
+   * disagreeing about one shelf in front of the customer. The model in AR still
+   * stands on its own lowest vertex, pad included, which is where it would
+   * stand on a real floor.
+   */
+  if (bounds) size.heightMm = Math.round(Math.max(0, bounds[5]));
+  return size;
 }
 
 /** The whole box, lamp included. */

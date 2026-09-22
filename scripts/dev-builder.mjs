@@ -76,6 +76,39 @@ const built = await import(
 );
 const designHandler = built.make(getStore);
 
+// --- the AR pair: /d/<CODE> and its model -----------------------------------
+
+/*
+ * `design-page.mjs` and `design-glb.mjs` are imported as they are, because
+ * unlike design.js they have no Blobs import to strip at the top level: the GLB
+ * cache is behind a try/catch that treats "no store here" as a cache miss, which
+ * is exactly the local case. So what runs here is the shipped handler.
+ *
+ * They read the catalogue, the geometry bundles and /api/design over HTTP from
+ * the site's own origin, which on this server is this server. That is set below,
+ * once the port is known, through FRAMEWORK_ASSET_ORIGIN.
+ */
+const designPageHandler = (await import("../netlify/functions/design-page.mjs")).default;
+const designGlbHandler = (await import("../netlify/functions/design-glb.mjs")).default;
+
+/** Run one Netlify function handler and copy its Response onto the socket. */
+async function runFunction(handler, request, response, url, context) {
+  const chunks = [];
+  for await (const chunk of request) chunks.push(chunk);
+  const proxied = new Request(`http://127.0.0.1:${PORT}${request.url}`, {
+    method: request.method,
+    headers: request.headers,
+    body: chunks.length ? Buffer.concat(chunks) : undefined
+  });
+  const result = await handler(proxied, context || {});
+  const body = Buffer.from(await result.arrayBuffer());
+  const headers = {};
+  result.headers.forEach((value, key) => { headers[key] = value; });
+  console.log(`${request.method} ${url.pathname} -> ${result.status} (${body.length} bytes)`);
+  response.writeHead(result.status, headers);
+  response.end(body);
+}
+
 // --- the push endpoint, faked ----------------------------------------------
 
 /*
@@ -959,6 +992,23 @@ const server = http.createServer(async (request, response) => {
     }
   }
 
+  /*
+   * The AR pair. `/d/<CODE>` is the page and `/api/design-glb/<CODE>.glb` the
+   * model; both are Netlify functions that declare their own routes through
+   * `export const config.path`, so these two lines stand in for that routing
+   * the way REWRITES stands in for netlify.toml's.
+   */
+  const designPage = /^\/d\/([0-9A-Za-z]{7})\/?$/.exec(url.pathname);
+  if (designPage) {
+    await runFunction(designPageHandler, request, response, url,
+      { params: { code: designPage[1] } });
+    return;
+  }
+  if (url.pathname === "/api/design-glb" || /^\/api\/design-glb\/[^/]*\.glb$/.test(url.pathname)) {
+    await runFunction(designGlbHandler, request, response, url, {});
+    return;
+  }
+
   if (url.pathname === "/api/design") {
     const chunks = [];
     for await (const chunk of request) chunks.push(chunk);
@@ -1011,6 +1061,11 @@ const server = http.createServer(async (request, response) => {
 });
 
 server.listen(PORT, "127.0.0.1", () => {
+  // The two AR functions fetch the catalogue, the geometry and /api/design from
+  // "the site". On Netlify that is the request's own origin; here it has to be
+  // said, because a request arriving on 127.0.0.1 has no public origin to infer.
+  process.env.FRAMEWORK_ASSET_ORIGIN = `http://127.0.0.1:${PORT}`;
   console.log(`framework-site + /api/design on http://127.0.0.1:${PORT}`);
   console.log(`the builder: http://127.0.0.1:${PORT}/builder`);
+  console.log(`a design in AR: http://127.0.0.1:${PORT}/d/01H0NP1`);
 });
