@@ -76,6 +76,29 @@ const built = await import(
 );
 const designHandler = built.make(getStore);
 
+// --- the event lake, in memory ----------------------------------------------
+
+/*
+ * `/api/track` for real, with the same Blobs-for-a-Map swap, because the two
+ * beacons /d/<CODE> adds are the only measurement AR will ever have and the way
+ * they fail is silent: track.js drops an event whose name is not in its
+ * allowlist with a 422 nobody looks at, which is exactly how `catalog_impression`
+ * and `designer_open` were zero for months. Locally they now land somewhere that
+ * can be read back: GET /api/track returns what this process has collected.
+ */
+const events = new Map();
+const trackSource = fs.readFileSync(path.join(ROOT, "netlify/functions/track.js"), "utf8")
+  .replace(/^import \{ getStore \} from '@netlify\/blobs';$/m, "")
+  .replace(/^export const config = .*$/m, "")
+  .replace("export default async (req, context) =>", "const handler = async (req, context) =>");
+const trackBuilt = await import(
+  `data:text/javascript;base64,${Buffer.from(`export const make = (getStore) => {${trackSource}\nreturn handler;};`).toString("base64")}`
+);
+const trackHandler = trackBuilt.make((name) => ({
+  get: async (key) => (events.get(`${name}/${key}`) || null),
+  setJSON: async (key, value) => { events.set(`${name}/${key}`, JSON.stringify(value)); }
+}));
+
 // --- the AR pair: /d/<CODE> and its model -----------------------------------
 
 /*
@@ -998,7 +1021,10 @@ const server = http.createServer(async (request, response) => {
    * `export const config.path`, so these two lines stand in for that routing
    * the way REWRITES stands in for netlify.toml's.
    */
-  const designPage = /^\/d\/([0-9A-Za-z]{7})\/?$/.exec(url.pathname);
+  // As wide as Netlify's `:code` segment, not as narrow as a valid code: the
+  // function's own 404 page is part of what there is to look at locally, and a
+  // dev server that 404s a mistyped code before the function sees it hides it.
+  const designPage = /^\/d\/([0-9A-Za-z]{1,16})\/?$/.exec(url.pathname);
   if (designPage) {
     await runFunction(designPageHandler, request, response, url,
       { params: { code: designPage[1] } });
@@ -1006,6 +1032,17 @@ const server = http.createServer(async (request, response) => {
   }
   if (url.pathname === "/api/design-glb" || /^\/api\/design-glb\/[^/]*\.glb$/.test(url.pathname)) {
     await runFunction(designGlbHandler, request, response, url, {});
+    return;
+  }
+
+  if (url.pathname === "/api/track") {
+    if (request.method === "GET") {
+      const rows = [...events.entries()].map(([key, value]) => ({ key, ...JSON.parse(value) }));
+      response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+      response.end(JSON.stringify({ ok: true, count: rows.length, events: rows }));
+      return;
+    }
+    await runFunction(trackHandler, request, response, url, { geo: { country: { code: "KE" } } });
     return;
   }
 

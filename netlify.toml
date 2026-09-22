@@ -319,8 +319,16 @@
   node_bundler = "esbuild"
 
 # --- Later phases (DO NOT enable yet: no handlers exist) ---
-# /d/:code       → design short-code resolver (Phase 2)
 # /shelf/:slug   → catalog slug pages (Phase 2)
+#
+# /d/:code is no longer on that list. It is a page now, rendered by
+# netlify/functions/design-page.mjs, with its model at
+# /api/design-glb/<CODE>.glb from design-glb.mjs. Neither needs a redirect here:
+# both declare their own routes through `export const config.path`, the way
+# track.js and export.js do. They are deliberately functions rather than a
+# rewrite to a static page -- the link is pasted into WhatsApp, so the og: tags
+# have to say what THIS shelf is, and a rewrite serves one set of tags for every
+# design there is.
 
 # The old custom steelwork page (products-services) was the first sitelink under
 # the brand on Google, pointing at work Framework no longer offers. Ben asked on

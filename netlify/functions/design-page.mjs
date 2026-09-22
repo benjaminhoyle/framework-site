@@ -54,8 +54,19 @@ export default async (req, context) => {
     const record = await readDesign(origin, code);
     if (!record || (!record.hash && !record.design)) return notFound();
     const state = stateFromRecord(catalog, record);
-    const finish = (catalog.finishes || []).find((entry) => entry.id === state.finish)
-      || (catalog.finishes || [])[0];
+    /*
+     * Every finish on the shelf, the design's own first. A design can carry a
+     * colour per piece, and app.js names them all for exactly this reason: on a
+     * shelf with charcoal posts and coral, marine and sage boards, the word
+     * "Sage" beside the picture is a half-truth. This is its finishesInUse.
+     */
+    const used = [state.finish].concat(
+      state.instances.map((instance) => instance.finish).filter(Boolean)
+    ).filter((id, index, all) => all.indexOf(id) === index);
+    const finishes = used
+      .map((id) => (catalog.finishes || []).find((entry) => entry.id === id))
+      .filter(Boolean);
+    const finish = finishes[0] || (catalog.finishes || [])[0];
     facts = {
       code,
       size: shelfSizeMm(catalog, state),
@@ -68,7 +79,12 @@ export default async (req, context) => {
         : priceOf(catalog, state).totalKsh,
       quoted: Number.isFinite(Number(record.total_ksh)) && Number(record.total_ksh) > 0,
       finishId: state.finish,
-      finishName: finish ? finish.displayName : state.finish,
+      // The og:image is a photograph of a shelf in the design's own finish;
+      // there is no photograph of a four-colour one, and the base colour is the
+      // closest true thing.
+      finishName: finishes.length
+        ? finishes.map((entry) => entry.displayName).join(' & ')
+        : state.finish,
       pieces: state.instances.length,
       bookends: state.bookends || 0,
       tag: contractTag(rawCatalog)

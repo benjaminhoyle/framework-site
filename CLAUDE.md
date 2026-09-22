@@ -132,6 +132,40 @@ npm run dev     # http://127.0.0.1:8770/assembly  (?bench=1, ?tier=lite|still|ph
 because the failures that matter here are silent: a NaN in a focus box draws a
 blank screen halfway down a page rather than throwing.
 
+## /d/<CODE>, and the model behind it
+
+One saved design at full size, and a button that stands it in the room through
+the phone's camera. `netlify/functions/design-page.mjs` renders the page and
+`design-glb.mjs` serves `/api/design-glb/<CODE>.glb`; both resolve a code
+through `_designs.mjs` in `js/builder/app.js`'s own order (`/api/design`, then
+`data/builder-designs/`, and the share hash over the serialised design), so
+`/builder/CODE` and `/d/CODE` cannot show two different shelves.
+
+- **The exporter drives the builder's own code**, `engine.js` and
+  `geometry.js`, and reimplements neither. `geometry.js` carries the same UMD
+  wrapper `engine.js` has so it runs in Node. A second copy of that
+  dequantisation would be a silent way for the shelf on a customer's floor to
+  disagree with the one they designed.
+- **Two numbers have to match /builder and are easy to get wrong.** The height
+  quoted is `heightAboveFloor`, `Math.max(0, bounds[5])`, not the height of the
+  box: every base reaches 13mm below the plane it is stood on. And the model's
+  own bounding box is measured from its vertices, because seven of the 53
+  bundles carry mesh outside their declared catalogue box.
+- **Colours are the real material hexes** (`steelHex` / `mdfHex`), the ones the
+  Blender renders use, converted out of sRGB — not the `builder` palette, which
+  is pre-scaled for the WebGL renderer's own light term.
+- **AR cannot launch inside Instagram's or Facebook's browsers**, which is where
+  most phone traffic arrives, and their Android user agent says Chrome. `ar`
+  comes off the viewer there and the page offers the way out instead.
+- `ar_open` and `ar_placed` go to `/api/track`, which the dev server now runs
+  for real: `GET /api/track` returns what this process has collected.
+
+```bash
+npm run dev                       # http://127.0.0.1:8770/d/01H0NP1
+node scripts/export-glb.mjs --all --out-dir /tmp/glb    # every catalogue design, with sizes
+node scripts/test-design-glb.mjs  # the file, measured against the shelf it claims to be
+```
+
 ## Analytics and the event lake
 
 `js/site.js` emits checkpoint events to `/api/track` (Netlify Blobs); the ops
