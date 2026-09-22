@@ -10,8 +10,18 @@
  * Everything stays quantised -- positions as uint16, normals as int8 -- so the
  * expansion allocates a third of what float32 would, which matters on a phone
  * with 2-4GB of RAM shared with the browser.
+ *
+ * Wrapped the way engine.js is, so the same expansion runs in Node. The GLB
+ * exporter (netlify/functions/_glb.mjs) writes a design's placed vertices into
+ * a glTF binary for AR, and a second implementation of this dequantisation
+ * would be a silent way for the model on a customer's floor to disagree with
+ * the one in /builder. The browser branch is byte-for-byte what it was: a
+ * global named FrameworkDesignerGeometry.
  */
-window.FrameworkDesignerGeometry = (function () {
+(function (root, factory) {
+  if (typeof module !== "undefined" && module.exports) module.exports = factory();
+  else root.FrameworkDesignerGeometry = factory();
+})(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
   const FORMAT = "framework-module-geometry@1";
@@ -178,4 +188,4 @@ window.FrameworkDesignerGeometry = (function () {
   }
 
   return { load, expand, ROLE_STEEL: 0, ROLE_SURFACE: 1, ROLE_FOOT: 2, ROLE_PAPER: 3 };
-})();
+});
