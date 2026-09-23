@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="/css/builder.css?v=155">
+    <link rel="stylesheet" href="/css/builder.css?v=156">
 
     <!--
       Nothing can render until the catalogue arrives, and the app's own scripts
@@ -36,7 +36,7 @@
         // with a stale catalogue silently loses whatever the catalogue gained,
         // which is exactly what a CDN or a browser cache will hand you a few
         // minutes after a deploy. Bump this whenever any of them changes.
-        window.frameworkDesignerVersion = '155';
+        window.frameworkDesignerVersion = '156';
         window.frameworkDesignerCatalog =
             fetch('/assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
                 .then(function (response) {
@@ -80,10 +80,28 @@
                 <span>Help me design</span>
             </a>
 
-            <div class="nd-modes" role="tablist" aria-label="Interface level" id="nd-modes">
-                <button type="button" role="tab" data-mode="simple" aria-selected="true">Simple</button>
-                <button type="button" role="tab" data-mode="standard" aria-selected="false">Flexible</button>
-                <button type="button" role="tab" data-mode="advanced" aria-selected="false">Advanced</button>
+            <!--
+              How much of the tool is on show, as a quiet dropdown rather than a
+              row of tabs.
+
+              It was a segmented control in the middle of the header with the
+              current mode picked out in white on a shadow, which made the first
+              thing the eye met on arrival a choice between three words that mean
+              nothing until you have used the page. Simple is the right place to
+              start and the page already starts there, so this asks to be found
+              rather than answered: one word, the panel's own select styling,
+              along the top right where a setting belongs, next to undo and redo.
+
+              A real <select>, so a phone gives it a native picker and the
+              keyboard and screen reader behaviour come for free.
+            -->
+            <div class="nd-mode">
+                <select class="nd-mode-select" id="nd-mode" aria-label="How much of the tool to show"
+                    title="How much of the tool to show">
+                    <option value="simple">Simple</option>
+                    <option value="standard">Flexible</option>
+                    <option value="advanced">Advanced</option>
+                </select>
             </div>
 
             <div class="nd-history">
@@ -321,11 +339,11 @@
         </div>
     </div>
 
-    <script src="/js/builder/engine.js?v=155" defer></script>
-    <script src="/js/builder/geometry.js?v=155" defer></script>
-    <script src="/js/builder/renderer.js?v=155" defer></script>
-    <script src="/js/builder/present.js?v=155" defer></script>
-    <script src="/js/builder/app.js?v=155" defer></script>
+    <script src="/js/builder/engine.js?v=156" defer></script>
+    <script src="/js/builder/geometry.js?v=156" defer></script>
+    <script src="/js/builder/renderer.js?v=156" defer></script>
+    <script src="/js/builder/present.js?v=156" defer></script>
+    <script src="/js/builder/app.js?v=156" defer></script>
 
     <!--
       Analytics loads after the designer is interactive. On a mid-range phone

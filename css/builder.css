@@ -153,38 +153,39 @@ button { cursor: pointer; }
 }
 
 
-/* Interface switch — the one control that is identical in all three modes. */
-.nd-modes {
+/* The mode picker: a setting, not the page's headline.
+
+   It sits at the right of the header with the history buttons, because that is
+   where a setting belongs and because the middle of the header was drawing the
+   eye before the shelf did. Quiet by default (muted text, no fill, no border
+   until it is approached), and it uses the same chevron as the panel's own
+   selects so it reads as the same kind of control. */
+.nd-mode {
+  margin-left: auto;
+  flex: 0 0 auto;
   display: flex;
-  margin: 0 auto;
-  background: var(--nd-soft);
-  border: 1px solid var(--nd-line);
-  border-radius: 999px;
-  padding: 2px;
-  gap: 2px;
+  align-items: center;
 }
 
-.nd-modes button {
-  border: 0;
-  background: transparent;
+.nd-mode-select {
+  min-height: 38px;
+  padding: 0 30px 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--nd-radius);
+  background: transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2368726f' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 8px center;
+  background-size: 15px;
   color: var(--nd-muted);
-  /* 40 rather than 44: the header already carries its own 8px of padding, and
-     44 here makes a 60px header on an 812px phone, which costs the model more
-     than the four pixels are worth. */
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
+  font-family: inherit;
   font-size: .85rem;
   font-weight: 500;
-  line-height: 1;
-  white-space: nowrap;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
 }
 
-.nd-modes button[aria-selected="true"] {
-  background: var(--nd-panel);
+.nd-mode-select:hover, .nd-mode-select:focus-visible {
+  border-color: var(--nd-line);
   color: var(--nd-ink);
-  font-weight: 700;
-  box-shadow: 0 1px 2px rgba(32, 36, 36, .12);
 }
 
 .nd-history { display: flex; gap: 4px; flex: 0 0 auto; }
@@ -205,16 +206,17 @@ button { cursor: pointer; }
 .nd-iconbutton svg { width: 18px; height: 18px; }
 
 /*
- * On a 320px phone the mark, the three interface names and undo/redo came to
- * 386px and the row overflowed, putting redo off the edge of a page that
- * cannot scroll sideways. Everything gives up a little, and the mark gives up
- * the most: the interface switch and the history are the tool, and the logo is
- * a link to a homepage that the back button also reaches.
+ * On a 320px phone the mark, the mode picker and undo/redo have to share one
+ * row on a page that cannot scroll sideways. Everything gives up a little, and
+ * the mark gives up the most: the picker and the history are the tool, and the
+ * logo is a link to a homepage that the back button also reaches. (The row was
+ * overflowing at 386px when the modes were three tabs; the picker is one word,
+ * so there is more room now than these rules were written for.)
  */
 @media (max-width: 380px) {
   .nd-top { gap: 6px; padding-left: 8px; padding-right: 8px; }
   .nd-brand { display: none; }
-  .nd-modes button { padding: 0 8px; font-size: .76rem; }
+  .nd-mode-select { padding: 0 26px 0 6px; font-size: .78rem; background-position: right 6px center; }
   .nd-iconbutton svg { width: 16px; height: 16px; }
 }
 
@@ -641,13 +643,17 @@ button { cursor: pointer; }
   border-bottom: 1px solid var(--nd-line);
   flex: 0 0 auto;
 }
+/* The panel's own name. It is the heading of the half of the screen where the
+   shelf is actually made, so it is set in the page's ink rather than the grey
+   used for captions: with the mode picker quietened at the top, this is what
+   the eye should find first after the shelf itself. */
 .nd-panel-head h2 {
   margin: 0;
-  font-size: .8rem;
+  font-size: .84rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .06em;
-  color: var(--nd-muted);
+  letter-spacing: .07em;
+  color: var(--nd-ink);
   flex: 1 1 auto;
 }
 

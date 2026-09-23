@@ -262,7 +262,7 @@
     controls: el("nd-controls"),
     panelTitle: el("nd-panel-title"),
     collapse: el("nd-collapse"),
-    modes: el("nd-modes"),
+    mode: el("nd-mode"),
     undo: el("nd-undo"),
     redo: el("nd-redo"),
     zoomIn: el("nd-zoom-in"),
@@ -4667,9 +4667,13 @@
     ui.mode = next;
     dom.app.dataset.mode = next;
     dom.panelTitle.textContent = "Build";
-    Array.prototype.forEach.call(dom.modes.querySelectorAll("button"), (button) => {
-      button.setAttribute("aria-selected", String(button.dataset.mode === next));
-    });
+    /*
+     * The picker follows the mode rather than setting it, which matters on the
+     * way back: cancelling the Simple rebuild calls applyMode again with the
+     * previous mode, and without this the header would go on claiming the mode
+     * the customer just backed out of.
+     */
+    if (dom.mode && dom.mode.value !== next) dom.mode.value = next;
     ui.selectedId = null;
     ui.activeModuleId = null;
     ui.placedSinceChoose = false;
@@ -4817,11 +4821,11 @@
     dom.canvas.addEventListener("wheel", onWheel, { passive: false });
     dom.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
-    dom.modes.addEventListener("click", (event) => {
-      const button = event.target.closest("button[data-mode]");
-      if (!button || button.dataset.mode === ui.mode) return;
-      track("designer_mode", { mode: button.dataset.mode });
-      applyMode(button.dataset.mode, {});
+    dom.mode.addEventListener("change", () => {
+      const chosen = dom.mode.value;
+      if (chosen === ui.mode) return;
+      track("designer_mode", { mode: chosen });
+      applyMode(chosen, {});
     });
 
     dom.undo.addEventListener("click", undo);
