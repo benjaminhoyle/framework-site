@@ -205,3 +205,12 @@ model-viewer:not(:defined) {
     font-size: var(--t-small);
     color: var(--ink-soft, #55605b);
 }
+
+/* The line that goes with the AR button: what a phone can and cannot promise
+   about colour and size. Quiet, and only on screens where the button is. */
+.dp-caveat {
+    margin: 10px 0 0;
+    max-width: 46ch;
+    color: var(--muted);
+    font-size: var(--t-small);
+}

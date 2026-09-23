@@ -46,6 +46,7 @@
     var DECIDE_TIMEOUT_MS = 4000;
     var inApp = document.querySelector('[data-when="in-app"]');
     var noAr = document.querySelector('[data-when="no-ar"]');
+    var caveat = document.querySelector('.dp-caveat');
     var note = document.querySelector('.dp-stage-note');
 
     // The same two tests js/site.js uses for its `in_app_browser` dimension, so
@@ -90,7 +91,9 @@
         }
         var until = Date.now() + DECIDE_TIMEOUT_MS;
         (function poll() {
-            if (viewer && viewer.canActivateAR) return show(arButton);
+            // The caveat belongs to the offer: it appears with the button that
+            // stands the shelf in a room, and nowhere else.
+            if (viewer && viewer.canActivateAR) { show(arButton); return show(caveat); }
             if (Date.now() > until) return show(noAr);
             setTimeout(poll, 250);
         })();

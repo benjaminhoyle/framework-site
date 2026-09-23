@@ -295,6 +295,16 @@ function render(design) {
         <button type="button" class="dp-ar" hidden>See it on your wall</button>
 
         <!--
+          Said with the offer rather than in a footnote, because it is about what
+          the button does. A phone judges colour by the light in the room and
+          distance by a floor it is guessing at, so both are close rather than
+          exact, and a customer who measures by it should know that first.
+        -->
+        <p class="dp-caveat" hidden>Colours and sizes on screen are a guide. Phones
+           read colour and distance differently, so measure the space before you
+           order, and ask us for a colour sample if the finish matters.</p>
+
+        <!--
           What is said where the button cannot be. Both start hidden and
           js/design.js shows at most one: an Instagram or Facebook window, where
           AR cannot launch at all and the way out is to leave; or anything else
