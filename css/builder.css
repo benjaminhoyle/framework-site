@@ -136,6 +136,23 @@ button { cursor: pointer; }
   color: var(--nd-ink);
 }
 
+/* The header gives the word up at the same width the help button gives up its
+   own: hidden from the eye, kept for a screen reader, which still names the
+   select. */
+@media (max-width: 560px) {
+  .nd-mode-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
 @media (max-width: 560px) {
   .nd-help {
     width: 38px;
@@ -165,6 +182,17 @@ button { cursor: pointer; }
   flex: 0 0 auto;
   display: flex;
   align-items: center;
+  gap: 4px;
+}
+
+/* Quieter than the mode it labels, so the pair reads as one small setting
+   rather than two words competing. */
+.nd-mode-label {
+  color: var(--nd-muted);
+  font-size: .78rem;
+  font-weight: 500;
+  opacity: .85;
+  white-space: nowrap;
 }
 
 .nd-mode-select {
