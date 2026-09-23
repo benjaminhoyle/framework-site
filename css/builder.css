@@ -836,6 +836,13 @@ a.nd-button {
 /* And the same trap as .nd-present-code above: a display rule beats the hidden
    attribute, so "View in AR" would show before a design has a code to link to. */
 a.nd-button[hidden] { display: none; }
+/* Waiting on the save that the page it points at has to read. It looks like a
+   disabled button and, having no href, cannot be followed or focused. */
+a.nd-button[aria-disabled="true"] {
+  opacity: .4;
+  cursor: default;
+  pointer-events: none;
+}
 .nd-button-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .nd-confirm-row { margin-top: 6px; }
 .nd-button.is-primary {

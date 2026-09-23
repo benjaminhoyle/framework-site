@@ -2826,9 +2826,20 @@
     // than only behind Advanced's "Create link" is what keeps that address from
     // being one that 404s. It runs alongside the composition: the picture is
     // worth having even if the save does not land.
-    saveDesign()
-      .then((code) => { ui.savedCode = code; })
-      .catch((error) => console.warn("could not save the design behind the image:", error.message));
+    /*
+     * The save is not awaited, because the picture is worth having even if it
+     * does not land. But the AR link is a different matter: /d/<CODE> reads the
+     * record this POST writes, so a link offered before the write returns is a
+     * link to a page that says the design does not exist. The promise is
+     * therefore handed to showPresentCode, which keeps the link waiting until
+     * the server has confirmed the code.
+     */
+    const saving = saveDesign()
+      .then((code) => { ui.savedCode = code; return code; })
+      .catch((error) => {
+        console.warn("could not save the design behind the image:", error.message);
+        throw error;
+      });
 
     loadPresentLogo().then((logo) => {
       try {
@@ -2864,7 +2875,7 @@
         // The same code the image prints, offered as text: it is what the render
         // console is opened with, and reading seven characters off a picture and
         // retyping them is the one bit of manual transcription in the chain.
-        showPresentCode(content.code);
+        showPresentCode(content.code, saving);
         dom.presentModal.hidden = false;
         track("designer_present", { mode: ui.mode, view: ui.renderer.getViewMode() });
       } catch (error) {
@@ -2883,19 +2894,37 @@
    * selecting the text and letting a long-press copy what is already
    * highlighted.
    */
-  function showPresentCode(code) {
+  function showPresentCode(code, saving) {
     if (!dom.presentCode || !code) return;
     dom.presentCodeValue.textContent = code;
     dom.presentCode.hidden = false;
     /*
-     * The design's own page, /d/<CODE>, which is where the shelf can be stood
-     * in a room at full size. It is safe to link by the time this runs: the
-     * code exists because the design has just been saved through /api/design,
-     * which is the same record the page resolves.
+     * The design's own page, /d/<CODE>, where the shelf can be stood in a room
+     * at full size. The link waits for the save: the page reads the record that
+     * POST /api/design writes, and on a phone that request can still be in
+     * flight while somebody is already reading the code. Offering the link
+     * first is how you get a page that says the design does not exist, seconds
+     * after making it.
+     *
+     * So the button is shown from the start, to keep the row from jumping, but
+     * it is not a link until the server has answered with the code. If the save
+     * fails it stays that way and says so: a dead link is worse than none.
      */
     if (dom.presentAr) {
-      dom.presentAr.href = "/d/" + encodeURIComponent(code);
       dom.presentAr.hidden = false;
+      dom.presentAr.removeAttribute("href");
+      dom.presentAr.setAttribute("aria-disabled", "true");
+      dom.presentAr.title = "Saving the design...";
+      Promise.resolve(saving).then(
+        (savedCode) => {
+          dom.presentAr.href = "/d/" + encodeURIComponent(savedCode || code);
+          dom.presentAr.removeAttribute("aria-disabled");
+          dom.presentAr.title = "Open this design and stand it in your room";
+        },
+        () => {
+          dom.presentAr.title = "The design could not be saved, so it has no page yet";
+        }
+      );
     }
     dom.presentCodeCopy.textContent = "Copy";
     dom.presentCodeCopy.onclick = () => {
@@ -2924,7 +2953,11 @@
     if (dom.presentCode) dom.presentCode.hidden = true;
     // Hidden again with its row, so a design saved later cannot inherit the
     // previous one's link for the instant before it is rewritten.
-    if (dom.presentAr) { dom.presentAr.hidden = true; dom.presentAr.removeAttribute("href"); }
+    if (dom.presentAr) {
+      dom.presentAr.hidden = true;
+      dom.presentAr.removeAttribute("href");
+      dom.presentAr.setAttribute("aria-disabled", "true");
+    }
   }
 
   // ------------------------------------------------------ share / URL state --

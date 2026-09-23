@@ -409,6 +409,7 @@ function notFound() {
 <h1>That design could not be found</h1>
 <p>The code may have been mistyped. Design codes are seven characters, as printed
    on the picture the shelf came in.</p>
+<p>If the design was made moments ago, give it a few seconds and reload this page.</p>
 <div class="pg-doors"><a class="pg-door" href="/d"><b>Try another code</b>
 <span>Seven characters, from your picture or your quote</span></a>
 <a class="pg-door pg-door-dark" href="/builder"><b>Design one</b>

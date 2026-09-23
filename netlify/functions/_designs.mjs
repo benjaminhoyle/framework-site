@@ -62,15 +62,45 @@ export function loadBundle(origin, moduleId) {
   return bundlePromises.get(moduleId);
 }
 
+/*
+ * A design that was made a second ago.
+ *
+ * /builder shows the code as soon as it has composed the picture, while the
+ * POST that stores the design may still be in flight, and the store itself
+ * takes a moment to settle after the write returns. Somebody who taps straight
+ * through from the share window can therefore arrive here before the record
+ * does, and be told their shelf does not exist.
+ *
+ * The builder now holds its own link back until the save has answered, which
+ * removes the race at the only place that can know about it. This is the other
+ * half: a code that looks well formed but is not in the store yet is worth one
+ * short second look before the page gives up, because the alternative is a page
+ * that is wrong for a moment rather than late for one. Two retries, 400ms
+ * apart, and only on the miss path, so nothing that resolves normally waits.
+ */
+const RETRY_MS = [400, 800];
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function readDesign(origin, code) {
-  try {
-    const stored = await fetchJson(`${origin}/api/design?code=${encodeURIComponent(code)}`);
-    if (stored && stored.ok) return stored;
-  } catch (error) {
-    // Not found in the blob store is the ordinary case for a catalogue design,
-    // not a fault. Fall through to the file.
+  for (let attempt = 0; attempt <= RETRY_MS.length; attempt += 1) {
+    try {
+      const stored = await fetchJson(`${origin}/api/design?code=${encodeURIComponent(code)}`);
+      if (stored && stored.ok) return stored;
+    } catch (error) {
+      // Not found in the blob store is the ordinary case for a catalogue
+      // design, not a fault. Fall through to the file.
+    }
+    try {
+      return await fetchJson(`${origin}/data/builder-designs/${encodeURIComponent(code)}.json`);
+    } catch (error) {
+      // A catalogue design would have been found by now, so this is either a
+      // code that does not exist or one that is a moment away from existing.
+      if (attempt === RETRY_MS.length) throw error;
+      await sleep(RETRY_MS[attempt]);
+    }
   }
-  return fetchJson(`${origin}/data/builder-designs/${encodeURIComponent(code)}.json`);
+  return null;
 }
 
 /**
