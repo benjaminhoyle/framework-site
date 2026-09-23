@@ -4325,8 +4325,12 @@
     const send = make("button", "nd-button is-primary", "Create draft invoice");
     send.type = "button";
     send.addEventListener("click", async () => {
-      if (!ui.design.instances.length) return say("There are no pieces on this design.", true);
-      if (ui.design.instances.every((instance) => instance.omitted)) {
+      // Bookends are a count on the design, not pieces, and are billed on their
+      // own: an order of bookends alone, for a shelf the client already owns
+      // (drawn and omitted, or not drawn at all), is a real order.
+      const bookends = ui.design.bookends > 0;
+      if (!ui.design.instances.length && !bookends) return say("There are no pieces on this design.", true);
+      if (!bookends && ui.design.instances.every((instance) => instance.omitted)) {
         return say("Every piece on this design is left out of the invoice, so there is nothing to bill.", true);
       }
       if (!rep.value) return say("Say who is raising this.", true);
