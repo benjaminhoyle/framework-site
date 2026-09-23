@@ -167,10 +167,6 @@ function render(design) {
   const wa = `https://wa.me/254783891005?text=${encodeURIComponent(
     `Hi Framework! I'm looking at design ${design.code} (${title}, ${design.finishName}, ${price}). ${here}`
   )}`;
-  // Its own first line, so /monitor can count gift chats apart from the rest.
-  const waGift = `https://wa.me/254783891005?text=${encodeURIComponent(
-    `Hi Framework! I'd like to buy design ${design.code} for someone else. ${here}`
-  )}`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -334,23 +330,6 @@ function render(design) {
                it could be delivered.</p>
             <a class="pg-wa" href="${wa}" target="_blank" rel="noopener noreferrer"
                data-fwk-handoff="design_page">Ask about design ${design.code}</a>
-        </div>
-
-        <!--
-          Added 23 Sep 2026 (framework-marketing/research/second-pass-2026-09-23):
-          Kenyans abroad buying for family in Nairobi, and colleagues who pool
-          money for a send-off, both need the one thing this page already does,
-          which is to let the person receiving the shelf see it in their own
-          room before anyone pays.
-        -->
-        <div class="pg-ask dp-for-someone">
-            <h2>Buying it for someone else?</h2>
-            <p>For family in Nairobi while you are abroad, or from a collection for
-               a colleague: send them this link, and they can stand the shelf in
-               their own room at its real size first. One person pays, and we
-               deliver it assembled within a week.</p>
-            <a class="pg-wa" href="${waGift}" target="_blank" rel="noopener noreferrer"
-               data-fwk-handoff="design_page_gift">Ask about a gift</a>
         </div>
 
         <div class="pg-doors">
