@@ -139,7 +139,7 @@ const quiet = () => {};
   ok(wa, "the ask is a wa.me link on the site's phone number with ?text=");
   ok(decodeURIComponent(wa[1].split("text=")[1]) === "I'd like shelving for a rented apartment.", "the prefilled message is the draft's whatsapp line");
   ok(html.includes('data-fwk-handoff="blog"') && html.includes("trackContactConversion('', {link_target:'blog_whatsapp'"), "the handoff is tracked like the header's");
-  ok(html.includes("Kindly share what the shelf is for, and we&#39;ll") || html.includes("Kindly share what the shelf is for, and we'll"), "the house ask line");
+  ok(!/revert back with design ideas/.test(html), "no 'kindly share what the shelf is for' line: Ben dropped it on 23 Sep 2026");
   ok(html.includes('"@type":"BlogPosting"') && html.includes('"datePublished":"2026-09-09"'), "BlogPosting JSON-LD");
   ok(!html.includes("\u2014"), "no em dash in the page");
 

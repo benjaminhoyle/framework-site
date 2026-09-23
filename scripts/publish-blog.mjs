@@ -62,6 +62,8 @@ export const DO_NOT_WRITE = [
   { phrase: "seamless", pattern: /\bseamless\w*/i },
   { phrase: "effortless", pattern: /\beffortless\w*/i },
   { phrase: "game-changing", pattern: /\bgame[- ]chang\w*/i },
+  // Dropped by Ben on 2026-09-23, from the blog footer and the Google ads alike.
+  { phrase: "revert back with design ideas", pattern: /revert back with design ideas/i },
 ];
 
 export const MODULAR_SENTENCE =
