@@ -83,6 +83,7 @@ const RETRY_MS = [400, 800];
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function readDesign(origin, code) {
+  let missing = null;
   for (let attempt = 0; attempt <= RETRY_MS.length; attempt += 1) {
     try {
       const stored = await fetchJson(`${origin}/api/design?code=${encodeURIComponent(code)}`);
@@ -91,16 +92,22 @@ export async function readDesign(origin, code) {
       // Not found in the blob store is the ordinary case for a catalogue
       // design, not a fault. Fall through to the file.
     }
-    try {
-      return await fetchJson(`${origin}/data/builder-designs/${encodeURIComponent(code)}.json`);
-    } catch (error) {
-      // A catalogue design would have been found by now, so this is either a
-      // code that does not exist or one that is a moment away from existing.
-      if (attempt === RETRY_MS.length) throw error;
-      await sleep(RETRY_MS[attempt]);
+    /*
+     * The catalogue's own designs are files in the repo, so they are either
+     * there on the first look or they are never coming. Only the store is worth
+     * asking twice, which keeps a wrong code down to one round trip plus the
+     * waiting rather than three of each.
+     */
+    if (attempt === 0) {
+      try {
+        return await fetchJson(`${origin}/data/builder-designs/${encodeURIComponent(code)}.json`);
+      } catch (error) {
+        missing = error;
+      }
     }
+    if (attempt < RETRY_MS.length) await sleep(RETRY_MS[attempt]);
   }
-  return null;
+  throw missing || new Error(`${code}: HTTP 404`);
 }
 
 /**
