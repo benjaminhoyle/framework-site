@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="/css/builder.css?v=157">
+    <link rel="stylesheet" href="/css/builder.css?v=159">
 
     <!--
       Nothing can render until the catalogue arrives, and the app's own scripts
@@ -36,7 +36,7 @@
         // with a stale catalogue silently loses whatever the catalogue gained,
         // which is exactly what a CDN or a browser cache will hand you a few
         // minutes after a deploy. Bump this whenever any of them changes.
-        window.frameworkDesignerVersion = '157';
+        window.frameworkDesignerVersion = '159';
         window.frameworkDesignerCatalog =
             fetch('/assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
                 .then(function (response) {
@@ -105,12 +105,28 @@
                   reader, which is also what names the control.
                 -->
                 <label class="nd-mode-label" for="nd-mode">Mode</label>
-                <select class="nd-mode-select" id="nd-mode"
-                    title="How much of the tool to show">
-                    <option value="simple">Simple</option>
-                    <option value="standard">Flexible</option>
-                    <option value="advanced">Advanced</option>
-                </select>
+                <!--
+                  The value and the chevron are drawn, and the real <select>
+                  lies over them, transparent. A native select sizes itself to
+                  its widest option, so with "Advanced" in the list the chevron
+                  sat a word's width away from "Simple" and the pair read as two
+                  unrelated words. This way the control is as wide as what it
+                  says, while the thing being clicked, focused and read out is
+                  still the select, and a phone still opens its own picker.
+                -->
+                <span class="nd-mode-field">
+                    <span class="nd-mode-value" id="nd-mode-value" aria-hidden="true">Simple</span>
+                    <svg class="nd-mode-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                    <select class="nd-mode-select" id="nd-mode"
+                        title="How much of the tool to show">
+                        <option value="simple">Simple</option>
+                        <option value="standard">Flexible</option>
+                        <option value="advanced">Advanced</option>
+                    </select>
+                </span>
             </div>
 
             <div class="nd-history">
@@ -348,11 +364,11 @@
         </div>
     </div>
 
-    <script src="/js/builder/engine.js?v=157" defer></script>
-    <script src="/js/builder/geometry.js?v=157" defer></script>
-    <script src="/js/builder/renderer.js?v=157" defer></script>
-    <script src="/js/builder/present.js?v=157" defer></script>
-    <script src="/js/builder/app.js?v=157" defer></script>
+    <script src="/js/builder/engine.js?v=159" defer></script>
+    <script src="/js/builder/geometry.js?v=159" defer></script>
+    <script src="/js/builder/renderer.js?v=159" defer></script>
+    <script src="/js/builder/present.js?v=159" defer></script>
+    <script src="/js/builder/app.js?v=159" defer></script>
 
     <!--
       Analytics loads after the designer is interactive. On a mid-range phone

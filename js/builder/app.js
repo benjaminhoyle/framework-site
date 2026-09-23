@@ -263,6 +263,7 @@
     panelTitle: el("nd-panel-title"),
     collapse: el("nd-collapse"),
     mode: el("nd-mode"),
+    modeValue: el("nd-mode-value"),
     undo: el("nd-undo"),
     redo: el("nd-redo"),
     zoomIn: el("nd-zoom-in"),
@@ -4674,6 +4675,8 @@
      * the customer just backed out of.
      */
     if (dom.mode && dom.mode.value !== next) dom.mode.value = next;
+    // The word beside it is drawn, not the select's own, so it has to be told.
+    if (dom.modeValue) dom.modeValue.textContent = MODE_LABELS[next] || next;
     ui.selectedId = null;
     ui.activeModuleId = null;
     ui.placedSinceChoose = false;
