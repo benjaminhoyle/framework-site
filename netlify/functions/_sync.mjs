@@ -138,6 +138,25 @@ export function zeroCharge(fields) {
 }
 
 /**
+ * An invoice that charges for a trip and nothing else.
+ *
+ * Ben, 2026-09-23: a delivery-only invoice is never an order. It is a
+ * re-delivery, a move, a second drop for an order already in the pipeline; the
+ * money stays in Zoho, which owns it, and if the driver has to go, the trip is
+ * scheduled in Airtable against the order it belongs to. Before this the sync
+ * would have built an order with no lines in the production queue, and for the
+ * older ones it reported "paid with no order" rows nobody could act on
+ * (INV640228, INV640287).
+ *
+ * At least one delivery line and no goods line at all. Goods given away with
+ * only the delivery billed (`249_Pocket-Libraries`) is still a shelf going out,
+ * so it is still an order. Takes `zoho.money()`, whose `lines` are the goods.
+ */
+export function deliveryOnly(m) {
+  return Boolean(m.hasDeliveryLine) && !(m.lines || []).length;
+}
+
+/**
  * A custom field's real value, not the one Zoho formatted for display.
  *
  * Every custom field comes back three times: `cf_delivery_date` is
@@ -832,6 +851,10 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
       // things that are fine is how a list stops being read.
       const workType = cfv(full.custom_field_hash, 'cf_work_type');
       const wantStatus = orderStatusFor(full.status, heldCredit(full));
+
+      // A delivery-only invoice is neither created nor reported: see
+      // `deliveryOnly`.
+      if (deliveryOnly(zoho.money(full))) continue;
 
       // -- create it, when everything about it is unambiguous
       //

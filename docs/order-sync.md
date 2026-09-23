@@ -770,7 +770,7 @@ movement and the round trip disappears.
 
 ### What has to be true before one is created
 
-Four conditions, each somebody's decision rather than a technicality:
+Five conditions, each somebody's decision rather than a technicality:
 
 | | |
 |---|---|
@@ -778,6 +778,7 @@ Four conditions, each somebody's decision rather than a technicality:
 | Paid, part-paid, sent, or awaiting approval | Ben's rule, 2026-08-31: paid or part-paid starts as **To Launch Production**, merely sent as **Invoice Sent**. Never a draft — that is a quote somebody is still editing — and never a void. Since 2026-09-21 an invoice submitted for approval (`pending_approval`, `approved`) counts too: clients pay and orders are confirmed before approval. Zoho cannot apply a payment to an unapproved invoice, so the customer's unused credit is read as paid: any credit starts the order as **To Launch Production**, and comes off `Balance to Pay`. |
 | Dated on or after `CREATE_ORDERS_FROM` | A fixed date in the code, not "today" computed at runtime: a floor that moves with the clock is not a floor. New invoices only, so a year of finished history does not materialise as live orders overnight. |
 | Nothing already claims the invoice number | The whole duplicate defence. |
+| It charges for goods, not only for delivery | Ben, 2026-09-23: a delivery-only invoice is never an order. It is a re-delivery, a move, a second drop for an order already in the pipeline; the money stays in Zoho, and if the driver has to go, the trip is scheduled in Airtable against the order it belongs to. Without this the sync would build an order with no lines in the production queue. `deliveryOnly()` in `_sync.mjs`: at least one delivery line and no goods line. Goods given away with only the delivery billed (`249_Pocket-Libraries`) is still a shelf going out, so it is still an order. |
 
 ### The duplicate defence, and the marker we cannot write
 
@@ -890,6 +891,9 @@ something a person can act on — which took removing four things that were not:
 - **`paid-invoice-no-order` is Shelving only.** Orders - Pipeline is the shelving
   pipeline; a window job has no order to be missing. 17 of the 25 it reported
   were Custom Projects.
+- **`paid-invoice-no-order` skips a delivery-only invoice** (2026-09-23), for the
+  same reason one is never created: a trip has no order to be missing. The two it
+  had been reporting, INV640228 and INV640287, were marked Ignored the same day.
 - **Catch-all products are not findings.** `Custom Item` is an Airtable product
   with no Zoho twin and never will have one — that is what it is for.
 - **A payment date within a week is the normal working gap.** Airtable records

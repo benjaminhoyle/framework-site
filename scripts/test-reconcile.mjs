@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import {
   reconcile, canonicalItem, matchProducts, hhmmToSeconds, seedDelivery, daysApart, unmatchedLines,
   orderStatusFor, cfv, orderFieldsFromInvoice, lineFieldsFromInvoice, resolveClient, CREATE_ORDERS_FROM,
-  VAT_EXEMPT_CHECK_FROM, HAND_ORDERS_STOPPED
+  VAT_EXEMPT_CHECK_FROM, HAND_ORDERS_STOPPED, deliveryOnly
 } from '../netlify/functions/_sync.mjs';
 
 let passed = 0;
@@ -1147,6 +1147,36 @@ await test('a draft, a void and a non-Shelving invoice create nothing', async ()
   assert.equal((await run(world({ status: 'void' }))).pending.creates.length, 0);
   // Orders - Pipeline IS the shelving pipeline; a window job has no order to be.
   assert.equal((await run(world({ custom_field_hash: { cf_work_type: 'Custom Projects' } }))).pending.creates.length, 0);
+});
+
+await test('a delivery-only invoice is never an order, and never reported as missing one', async () => {
+  // Ben, 2026-09-23. A trip is charged in Zoho and scheduled against the order
+  // it belongs to; it is not a row in the shelving pipeline. INV640228 and
+  // INV640287 sat in the log as "paid with no order" until they were Ignored.
+  const trip = (date) => ({
+    clients: [client('c1', '900')],
+    invoices: [invoice('INV1', [zline('Delivery Fees', 1, 2500)], { customer_id: '900', date })]
+  });
+  for (const date of ['2026-09-10', '2025-05-20']) {
+    const r = await run(trip(date));
+    assert.equal(r.pending.creates.length, 0, `no order from a delivery-only invoice dated ${date}`);
+    assert.equal(of(r, 'paid-invoice-no-order').length, 0, `nothing reported for one dated ${date}`);
+  }
+  assert.ok(deliveryOnly({ hasDeliveryLine: true, lines: [] }));
+  assert.ok(!deliveryOnly({ hasDeliveryLine: false, lines: [] }), 'no lines at all is not a trip');
+});
+
+await test('goods given away with only the delivery billed is still an order', async () => {
+  // 249_Pocket-Libraries: the shelf went out free and 1,500 of delivery was
+  // charged. A shelf leaving the workshop is an order, whatever it cost.
+  const r = await run({
+    clients: [client('c1', '900')],
+    invoices: [invoice('INV1', [
+      { ...zline('Standard Base', 1, 6500), item_total: 0 },
+      zline('Delivery Fees', 1, 1500)
+    ], { customer_id: '900', date: '2026-09-10' })]
+  });
+  assert.equal(r.pending.creates.length, 1);
 });
 
 await test('an invoice older than the start date is left alone', async () => {
