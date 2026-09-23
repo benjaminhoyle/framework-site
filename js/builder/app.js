@@ -296,7 +296,8 @@
     presentHint: el("nd-present-hint"),
     presentCode: el("nd-present-code"),
     presentCodeValue: el("nd-present-code-value"),
-    presentCodeCopy: el("nd-present-code-copy")
+    presentCodeCopy: el("nd-present-code-copy"),
+    presentAr: el("nd-present-ar")
   };
 
   const ui = {
@@ -2886,6 +2887,16 @@
     if (!dom.presentCode || !code) return;
     dom.presentCodeValue.textContent = code;
     dom.presentCode.hidden = false;
+    /*
+     * The design's own page, /d/<CODE>, which is where the shelf can be stood
+     * in a room at full size. It is safe to link by the time this runs: the
+     * code exists because the design has just been saved through /api/design,
+     * which is the same record the page resolves.
+     */
+    if (dom.presentAr) {
+      dom.presentAr.href = "/d/" + encodeURIComponent(code);
+      dom.presentAr.hidden = false;
+    }
     dom.presentCodeCopy.textContent = "Copy";
     dom.presentCodeCopy.onclick = () => {
       const done = () => {
@@ -2911,6 +2922,9 @@
     dom.presentModal.hidden = true;
     dom.presentImage.removeAttribute("src");
     if (dom.presentCode) dom.presentCode.hidden = true;
+    // Hidden again with its row, so a design saved later cannot inherit the
+    // previous one's link for the instant before it is rewritten.
+    if (dom.presentAr) { dom.presentAr.hidden = true; dom.presentAr.removeAttribute("href"); }
   }
 
   // ------------------------------------------------------ share / URL state --

@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="/css/builder.css?v=153">
+    <link rel="stylesheet" href="/css/builder.css?v=154">
 
     <!--
       Nothing can render until the catalogue arrives, and the app's own scripts
@@ -36,7 +36,7 @@
         // with a stale catalogue silently loses whatever the catalogue gained,
         // which is exactly what a CDN or a browser cache will hand you a few
         // minutes after a deploy. Bump this whenever any of them changes.
-        window.frameworkDesignerVersion = '153';
+        window.frameworkDesignerVersion = '154';
         window.frameworkDesignerCatalog =
             fetch('/assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
                 .then(function (response) {
@@ -281,6 +281,13 @@
                         <span class="nd-present-code-label">Design code</span>
                         <code id="nd-present-code-value"></code>
                         <button type="button" class="nd-button is-small" id="nd-present-code-copy">Copy</button>
+                        <!-- The same shelf on its own page, where it can be
+                             stood in the room at full size. An anchor rather
+                             than a button: it is a link, and it opens in its
+                             own tab so the design being worked on is still
+                             here when the tab is closed. -->
+                        <a class="nd-button is-small" id="nd-present-ar" target="_blank"
+                           rel="noopener noreferrer" hidden>View in AR</a>
                     </div>
                 </div>
             </div>
@@ -314,11 +321,11 @@
         </div>
     </div>
 
-    <script src="/js/builder/engine.js?v=153" defer></script>
-    <script src="/js/builder/geometry.js?v=153" defer></script>
-    <script src="/js/builder/renderer.js?v=153" defer></script>
-    <script src="/js/builder/present.js?v=153" defer></script>
-    <script src="/js/builder/app.js?v=153" defer></script>
+    <script src="/js/builder/engine.js?v=154" defer></script>
+    <script src="/js/builder/geometry.js?v=154" defer></script>
+    <script src="/js/builder/renderer.js?v=154" defer></script>
+    <script src="/js/builder/present.js?v=154" defer></script>
+    <script src="/js/builder/app.js?v=154" defer></script>
 
     <!--
       Analytics loads after the designer is interactive. On a mid-range phone

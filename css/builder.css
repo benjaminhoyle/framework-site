@@ -833,6 +833,9 @@ a.nd-button {
   justify-content: center;
   text-decoration: none;
 }
+/* And the same trap as .nd-present-code above: a display rule beats the hidden
+   attribute, so "View in AR" would show before a design has a code to link to. */
+a.nd-button[hidden] { display: none; }
 .nd-button-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .nd-confirm-row { margin-top: 6px; }
 .nd-button.is-primary {
