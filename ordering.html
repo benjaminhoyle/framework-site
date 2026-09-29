@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Ordering, delivery and payment | Framework Nairobi</title>
+    <!--
+      /ordering: what someone needs before they pay. Written 29 September 2026
+      after Ian's advice that pages answering general questions earn little now
+      that Google's AI summary answers them, while pages about buying from
+      Framework itself cannot be replaced by a summary.
+
+      Every fact here has a source, so change the source first:
+        prices          data/catalog.json (the catalogue's own)
+        how to order    the builder's "Order on WhatsApp" message, js/builder/app.js
+        payment         the terms on page 2 of every Zoho invoice ("Payment in
+                        full is required before orders can be processed")
+        delivery        "within a week of payment", as on /how and the journal;
+                        the fee is by area and Ben chose to publish no figure
+        returns, defects  the same invoice terms, word for word in meaning
+        how much it holds  Ben, 29 Sep: very strong, and no number
+        where to see one   the team's own WhatsApp reply, September 2026
+
+      Quiet on purpose: one picture, the questions, one ask. No doors, no
+      colors strip, nothing in the footer.
+    -->
+    <meta name="description"
+        content="How to order a Framework shelf, how payment and delivery work in Nairobi, what happens if something is wrong, and where to see one first.">
+    <link rel="canonical" href="https://www.framework.co.ke/ordering">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.framework.co.ke/ordering">
+    <meta property="og:site_name" content="Framework Designs">
+    <meta property="og:title" content="Ordering, delivery and payment">
+    <meta property="og:description" content="How to order a Framework shelf, how payment and delivery work in Nairobi, what happens if something is wrong, and where to see one first.">
+    <meta property="og:image" content="https://www.framework.co.ke/images/shelving/configs/client-space.jpg">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="/images/global/fwk-icon-lg.png">
+    <!-- === TRACKING === -->
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1492649948884685');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1492649948884685&ev=PageView&noscript=1"/></noscript>
+    <!-- End Meta Pixel Code -->
+    <!-- Google tag (gtag.js): one loader for Google Ads and GA4, as on /how. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16875113878"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'AW-16875113878');
+        gtag('config', 'G-HXHT6KGZT3');
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
+    <!-- styles.css carries the header and footer that js/site.js injects;
+         pages.css the type roles and the ask; ordering.css the column. -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/pages.css">
+    <link rel="stylesheet" href="/css/ordering.css">
+    <script src="/js/site.js"></script>
+</head>
+
+<body>
+
+    <main class="pg ordering">
+        <section class="ordering-intro">
+            <h1>Ordering, delivery and payment</h1>
+            <p>What to know before you order a shelf from us, from the price to the day it arrives.</p>
+        </section>
+
+        <figure>
+            <img class="pg-shot" src="/images/shelving/configs/client-space.jpg"
+                srcset="/images/shelving/configs/w400/client-space.jpg 400w, /images/shelving/configs/w800/client-space.jpg 800w, /images/shelving/configs/client-space.jpg 959w"
+                sizes="(min-width: 768px) 672px, calc(100vw - 48px)"
+                alt="A sage green Framework shelf full of books in a customer's sitting room, beside an armchair and a floor lamp."
+                width="959" height="1200">
+            <figcaption class="pg-shown">A customer's shelf at home, in Sage.</figcaption>
+        </figure>
+
+        <section class="ordering-q">
+            <h2>What does a shelf cost?</h2>
+            <p>Every price is on <a href="/shelving.html">our shelving page</a>, and it is the same for everyone. Units start at Ksh&nbsp;6,500 for The Starter. The Quadruple, a four-tier bookcase, is Ksh&nbsp;17,500, and The Double Bay, with ten shelves, is Ksh&nbsp;46,000.</p>
+            <p>Our shelves are modular, which means they are made of separate parts that stack together. A shelf costs what its parts cost, so you can start with one unit and add more later.</p>
+            <p>Delivery is charged separately.</p>
+        </section>
+
+        <section class="ordering-q">
+            <h2>How do I order?</h2>
+            <p>Message us on WhatsApp with the shelf you like, by its name or a picture from our site, and we'll send you an invoice. If you'd like it wider, taller or in another color, we can change the design with you first.</p>
+            <p>Or design it yourself in <a href="/builder">our builder</a>, which prices the shelf as you go. When it looks right, tap Order on WhatsApp. The message carries your design, its pieces, its color and its price, so we can send the invoice straight back.</p>
+        </section>
+
+        <section class="ordering-q">
+            <h2>How do I pay?</h2>
+            <p>We ask for full payment before we make the shelf, by M-Pesa or bank transfer. The payment details are at the bottom of the invoice.</p>
+            <p>Prices include VAT, and we provide an ETR invoice in whichever name you give us. A bank transfer to our Kenyan account also works from abroad, if you are <a href="/blog/buying-a-shelf-for-someone-in-nairobi.html">buying for someone in Nairobi</a>.</p>
+        </section>
+
+        <section class="ordering-q">
+            <h2>When will it arrive, and what does delivery cost?</h2>
+            <p>We make every unit at our workshop in Dagoretti Corner and deliver within Nairobi, assembled, within a week of payment. We agree the day and a time with you.</p>
+            <p>Delivery is charged by area, and we tell you the fee before you pay. You are also welcome to collect from the workshop, with no delivery fee.</p>
+        </section>
+
+        <section class="ordering-q">
+            <h2>What if something is wrong?</h2>
+            <p>If a shelf has a defect in its materials or workmanship, we repair or replace it free of charge. Kindly tell us within 7 days of delivery. Wear and tear after delivery is not covered.</p>
+            <p>If your order is under Ksh&nbsp;20,000, you can also return it at delivery, for store credit. The delivery fee is not refunded, and a later delivery is charged again.</p>
+        </section>
+
+        <section class="ordering-q">
+            <h2>How much does a shelf hold?</h2>
+            <p>Our shelves have a steel frame, and they are very strong. A full row of hardbacks, or a television on a low unit, is well within what a shelf carries.</p>
+        </section>
+
+        <section class="ordering-q">
+            <h2>Where can I see one?</h2>
+            <p>We don't have a showroom yet, but you are welcome to visit <a href="https://maps.app.goo.gl/dRCEbic6Zi7jWGVY7" target="_blank" rel="noopener noreferrer">our workshop in Dagoretti Corner</a> and see units being made. Kindly message us first to agree a time.</p>
+            <p>Units are also on display at Knead Artisanal Bakery in Westlands and Cheche Books in Lavington.</p>
+            <p>Every design on our site has its own page, where you can stand the shelf in your room at its real size through your phone camera. Colors on screen are a guide, so if you'd like to see <a href="/customize">one of our four colors</a> in person, ask us for a sample.</p>
+        </section>
+
+        <section class="pg-ask">
+            <h2>Anything else you'd like to know?</h2>
+            <p>Message us and we'll be happy to assist.</p>
+            <!-- Prefilled per AGENTS.md, in the customer's own phrasing ("I'd
+                 like", VOICE.md). js/site.js adds the short code on click and
+                 beacons the handoff with source "ordering". -->
+            <a class="pg-wa"
+                href="https://wa.me/254783891005?text=Hello%2C%20I%27d%20like%20to%20ask%20about%20ordering%20a%20shelf."
+                target="_blank" rel="noopener noreferrer" data-fwk-handoff="ordering"
+                onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{link_target:'ordering_page',content_category:'ordering_page'});}">Message us on WhatsApp</a>
+        </section>
+    </main>
+
+</body>
+
+</html>

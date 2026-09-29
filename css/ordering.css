@@ -1,0 +1,34 @@
+/*
+ * /ordering: one column of questions and answers, on the type roles and the
+ * ask from css/pages.css. This file is only the column, the space between
+ * the questions, and the links inside the answers.
+ */
+
+.ordering {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: clamp(48px, 9vh, 96px) 24px clamp(64px, 8vw, 96px);
+}
+
+/* The questions are kept apart by space, not by rules or boxes. */
+.ordering > * + * { margin-top: var(--gap); }
+
+/* The picture belongs to the intro, so it sits closer to it than the
+   questions sit to each other. */
+.ordering figure { margin: 0; }
+.ordering > .ordering-intro + figure { margin-top: 32px; }
+
+.ordering figcaption { margin-top: 12px; }
+
+/* Links inside the answers are body text that happens to be a link:
+   underlined, never colored like a button. */
+.ordering-q a,
+.ordering-intro a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+.ordering-q a:hover,
+.ordering-q a:focus { text-decoration-thickness: 2px; }

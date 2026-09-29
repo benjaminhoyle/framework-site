@@ -93,6 +93,13 @@
   to = "/customize.html"
   status = 200
 
+# What someone needs before they pay: price, ordering, payment, delivery,
+# returns, and where to see one. The link the team sends when those come up.
+[[redirects]]
+  from = "/ordering"
+  to = "/ordering.html"
+  status = 200
+
 # The page was /colors until 2026-09-15, when it took in the add-ons and became
 # /customize. /colors is in replies already sent and is still the natural link
 # for colors, so it lands on the same page, at the top, where the colors are.
