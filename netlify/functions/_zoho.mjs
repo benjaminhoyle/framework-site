@@ -152,6 +152,11 @@ export function invoicesCreatedSince(date) {
   return pageAll('/invoices', 'invoices', { created_date_start: date });
 }
 
+/** Every invoice for one client, newest first, any status. */
+export function invoicesFor(customerId) {
+  return pageAll('/invoices', 'invoices', { customer_id: customerId });
+}
+
 /**
  * One invoice in full.
  *

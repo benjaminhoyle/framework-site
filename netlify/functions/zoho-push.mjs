@@ -48,7 +48,7 @@ import {
   groupDesign, buildLineItems, linesTotal, quoteDrift,
   deliveryLine, goodsLines, isDeliveryName, moneyValue, contactDetails, contactName, contactUpdate,
   newContactPayload, airtableClientPatch, clientDisagreement, normalisePin,
-  exemptLines, exemptionProblems, alreadyRaised
+  exemptLines, exemptionProblems, alreadyRaised, isOpenInvoice, sameGoods
 } from './_push.mjs';
 import * as zoho from './_zoho.mjs';
 
@@ -280,6 +280,22 @@ async function search(query) {
 
 // --------------------------------------------------------------------- push --
 
+/**
+ * The client's open invoice selling the same goods, or null.
+ *
+ * The list response carries no lines, so each open invoice is fetched in full.
+ * A client rarely has more than one or two open, and the newest ten are
+ * plenty: a twin is a recent invoice.
+ */
+async function openInvoiceWithSameGoods(customerId, lines) {
+  const open = (await zoho.invoicesFor(customerId)).filter(isOpenInvoice).slice(0, 10);
+  for (const inv of open) {
+    const full = await zoho.invoice(inv.invoice_id);
+    if (sameGoods(full.line_items, lines)) return full;
+  }
+  return null;
+}
+
 async function push({ code, contact_id, new_client, rep, phone, address, kra_pin, delivery_date,
                       delivery_date_status, window_start, window_end,
                       pickup, delivery_fee, notes, vat_exempt }) {
@@ -360,6 +376,22 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
   }
   const standardTotal = linesTotal(line_items);
   const invoiceLines = exempt ? exemptLines(line_items) : line_items;
+
+  // The same shelf already on an open invoice for this client, under any code
+  // and however long ago: see `sameGoods`. Only for a client picked from the
+  // list; a new client has no invoices yet, and a retry for one is caught by
+  // name above.
+  if (contact_id) {
+    const twin = await openInvoiceWithSameGoods(String(contact_id), invoiceLines);
+    if (twin) {
+      return json({
+        ok: false, error: 'already_raised', same_goods: true,
+        invoice_number: twin.invoice_number,
+        customer: twin.customer_name || null,
+        status: twin.status || null
+      }, 409);
+    }
+  }
 
   // Either an existing client, or one created here and now. Creating the contact
   // BEFORE the invoice is deliberate: an invoice needs a customer_id, so there is

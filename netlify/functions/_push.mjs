@@ -530,3 +530,34 @@ export function alreadyRaised(invoices, code, { customerId = null, name = null }
     return Boolean(norm(name)) && norm(inv.customer_name) === norm(name);
   }) || null;
 }
+
+/**
+ * The same shelf for the same client, still open, under any code.
+ *
+ * `alreadyRaised` catches a retry: the same code within two days. It missed
+ * INV640464 on 3 October. Jemima Schilling's Stepped Stack had been re-saved,
+ * which gave it a new code (1K5JEJJ for 4KJB1S9), and was pushed five days
+ * after INV640461: one shelf, two invoices for 33,500.
+ *
+ * So this compares what the invoices sell, not their codes: the goods lines as
+ * item, quantity and colour. Delivery is left out, because a fee typed
+ * differently is still the same order. Rates are left out too, because an
+ * exempt client's lines carry the price less VAT and a price change between
+ * pushes is still one shelf. Only an OPEN invoice counts: a void one was
+ * cancelled on purpose, and a paid one for the same shelf is a repeat order.
+ */
+export const isOpenInvoice = (inv) => Boolean(inv) && !['void', 'paid'].includes(inv.status);
+
+const colourOf = (li) =>
+  String((li.item_custom_fields || []).find((f) => f.api_name === 'cf_color')?.value || '')
+    .trim().toLowerCase();
+
+const goodsKey = (lines) => goodsLines(lines || [])
+  .map((li) => [li.item_id, Number(li.quantity), colourOf(li)].join('|'))
+  .sort()
+  .join(';');
+
+export function sameGoods(a, b) {
+  const key = goodsKey(a);
+  return key !== '' && key === goodsKey(b);
+}

@@ -9,7 +9,8 @@ import {
   zohoItemName, finishLabel, groupDesign, buildLineItems, linesTotal, quoteDrift,
   deliveryLine, goodsLines, samePhone, sameAddress, contactDetails, contactName,
   contactUpdate, newContactPayload, airtableClientPatch, clientDisagreement, moneyValue,
-  samePin, normalisePin, exemptLines, exemptionProblems, VAT_EXEMPTION_ID, alreadyRaised
+  samePin, normalisePin, exemptLines, exemptionProblems, VAT_EXEMPTION_ID, alreadyRaised,
+  isOpenInvoice, sameGoods
 } from '../netlify/functions/_push.mjs';
 import { draftInvoicePayload } from '../netlify/functions/_zoho.mjs';
 
@@ -545,6 +546,42 @@ test('the same shelf for a different client is not a duplicate', () => {
   assert.equal(alreadyRaised(list, '24P1KB2', { customerId: 'c9' }), null);
   assert.equal(alreadyRaised(list, '24P1KB2', { name: 'Mary Mukuria' }), null);
   assert.equal(alreadyRaised(list, '24P1KB2', {}), null, 'no client at all matches nothing');
+});
+
+// ---- the same shelf, re-saved under a new code ------------------------
+const sage = [{ api_name: 'cf_color', value: 'Sage' }];
+const stack = [
+  { item_id: 'ext', name: 'Standard Extension', rate: 5500, quantity: 3, item_custom_fields: sage },
+  { item_id: 'adp', name: 'Wide Adapter', rate: 7000, quantity: 1, item_custom_fields: sage },
+  { item_id: 'wb', name: 'Wide Base', rate: 8000, quantity: 1, item_custom_fields: sage },
+  { item_id: 'del', name: 'Delivery Fees', rate: 2000, quantity: 1, item_custom_fields: [] }
+];
+
+test('INV640464: the same goods under a new code are the same order', () => {
+  const pushed = stack.slice(0, 3).reverse()
+    .concat({ item_id: 'del', name: 'Delivery Fees', rate: 2500, quantity: 1, item_custom_fields: [] });
+  assert.equal(sameGoods(stack, pushed), true, 'order and delivery fee do not matter');
+  assert.equal(sameGoods(stack, exemptLines(stack)), true, 'an exempt rate is the same shelf');
+});
+
+test('different pieces, counts or colours are a different order', () => {
+  const more = stack.map((li) => (li.item_id === 'ext' ? { ...li, quantity: 4 } : li));
+  const coral = stack.map((li) => (li.item_custom_fields.length
+    ? { ...li, item_custom_fields: [{ api_name: 'cf_color', value: 'Coral' }] } : li));
+  assert.equal(sameGoods(stack, more), false);
+  assert.equal(sameGoods(stack, coral), false);
+  assert.equal(sameGoods(stack, stack.slice(1)), false);
+  assert.equal(sameGoods([stack[3]], [stack[3]]), false, 'delivery alone is not an order');
+  assert.equal(sameGoods([], []), false);
+});
+
+test('only an open invoice blocks a push', () => {
+  for (const status of ['draft', 'pending_approval', 'approved', 'sent', 'overdue', 'partially_paid']) {
+    assert.equal(isOpenInvoice({ status }), true, status);
+  }
+  assert.equal(isOpenInvoice({ status: 'void' }), false, 'voided on purpose');
+  assert.equal(isOpenInvoice({ status: 'paid' }), false, 'a paid one is a repeat order');
+  assert.equal(isOpenInvoice(null), false);
 });
 
 console.log(`test-push: ${passed} passed${process.exitCode ? ' (with failures)' : ''}`);

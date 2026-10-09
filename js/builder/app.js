@@ -4475,6 +4475,10 @@
   function pushProblem(out) {
     if (!out) return "Could not raise it — check your connection and try again.";
     if (out.error === "nothing_priceable") return "None of these pieces are sellable in Zoho yet.";
+    if (out.error === "already_raised" && out.same_goods) {
+      return `The same pieces are already on ${out.invoice_number || "an open invoice"}${
+        out.customer ? " for " + out.customer : ""}, still open. Change that one in Zoho, or void it first if this one replaces it.`;
+    }
     if (out.error === "already_raised") {
       return `This design is already on ${out.invoice_number || "an invoice"}${
         out.customer ? " for " + out.customer : ""}. Open that one in Zoho rather than raising it twice.`;
