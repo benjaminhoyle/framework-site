@@ -1,10 +1,76 @@
-# Deep Spacer Base — getting it live
+# Spacer bases — getting them live
 
-> What this is: the record of adding one new module to the range, and of
-> everything a module has to exist in. The first module added since the
-> pipeline was built, so the list is also a map for the next one.
-> When to read it: when adding a module, or when something about this one
+> What this is: the record of adding the spacer bases to the range, and of
+> everything a module has to exist in. Deep came first (2026-09-20) and its
+> record below is the full map; the other five followed (2026-10-15) and the
+> next section is what was different about doing them as a family.
+> When to read it: when adding a module, or when something about one of these
 > looks wrong.
+
+## The other five, 2026-10-15
+
+Slim, Standard, Wide, Compact and Broad. **Corner has none**: it has no spacer,
+so there is no U for its base to borrow.
+
+**One rule, every family.** Drop the boards, keep the spine bars, and at each
+level keep only the *rearmost* cross rail, moved back so its back face lands on
+the back post centreline (257 on the standard-depth families, 427 on the deep
+ones). It moves 118.5mm in every family. Slim, Standard and Wide carry one rail
+per level, so their spacer base is exactly the trimmed base with the boards off
+and the rail moved: the same steel, not less. Compact and Broad lose their
+front rail, as Deep did. Run on deep, the rule reproduces `deep_spacer_base`
+member for member.
+
+| module | price | Zoho item | Airtable product | Materials Cost (Blue) |
+|---|---|---|---|---|
+| Slim Spacer Base | 4,500 | 4099765000004718001 | recuLKG161bdTvyEJ | 1,137 |
+| Standard Spacer Base | 5,000 | 4099765000004720001 | recQOYTNXX8HL8pM6 | 1,246 |
+| Wide Spacer Base | 5,500 | 4099765000004721001 | recCxBjbTLgF8VKQy | 1,427 |
+| Compact Spacer Base | 6,500 | 4099765000004720010 | recLn6Cw9LF0aon06 | 1,392 |
+| Broad Spacer Base | 8,000 | 4099765000004722001 | reckFcAdkq9n50t4m | 1,500 |
+
+Prices are Ben's (proposed from three anchors: his deep ratio, the price drop
+per shilling of material removed, and keeping Slim < Standard < Wide and
+Compact < Broad < Deep). Each Zoho item copies Deep Spacer Base's settings
+field for field and reads `pushed` for eTIMS. Each Airtable product has the
+same 17 bill-of-materials rows as Deep Spacer Base, every one tagged
+`spacer bases 2026-10-15` in its Note so the batch can be found and reversed.
+`Baked Scaled Unit Value` is baked on all five.
+
+**Descriptions give the real footprint**, as Deep Spacer Base's does: "Starts a
+run of standard units at desk height. 430mm tall, 720mm wide, 280mm deep. No
+shelf surface." The older spacers quote the run's width instead (Standard
+Spacer says 780). Compact's carries its siblings' line about bookends and
+display bars.
+
+**Slim Spacer and Broad Spacer are now sold on /builder.** Both were active in
+Zoho and Airtable and each had sold once, but the site had no price for them,
+so /builder showed "on request". They are in `data/module-prices.json` now and
+offered in Flexible and Advanced. Broad Spacer was 7,000, more than the Deep
+Spacer it is 440mm narrower than; Ben set it to **5,500** in all three places.
+Slim Spacer stays 4,000.
+
+**What was different this time:**
+
+- **Both scripts are general.** `source/pending-modules/add-spacer-bases.py`
+  and `add-spacer-bases-to-dae.py` (renamed from the deep-only pair) take any
+  family and skip one already present.
+- **Advanced-only is a rule, not a list.** `advancedOnly()` in
+  `js/builder/app.js` matches the `_spacer_base` suffix.
+- **The repos find each other through the Makefile.** `make SITE=<path>` now
+  exports `FRAMEWORK_SITE` and `FRAMEWORK_RENDERER`, and render parity, the
+  names check, the price builder and `test-builder.mjs` read them. Before, a
+  worktree pair built one side and checked the other against the main checkout.
+- **`make assets` overwrote the 16 untrimmed GLBs again** (the landmine at the
+  foot of this doc). Restored from git; still not fixed at the asset plan.
+- **Zoho item creation goes through the Books MCP connector**, then the four
+  eTIMS fields go on with a REST PUT, as before. The refresh token in
+  `../framework-ops/.env` can update items but not create them (no
+  `settings.CREATE` scope), so a REST POST answers 401.
+
+---
+
+# Deep Spacer Base, 2026-09-20
 
 **The module.** A deep base carrying no shelves: four legs to the floor with
 feet, and at each level the two spine bars plus one cross rail on the back post
