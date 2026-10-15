@@ -62,7 +62,8 @@ Slim Spacer stays 4,000.
   names check, the price builder and `test-builder.mjs` read them. Before, a
   worktree pair built one side and checked the other against the main checkout.
 - **`make assets` overwrote the 16 untrimmed GLBs again** (the landmine at the
-  foot of this doc). Restored from git; still not fixed at the asset plan.
+  foot of this doc). Restored from git, then fixed at the asset plan the same
+  day; the foot of this doc says how.
 - **Zoho item creation goes through the Books MCP connector**, then the four
   eTIMS fields go on with a REST PUT, as before. The refresh token in
   `../framework-ops/.env` can update items but not create them (no
@@ -329,22 +330,42 @@ showing empty is how a correct code gets blanked on an item that was already
 fiscalised. Read and write these fields over the API, where the values are
 plainly visible.
 
-## A landmine found on the way
+## A landmine found on the way, fixed 2026-10-15
 
-**`make assets` silently replaces 16 modules' geometry with their trimmed cut.**
-`generated/manifests/three-asset-plan.json` maps each untrimmed module to its
-*trimmed* block — `deep_base` ← `deep_base_trimmed`, and the same for every
-other family — so the DAE export path writes trimmed geometry into the
-untrimmed module's GLB. The tracked GLBs, made by the in-Rhino exporter
-(`scripts/assets/rhino-export-module-glbs.py`, which inserts the real block),
-carry the correct untrimmed geometry.
+**`make assets` used to replace 16 modules' geometry with their trimmed cut.**
+`generated/manifests/three-asset-plan.json` mapped each untrimmed module to its
+*trimmed* block (`deep_base` from `deep_base_trimmed`, and the same for every
+other family), so the DAE export path wrote trimmed geometry into the untrimmed
+module's GLB. It surfaced as `slim_extension: geometry overruns the catalog
+bbox` in the site's tests after a full run, and bit twice: here, and again with
+the other five spacer bases. Both times the 16 were restored from git by hand.
 
-It surfaced here as `slim_extension: geometry overruns the catalog bbox` in the
-site's own tests after a full run, and the diagnosis was clean: the DAE path
-reproduced 20 of the 36 GLBs byte-for-byte and diverged on exactly the 16 with
-a trimmed twin. Those 16 were restored from git and only the new module's GLB
-was kept.
+**Why the plan said so.** The manifest's module records name the block a module
+is *measured* from, and prefer the trimmed one. That is deliberate: the
+contract's bboxes and aliases are built on it. The mistake was letting the
+exporters read those records as "which block makes this GLB".
 
-**Anyone running `make all` today would ship trimmed bases as full ones**, and
-the only thing that catches it is a bbox assertion in the *other* repo. Worth
-fixing at the asset-plan level before the next geometry change.
+**The fix, in `framework-renderer`.** The plan now also carries `glb_exports`:
+one entry per module block, 57 in all, each GLB cut from the block of its own
+name (`deep_base.glb` from `deep_base`, `deep_base_trimmed.glb` from
+`deep_base_trimmed`). Both exporters, the DAE path and the in-Rhino script, read
+that list and never the module records, and the DAE path refuses a plan
+without it. The module records, and so the contract, are unchanged.
+
+**Proved on the current library.** `make extract assets` writes all 57 GLBs and
+the bookend byte for byte as tracked, and a second run changes nothing. `make
+validate`, `make site` (which rebuilt the site's assets identically) and the
+site's `npm test` all pass. The export reports no longer keep Assimp's chatter
+(absolute paths, timings) for a conversion that worked, so they stop changing
+on every run.
+
+**And it is caught in that repo now, not only in this one.**
+`scripts/validate/check-module-glbs.py`, in `make validate` and `make test`,
+measures every GLB that has a trimmed twin (32 of them) and fails if its box is
+nearer the twin's block than its own. Put the trimmed geometry back into the 16
+and it names all 16.
+
+**A correction to the first diagnosis.** The tracked GLBs are the DAE path's
+output: Assimp reproduces every one of them exactly. The in-Rhino exporter read
+the same module records, so it had the same flaw; it reads `glb_exports` now
+too.
