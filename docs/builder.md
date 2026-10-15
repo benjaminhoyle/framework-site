@@ -690,12 +690,15 @@ designer-page exclusion list.
 
 ## Not done yet
 
-- **Eight pieces have no price** and read "on request": `booster_adapter`,
-  `broad_hanger`, `broad_spacer`, `broad_top_bar`, `compact_top_bar`,
-  `deep_top_bar`, `slim_spacer`, `slim_top_bar`. A trimmed cut inherits its full
-  unit's price and vice versa, so these are genuinely absent from
-  `shared/prices.json` rather than a mapping gap. They are excluded from the
-  total, which the summary says out loud.
+- **Every piece is priced** since 2026-10-15. The eight that read "on request"
+  were in Zoho and Airtable, active and registered with eTIMS, from the
+  2026-08-15 catalogue pass (`../stock-analysis/CATALOGUE.md`). They were never
+  added to the site because `data/module-prices.json` did not exist yet. They
+  are priced there at the Zoho rate, except Broad Hanger: Zoho had it at 8,000,
+  set as "its spacer plus 1,000" when Broad Spacer was 7,000. With Broad Spacer
+  at 5,500 the same rule gives 6,500, which is also between Compact (6,000) and
+  Deep (7,000). A module with no price still shows "on request" and is left out
+  of the total, so a new module needs an entry in that file.
 - **`noindex`.** Remove the meta tag in `builder.html` when this page replaces
   `/designer` or `/simplified-designer`, and add it to `sitemap.xml` then — not
   while both are live and competing for the same queries.

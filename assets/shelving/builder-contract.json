@@ -100,7 +100,7 @@
     "wide_spacer_base": "wide_spacer_base",
     "wide_top_bar": "wide_top_bar"
   },
-  "contentHash": "3e67dee70d083a706e01dd5bef48c1a596ea66285090945512bafebb06e8640d",
+  "contentHash": "fc85b9dcd639b6a6f51d9076aca1e73473fb761a6314b69a0995e6744496de40",
   "finishes": [
     {
       "displayName": "Marine",
@@ -143,7 +143,7 @@
       "steelLabel": "Coral steel"
     }
   ],
-  "generatedAt": "2026-10-15T08:47:56Z",
+  "generatedAt": "2026-10-15T09:27:03Z",
   "modules": {
     "booster_adapter": {
       "bboxMm": [
@@ -16416,17 +16416,21 @@
     "note": "Price is per module type, independent of finish/orientation. Types not sold individually (hardware, model-pending, or site-unlisted) are absent \u2014 treat missing as unpriced, not free.",
     "prices": {
       "bookend": 1000,
+      "booster_adapter": 3000,
       "broad_base": 12000,
       "broad_base_trimmed": 12000,
       "broad_extension": 9000,
       "broad_extension_trimmed": 9000,
+      "broad_hanger": 6500,
       "broad_spacer": 5500,
       "broad_spacer_base": 8000,
+      "broad_top_bar": 3000,
       "compact_base_trimmed": 9500,
       "compact_extension_trimmed": 8500,
       "compact_hanger": 6000,
       "compact_spacer": 5000,
       "compact_spacer_base": 6500,
+      "compact_top_bar": 2500,
       "corner_base": 7000,
       "corner_extension": 6000,
       "deep_adapter": 10000,
@@ -16436,6 +16440,7 @@
       "deep_hanger": 7000,
       "deep_spacer": 6000,
       "deep_spacer_base": 9000,
+      "deep_top_bar": 3500,
       "lamp": 4500,
       "slim_base": 6000,
       "slim_base_trimmed": 6000,
@@ -16443,6 +16448,7 @@
       "slim_extension_trimmed": 5000,
       "slim_spacer": 4000,
       "slim_spacer_base": 4500,
+      "slim_top_bar": 2500,
       "standard_base": 6500,
       "standard_base_trimmed": 6500,
       "standard_booster": 2000,
