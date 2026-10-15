@@ -11,18 +11,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { fileURLToPath } from 'node:url';
-import { resolveSiteAlias } from '../../framework-renderer/shared/framework-config.mjs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SITE = path.resolve(HERE, '..');
+// The pipeline checkout beside this one, or FRAMEWORK_RENDERER, which the
+// pipeline's Makefile sets so a worktree pair reads and writes each other.
+const RENDERER = path.resolve(process.env.FRAMEWORK_RENDERER || path.join(SITE, '../framework-renderer'));
+const { resolveSiteAlias } = await import(pathToFileURL(path.join(RENDERER, 'shared/framework-config.mjs')).href);
 const ENGINE = path.join(SITE, 'js/designer-engine.js');
 // Module types the 2D designer never carried. Its entries need two isometric
 // SVGs each, for a page being retired, so a new module would otherwise have to
 // be drawn into a dead tool before it could be priced.
 const EXTRA = path.join(SITE, 'data/module-prices.json');
-const VOCAB = path.resolve(SITE, '../framework-renderer/shared/module-vocabulary.json');
-const OUT = path.resolve(SITE, '../framework-renderer/shared/prices.json');
+const VOCAB = path.join(RENDERER, 'shared/module-vocabulary.json');
+const OUT = path.join(RENDERER, 'shared/prices.json');
 
 function loadModuleFilenames() {
   const src = fs.readFileSync(ENGINE, 'utf8');
@@ -68,7 +71,7 @@ function build() {
   return {
     schema: 'framework-prices@1',
     currency: 'KSh',
-    generatedFrom: [ENGINE, EXTRA].map((file) => path.relative(path.resolve(SITE, '..'), file)).join(' + '),
+    generatedFrom: [ENGINE, EXTRA].map((file) => `framework-site/${path.relative(SITE, file)}`).join(' + '),
     generatedAt: new Date().toISOString().slice(0, 10),
     note: 'Price is per module type, independent of finish/orientation. Types not sold individually (hardware, model-pending, or site-unlisted) are absent — treat missing as unpriced, not free.',
     unmapped,

@@ -36,7 +36,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SITE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DEFAULT_PIPELINE = path.resolve(SITE_ROOT, "..", "framework-renderer");
+const DEFAULT_PIPELINE = path.resolve(process.env.FRAMEWORK_RENDERER || path.join(SITE_ROOT, "..", "framework-renderer"));
 
 const argv = process.argv.slice(2);
 const pipelineArg = argv.indexOf("--pipeline");
