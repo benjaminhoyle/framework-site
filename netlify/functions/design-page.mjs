@@ -14,9 +14,9 @@
 // already in the HTML rather than after a fetch, which on a Nairobi phone is the
 // difference between reading a price and watching a spinner.
 //
-// What it does NOT do is draw the shelf into the preview card. og:image is a
-// photograph of a real shelf in the same colour, from /customize. See the note
-// at the foot of this file for what a per-design card would take.
+// What it does NOT do is draw the shelf into the preview card. og:image is the
+// Framework mark on white, the same for every code. See the note at the foot of
+// this file for what a per-design card would take.
 //
 // Nothing personal is on this page by construction, exactly as for /api/design:
 // a design is a list of parts and a price, and the site has no name or phone
@@ -29,16 +29,12 @@ import { stateFromRecord, priceOf, shelfSizeMm } from './_glb.mjs';
 
 const SITE = 'https://www.framework.co.ke';
 
-// The four colour shots from /customize: a real photograph of a real shelf in
-// the finish this design is in. Not the design itself -- honest, and better than
-// one generic image for all of them.
-const FINISH_IMAGE = {
-  marine: '/images/shelving/configs/quadruple-emptied.jpg',
-  sage: '/images/shelving/configs/versatile-stack-emptied.jpg',
-  charcoal: '/images/shelving/configs/low-console-emptied.jpg',
-  coral: '/images/shelving/configs/wide-four-tier-emptied.jpg'
-};
-const FALLBACK_IMAGE = '/images/shelving/configs/asymmetric-display-emptied.jpg';
+// The brand mark, not a shelf. Until 15 Oct 2026 this was a photograph of a
+// catalogue shelf in the design's finish, and Ben took it out: the card then
+// showed a different shelf from the one the link opens. The mark is flattened
+// onto white because the plain icon is transparent black, which disappears on
+// WhatsApp's dark background.
+const CARD_IMAGE = '/images/global/fwk-card.png';
 
 export default async (req, context) => {
   const url = new URL(req.url);
@@ -87,10 +83,6 @@ export default async (req, context) => {
         ? Number(record.total_ksh)
         : priceOf(catalog, state).totalKsh,
       quoted: Number.isFinite(Number(record.total_ksh)) && Number(record.total_ksh) > 0,
-      finishId: state.finish,
-      // The og:image is a photograph of a shelf in the design's own finish;
-      // there is no photograph of a four-colour one, and the base colour is the
-      // closest true thing.
       finishName: finishes.length
         ? finishes.map((entry) => entry.displayName).join(' & ')
         : state.finish,
@@ -161,7 +153,7 @@ function render(design) {
   const title = headline(design.size);
   const price = `Ksh ${comma(design.totalKsh)}`;
   const summary = `${title}, in ${design.finishName}. ${price}. See it at full size in your own room.`;
-  const image = SITE + (FINISH_IMAGE[design.finishId] || FALLBACK_IMAGE);
+  const image = SITE + CARD_IMAGE;
   const here = `${SITE}/d/${design.code}`;
   const model = `/api/design-glb/${design.code}.glb`;
   const wa = `https://wa.me/254783891005?text=${encodeURIComponent(
@@ -195,9 +187,9 @@ function render(design) {
     <meta property="og:title" content="${escape(title)} in ${escape(design.finishName)}">
     <meta property="og:description" content="${escape(summary)}">
     <meta property="og:image" content="${image}">
-    <meta property="og:image:width" content="1400">
-    <meta property="og:image:height" content="1400">
-    <meta name="twitter:card" content="summary_large_image">
+    <meta property="og:image:width" content="600">
+    <meta property="og:image:height" content="600">
+    <meta name="twitter:card" content="summary">
     <meta name="theme-color" content="#ffffff">
     <link rel="icon" href="/images/global/fwk-icon-lg.png">
     <!-- Meta Pixel Code -->
@@ -433,7 +425,7 @@ function notFound() {
  * has to be kept. The cheapest version is a dozen lines in app.js's save path --
  * `canvas.toBlob`, POST beside the existing /api/design write, into a Blobs
  * store keyed by the same code -- and a small function to serve it, and then
- * `og:image` here becomes `/api/design-card/<CODE>.png` with this photograph as
+ * `og:image` here becomes `/api/design-card/<CODE>.png` with the brand mark as
  * the fallback for designs saved before it existed. That change belongs in
  * app.js, which is being worked in, so it is written up rather than made: see
  * the report for the patch.
