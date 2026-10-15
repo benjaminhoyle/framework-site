@@ -14,6 +14,7 @@
 // exactly like one that is right until you use it, which is why each check makes
 // a real call rather than testing for presence alone.
 
+import { createHash } from 'node:crypto';
 import { refuseMachine } from './_auth.mjs';
 import { accessToken, invoices } from './_zoho.mjs';
 import { TABLES, all } from './_airtable.mjs';
@@ -30,11 +31,21 @@ const REQUIRED = [
 
 const shape = (v) => (v ? `set (${v.length} chars)` : 'MISSING');
 
+/*
+ * Which credential is this? Length says a value is present; it cannot say
+ * whether it is the one in `.env.zoho` or a stale one, because every Zoho
+ * refresh token is 70 characters. A short hash prefix can, without echoing
+ * anything usable: compare it with the same prefix taken locally.
+ */
+const FINGERPRINTED = ['ZOHO_CLIENT_ID', 'ZOHO_REFRESH_TOKEN'];
+const fingerprint = (v) => (v ? createHash('sha256').update(v).digest('hex').slice(0, 8) : null);
+
 export default async (req) => {
   const denied = refuseMachine(req);
   if (denied) return denied;
 
   const env = Object.fromEntries(REQUIRED.map((k) => [k, shape(process.env[k])]));
+  const fingerprints = Object.fromEntries(FINGERPRINTED.map((k) => [k, fingerprint(process.env[k])]));
   const checks = {};
   let ok = true;
 
@@ -76,6 +87,7 @@ export default async (req) => {
   return new Response(JSON.stringify({
     ok,
     env,
+    fingerprints,
     checks,
     writes_enabled: process.env.SYNC_ALLOW_WRITES === '1',
     schedule_enabled: process.env.SYNC_SCHEDULE_ENABLED === '1',
