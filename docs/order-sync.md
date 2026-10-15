@@ -172,6 +172,20 @@ fault, in case a future token is issued short again.
 paste into Netlify. Plus **`AIRTABLE_TOKEN`** — `data.records:read` and `data.records:write` on the
 Framework Designs base, nothing else.
 
+**Netlify and `.env.zoho` must hold the same refresh token.** On 2026-10-15
+they did not: Netlify's had been replaced at some point without the file being
+updated, and between the 12:00 and 13:00 syncs that token stopped working.
+Every refresh then came back `200 {"error":"invalid_code"}`, so reps could not
+raise drafts and every hourly sync failed, while the token in `.env.zoho` still
+worked. Zoho answers `invalid_code` for a refresh token that has been revoked
+or deleted; it caps how many refresh tokens one client keeps and drops the
+oldest, so a token issued elsewhere on the same Self Client can end one in use
+here. `/api/sync-health` now shows an 8-character sha256 prefix of the client
+id and refresh token under `fingerprints`. Compare it with the same prefix of
+`.env.zoho`'s values before assuming the two agree, and change both together.
+Netlify functions read the environment at deploy time, so a changed value
+needs a redeploy.
+
 And **`ZOHO_PUSH_KEY`** — the password reps type into the builder. Two switches
 stay off until the write pass has been checked by hand: `SYNC_ALLOW_WRITES` and
 `SYNC_SCHEDULE_ENABLED`.
