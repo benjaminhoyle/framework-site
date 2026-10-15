@@ -26,11 +26,19 @@ import { VAT_RATE } from './_zoho.mjs';
  * The Zoho item name for a builder module id.
  *
  * `standard_base_trimmed` -> `Standard Base (Trimmed)`. Verified against the
- * live catalogue: all 34 priced modules resolve. It is still checked at push
- * time rather than trusted — a rename in Zoho must fail loudly here, not
- * quietly invoice the wrong product.
+ * live catalogue: all 57 modules resolve. It is still checked at push time
+ * rather than trusted — a rename in Zoho must fail loudly here, not quietly
+ * invoice the wrong product.
+ *
+ * One id does not spell its name. `booster_adapter` is sold as "Standard
+ * Adapter", in Zoho, in Airtable and on the builder's own label; spelled out
+ * it would be "Booster Adapter", which matches nothing, and the adapter would
+ * fall off every invoice raised from a design that has one.
  */
+const ZOHO_NAME_EXCEPTIONS = { booster_adapter: 'Standard Adapter' };
+
 export function zohoItemName(moduleId) {
+  if (ZOHO_NAME_EXCEPTIONS[moduleId]) return ZOHO_NAME_EXCEPTIONS[moduleId];
   const trimmed = moduleId.endsWith('_trimmed');
   const base = trimmed ? moduleId.slice(0, -'_trimmed'.length) : moduleId;
   const words = base.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');

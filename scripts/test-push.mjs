@@ -44,6 +44,12 @@ test('a trimmed module keeps its parenthesised suffix', () => {
   assert.equal(zohoItemName('compact_extension_trimmed'), 'Compact Extension (Trimmed)');
 });
 
+test('the booster adapter maps to the name it is sold under', () => {
+  // Spelled out from its id it would be "Booster Adapter", which no Zoho item
+  // is called, and the adapter would drop off the invoice.
+  assert.equal(zohoItemName('booster_adapter'), 'Standard Adapter');
+});
+
 test('finish ids become the Colour values Zoho stores', () => {
   assert.equal(finishLabel('marine'), 'Marine');
   assert.equal(finishLabel('coral'), 'Coral');

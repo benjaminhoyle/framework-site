@@ -10,6 +10,12 @@
     "compact_spacer_base": 6500,
     "broad_spacer_base": 8000,
     "slim_spacer": 4000,
-    "broad_spacer": 5500
+    "broad_spacer": 5500,
+    "slim_top_bar": 2500,
+    "compact_top_bar": 2500,
+    "broad_top_bar": 3000,
+    "deep_top_bar": 3500,
+    "booster_adapter": 3000,
+    "broad_hanger": 6500
   }
 }
