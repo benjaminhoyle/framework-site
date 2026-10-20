@@ -9,6 +9,13 @@
  * without cropping the preview, and 1080 wide is the most it keeps before
  * re-encoding. The shelf always gets the same box and is always re-fitted into
  * it, so a design never inherits wherever the live view happened to be panned.
+ *
+ * READ BACK BY THE PIPELINE. framework-pipeline/media/read.py reads these images
+ * when they turn up in customer chats, so every quote sent has a record: the size,
+ * finish, parts, total and the code in the footer, checked against /api/design.
+ * It is told what this layout looks like (PRESENT there). If you change what is
+ * drawn or where, update PRESENT and bump PRESENT_VERSION in the same change;
+ * until then the pipeline flags any present image it cannot read to Ben.
  */
 window.FrameworkDesignerPresent = (function () {
   "use strict";
