@@ -71,12 +71,15 @@
   .big small { font-size: 20px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
   .pace { font-size: 16px; color: var(--muted); margin-top: 8px; }
   .pace b { color: var(--ink); font-weight: 700; }
-  .track { position: relative; height: 14px; border-radius: 7px; background: var(--wash); margin: 26px 0 0; }
+  .track { position: relative; height: 14px; border-radius: 7px; background: var(--wash); margin: 34px 0 0; }
   .fill, .ghost { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 7px; }
   .ghost { background: var(--accent-soft); }
   .fill { background: var(--accent); }
   .tick { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--ink); border-radius: 1px; }
   .tick.done { background: var(--accent); }
+  /* One face above each line, grey until it is passed. */
+  .face { position: absolute; top: -29px; transform: translateX(-50%); font-size: 15px; line-height: 1; opacity: .45; filter: grayscale(1); }
+  .face.done { opacity: 1; filter: none; }
   .ticklabels { position: relative; height: 40px; margin-top: 8px; }
   .tl { position: absolute; transform: translateX(-50%); text-align: center; font-size: 13px; line-height: 1.3; white-space: nowrap; }
   .tl b { display: block; font-size: 14px; }
@@ -150,6 +153,7 @@ const KEY = 'tracker-pass';
 const TZ = 'Africa/Nairobi';
 const STALE_HOURS = 8;   // the PC refreshes at 8am, 2pm and 8pm
 const SCALE_MAX = 100;
+const FACES = ['🙂', '😄'];   // one per bonus line, happier as they go
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => ['gate', 'msg', 'app'].forEach((x) => { $(x).hidden = x !== id; });
@@ -245,7 +249,9 @@ function render() {
   let labels = '';
   scheme.tiers.forEach((t, i) => {
     const step = t.pay - (scheme.tiers[i - 1]?.pay || 0);
-    track += `<div class="tick${data.units > t.over ? ' done' : ''}" style="left:calc(${pct(t.over)} - 1px)"></div>`;
+    const done = data.units > t.over ? ' done' : '';
+    track += `<div class="tick${done}" style="left:calc(${pct(t.over)} - 1px)"></div>`;
+    if (FACES[i]) track += `<span class="face${done}" style="left:${pct(t.over)}" aria-hidden="true">${FACES[i]}</span>`;
     labels += `<div class="tl" style="left:${pct(t.over)}"><b>${t.over}</b><span>+${step / 1000}k</span></div>`;
   });
   $('track').innerHTML = track;
