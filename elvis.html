@@ -134,7 +134,7 @@
 
   <section class="card">
     <h2>Last 7 days</h2>
-    <p class="sub">Not paid on their own. They are what brings the units in.</p>
+    <p class="sub" id="habitsNote">Goals to help you make more sales.</p>
     <div id="habits"></div>
   </section>
 
@@ -270,6 +270,7 @@ function render() {
     ? `${data.quotes.count} ${data.quotes.count === 1 ? 'quote' : 'quotes'} not yet paid, about ${Math.round(data.quotes.units)} units.`
     : '';
 
+  if (data.habitsNote) $('habitsNote').textContent = data.habitsNote;
   $('habits').innerHTML = data.habits.map((h) => {
     const has = h.value != null;
     const met = has && h.value >= h.goal;
