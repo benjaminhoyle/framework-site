@@ -2065,6 +2065,9 @@
     const module = ui.catalog.modules[instance.moduleId];
     if (!module) return 0;
     if (module.role === "lamp") return 45;
+    // A spacer's cross bar is the thing worth turning even where little else
+    // moves: the Slim Spacer's shift is 0.07, under the threshold (Ben, 27 Oct).
+    if (module.role === "spacer" && engine.rotationKeepsSockets(module, 180)) return 180;
     return (module.rotation180Shift || 0) >= ROTATION_SHIFT_THRESHOLD ? 180 : 0;
   }
 
@@ -2080,15 +2083,15 @@
   /**
    * The rotation a piece should be placed at.
    *
-   * Zero for almost everything. A spacer reads better turned round, which is
-   * free because its sockets are unchanged by a half turn. A front-mounted top
-   * bar has to be flipped so its cross bar reaches back over the shelf instead
-   * of jutting out into the room.
+   * Zero for almost everything, spacers included: unturned, a spacer's cross
+   * bar is at the back, where it belongs (Ben, 27 Oct 2026; until then spacers
+   * were turned round, which put it at the front). A front-mounted top bar has
+   * to be flipped so its cross bar reaches back over the shelf instead of
+   * jutting out into the room.
    */
   function defaultRotationFor(module, candidate) {
     if (!engine.rotationKeepsSockets(module, 180)) return 0;
     if (facesIntoShelf(module)) return onFrontRow(candidate) ? 180 : 0;
-    if (module.role === "spacer") return 180;
     return 0;
   }
 
