@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Sales | Framework Nairobi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700;800&display=swap" rel="stylesheet">
+<!--
+  Elvis's sales tracker. The numbers come from /api/tracker behind their own
+  password; framework-ops/src/tracker.js builds them after every refresh (8am,
+  2pm, 8pm on the PC). Nothing here is computed from the visitor's clock except
+  how old the numbers are: the pace runs from the time they were pulled.
+-->
+<style>
+  :root {
+    --ink: #1b1f1e; --muted: #68726f; --faint: #a3aca9;
+    --paper: #ffffff; --wash: #f2f5f4; --line: #e1e7e5;
+    --accent: #245d5f; --accent-soft: #cfe1de;
+    --amber: #9a6512;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #e7ecea; --muted: #9aa5a1; --faint: #5d6865;
+      --paper: #161b1a; --wash: #0e1211; --line: #263130;
+      --accent: #74b8b1; --accent-soft: #2c4a48;
+      --amber: #d9a24a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #e7ecea; --muted: #9aa5a1; --faint: #5d6865;
+    --paper: #161b1a; --wash: #0e1211; --line: #263130;
+    --accent: #74b8b1; --accent-soft: #2c4a48;
+    --amber: #d9a24a;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; background: var(--wash); color: var(--ink);
+    font-family: 'Red Hat Display', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 520px; margin: 0 auto; padding: 20px 16px 48px; }
+  .card { background: var(--paper); border-radius: 18px; padding: 22px 20px; margin-bottom: 14px; }
+  h2 { font-size: 15px; font-weight: 700; margin: 0; }
+  .sub { color: var(--muted); font-size: 14px; margin: 4px 0 0; line-height: 1.4; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+
+  #gate { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+  #gate form { width: 100%; max-width: 320px; text-align: center; }
+  #gate .mark { font-weight: 800; letter-spacing: .02em; font-size: 18px; margin-bottom: 20px; }
+  #gate input {
+    width: 100%; font: inherit; font-size: 17px; padding: 14px 16px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink); outline: none;
+  }
+  #gate input:focus { border-color: var(--accent); }
+  #gate button {
+    width: 100%; margin-top: 10px; font: inherit; font-weight: 700; font-size: 16px; padding: 14px;
+    border: 0; border-radius: 12px; background: var(--accent); color: var(--paper); cursor: pointer;
+  }
+  #gate button:disabled { opacity: .6; }
+  #gate .err { color: var(--amber); font-size: 14px; min-height: 20px; margin-top: 10px; }
+  .shake { animation: shake .3s; }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+  .month { font-size: 15px; font-weight: 700; }
+  .updated { font-size: 13px; color: var(--muted); text-align: right; }
+  .updated.stale { color: var(--amber); }
+  .big { font-size: 64px; font-weight: 800; line-height: 1; margin: 18px 0 0; letter-spacing: -.02em; }
+  .big small { font-size: 20px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+  .pace { font-size: 16px; color: var(--muted); margin-top: 8px; }
+  .pace b { color: var(--ink); font-weight: 700; }
+  .track { position: relative; height: 14px; border-radius: 7px; background: var(--wash); margin: 26px 0 0; }
+  .fill, .ghost { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 7px; }
+  .ghost { background: var(--accent-soft); }
+  .fill { background: var(--accent); }
+  .tick { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--ink); border-radius: 1px; }
+  .tick.done { background: var(--accent); }
+  .ticklabels { position: relative; height: 40px; margin-top: 8px; }
+  .tl { position: absolute; transform: translateX(-50%); text-align: center; font-size: 13px; line-height: 1.3; white-space: nowrap; }
+  .tl b { display: block; font-size: 14px; }
+  .tl span { color: var(--muted); }
+  .next { margin-top: 18px; font-size: 16px; line-height: 1.45; }
+  .note { margin-top: 6px; font-size: 14px; color: var(--muted); }
+
+  .habit { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding: 16px 0; border-top: 1px solid var(--line); }
+  .habit:first-of-type { border-top: 0; padding-top: 18px; }
+  .habit .name { font-weight: 700; font-size: 16px; }
+  .habit .what { color: var(--muted); font-size: 13.5px; line-height: 1.4; grid-column: 1; }
+  .habit .val { grid-row: 1 / span 2; grid-column: 2; text-align: right; align-self: center; }
+  .habit .val b { font-size: 28px; font-weight: 800; }
+  .habit .val span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+  .habit .val.met b { color: var(--accent); }
+  .mini { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--wash); margin-top: 10px; overflow: hidden; }
+  .mini i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+
+  .earned { font-size: 14px; font-weight: 700; color: var(--accent); }
+  .chart { margin-top: 14px; }
+  svg text { font-family: inherit; }
+  .msg { text-align: center; color: var(--muted); padding: 40vh 16px 0; }
+</style>
+</head>
+<body>
+
+<div id="gate" hidden>
+  <form autocomplete="off">
+    <div class="mark">Framework</div>
+    <input id="pw" type="password" placeholder="Password" aria-label="Password" autocapitalize="none">
+    <button type="submit">Open</button>
+    <div class="err" id="err"></div>
+  </form>
+</div>
+
+<div class="msg" id="msg" hidden></div>
+
+<main id="app" hidden>
+  <section class="card">
+    <div class="head">
+      <div class="month" id="monthName"></div>
+      <div class="updated" id="updated"></div>
+    </div>
+    <div class="big" id="units"></div>
+    <div class="pace" id="pace"></div>
+    <div class="track" id="track"></div>
+    <div class="ticklabels" id="ticklabels"></div>
+    <div class="next" id="next"></div>
+    <div class="note" id="quotes"></div>
+  </section>
+
+  <section class="card">
+    <h2>Last 7 days</h2>
+    <p class="sub">Not paid on their own. They are what brings the units in.</p>
+    <div id="habits"></div>
+  </section>
+
+  <section class="card">
+    <div class="head">
+      <h2 id="windowName"></h2>
+      <div class="earned" id="earned"></div>
+    </div>
+    <div class="chart" id="chart"></div>
+  </section>
+</main>
+
+<script>
+const KEY = 'tracker-pass';
+const TZ = 'Africa/Nairobi';
+const STALE_HOURS = 8;   // the PC refreshes at 8am, 2pm and 8pm
+const SCALE_MAX = 100;
+
+const $ = (id) => document.getElementById(id);
+const show = (id) => ['gate', 'msg', 'app'].forEach((x) => { $(x).hidden = x !== id; });
+const store = {
+  get() { try { return localStorage.getItem(KEY); } catch { return null; } },
+  set(v) { try { v == null ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, v); } catch {} },
+};
+const ksh = (n) => 'Ksh ' + n.toLocaleString('en-US');
+const fmt = (opts, d) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, ...opts }).format(d);
+const monthLabel = (m, opts) => fmt(opts, new Date(m + '-15T12:00:00Z'));
+
+let data = null, pass = store.get(), loadedAt = 0;
+
+async function load(p) {
+  const res = await fetch('/api/tracker', { headers: { 'x-tracker-pass': p }, cache: 'no-store' });
+  if (res.status === 401) return 'wrong';
+  if (res.status === 404) return 'empty';
+  if (!res.ok) throw new Error(res.status);
+  data = await res.json();
+  loadedAt = Date.now();
+  return 'ok';
+}
+
+async function open(p, fromForm) {
+  let r;
+  try { r = await load(p); } catch {
+    if (fromForm) { $('err').textContent = 'Could not reach the server. Try again.'; return; }
+    $('msg').textContent = 'Could not reach the server. Pull down to try again.'; show('msg'); return;
+  }
+  if (r === 'wrong') {
+    store.set(null);
+    show('gate');
+    if (fromForm) {
+      $('err').textContent = 'Not quite. Try again.';
+      const f = $('gate').querySelector('form'); f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake');
+    }
+    return;
+  }
+  store.set(p); pass = p;
+  if (r === 'empty') { $('msg').textContent = 'No numbers yet. They arrive with the next refresh.'; show('msg'); return; }
+  render(); show('app');
+}
+
+$('gate').querySelector('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const b = e.target.querySelector('button'); b.disabled = true;
+  await open($('pw').value.trim(), true);
+  b.disabled = false;
+});
+
+// Coming back to the tab after a while fetches again rather than showing old numbers.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && pass && Date.now() - loadedAt > 10 * 60e3) open(pass, false);
+});
+
+if (pass) open(pass, false); else show('gate');
+
+// Whole units, except where rounding would show a bonus line that was not passed (69.6 is not "70").
+function fmtUnits(u) {
+  return data.scheme.tiers.some((t) => Math.round(u) === t.over && u <= t.over) ? u.toFixed(1) : String(Math.round(u));
+}
+
+function render() {
+  const { scheme } = data;
+  const asOf = new Date(data.asOf);
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
+    timeZone: TZ, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hourCycle: 'h23',
+  }).formatToParts(asOf).map((x) => [x.type, +x.value]));
+  const daysInMonth = new Date(Date.UTC(p.year, p.month, 0)).getUTCDate();
+  const elapsed = (p.day - 1) + (p.hour + p.minute / 60) / 24;
+  const pace = elapsed > 0.5 ? data.units / elapsed * daysInMonth : null;
+  const daysLeft = daysInMonth - elapsed;
+
+  $('monthName').textContent = monthLabel(data.month, { month: 'long' });
+
+  const dayKey = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d);
+  const today = dayKey(new Date()), then = dayKey(asOf), yesterday = dayKey(new Date(Date.now() - 864e5));
+  const when = then === today ? 'today' : then === yesterday ? 'yesterday' : fmt({ weekday: 'short', day: 'numeric', month: 'short' }, asOf);
+  $('updated').textContent = `Updated ${when} at ${fmt({ hour: '2-digit', minute: '2-digit' }, asOf)}`;
+  $('updated').classList.toggle('stale', (Date.now() - asOf) / 36e5 > STALE_HOURS);
+
+  $('units').innerHTML = `${fmtUnits(data.units)}<small>units</small>`;
+  const by = daysLeft < 7
+    ? 'by ' + fmt({ weekday: 'long' }, new Date(Date.UTC(p.year, p.month - 1, daysInMonth, 9)))
+    : `with ${Math.floor(daysLeft)} days left`;
+  $('pace').innerHTML = pace == null ? 'First day of the month' : `On pace for <b>${fmtUnits(pace)}</b> ${by}`;
+
+  const pct = (u) => Math.min(100, u / SCALE_MAX * 100) + '%';
+  let track = `<div class="ghost" style="width:${pct(Math.max(pace || 0, data.units))}"></div>`
+            + `<div class="fill" style="width:${pct(data.units)}"></div>`;
+  let labels = '';
+  for (const t of scheme.tiers) {
+    track += `<div class="tick${data.units > t.over ? ' done' : ''}" style="left:calc(${pct(t.over)} - 1px)"></div>`;
+    labels += `<div class="tl" style="left:${pct(t.over)}"><b>${t.over}</b><span>${t.pay / 1000}k</span></div>`;
+  }
+  $('track').innerHTML = track;
+  $('ticklabels').innerHTML = labels;
+
+  const inScheme = data.month >= scheme.from && data.month <= scheme.to;
+  const earned = [...scheme.tiers].reverse().find((t) => data.units > t.over);
+  const next = scheme.tiers.find((t) => data.units <= t.over);
+  let line = '';
+  if (earned) line += `<b>${ksh(earned.pay)}</b> ${inScheme ? 'earned' : 'reached'}. `;
+  line += next ? `<b>${Math.ceil(next.over - data.units)} more</b> for ${ksh(next.pay)}.` : 'Top bonus reached.';
+  if (data.month < scheme.from) line += ` The bonus starts in ${monthLabel(scheme.from, { month: 'long' })}.`;
+  if (data.month > scheme.to) line += ` The bonus ran ${monthLabel(scheme.from, { month: 'long' })} to ${monthLabel(scheme.to, { month: 'long' })}.`;
+  $('next').innerHTML = line;
+  $('quotes').textContent = data.quotes?.count
+    ? `${data.quotes.count} ${data.quotes.count === 1 ? 'quote' : 'quotes'} not yet paid, about ${Math.round(data.quotes.units)} units.`
+    : '';
+
+  $('habits').innerHTML = data.habits.map((h) => {
+    const has = h.value != null;
+    const met = has && h.value >= h.goal;
+    return `<div class="habit">
+      <div class="name">${h.name}</div>
+      <div class="what">${h.note}</div>
+      <div class="val${met ? ' met' : ''}"><b>${has ? h.value + h.unit : 'none'}</b><span>goal ${h.goal}${h.unit}</span></div>
+      <div class="mini"><i style="width:${has ? Math.min(100, h.value / h.goal * 100) : 0}%"></i></div>
+    </div>`;
+  }).join('');
+
+  $('windowName').textContent = `${monthLabel(scheme.from, { month: 'long' })} to ${monthLabel(scheme.to, { month: 'long' })}`;
+  const total = data.months.reduce((s, m) => s + (m.pay || 0), 0);
+  $('earned').textContent = total ? `${ksh(total)} earned` : '';
+  renderChart();
+}
+
+// The six bonus months: units, the two lines, and what each finished month paid.
+function renderChart() {
+  const { months, scheme } = data;
+  const W = 340, H = 186, padL = 2, padR = 22, padT = 18, padB = 36;
+  const slot = (W - padL - padR) / months.length, bw = Math.min(30, slot * 0.6);
+  const y = (u) => padT + (H - padT - padB) * (1 - Math.min(u, SCALE_MAX) / SCALE_MAX);
+  const css = getComputedStyle(document.documentElement);
+  const c = (v) => css.getPropertyValue(v).trim();
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Units in each bonus month">`;
+  for (const t of scheme.tiers) {
+    s += `<line x1="${padL}" x2="${W - padR + 4}" y1="${y(t.over)}" y2="${y(t.over)}" stroke="${c('--faint')}" stroke-dasharray="3 4"/>`
+       + `<text x="${W - 2}" y="${y(t.over) + 4}" text-anchor="end" font-size="11" fill="${c('--muted')}">${t.over}</text>`;
+  }
+  months.forEach((m, i) => {
+    const cx = padL + slot * i + slot / 2, x = cx - bw / 2;
+    const isNow = m.month === data.month;
+    if (m.units != null) {
+      const cleared = m.units > scheme.tiers[0].over;
+      const fill = isNow ? c('--accent-soft') : cleared ? c('--accent') : c('--line');
+      s += `<rect x="${x}" y="${y(m.units)}" width="${bw}" height="${Math.max(0, y(0) - y(m.units))}" rx="4" fill="${fill}"/>`
+         + `<text x="${cx}" y="${y(m.units) - 5}" text-anchor="middle" font-size="11" font-weight="${cleared ? 700 : 500}" fill="${cleared ? c('--ink') : c('--muted')}">${fmtUnits(m.units)}</text>`;
+    } else {
+      s += `<rect x="${x}" y="${y(0) - 3}" width="${bw}" height="3" rx="1.5" fill="${c('--line')}"/>`;
+    }
+    s += `<text x="${cx}" y="${H - 20}" text-anchor="middle" font-size="11" font-weight="${isNow ? 700 : 400}" fill="${isNow ? c('--ink') : c('--muted')}">${monthLabel(m.month, { month: 'short' })}</text>`;
+    if (m.pay) s += `<text x="${cx}" y="${H - 4}" text-anchor="middle" font-size="11" font-weight="700" fill="${c('--accent')}">${m.pay / 1000}k</text>`;
+  });
+  s += '</svg>';
+  $('chart').innerHTML = s;
+}
+</script>
+</body>
+</html>

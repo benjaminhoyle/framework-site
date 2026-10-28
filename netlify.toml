@@ -189,6 +189,13 @@
   to = "/marketing.html"
   status = 200
 
+# Elvis's sales tracker: its own password, fed by framework-ops/src/tracker.js
+# through /api/tracker after each refresh. noindex, linked from nowhere.
+[[redirects]]
+  from = "/elvis"
+  to = "/elvis.html"
+  status = 200
+
 # They were called /scene-generator and /catalog-generator for one afternoon.
 [[redirects]]
   from = "/scene-generator"

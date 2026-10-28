@@ -103,3 +103,18 @@ export function refusePush(req) {
   if (push && supplied === push) return null;
   return unauthorised();
 }
+
+/**
+ * Elvis's sales tracker (/api/tracker) has a password of its own, so the person
+ * holding it sees that page and nothing else, and the login key is not handed
+ * out. It lives only in TRACKER_PASSWORD on Netlify, never in the repo. Case and
+ * stray spaces are forgiven, since it is typed on a phone. It fails closed: with
+ * the variable unset, only the machine key reads, to check what was published.
+ */
+export function trackerAllowed(req, env = process.env) {
+  const supplied = (req.headers.get('x-tracker-pass') || '').trim().toLowerCase();
+  const pass = (env.TRACKER_PASSWORD || '').trim().toLowerCase();
+  if (supplied) return !!pass && supplied === pass;
+  const machine = env.SITE_EXPORT_KEY;
+  return !!machine && keyFrom(req) === machine;
+}
