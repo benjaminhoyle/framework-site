@@ -83,7 +83,9 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@300;400;500;700&display=swap" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/styles.css">
-    <link rel="preload" as="image" href="images/shelving/hero-image.jpg" media="(min-width: 900px)">
+    <link rel="preload" as="image" href="images/shelving/hero-image.jpg"
+          imagesrcset="images/shelving/w400/hero-image.jpg 400w, images/shelving/w800/hero-image.jpg 800w, images/shelving/w1100/hero-image.jpg 1100w, images/shelving/hero-image.jpg 1600w"
+          imagesizes="(min-width: 900px) 420px, (min-width: 632px) 600px, calc(100vw - 32px)">
 
     <style>
         /* === Layout (replacing Tailwind utilities) === */
@@ -237,7 +239,8 @@
           margin: 0 auto;
         }
         .intro-media {
-          display: none;
+          max-width: 600px;
+          margin: 0 auto 24px;
         }
         .intro-media img {
           width: 100%;
@@ -310,7 +313,8 @@
             margin: 0;
           }
           .intro-media {
-            display: block;
+            max-width: none;
+            margin: 0;
           }
         }
 
@@ -1137,16 +1141,22 @@
 
     <!-- Intro -->
     <div class="intro-section">
-      <div class="intro-media" aria-hidden="true">
-        <picture>
-          <source media="(min-width: 900px)" srcset="images/shelving/hero-image.jpg">
-          <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="" width="1600" height="1600" loading="eager" fetchpriority="high">
-        </picture>
+      <div class="intro-media">
+        <img src="images/shelving/hero-image.jpg"
+             srcset="images/shelving/w400/hero-image.jpg 400w, images/shelving/w800/hero-image.jpg 800w, images/shelving/w1100/hero-image.jpg 1100w, images/shelving/hero-image.jpg 1600w"
+             sizes="(min-width: 900px) 420px, (min-width: 632px) 600px, calc(100vw - 32px)"
+             alt="The Curator's Shelf in Sage: six tiers of leaf green steel and mint boards, holding baskets, mugs of brushes and painted clay animals"
+             width="1600" height="1600" loading="eager" fetchpriority="high">
       </div>
       <div class="intro-copy">
         <h1 class="intro-headline">Stackable shelving, made in Nairobi</h1>
         <p class="intro-subhead">Steel shelves that stack into bookshelves, TV stands and open wardrobes. Add more as you need them. Delivered assembled within a week.</p>
         <div class="intro-links">
+          <a href="#popular-configurations" class="intro-link-row"
+             onclick="event.preventDefault(); document.getElementById('popular-configurations').scrollIntoView({behavior:'smooth'});">
+            <span class="intro-link-text">Our shelves and prices</span>
+            <span class="intro-link-arrow">&rsaquo;</span>
+          </a>
           <a href="#customize-your-shelf" class="intro-link-row"
              onclick="event.preventDefault(); document.getElementById('customize-your-shelf').scrollIntoView({behavior:'smooth'});">
             <span class="intro-link-text">Design your own shelf</span>
@@ -1159,22 +1169,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Popular Configurations Catalog -->
-    <section id="popular-configurations" class="section-band" aria-labelledby="popular-configurations-title">
-      <div class="section-inner catalog-section">
-      <div class="catalog-header section-header">
-        <h2 id="popular-configurations-title">Our shelves</h2>
-      </div>
-      <div id="catalog-grid" class="catalog-grid"></div>
-      <div id="catalog-more-wrap" class="catalog-more-wrap">
-        <button id="catalog-see-more" class="catalog-more-button" type="button"
-                data-clarity-action="see_more_configurations">
-          See more shelves
-        </button>
-      </div>
-      </div>
-    </section>
 
     <!-- Product Details -->
     <section id="product-details" class="section-band section-band-muted featured-gallery">
@@ -1217,8 +1211,24 @@
       </div>
     </section>
 
+    <!-- Popular Configurations Catalog -->
+    <section id="popular-configurations" class="section-band" aria-labelledby="popular-configurations-title">
+      <div class="section-inner catalog-section">
+      <div class="catalog-header section-header">
+        <h2 id="popular-configurations-title">Our shelves</h2>
+      </div>
+      <div id="catalog-grid" class="catalog-grid"></div>
+      <div id="catalog-more-wrap" class="catalog-more-wrap">
+        <button id="catalog-see-more" class="catalog-more-button" type="button"
+                data-clarity-action="see_more_configurations">
+          See more shelves
+        </button>
+      </div>
+      </div>
+    </section>
+
     <!-- Customize Your Shelf -->
-    <section id="customize-your-shelf" class="section-band">
+    <section id="customize-your-shelf" class="section-band section-band-muted">
       <div class="section-inner">
       <div class="section-header">
         <h2>Design Your Own Shelf</h2>
@@ -1289,7 +1299,7 @@
     </section>
 
     <!-- FAQ Section -->
-    <section class="section-band section-band-muted">
+    <section class="section-band">
       <div class="section-inner">
         <div class="section-header">
           <h2>Frequently Asked Questions</h2>
