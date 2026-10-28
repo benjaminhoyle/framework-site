@@ -246,14 +246,6 @@
           border-radius: 8px;
           box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
-        .intro-tagline {
-          font-size: 13px;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          color: #6b6b6b; /* was #999 (2.8:1); this matches .intro-headline and passes AA */
-          margin: 0 0 12px;
-          font-weight: 400;
-        }
         .intro-headline {
           font-size: 24px;
           font-weight: 700;
@@ -372,10 +364,6 @@
           margin-top: 0.75rem;
           color: #374151;
           line-height: 1.5;
-        }
-        .see-more-link {
-          text-align: center;
-          margin-top: 1.5rem;
         }
         .see-configs-btn {
           display: inline-block;
@@ -1007,60 +995,6 @@
           }
         }
 
-        /* === Details Grid === */
-        .details-section {
-          display: none;
-          margin-top: 2rem;
-        }
-        .details-section.active { display: block; }
-        .details-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 1rem;
-        }
-        @media (min-width: 768px) {
-          .details-grid { grid-template-columns: repeat(4, 1fr); }
-        }
-        .detail-item img {
-          width: 100%;
-          aspect-ratio: 1;
-          object-fit: cover;
-          border-radius: 8px;
-        }
-        .detail-item p {
-          margin-top: 0.5rem;
-          font-size: 0.9rem;
-          color: #555;
-        }
-        .section-reveal-button {
-          background: #fff;
-          border: 1.5px solid #2563eb;
-          border-radius: 8px;
-          color: #2563eb;
-          cursor: pointer;
-          font: inherit;
-          font-weight: 700;
-          padding: 12px 24px;
-          transition: background 0.2s, color 0.2s;
-        }
-        .section-reveal-button:hover,
-        .section-reveal-button:focus-visible {
-          background: #2563eb;
-          color: #fff;
-          outline: none;
-        }
-        .section-hide-button {
-          background: transparent;
-          border-color: #d6dce8;
-          color: #4b5563;
-        }
-        .section-hide-button:hover,
-        .section-hide-button:focus-visible {
-          background: #fff;
-          border-color: #6b7280;
-          color: #333;
-        }
-
         /* === Customize Cards === */
         .customize-card .customize-media {
           background: #f7f8fa;
@@ -1113,7 +1047,7 @@
           font-size: 1.05rem;
           font-weight: 700;
           list-style: none;
-          padding: 1rem 1.15rem;
+          padding: 1rem 2.75rem 1rem 1.15rem;
           position: relative;
         }
         .faq-item summary::-webkit-details-marker {
@@ -1189,11 +1123,10 @@
         }
         .btn-green:hover { background-color: #166534; }
 
-        /* Mobile-only title bg */
-        .bg-mobile-title {
-          background-color: #fff;
-          color: #333;
-          line-height: 1.35;
+        .customize-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
         }
     </style>
     <link rel="canonical" href="https://www.framework.co.ke/shelving.html">
@@ -1211,15 +1144,9 @@
         </picture>
       </div>
       <div class="intro-copy">
-        <p class="intro-tagline">Bookshelves, TV stands, open wardrobes</p>
         <h1 class="intro-headline">Stackable shelving, made in Nairobi</h1>
-        <p class="intro-subhead">Start with one unit and add more as your space needs it. Steel framed, delivered assembled within a week.</p>
+        <p class="intro-subhead">Steel shelves that stack into bookshelves, TV stands and open wardrobes. Add more as you need them. Delivered assembled within a week.</p>
         <div class="intro-links">
-          <a href="#popular-configurations" class="intro-link-row"
-             onclick="event.preventDefault(); document.getElementById('popular-configurations').scrollIntoView({behavior:'smooth'});">
-            <span class="intro-link-text">Design ideas & pricing</span>
-            <span class="intro-link-arrow">&rsaquo;</span>
-          </a>
           <a href="#customize-your-shelf" class="intro-link-row"
              onclick="event.preventDefault(); document.getElementById('customize-your-shelf').scrollIntoView({behavior:'smooth'});">
             <span class="intro-link-text">Design your own shelf</span>
@@ -1232,6 +1159,22 @@
         </div>
       </div>
     </div>
+
+    <!-- Popular Configurations Catalog -->
+    <section id="popular-configurations" class="section-band" aria-labelledby="popular-configurations-title">
+      <div class="section-inner catalog-section">
+      <div class="catalog-header section-header">
+        <h2 id="popular-configurations-title">Our shelves</h2>
+      </div>
+      <div id="catalog-grid" class="catalog-grid"></div>
+      <div id="catalog-more-wrap" class="catalog-more-wrap">
+        <button id="catalog-see-more" class="catalog-more-button" type="button"
+                data-clarity-action="see_more_configurations">
+          See more shelves
+        </button>
+      </div>
+      </div>
+    </section>
 
     <!-- Product Details -->
     <section id="product-details" class="section-band section-band-muted featured-gallery">
@@ -1248,7 +1191,7 @@
                class="featured-img"
                width="1080" height="1080"
                loading="lazy">
-          <p class="featured-caption"><strong>Infinitely Expandable</strong><br>Our modular shelving system grows in any direction: stack vertically, extend horizontally, and turn corners. Perfect for Nairobi's diverse living spaces.</p>
+          <p class="featured-caption"><strong>Up, Along and Around Corners</strong><br>Stack units on top of each other, run them along a wall, or turn a corner.</p>
         </button>
         <button type="button" class="featured-item" data-fwk-featured-id="triple" onclick="openConfigById('triple', 'featured_gallery')">
           <img src="images/shelving/configs/multicolor-stack-under-mdf.jpg"
@@ -1258,7 +1201,7 @@
                class="featured-img"
                width="1400" height="1400"
                loading="lazy">
-          <p class="featured-caption"><strong>Made in Kenya</strong><br>Crafted in our Nairobi workshop, these steel-framed shelving units combine slim proportions with exceptional durability.</p>
+          <p class="featured-caption"><strong>Steel Under Every Board</strong><br>Each board rests on a steel bracket, and each post slots into the one below. Made in our Nairobi workshop.</p>
         </button>
         <button type="button" class="featured-item" data-fwk-featured-id="multicolor-stack" onclick="openConfigById('multicolor-stack', 'featured_gallery')">
           <img src="images/shelving/configs/multicolor-stack-populated.jpg"
@@ -1271,59 +1214,11 @@
           <p class="featured-caption"><strong>One Color or a Mix</strong><br>Marine, Sage, Charcoal and Coral. Keep one color all the way up, or give each unit its own.</p>
         </button>
       </div>
-
-      <div class="see-more-link">
-        <button id="product-details-reveal" class="section-reveal-button" type="button" onclick="showProductDetails()">
-          See more product details
-        </button>
-      </div>
-
-      <div id="details-craftsmanship" class="details-section">
-        <div class="details-grid">
-          <div class="detail-item">
-            <img src="images/shelving/shelf (11).jpg" alt="A Sage board between two steel posts, with the collar where one post stacks onto the next" loading="lazy" width="1000" height="1000">
-            <p>Rock-solid steel frame</p>
-          </div>
-          <div class="detail-item">
-            <img src="images/shelving/shelf (12).jpg" alt="The bottom board of a Sage shelf and the metal foot under its post" loading="lazy" width="1000" height="1000">
-            <p>Adjustable feet for any floor</p>
-          </div>
-          <div class="detail-item">
-            <img src="images/shelving/shelf (10).jpg" alt="A Sage post lowered toward the open end of the post below it" loading="lazy" width="1000" height="1000">
-            <p>Tool-free assembly, just slide together</p>
-          </div>
-          <div class="detail-item">
-            <img src="images/shelving/shelf (14).jpg" alt="Looking up at two Sage boards and the brackets and post that carry them" loading="lazy" width="1000" height="1000">
-            <p>Precision-engineered details</p>
-          </div>
-        </div>
-        <div class="see-more-link">
-          <button id="product-details-hide" class="section-reveal-button section-hide-button" type="button" onclick="hideProductDetails()">
-            Hide product details
-          </button>
-        </div>
-      </div>
-      </div>
-    </section>
-
-    <!-- Popular Configurations Catalog -->
-    <section id="popular-configurations" class="section-band" aria-labelledby="popular-configurations-title">
-      <div class="section-inner catalog-section">
-      <div class="catalog-header section-header">
-        <h2 id="popular-configurations-title">Bookshelves, TV Stands and Open Wardrobes</h2>
-      </div>
-      <div id="catalog-grid" class="catalog-grid"></div>
-      <div id="catalog-more-wrap" class="catalog-more-wrap">
-        <button id="catalog-see-more" class="catalog-more-button" type="button"
-                data-clarity-action="see_more_configurations">
-          See more configurations
-        </button>
-      </div>
       </div>
     </section>
 
     <!-- Customize Your Shelf -->
-    <section id="customize-your-shelf" class="section-band section-band-muted">
+    <section id="customize-your-shelf" class="section-band">
       <div class="section-inner">
       <div class="section-header">
         <h2>Design Your Own Shelf</h2>
@@ -1332,9 +1227,6 @@
       <!-- Simple Shelf CTA Card -->
       <div class="mb-12">
         <div class="bg-white rounded-lg overflow-hidden shadow-md customize-card">
-          <h2 class="text-2xl text-center md:hidden p-4 pb-2 font-bold bg-mobile-title mb-0">
-            Looking for a Simple Shelf?
-          </h2>
           <div class="md:flex">
             <div class="customize-media">
               <img src="images/shelving/configs/wide-four-tier-emptied.jpg"
@@ -1345,17 +1237,15 @@
                    width="1400" height="1400"
                    loading="lazy">
             </div>
-            <div class="p-6 flex flex-col justify-center bg-gray-50 md:bg-white customize-copy">
-              <h2 class="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Simple Shelf?</h2>
-              <div class="bg-white p-4 rounded-lg shadow-sm md:shadow-none">
-                <p class="text-gray-700 mb-6">If you want a great shelf without needing to overthink it, our Simple Builder will help you get exactly what you need.</p>
-                <div>
-                  <a href="/builder.html?mode=simple"
-                     class="btn-blue"
-                     onclick="gtag('event','customize_product',{content_name:'Simple Designer',content_category:'shelving_page_body',link_target:'simple_shelf_designer'}); if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Simple Designer',content_category:'shelving_page_body'});}">
-                    Start Here
-                  </a>
-                </div>
+            <div class="p-6 flex flex-col justify-center customize-copy">
+              <h3 class="text-2xl section-title mb-4 font-bold">A simple shelf</h3>
+              <p class="text-gray-700 mb-6">Pick a width, a height and a color, and see the price as you go.</p>
+              <div>
+                <a href="/builder.html?mode=simple"
+                   class="btn-blue"
+                   onclick="gtag('event','customize_product',{content_name:'Simple Designer',content_category:'shelving_page_body',link_target:'simple_shelf_designer'}); if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Simple Designer',content_category:'shelving_page_body'});}">
+                  Open Simple Builder
+                </a>
               </div>
             </div>
           </div>
@@ -1363,11 +1253,8 @@
       </div>
 
       <!-- Custom Shelf CTA Card -->
-      <div class="mb-16">
+      <div>
         <div class="bg-white rounded-lg overflow-hidden shadow-md customize-card">
-          <h2 class="text-2xl text-center md:hidden p-4 pb-2 font-bold bg-mobile-title mb-0">
-            Looking for a Unique Shelf?
-          </h2>
           <div class="md:flex">
             <div class="customize-media">
               <video autoplay loop muted playsinline preload="metadata" width="500" height="500" class="w-full object-cover object-center">
@@ -1376,30 +1263,23 @@
               </video>
             </div>
             <div class="p-6 flex flex-col justify-center customize-copy">
-              <h2 class="text-2xl section-title mb-4 hidden md:block font-bold">Looking for a Unique Shelf?</h2>
-              <p class="text-gray-600 mb-6">If you want more control over your shelving system, we can help on WhatsApp or you can arrange it yourself in our Flexible Builder.</p>
+              <h3 class="text-2xl section-title mb-4 font-bold">Corners, steps and mixed heights</h3>
+              <p class="text-gray-600 mb-6">Tell us about your space on WhatsApp and we will suggest a design, or arrange every unit yourself in the Flexible Builder.</p>
 
-              <div class="space-y-4">
-                <div class="bg-gray-50 p-4 rounded-lg">
-                  <h3 class="font-bold text-lg mb-2">Get guidance on a perfect design</h3>
-                  <a href="https://wa.me/254783891005?text=Hi%20Framework!%20I%20would%20like%20some%20guidance%20on%20designing%20a%20shelf%20for%20my%20space."
-                     target="_blank"
-                     rel="noopener noreferrer"
-                     class="btn-green"
-                     data-fwk-handoff="guidance"
-                     onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{link_target:'shelving_guidance',content_category:'shelving_page_guidance'});}">
-                    Contact Us on WhatsApp
-                  </a>
-                </div>
-
-                <div class="bg-gray-50 p-4 rounded-lg">
-                  <h3 class="font-bold text-lg mb-2">Arrange it yourself</h3>
-                  <a href="/builder.html?mode=flexible"
-                     class="btn-blue"
-                     onclick="gtag('event','customize_product',{content_name:'Flexible Builder',content_category:'shelving_page',link_target:'flexible_builder'}); if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Flexible Builder',content_category:'shelving_page'});}">
-                    Open Flexible Builder
-                  </a>
-                </div>
+              <div class="customize-actions">
+                <a href="https://wa.me/254783891005?text=Hi%20Framework!%20I%20would%20like%20some%20guidance%20on%20designing%20a%20shelf%20for%20my%20space."
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="btn-green"
+                   data-fwk-handoff="guidance"
+                   onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{link_target:'shelving_guidance',content_category:'shelving_page_guidance'});}">
+                  Contact Us on WhatsApp
+                </a>
+                <a href="/builder.html?mode=flexible"
+                   class="btn-blue"
+                   onclick="gtag('event','customize_product',{content_name:'Flexible Builder',content_category:'shelving_page',link_target:'flexible_builder'}); if(typeof fbq==='function'){fbq('track','CustomizeProduct',{content_name:'Flexible Builder',content_category:'shelving_page'});}">
+                  Open Flexible Builder
+                </a>
               </div>
             </div>
           </div>
@@ -1409,41 +1289,25 @@
     </section>
 
     <!-- FAQ Section -->
-    <section class="section-band">
+    <section class="section-band section-band-muted">
       <div class="section-inner">
         <div class="section-header">
           <h2>Frequently Asked Questions</h2>
         </div>
         <div class="faq-list">
             <details class="faq-item">
-                <summary>What makes Framework's shelving unique in Nairobi?</summary>
-                <p>Our shelving systems are designed and manufactured in Kenya using premium steel
-                    and engineered wood. Unlike imported furniture, our modular shelving is specifically designed
-                    for Nairobi homes and businesses, with adjustable features that make it adaptable to any space. The
-                    space-saving design maximizes storage while maintaining an elegant aesthetic that complements
-                    contemporary Kenyan interiors.</p>
-            </details>
-
-            <details class="faq-item">
                 <summary>Can I choose the size and colors?</summary>
                 <p>Yes. Choose a color for each unit, and add or swap units to fit your space. You can try a design first in the online designer, which prices it as you go.</p>
             </details>
 
             <details class="faq-item">
-                <summary>Do you deliver and install in Nairobi?</summary>
-                <p>Yes, we offer delivery throughout Nairobi and surrounding areas. Installation
-                    services are also available for an additional fee. Our team ensures your shelving is properly set up
-                    and stable, with adjustable feet that adapt to uneven floors commonly found in Nairobi buildings. We
-                    serve clients across all neighborhoods, from Kilimani and Westlands to Karen and beyond.</p>
+                <summary>Do you deliver in Nairobi?</summary>
+                <p>Yes. We deliver across Nairobi and nearby areas, and your shelf arrives assembled. The feet adjust, so it stands level on an uneven floor.</p>
             </details>
 
             <details class="faq-item">
-                <summary>What is the price range for Framework shelving?</summary>
-                <p>Our shelving starts at KSh 6,500 for a standard base unit, with extension units
-                    available from KSh 5,500. Custom configurations vary in price based on size and features. Being
-                    Kenyan-made, our shelving offers exceptional value compared to imported options of similar quality.
-                    For architects, interior designers, and business owners looking for commercial shelving solutions,
-                    we also offer competitive pricing for bulk orders.</p>
+                <summary>How much does a shelf cost?</summary>
+                <p>The two-tier Starter is Ksh 6,500, and every shelf above shows its price. The builders price your own design as you go. For a large order, message us for a quote.</p>
             </details>
         </div>
       </div>
@@ -1926,7 +1790,7 @@
       moreWrap.style.display = configurations.length <= INITIAL_VISIBLE_CONFIGS ? 'none' : '';
       var button = document.getElementById('catalog-see-more');
       if (button) {
-        button.textContent = catalogExpanded ? 'Hide additional configurations' : 'See more configurations';
+        button.textContent = catalogExpanded ? 'Show fewer' : 'See more shelves';
         button.setAttribute('data-clarity-action', catalogExpanded ? 'hide_more_configurations' : 'see_more_configurations');
       }
       observeCatalogCards(); // WS1: start the impression clock for hesitation dims
@@ -2102,39 +1966,6 @@
       else showMoreConfigurations();
     }
 
-    function showProductDetails() {
-      var details = document.getElementById('details-craftsmanship');
-      var button = document.getElementById('product-details-reveal');
-      if (!details || !button) return;
-      details.classList.add('active');
-      button.style.display = 'none';
-      if (typeof gtag === 'function') {
-        gtag('event', 'product_details_expand', {
-          content_category: 'shelving_product_details'
-        });
-      }
-      if (typeof clarity === 'function') {
-        clarity('event', 'product_details_expand');
-      }
-    }
-
-    function hideProductDetails() {
-      var details = document.getElementById('details-craftsmanship');
-      var button = document.getElementById('product-details-reveal');
-      if (!details || !button) return;
-      details.classList.remove('active');
-      button.style.display = '';
-      document.getElementById('product-details').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      if (typeof gtag === 'function') {
-        gtag('event', 'product_details_hide', {
-          content_category: 'shelving_product_details'
-        });
-      }
-      if (typeof clarity === 'function') {
-        clarity('event', 'product_details_hide');
-      }
-    }
-
     // Keyboard navigation
     document.addEventListener('keydown', function(e) {
       var lb = document.getElementById('config-lightbox');
@@ -2216,7 +2047,11 @@
       try {
         if (/[?&]gridorder=published\b/.test(window.location.search)) return list;
       } catch (e) { /* no location in some embeds — rotate anyway */ }
-      return seededShuffle(list, isoWeekSeed(new Date()));
+      seededShuffle(list, isoWeekSeed(new Date()));
+      // An add-on never leads the grid: the first tile should be a shelf.
+      var i = list.findIndex(function (c) { return c.id === 'bookend'; });
+      if (i > -1) list.push(list.splice(i, 1)[0]);
+      return list;
     }
 
     /**
