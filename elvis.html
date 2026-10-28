@@ -238,11 +238,14 @@ function render() {
   const pct = (u) => Math.min(100, u / SCALE_MAX * 100) + '%';
   let track = `<div class="ghost" style="width:${pct(Math.max(pace || 0, data.units))}"></div>`
             + `<div class="fill" style="width:${pct(data.units)}"></div>`;
+  // Each line is labelled with what it adds (+5k, +5k), so the top one does not
+  // read as 10k on top of the first.
   let labels = '';
-  for (const t of scheme.tiers) {
+  scheme.tiers.forEach((t, i) => {
+    const step = t.pay - (scheme.tiers[i - 1]?.pay || 0);
     track += `<div class="tick${data.units > t.over ? ' done' : ''}" style="left:calc(${pct(t.over)} - 1px)"></div>`;
-    labels += `<div class="tl" style="left:${pct(t.over)}"><b>${t.over}</b><span>${t.pay / 1000}k</span></div>`;
-  }
+    labels += `<div class="tl" style="left:${pct(t.over)}"><b>${t.over}</b><span>+${step / 1000}k</span></div>`;
+  });
   $('track').innerHTML = track;
   $('ticklabels').innerHTML = labels;
 
@@ -251,7 +254,8 @@ function render() {
   const next = scheme.tiers.find((t) => data.units <= t.over);
   let line = '';
   if (earned) line += `<b>${ksh(earned.pay)}</b> ${inScheme ? 'earned' : 'reached'}. `;
-  line += next ? `<b>${Math.ceil(next.over - data.units)} more</b> for ${ksh(next.pay)}.` : 'Top bonus reached.';
+  line += !next ? 'Top bonus reached.'
+    : `<b>${Math.ceil(next.over - data.units)} more</b> for ${earned ? 'another ' + ksh(next.pay - earned.pay) : ksh(next.pay)}.`;
   if (data.month < scheme.from) line += ` The bonus starts in ${monthLabel(scheme.from, { month: 'long' })}.`;
   if (data.month > scheme.to) line += ` The bonus ran ${monthLabel(scheme.from, { month: 'long' })} to ${monthLabel(scheme.to, { month: 'long' })}.`;
   $('next').innerHTML = line;
