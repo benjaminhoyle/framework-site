@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Which of Our Colors Suits Your Room? | Framework Nairobi</title>
+    <!--
+      /color-match: a photo of the customer's room, its main colors marked, and
+      one of our four finishes suggested for it. Everything runs in the browser:
+      the photo is read on a canvas and never leaves the phone, so there is
+      nothing to store and no AI call. The rules that pick a finish are in
+      suggest() below, each one a reason a person can read; only the pick's
+      reason is shown, because the other colors are there to try, not to be
+      talked down.
+
+      Doors in: the strip under the four tiles on /customize (where somebody who
+      cannot choose is standing) and the colors strip on /how. The ask out is
+      WhatsApp, pre-filled with the color it picked; js/site.js adds the short
+      code and beacons the handoff as `color_match`.
+
+      The three sample rooms are generated images, used only to show what the
+      tool does. They are not customers' homes and must never be used as
+      references for /scenes.
+    -->
+    <meta name="description"
+        content="Take a photo of the spot where your shelf will go. We read the colors in your room and suggest Marine, Sage, Charcoal or Coral.">
+    <link rel="canonical" href="https://www.framework.co.ke/color-match">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.framework.co.ke/color-match">
+    <meta property="og:site_name" content="Framework Designs">
+    <meta property="og:title" content="Which of our colors suits your room?">
+    <meta property="og:description" content="Take a photo of your room and we suggest one of our four colors. Your photo stays on your phone.">
+    <meta property="og:image" content="https://www.framework.co.ke/images/shelving/configs/multicolor-stack-populated.jpg">
+    <meta property="og:image:width" content="1400">
+    <meta property="og:image:height" content="1400">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="/images/global/fwk-icon-lg.png">
+    <!-- === TRACKING === -->
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1492649948884685');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1492649948884685&ev=PageView&noscript=1"/></noscript>
+    <!-- End Meta Pixel Code -->
+    <!-- Google tag (gtag.js): one loader for Google Ads and GA4. Each ID used to
+         have its own loader script, and whichever ran first fetched the other's
+         container a second time (2026-09-10). -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16875113878"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'AW-16875113878');
+        gtag('config', 'G-HXHT6KGZT3');
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
+    <!-- styles.css carries the header and footer that js/site.js injects; the
+         start screen keeps them, the result screen is the whole screen. -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="/js/site.js" defer></script>
+<style>
+/* Layout: one narrow column, centred at every width, one left edge (16px) for everything.
+   Before a photo: the site's header, a headline, one button, sample rooms.
+   After (html.cm-app): no header or footer, one screen.
+   After: one screen. A single top row (back, the four colors, add), the verdict, then the photo at the
+   full column width taking every pixel left, and the WhatsApp ask at the thumb. The page takes the shown
+   color's board, the photo is framed in its steel, and a sample chip sits tucked on the photo's corner.
+   Type on the result screen: 13 / 15 / 16 / 24, nothing else; the start screen is a page like /customize
+   and sets its title at 34 on a phone and 42 to 52 on a laptop. Tokens are framework.co.ke's (css/pages.css).
+   Single light theme on purpose: the site is light. */
+:root {
+  --ink: #1b1f1e;
+  --muted: #5b6461;
+  --paper: #ffffff;
+  --glass: rgba(255, 255, 255, .5);
+  --board: #82aad0;
+  --steel: #143f68;
+  --page: #ffffff;
+  --gut: max(16px, env(safe-area-inset-left, 0px));
+  --font: "Red Hat Display", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html.cm-app, html.cm-app body { height: 100%; }
+html.cm-app body > header, html.cm-app body > footer { display: none; }
+html { background: var(--page); transition: background-color .5s ease; }
+/* styles.css pads the body for the older pages; this page takes that back, as css/pages.css does. */
+body {
+  margin: 0; padding: 0; min-height: 0; height: auto;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .5s ease;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.vh { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip-path: inset(50%); }
+
+.col {
+  max-width: 480px;
+  margin: 0 auto;
+  padding-left: var(--gut);
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 22px;
+  border: 0; border-radius: 999px;
+  background: var(--ink); color: var(--paper);
+  font-weight: 700; font-size: 16px; line-height: 1;
+  text-decoration: none; cursor: pointer;
+}
+.btn svg { width: 19px; height: 19px; flex: none; }
+.btn:focus-within { outline: 2px solid var(--ink); outline-offset: 3px; }
+.fine { margin: 0; font-size: 13px; color: var(--muted); text-wrap: balance; }
+
+/* --------------------------------------------------------------------- start */
+/* Two blocks: the words with the button, then the three sample rooms as the picture. The rooms are the
+   only photographs on the screen, so they carry its weight: one large, two beside it, all 3:4 and
+   uncropped. On a phone the blocks stack with the site's 24px margin; from 900px they sit side by side
+   in the site's 1080px container, the rooms where a hero picture would be. The title takes the site's
+   own title scale (css/pages.css), smaller on a phone so it stays two lines at 375px. */
+.col.start {
+  max-width: 480px;
+  display: grid; row-gap: 36px; align-content: start;
+  min-height: calc(100svh - 70px); /* the header is 70px here; the footer waits below the first screen */
+  padding: 8px max(24px, env(safe-area-inset-right, 0px)) 48px max(24px, env(safe-area-inset-left, 0px));
+}
+.start-main { display: flex; flex-direction: column; }
+/* The four colors: steel on the left, board on the right, the site's own swatch (css/pages.css
+   .pg-swatches) and the same one the result screen's color row uses. */
+.four { display: flex; gap: 6px; margin: 0 0 18px; }
+.four span {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: linear-gradient(90deg, var(--s) 50%, var(--b) 50%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08);
+}
+.start h1 { margin: 0; font-size: 34px; line-height: 1.1; font-weight: 700; text-wrap: balance; }
+.lede { margin: 12px 0 0; font-size: 16px; line-height: 1.45; color: var(--muted); max-width: 30ch; text-wrap: pretty; }
+.start .btn { margin-top: 28px; min-height: 54px; font-size: 17px; }
+.start .fine { margin-top: 12px; text-align: center; }
+.samples { display: flex; flex-direction: column; gap: 12px; }
+.samples h2 { margin: 0; font-size: 15px; line-height: 1.3; font-weight: 500; color: var(--ink); }
+/* One large room and two stacked beside it. The large one sets the height at 3:4; the two small ones
+   share it, which leaves them within a hair of 3:4 too. */
+.srow { display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; }
+.sample {
+  display: block; width: 100%; height: 100%; min-height: 44px;
+  border: 0; border-radius: 12px; padding: 0;
+  background: var(--wash, #f5f7f6) center / cover no-repeat;
+  box-shadow: 0 1px 6px rgba(27, 31, 30, .14);
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.sample:first-child { grid-row: span 2; aspect-ratio: 3 / 4; border-radius: 14px; }
+@media (hover: hover) {
+  .sample:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(27, 31, 30, .18); }
+}
+@media (prefers-reduced-motion: reduce) { .sample { transition: none; } }
+
+/* Laptop: the words on the left, aligned to the header's logo, the rooms on the right; the pair
+   centred in the first screen so the footer waits below it. */
+@media (min-width: 900px) {
+  .col.start {
+    max-width: 1080px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 72px;
+    align-items: center; align-content: center;
+    min-height: calc(100svh - 90px);
+    padding-block: 24px 64px;
+  }
+  .four { margin-bottom: 22px; }
+  .start h1 { font-size: clamp(42px, 4.2vw, 52px); line-height: 1.05; }
+  .lede { margin-top: 18px; font-size: 18px; }
+  .start .btn { align-self: flex-start; margin-top: 36px; min-height: 56px; padding: 0 30px; }
+  .start .fine { text-align: left; }
+}
+
+/* --------------------------------------------------------------------- result */
+.result { height: 100%; }
+.screen { position: relative; height: 100%; display: flex; flex-direction: column; gap: 10px; padding-block: 6px 12px; }
+
+/* One row: back, the four colors, add. The shown color is ringed and the pick carries a star; the
+   heading below names whichever is shown, so the swatches need no labels. */
+.top { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; gap: 8px; }
+.icon {
+  width: 40px; height: 40px; border: 0; border-radius: 50%;
+  display: grid; place-items: center;
+  background: transparent; cursor: pointer;
+}
+.icon svg { width: 22px; height: 22px; }
+label.icon:focus-within { outline: 2px solid var(--ink); outline-offset: 3px; }
+.picker { display: flex; justify-content: center; gap: 6px; }
+.opt { position: relative; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 50%; background: transparent; display: grid; place-items: center; cursor: pointer; }
+.opt .sw {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(90deg, var(--s) 50%, var(--b) 50%);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .9), 0 1px 4px rgba(27, 31, 30, .2);
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.opt[aria-checked="true"] .sw { transform: scale(1.06); box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--ink), 0 2px 6px rgba(27, 31, 30, .25); }
+.opt .star {
+  position: absolute; top: 2px; right: 1px;
+  width: 15px; height: 15px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--ink); color: var(--paper);
+  box-shadow: 0 0 0 2px var(--board);
+  transition: box-shadow .5s ease;
+}
+.opt .star svg { width: 9px; height: 9px; }
+
+/* The verdict: the shown color's name, a quiet note when it is our pick, and one reason. Its right edge
+   stays clear for the sample chip, which rises out of the photo's corner. */
+.verdict { padding-right: 52px; }
+.title { display: flex; align-items: baseline; gap: 10px; }
+.verdict h2 { margin: 0; font-size: 24px; line-height: 1.15; font-weight: 700; }
+.mark { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.mark svg { width: 12px; height: 12px; transform: translateY(-1px); }
+/* One line, held open even when empty, so the photo never changes size under your thumb. */
+.why { margin: 2px 0 0; font-size: 15px; line-height: 1.4; min-height: 1.4em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* The photos: full column width, a carousel when there is more than one. The track runs to the screen
+   edges and pads itself, so the frame's shadow is never cut into a band. */
+.stage { position: relative; flex: 1 1 0; min-height: 200px; margin-inline: calc(-1 * var(--gut)); }
+.track {
+  position: absolute; inset: 0;
+  display: flex; overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain;
+}
+.track::-webkit-scrollbar { display: none; }
+.track:focus-visible { outline-offset: -2px; }
+.slide {
+  flex: 0 0 100%; height: 100%;
+  padding: 8px var(--gut) 14px;
+  display: flex; align-items: flex-start; justify-content: center;
+  scroll-snap-align: center; scroll-snap-stop: always;
+}
+.photo {
+  position: relative; flex: none; margin: 0;
+  border: 4px solid var(--steel); border-radius: 16px; background: var(--steel);
+  box-shadow: 0 6px 16px rgba(27, 31, 30, .16);
+  overflow: hidden;
+  transition: border-color .5s ease, background-color .5s ease;
+}
+.photo img {
+  display: block; width: 100%; height: 100%; object-fit: cover;
+  border-radius: 12px; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; pointer-events: none;
+}
+.pins { position: absolute; inset: 0; pointer-events: none; }
+/* A callout: the color itself, ringed in white, on the spot, with its name beside it. */
+.pin { position: absolute; display: flex; align-items: center; gap: 5px; transform: translate(-9px, -50%); animation: pin-in .5s cubic-bezier(.2, .8, .2, 1.2) both; }
+.pin.left { flex-direction: row-reverse; transform: translate(calc(-100% + 9px), -50%); }
+.pin .sw { flex: none; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 1px 5px rgba(0, 0, 0, .35); }
+.pin .lab {
+  height: 22px; padding: 0 9px; border-radius: 11px;
+  display: flex; align-items: center;
+  background: #fff; color: var(--ink);
+  font-size: 13px; font-weight: 500; line-height: 1; white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
+}
+@keyframes pin-in { from { opacity: 0; scale: .6; } to { opacity: 1; scale: 1; } }
+
+.dots { display: flex; justify-content: center; gap: 6px; margin-top: -8px; }
+.dot { width: 6px; height: 6px; border-radius: 3px; background: rgba(27, 31, 30, .28); transition: width .25s ease, background-color .25s ease; }
+.dot[aria-current="true"] { width: 18px; background: var(--ink); }
+
+/* The sample chip: the shown color's board over its steel, like a paint chip. It rests tilted on the
+   photo's top corner, mostly outside it, and can be dragged anywhere; a double tap sends it back. */
+.chip {
+  position: absolute; z-index: 6; left: 0; top: 0;
+  width: 46px; height: 64px;
+  border-radius: 9px; border: 3px solid #fff;
+  display: grid; grid-template-rows: 1fr 30%;
+  box-shadow: 0 6px 16px rgba(27, 31, 30, .3);
+  touch-action: none; cursor: grab;
+  rotate: -7deg;
+  transition: transform .15s ease, box-shadow .15s ease, rotate .2s ease;
+}
+.chip.free { rotate: 0deg; }
+.chip i { display: block; transition: background-color .5s ease; }
+.chip i:first-of-type { background: var(--board); border-radius: 6px 6px 0 0; }
+.chip i:last-of-type { background: var(--steel); border-radius: 0 0 6px 6px; }
+.chip .grip {
+  position: absolute; right: -9px; bottom: -9px;
+  width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--paper); color: var(--ink);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
+}
+.chip .grip svg { width: 13px; height: 13px; }
+.chip::after { content: ""; position: absolute; inset: -12px; } /* a 70px finger target */
+.chip.drag { transform: scale(1.1); box-shadow: 0 16px 30px rgba(27, 31, 30, .34); cursor: grabbing; }
+.chip.homing { transition: left .35s ease, top .35s ease, rotate .35s ease, transform .15s ease; }
+.chip.nudge { animation: nudge 1.3s ease .9s 1 both; }
+@keyframes nudge { 0%, 100% { translate: 0 0; } 25% { translate: -6px 14px; } 50% { translate: 0 0; } 70% { translate: -3px 7px; } }
+
+/* Short phones (an SE in Safari): the same screen, tighter. */
+@media (max-height: 640px) {
+  .screen { gap: 6px; padding-block: 4px 10px; }
+  .verdict h2 { font-size: 22px; }
+  .slide { padding-block: 6px 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html, body, .photo, .chip, .chip i, .opt .sw, .dot { transition: none; }
+  .pin, .chip.nudge { animation: none; }
+}
+</style>
+</head>
+
+<body>
+
+<section id="start" class="col start">
+  <div class="start-main">
+    <div class="four" aria-hidden="true"><span style="--b:#82AAD0;--s:#143F68"></span><span style="--b:#B3D4BE;--s:#6F986A"></span><span style="--b:#94A4B0;--s:#171E20"></span><span style="--b:#F29A8C;--s:#C8554B"></span></div>
+    <h1>Which of our colors suits your room?</h1>
+    <p class="lede">Photograph the spot where your shelf will go and we suggest one of our four.</p>
+    <label class="btn" for="fileStart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      Take or choose a photo
+      <input class="vh" type="file" id="fileStart" accept="image/*" multiple>
+    </label>
+    <p class="fine">Your photo stays on your phone. Nothing is uploaded.</p>
+  </div>
+  <div class="samples">
+    <h2>Or try a sample room</h2>
+    <div class="srow" id="srow"></div>
+  </div>
+</section>
+
+<section id="result" class="result" hidden>
+  <div class="col screen" id="screen">
+    <div class="top">
+      <button class="icon" id="back" type="button" aria-label="Start over">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="picker" id="picker" role="radiogroup" aria-label="Our colors"></div>
+      <label class="icon" for="fileMore" aria-label="Add another photo of the room">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 19H4V8h3l2-3h6l2 3h3v4.5"/><circle cx="11.5" cy="12.5" r="3"/><path d="M19 15v6M16 18h6"/></svg>
+        <input class="vh" type="file" id="fileMore" accept="image/*" multiple>
+      </label>
+    </div>
+
+    <div class="verdict" aria-live="polite">
+      <div class="title"><h2 id="name"></h2><span id="markSlot"></span></div>
+      <p class="why" id="why"></p>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="track" id="track" tabindex="0" aria-label="Your photos"></div>
+    </div>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+
+    <a class="btn" id="wa" target="_blank" rel="noopener noreferrer" data-fwk-handoff="color_match"
+      href="https://wa.me/254783891005?text=Hi%2C%20I%20tried%20the%20room%20color%20match%20on%20your%20site.%20Can%20you%20help%20me%20choose%20a%20color%3F"
+      onclick="if(typeof trackContactConversion==='function'){trackContactConversion('',{link_target:'color_match',content_category:'color_match'});}">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2s.2-1.1.2-1.2-.2-.2-.5-.3z"/></svg>
+      <span id="waText">Ask us about Marine</span>
+    </a>
+
+    <div class="chip" id="chip" tabindex="0" role="img" aria-label="Sample of the shown color. Drag it onto your photo; double tap to put it back.">
+      <i></i><i></i>
+      <span class="grip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg></span>
+    </div>
+  </div>
+</section>
+
+<script>
+/* Three sample rooms, generated to show what the tool does; see the note in the head. */
+const SAMPLES = { warm: "/images/color-match/warm.jpg", cool: "/images/color-match/cool.jpg", green: "/images/color-match/green.jpg" };
+const SAMPLE_THUMBS = { warm: "/images/color-match/w360/warm.jpg", cool: "/images/color-match/w360/cool.jpg", green: "/images/color-match/w360/green.jpg" };
+/* The four finishes, from assets/shelving/builder-contract.json (the site hex pair). */
+const FINISHES = [
+  { id: "marine",   name: "Marine",   board: "#82AAD0", steel: "#143F68", boardWord: "Sky blue",   steelWord: "deep blue",  temp: -1.0 },
+  { id: "sage",     name: "Sage",     board: "#B3D4BE", steel: "#6F986A", boardWord: "Mint green", steelWord: "leaf green", temp: -0.5 },
+  { id: "charcoal", name: "Charcoal", board: "#94A4B0", steel: "#171E20", boardWord: "Cool grey",  steelWord: "charcoal",   temp: -0.3, neutral: true },
+  { id: "coral",    name: "Coral",    board: "#F29A8C", steel: "#C8554B", boardWord: "Soft coral", steelWord: "coral",      temp: 1.0 },
+];
+const WA_PHONE = "254783891005";
+
+/* ------------------------------------------------------------ color math (OKLab) */
+function lin(c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+function oklab(r, g, b) {
+  const lr = lin(r), lg = lin(g), lb = lin(b);
+  const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+  const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+  const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+  return [
+    0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
+  ];
+}
+function labRgb(L, a, b) {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3, m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3, s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3;
+  const f = x => { x = Math.max(0, Math.min(1, x)); return Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055)); };
+  return `rgb(${f(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s)},${f(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s)},${f(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s)})`;
+}
+function hexLab(hex) { const n = parseInt(hex.slice(1), 16); return oklab(n >> 16, (n >> 8) & 255, n & 255); }
+function lch(lab) { const C = Math.hypot(lab[1], lab[2]); let h = Math.atan2(lab[2], lab[1]) * 180 / Math.PI; if (h < 0) h += 360; return { L: lab[0], C, h }; }
+function hueDiff(a, b) { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; }
+/* Lightness counts for less than hue and chroma, so one wall in light and shade stays one color. */
+const LW = 0.5;
+function dist2(L1, a1, b1, L2, a2, b2) { const dL = (L1 - L2) * LW, da = a1 - a2, db = b1 - b2; return dL * dL + da * da + db * db; }
+
+/* Plain color words for what the photo shows, read from the lit side of a surface (that is the color
+   people say a thing is). No finish names here, so "Sage picks up the sage" can't happen. */
+function nameOf(L, C, h) {
+  if (C < 0.022 && C / Math.max(L, 0.2) < 0.035) return L > 0.86 ? "white" : L > 0.7 ? "light grey" : L > 0.48 ? "grey" : L > 0.28 ? "dark grey" : "black";
+  if (C < 0.065 && h >= 40 && h < 105) return L > 0.86 ? "cream" : L > 0.7 ? "beige" : L > 0.55 ? "taupe" : L > 0.36 ? "brown" : "dark brown";
+  if (h < 20 || h >= 345) return L > 0.75 ? "pink" : L > 0.5 ? "rose" : L > 0.3 ? "red" : "burgundy";
+  if (h < 45) return L > 0.68 ? (C > 0.08 ? "salmon" : "blush") : L > 0.4 ? (C > 0.07 ? "terracotta" : "clay") : L > 0.25 ? "rust" : "dark brown";
+  if (h < 75) return C > 0.11 && L > 0.6 ? "orange" : L > 0.72 ? "sand" : L > 0.5 ? "honey" : L > 0.33 ? "walnut" : "dark brown";
+  if (h < 105) return C > 0.09 ? (L > 0.82 ? "butter yellow" : "mustard") : L > 0.8 ? "cream" : L > 0.55 ? "khaki" : "dark olive";
+  if (h < 140) return C >= 0.06 ? (L > 0.55 ? "leaf green" : "dark green") : L > 0.75 ? "pale green" : "olive";
+  if (h < 185) return L > 0.75 ? "mint" : L > 0.45 ? "green" : "dark green";
+  if (h < 240) return L > 0.72 ? "pale blue" : "teal";
+  if (h < 290) return L > 0.72 ? "pale blue" : L > 0.5 ? "blue" : "navy";
+  return L > 0.7 ? "lilac" : L > 0.45 ? "purple" : "plum";
+}
+
+/* How colorful a thing looks. Dark colors carry less chroma for the same impression (a navy sofa in a
+   photo measures barely above grey), so they get a lift. */
+function vivid(c) { return c.C * (c.L < 0.5 ? 1.6 : 1); }
+
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* ------------------------------------------------------------ the analysis */
+function analyse(img) {
+  const maxSide = 150;
+  const s = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.max(8, Math.round(img.naturalWidth * s)), h = Math.max(8, Math.round(img.naturalHeight * s));
+  const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+  const cx = cv.getContext("2d", { willReadFrequently: true });
+  cx.drawImage(img, 0, 0, w, h);
+  const px = cx.getImageData(0, 0, w, h).data;
+  const n = w * h;
+  const L = new Float32Array(n), A = new Float32Array(n), B = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const o = oklab(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]); L[i] = o[0]; A[i] = o[1]; B[i] = o[2]; }
+
+  // k-means++ in OKLab, seeded so the same photo always gives the same answer.
+  const K = 12, rand = rng(11);
+  const cL = [], cA = [], cB = [];
+  let first = Math.floor(rand() * n); cL.push(L[first]); cA.push(A[first]); cB.push(B[first]);
+  const dmin = new Float32Array(n).fill(Infinity);
+  while (cL.length < K) {
+    let sum = 0; const k = cL.length - 1;
+    for (let i = 0; i < n; i++) { const d = dist2(L[i], A[i], B[i], cL[k], cA[k], cB[k]); if (d < dmin[i]) dmin[i] = d; sum += dmin[i]; }
+    let r = rand() * sum, pick = 0;
+    for (let i = 0; i < n; i++) { r -= dmin[i]; if (r <= 0) { pick = i; break; } }
+    cL.push(L[pick]); cA.push(A[pick]); cB.push(B[pick]);
+  }
+  const lab = new Int16Array(n);
+  for (let it = 0; it < 16; it++) {
+    const sL = new Float64Array(K), sA = new Float64Array(K), sB = new Float64Array(K), cnt = new Float64Array(K);
+    for (let i = 0; i < n; i++) {
+      let bk = 0, bd = Infinity;
+      for (let k = 0; k < K; k++) { const d = dist2(L[i], A[i], B[i], cL[k], cA[k], cB[k]); if (d < bd) { bd = d; bk = k; } }
+      lab[i] = bk; sL[bk] += L[i]; sA[bk] += A[i]; sB[bk] += B[i]; cnt[bk]++;
+    }
+    for (let k = 0; k < K; k++) if (cnt[k]) { cL[k] = sL[k] / cnt[k]; cA[k] = sA[k] / cnt[k]; cB[k] = sB[k] / cnt[k]; }
+  }
+
+  // Clusters, then merge any two that are one surface in light and in shade: shade drops lightness
+  // and chroma together, so the hue holds and chroma relative to lightness roughly holds.
+  let cl = [];
+  for (let k = 0; k < K; k++) cl.push({ id: k, L: cL[k], a: cA[k], b: cB[k], count: 0 });
+  for (let i = 0; i < n; i++) cl[lab[i]].count++;
+  cl = cl.filter(c => c.count > 0);
+  const sameSurface = (x, y) => {
+    const X = lch([x.L, x.a, x.b]), Y = lch([y.L, y.a, y.b]);
+    if (X.C < 0.025 && Y.C < 0.025) return Math.abs(x.L - y.L) < 0.12;
+    if (X.C >= 0.035 && Y.C >= 0.035) {
+      const rx = X.C / Math.max(0.2, X.L), ry = Y.C / Math.max(0.2, Y.L);
+      return hueDiff(X.h, Y.h) < 12 && Math.abs(rx - ry) / Math.max(rx, ry) < 0.35 && Math.abs(x.L - y.L) < 0.3;
+    }
+    return dist2(x.L, x.a, x.b, y.L, y.a, y.b) < 0.035 ** 2;
+  };
+  const remap = new Int16Array(K).map((_, i) => i);
+  for (;;) {
+    let bi = -1, bj = -1, bd = Infinity;
+    for (let i = 0; i < cl.length; i++) for (let j = i + 1; j < cl.length; j++) {
+      if (!sameSurface(cl[i], cl[j])) continue;
+      const d = dist2(cl[i].L, cl[i].a, cl[i].b, cl[j].L, cl[j].a, cl[j].b);
+      if (d < bd) { bd = d; bi = i; bj = j; }
+    }
+    if (bi < 0) break;
+    const x = cl[bi], y = cl[bj], t = x.count + y.count;
+    x.L = (x.L * x.count + y.L * y.count) / t; x.a = (x.a * x.count + y.a * y.count) / t; x.b = (x.b * x.count + y.b * y.count) / t;
+    x.count = t;
+    for (let k = 0; k < K; k++) if (remap[k] === y.id) remap[k] = x.id;
+    cl.splice(bj, 1);
+  }
+  for (let i = 0; i < n; i++) lab[i] = remap[lab[i]];
+
+  // Each color as it looks in the light: the brightest 40% of its pixels.
+  const members = new Map(cl.map(c => [c.id, []]));
+  for (let i = 0; i < n; i++) members.get(lab[i]).push(i);
+  for (const c of cl) {
+    const m = members.get(c.id).sort((p, q) => L[q] - L[p]);
+    const top = m.slice(0, Math.max(1, Math.ceil(m.length * 0.4)));
+    let sl = 0, sa = 0, sb = 0, r = 0, g = 0, bl = 0;
+    for (const i of top) { sl += L[i]; sa += A[i]; sb += B[i]; r += px[i * 4]; g += px[i * 4 + 1]; bl += px[i * 4 + 2]; }
+    const t = top.length;
+    c.L = sl / t; c.a = sa / t; c.b = sb / t;
+    c.share = c.count / n;
+    const o = lch([c.L, c.a, c.b]); c.C = o.C; c.h = o.h;
+    c.rgb = `rgb(${Math.round(r / t)},${Math.round(g / t)},${Math.round(bl / t)})`;
+    c.name = nameOf(c.L, c.C, c.h);
+  }
+  cl.sort((p, q) => q.share - p.share);
+  // Two clusters a person would call the same color are one color: the bigger keeps its look.
+  for (let i = 0; i < cl.length; i++) for (let j = cl.length - 1; j > i; j--) {
+    if (cl[i].name !== cl[j].name) continue;
+    const keep = cl[i], gone = cl[j];
+    for (let p = 0; p < n; p++) if (lab[p] === gone.id) lab[p] = keep.id;
+    keep.count += gone.count; keep.share += gone.share;
+    cl.splice(j, 1);
+  }
+  cl.sort((p, q) => q.share - p.share);
+  for (const c of cl) c.vivid = vivid(c);
+
+  // Which colors get a callout. First the clusters are grouped into surfaces a person would name once
+  // (a wall in light and in shade), each compared only with its group's biggest member so nothing chains.
+  // A group is named and swatched from its lit side. Then the three biggest groups are shown, leaving out
+  // shadow and door frames, plus the most vivid group left over if it is not a near neighbour of one shown.
+  // Groups are copies: the clusters themselves, which the suggestion reads, are never changed.
+  // A grey and a tinted color are one surface when their hues agree (a grey's hue only counts once it has
+  // some color) and the tint is faint, or is the warm cast a light wall takes on in shade.
+  const grey = c => c.C < 0.025;
+  const shadeOf = (g, t) => grey(g) && (g.C < 0.012 || hueDiff(g.h, t.h) < 30) &&
+    (t.C < 0.035 || (t.h >= 30 && t.h < 110 && t.L > 0.5));
+  const oneSurface = (a, b) => a.name === b.name ||
+    (a.C < 0.06 && b.C < 0.06 && Math.abs(a.L - b.L) < 0.3 &&
+      (shadeOf(a, b) || shadeOf(b, a) || (!grey(a) && !grey(b) && hueDiff(a.h, b.h) < 20)));
+  const groups = [];
+  for (const c of cl) {
+    if (c.share < 0.012) continue;
+    const g = groups.find(g => oneSurface(g.lead, c));
+    if (g) { g.members.push(c); g.share += c.share; } else groups.push({ lead: c, members: [c], share: c.share });
+  }
+  for (const g of groups) {
+    const solid = g.members.filter(m => m.share >= 0.05);
+    const body = solid.length ? solid : [g.lead];
+    const lit = body.reduce((p, q) => (q.L > p.L ? q : p));
+    const C = g.members.reduce((t, m) => t + m.C * m.share, 0) / g.share;
+    const h = g.members.reduce((p, q) => (q.C > p.C ? q : p)).h;
+    Object.assign(g, { id: g.lead.id, ids: body.map(m => m.id), L: lit.L, C, h, a: C * Math.cos(h * Math.PI / 180), b: C * Math.sin(h * Math.PI / 180) });
+    g.vivid = vivid(g); g.name = nameOf(g.L, g.C, g.h); g.rgb = labRgb(g.L, g.a, g.b);
+  }
+  const shown = [];
+  for (const g of groups) {
+    if (shown.length === 3) break;
+    if (g.share < 0.03 || (g.L < 0.36 && g.C < 0.04 && g.share < 0.2)) continue; // shadows and dark frames, not a color in the room
+    if (!shown.some(o => o.name === g.name)) shown.push(g);
+  }
+  const accent = groups.filter(g => (g.vivid >= 0.05 || (g.vivid >= 0.03 && g.share >= 0.05)) && !shown.includes(g) && !shown.some(o => o.name === g.name))
+    .map(g => ({ g, s: g.vivid * g.vivid * Math.sqrt(g.share) * (shown.some(o => o.vivid >= 0.07 && hueDiff(o.h, g.h) < 30) ? 0.4 : 1) }))
+    .sort((p, q) => q.s - p.s)[0];
+  if (accent) shown.push(accent.g);
+
+  // Where each callout sits: deep inside a patch of its own color, away from the edges and the other callouts.
+  const rad = Math.max(2, Math.round(Math.min(w, h) * 0.05));
+  const placed = [];
+  const biggestPatch = ids => {
+    const mine = new Uint8Array(K); for (const id of ids) mine[id] = 1;
+    const seen = new Uint8Array(n); let best = null;
+    for (let i = 0; i < n; i++) {
+      if (seen[i] || !mine[lab[i]]) continue;
+      const patch = [i]; seen[i] = 1;
+      for (let k = 0; k < patch.length; k++) {
+        const p = patch[k], x = p % w, y = (p - x) / w;
+        for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, y > 0 ? p - w : -1, y < h - 1 ? p + w : -1]) {
+          if (q >= 0 && !seen[q] && mine[lab[q]]) { seen[q] = 1; patch.push(q); }
+        }
+      }
+      if (!best || patch.length > best.size) best = { size: patch.length, set: patch };
+    }
+    const mask = new Uint8Array(n); if (best) for (const p of best.set) mask[p] = 1;
+    return mask;
+  };
+  for (const c of shown) {
+    const id = c.id;
+    const patch = biggestPatch(c.ids || [id]);
+    const integ = new Uint32Array((w + 1) * (h + 1));
+    for (let y = 0; y < h; y++) { let row = 0; for (let x = 0; x < w; x++) { row += patch[y * w + x]; integ[(y + 1) * (w + 1) + x + 1] = integ[y * (w + 1) + x + 1] + row; } }
+    let best = null, bs = -Infinity;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (!patch[y * w + x]) continue;
+      const x0 = Math.max(0, x - rad), x1 = Math.min(w, x + rad + 1), y0 = Math.max(0, y - rad), y1 = Math.min(h, y + rad + 1);
+      const inside = integ[y1 * (w + 1) + x1] - integ[y0 * (w + 1) + x1] - integ[y1 * (w + 1) + x0] + integ[y0 * (w + 1) + x0];
+      const purity = inside / ((x1 - x0) * (y1 - y0));
+      const u = x / w, v = y / h;
+      const edge = (u < 0.1 || u > 0.9 || v < 0.2 || v > 0.8) ? 0.5 : 0;
+      let crowd = 0;
+      for (const p of placed) { const d = Math.hypot((p.u - u) * w / Math.max(w, h), (p.v - v) * h / Math.max(w, h)); if (d < 0.16) crowd += 1; }
+      const sc = purity - edge - crowd;
+      if (sc > bs) { bs = sc; best = { u, v }; }
+    }
+    if (best) { c.u = best.u; c.v = best.v; placed.push(best); }
+  }
+  // Where the sample card goes: the middle of the biggest clear stretch of wall.
+  const wall = cl.find(c => c.L > 0.6 && c.C < 0.07 && c.share >= 0.08) || cl[0];
+  const R = Math.max(3, Math.round(Math.min(w, h) * 0.13));
+  const wi = new Uint32Array((w + 1) * (h + 1));
+  for (let y = 0; y < h; y++) { let row = 0; for (let x = 0; x < w; x++) { row += lab[y * w + x] === wall.id ? 1 : 0; wi[(y + 1) * (w + 1) + x + 1] = wi[y * (w + 1) + x + 1] + row; } }
+  let cardAt = { u: 0.5, v: 0.4 }, cb = -Infinity;
+  for (let y = R; y < h - R; y++) for (let x = R; x < w - R; x++) {
+    const inside = wi[(y + R + 1) * (w + 1) + x + R + 1] - wi[(y - R) * (w + 1) + x + R + 1] - wi[(y + R + 1) * (w + 1) + x - R] + wi[(y - R) * (w + 1) + x - R];
+    const v = y / h, sc = inside / ((2 * R + 1) ** 2) - (v < 0.3 ? 0.15 : 0) - Math.abs(x / w - 0.5) * 0.1;
+    if (sc > cb) { cb = sc; cardAt = { u: x / w, v }; }
+  }
+  return { clusters: cl, shown: shown.filter(c => c.u != null), wallId: wall.id, cardAt };
+}
+
+/* ------------------------------------------------------------ the suggestion */
+/* A first pass at a designer's rules of thumb, each one a reason a person can read:
+   echo a smaller color already in the room, set off a strong one from across the wheel,
+   balance a warm room with a cool color and the other way round, give a busy room a calm
+   color and a quiet room some life, and stay away from a big color you would only compete with. */
+function suggest(result) {
+  const cl = result.clusters;
+  const walls = cl.filter(c => c.L > 0.6 && c.C < 0.07 && c.share >= 0.08);
+  const wall = walls[0] || cl[0];
+  const accents = cl.filter(c => c !== wall && c.vivid >= 0.05 && c.share >= 0.012).map(c => ({
+    c, strength: Math.min(1, c.share / 0.06) * Math.min(1, (c.vivid - 0.03) / 0.08),
+  }));
+  let warm = 0;
+  for (const c of cl) warm += c.share * Math.max(-1.5, Math.min(1.5, (c.b + 0.6 * c.a) / 0.05));
+  const W = Math.max(-1, Math.min(1, warm / 0.5));
+  const hues = [];
+  for (const a of accents) if (a.strength >= 0.45 && !hues.some(h => hueDiff(h, a.c.h) < 45)) hues.push(a.c.h);
+  const busy = hues.length;
+  const avgC = cl.reduce((s, c) => s + c.share * c.C, 0);
+  const quiet = busy <= 1 && avgC < 0.035;
+  const blacks = cl.filter(c => c.L < 0.3 && c.C < 0.03).reduce((s, c) => s + c.share, 0);
+
+  const scored = FINISHES.map(f => {
+    const bl = hexLab(f.board), bo = lch(bl), so = lch(hexLab(f.steel));
+    const parts = [];
+    // warm and cool
+    const t = -W * f.temp * 0.3;
+    if (t > 0.1) parts.push({ k: "temp", s: t, txt: W > 0 ? "cools down a warm room" : "warms up a cool room" });
+    else if (t < -0.1) parts.push({ k: "temp", s: t, txt: W > 0 ? "makes a warm room warmer" : "makes a cool room cooler" });
+    // busy or quiet
+    if (f.neutral) {
+      if (busy >= 3) parts.push({ k: "calm", s: 0.8, txt: "calms a room full of color" });
+      else if (quiet) parts.push({ k: "calm", s: -0.3, txt: "keeps a quiet room quiet" });
+      else parts.push({ k: "calm", s: 0.15, txt: "sits quietly with the rest" });
+      if (blacks > 0.1) parts.push({ k: "echo", s: 0.3, txt: "its frame matches your black" });
+    } else {
+      if (quiet) parts.push({ k: "calm", s: 0.3 * (f.temp > 0 ? 1.6 : 1), txt: "brings life to a quiet room" });
+      if (busy >= 3) parts.push({ k: "calm", s: -0.25, txt: "adds to a room with plenty of color" });
+    }
+    // against each accent. The shelves and the frame both count for an echo, whichever sits nearer
+    // the accent in lightness; a pastel board next to a dark sofa of the same hue is only half an echo.
+    if (!f.neutral) for (const a of accents) {
+      const d = hueDiff(bo.h, a.c.h);
+      const big = a.c.share > 0.12;
+      if (d < 30 && a.c.C > 0.1 && a.c.share > 0.08 && bo.C > 0.08) {
+        parts.push({ k: "clash", s: -0.7 * a.strength, txt: `competes with your ${a.c.name}` });
+      } else if (d < 45) {
+        const near = Math.min(Math.abs(bo.L - a.c.L), Math.abs(so.L - a.c.L));
+        const s = 0.95 * a.strength * (1 - d / 45) * Math.max(0.4, 1 - near * 1.2);
+        parts.push(big
+          ? { k: "same", s: Math.min(0.12, s * 0.45), txt: `blends into your ${a.c.name}` }
+          : { k: "echo", s, txt: `picks up your ${a.c.name}` });
+      } else if (d > 100) {
+        parts.push({ k: "foil", s: 0.45 * a.strength * Math.min(1, (d - 100) / 40), txt: `sets off your ${a.c.name}` });
+      }
+    }
+    // against the wall
+    const dw = Math.sqrt(dist2(bl[0], bl[1], bl[2], wall.L, wall.a, wall.b) / (LW * LW));
+    if (dw < 0.09) parts.push({ k: "wall", s: -0.5, txt: `fades into your ${wall.name} walls` });
+    // One reason of each kind counts: three things it sets off is still one idea.
+    const byKind = new Map();
+    for (const p of parts) { const o = byKind.get(p.k); if (!o || Math.abs(p.s) > Math.abs(o.s)) byKind.set(p.k, p); }
+    const kept = [...byKind.values()];
+    const score = kept.reduce((s, p) => s + p.s, 0);
+    return { f, score, parts: kept };
+  });
+  scored.sort((p, q) => q.score - p.score);
+  scored.forEach((x, i) => { x.rank = i + 1; x.why = sentence(x); });
+  return scored;
+}
+
+/* One short sentence, two lines on a phone at most. The pick and the runner-up say what they do for the
+   room; the other two say what holds them back. */
+/* One short clause, one line on a phone. The pick and the runner-up say what they do for the room, the
+   other two what holds them back, and no color repeats the reason already given for the pick. */
+function sentence(x, avoid = []) {
+  // A reason about something in this room beats a general one about warmth or quiet.
+  const specific = p => (p.k === "temp" || p.k === "calm" ? 0 : 0.5);
+  const fresh = p => !avoid.includes(p.txt);
+  const pos = x.parts.filter(p => p.s > 0.1 && fresh(p)).sort((p, q) => (q.s + specific(q)) - (p.s + specific(p)));
+  const neg = x.parts.filter(p => p.s < -0.1 && fresh(p)).sort((p, q) => (p.s - specific(p)) - (q.s - specific(q)));
+  const say = p => p.txt[0].toUpperCase() + p.txt.slice(1) + ".";
+  if (x.rank <= 2 && pos.length) return say(pos[0]);
+  if (x.rank === 1) return "The safest of the four here.";
+  if (neg.length) return say(neg[0]);
+  if (pos.length) return say(pos[0]);
+  return "Fine here, but nothing asks for it.";
+}
+
+
+/* ---------------------------------------------------------------- the page */
+const $ = id => document.getElementById(id);
+const root = document.documentElement;
+const screenEl = $("screen"), track = $("track"), stage = $("stage"), chip = $("chip");
+const state = { kind: null, shots: [], active: 0, shown: null, rank: null, pick: null, chipFree: false, nudged: false };
+const STAR = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>`;
+const MAX_CROP = 0.3;       // the most of a photo's height the frame may hide to stay full width
+const MAX_SIDE_CROP = 0.22; // the most of its width it may hide to fill a tall screen
+
+function show(which) {
+  $("start").hidden = which !== "start";
+  $("result").hidden = which !== "result";
+  root.style.setProperty("--page", which === "result" ? "var(--board)" : "var(--paper)");
+  root.classList.toggle("cm-app", which === "result");
+  window.scrollTo(0, 0);
+  if (which === "result") layout();
+}
+
+function loadImage(src) {
+  return new Promise((ok, fail) => { const im = new Image(); im.onload = () => ok(im); im.onerror = fail; im.src = src; });
+}
+
+/* Every photo is of the same room, so the pick is the color that does best across all of them. */
+function rankAll() {
+  const total = new Map(FINISHES.map(f => [f.id, 0]));
+  for (const s of state.shots) for (const r of s.ranking) total.set(r.f.id, total.get(r.f.id) + r.score);
+  const order = [...FINISHES].sort((a, b) => total.get(b.id) - total.get(a.id));
+  state.rank = new Map(order.map((f, i) => [f.id, i + 1]));
+  state.pick = order[0].id;
+}
+
+async function addPhotos(srcs, kind) {
+  if (!srcs.length) return;
+  if (kind !== state.kind || kind === "sample") { state.kind = kind; state.shots = []; }
+  const first = state.shots.length;
+  for (const src of srcs) {
+    try {
+      const im = await loadImage(src);
+      const result = analyse(im);
+      state.shots.push({ src, w: im.naturalWidth, h: im.naturalHeight, result, ranking: suggest(result) });
+    } catch (e) { /* a file that is not a picture is skipped */ }
+  }
+  if (state.shots.length === first) return;
+  rankAll();
+  if (window.fwk && window.fwk.track) window.fwk.track("color_match", { source: kind, photos: state.shots.length, pick: state.pick });
+  renderPicker();
+  renderSlides();
+  state.chipFree = false;
+  chip.classList.remove("free");
+  show("result");
+  goTo(first, false);
+  select(state.pick);
+  if (!state.nudged) { state.nudged = true; chip.classList.add("nudge"); }
+}
+
+function renderPicker() {
+  const box = $("picker");
+  box.textContent = "";
+  for (const f of FINISHES) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "opt"; b.dataset.id = f.id;
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-label", f.id === state.pick ? `${f.name}, our pick` : f.name);
+    b.style.setProperty("--b", f.board); b.style.setProperty("--s", f.steel);
+    b.innerHTML = `<span class="sw"></span>${f.id === state.pick ? `<span class="star">${STAR}</span>` : ""}`;
+    b.addEventListener("click", () => select(f.id));
+    box.appendChild(b);
+  }
+}
+
+function renderSlides() {
+  track.textContent = "";
+  state.shots.forEach((s, i) => {
+    const slide = document.createElement("div");
+    slide.className = "slide";
+    const pins = s.result.shown.map((c, k) =>
+      `<div class="pin" style="animation-delay:${150 + k * 110}ms"><span class="sw" style="background:${c.rgb}"></span><span class="lab">${c.name}</span></div>`).join("");
+    slide.innerHTML = `<figure class="photo"><img src="${s.src}" alt="${state.kind === "sample" ? "A sample room" : "Your photo " + (i + 1)}, with its main colors marked"><div class="pins">${pins}</div></figure>`;
+    track.appendChild(slide);
+  });
+  const dots = $("dots");
+  dots.textContent = "";
+  dots.hidden = state.shots.length < 2;
+  state.shots.forEach((_, i) => {
+    const d = document.createElement("span");
+    d.className = "dot";
+    dots.appendChild(d);
+  });
+}
+
+function goTo(i, smooth) {
+  state.active = Math.max(0, Math.min(state.shots.length - 1, i));
+  track.scrollTo({ left: state.active * track.clientWidth, behavior: smooth ? "smooth" : "auto" });
+  paintDots();
+  paintVerdict();
+  if (!state.chipFree) homeChip(!!smooth);
+}
+function paintDots() {
+  [...$("dots").children].forEach((d, i) => d.setAttribute("aria-current", String(i === state.active)));
+}
+let scrollTick = 0;
+track.addEventListener("scroll", () => {
+  cancelAnimationFrame(scrollTick);
+  scrollTick = requestAnimationFrame(() => {
+    const i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    if (i !== state.active && i >= 0 && i < state.shots.length) {
+      state.active = i; paintDots(); paintVerdict();
+      if (!state.chipFree) homeChip(true);
+    }
+  });
+});
+
+function select(id) {
+  const f = FINISHES.find(x => x.id === id);
+  state.shown = f.id;
+  root.style.setProperty("--board", f.board);
+  root.style.setProperty("--steel", f.steel);
+  for (const b of $("picker").children) b.setAttribute("aria-checked", String(b.dataset.id === f.id));
+  paintVerdict();
+}
+
+function paintVerdict() {
+  const shot = state.shots[state.active];
+  if (!shot || !state.shown) return;
+  const f = FINISHES.find(x => x.id === state.shown);
+  const pick = FINISHES.find(x => x.id === state.pick);
+  const rank = state.rank.get(f.id);
+  const here = shot.ranking.find(r => r.f.id === f.id);
+  $("name").textContent = f.name;
+  $("markSlot").innerHTML = rank === 1 ? `<span class="mark">${STAR}Our pick</span>` : "";
+  // Only our pick carries a reason. The other colors are there to try, not to be talked down.
+  $("why").textContent = rank === 1 ? sentence({ ...here, rank }) : "";
+  $("waText").textContent = `Ask us about ${f.name}`;
+  const msg = rank === 1
+    ? `Hi, I tried the room color match on your site and it picked ${f.name} for my room. Can you tell me more?`
+    : `Hi, I tried the room color match on your site. It picked ${pick.name} for my room, but I like ${f.name}. Can you tell me more?`;
+  $("wa").href = `https://wa.me/${WA_PHONE}?text=${encodeURIComponent(msg)}`;
+}
+
+/* ---------------------------------------------------------------- layout */
+/* Each photo fills as much of the space as it can. One taller than the space is cropped top and bottom
+   by up to 30% of its height, past which the frame narrows; one shorter than the space (a tall phone)
+   is cropped at the sides by up to 22% so the frame can grow taller. Callouts follow the crop, and any that
+   fall outside it, or land on an earlier callout, are left out. */
+function sizeSlides() {
+  const slides = [...track.children];
+  if (!slides.length) return;
+  const cs = getComputedStyle(slides[0]);
+  const W = track.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 8;
+  const H = track.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 8;
+  slides.forEach((slide, i) => {
+    const s = state.shots[i], a = s.w / s.h;
+    let w = W, h = W / a;
+    if (h > H) { h = H; w = Math.min(W, (H / (1 - MAX_CROP)) * a); }
+    else { h = Math.min(H, h / (1 - MAX_SIDE_CROP)); }
+    w = Math.max(80, Math.round(w)); h = Math.max(80, Math.round(h));
+    const fig = slide.firstElementChild;
+    fig.style.width = (w + 8) + "px"; fig.style.height = (h + 8) + "px";
+    const scale = Math.max(w / s.w, h / s.h), dw = s.w * scale, dh = s.h * scale;
+    const ox = (w - dw) / 2, oy = (h - dh) / 2;
+    const placed = [];
+    [...fig.querySelectorAll(".pin")].forEach((pin, k) => {
+      const c = s.result.shown[k];
+      let x = ox + c.u * dw, y = oy + c.v * dh;
+      if (x < w * 0.06 && x > -w * 0.15) x = w * 0.06;
+      if (x > w * 0.94 && x < w * 1.15) x = w * 0.94;
+      if (y < h * 0.08 && y > -h * 0.1) y = h * 0.08;  // pulled in to the crop's edge rather than dropped
+      if (y > h * 0.92 && y < h * 1.1) y = h * 0.92;
+      const inside = x >= w * 0.06 && x <= w * 0.94 && y >= h * 0.08 && y <= h * 0.92;
+      pin.classList.toggle("left", x > w * 0.55);
+      pin.style.left = x + "px"; pin.style.top = y + "px";
+      pin.hidden = !inside;
+      if (!inside) return;
+      const r = pin.getBoundingClientRect();
+      if (placed.some(p => r.left < p.right + 4 && r.right > p.left - 4 && r.top < p.bottom + 4 && r.bottom > p.top - 4)) { pin.hidden = true; return; }
+      placed.push(r);
+    });
+  });
+}
+
+function layout() {
+  if ($("result").hidden) return;
+  sizeSlides();
+  track.scrollLeft = state.active * track.clientWidth;
+  if (!state.chipFree) homeChip(false);
+  else placeChip(parseFloat(chip.style.left) || 0, parseFloat(chip.style.top) || 0);
+}
+new ResizeObserver(layout).observe(stage);
+window.addEventListener("resize", layout);
+
+/* ---------------------------------------------------------------- the sample chip */
+function placeChip(x, y) {
+  const s = screenEl.getBoundingClientRect();
+  x = Math.max(-6, Math.min(s.width - chip.offsetWidth + 6, x));
+  y = Math.max(0, Math.min(s.height - chip.offsetHeight, y));
+  chip.style.left = x + "px"; chip.style.top = y + "px";
+}
+/* Home is the active photo's top right corner, two thirds of the chip above the frame. */
+function homeChip(animate) {
+  const fig = track.children[state.active] && track.children[state.active].firstElementChild;
+  if (!fig) return;
+  const s = screenEl.getBoundingClientRect(), f = fig.getBoundingClientRect();
+  const left = Math.min(f.right, s.right) - s.left - chip.offsetWidth + 2;
+  const top = f.top - s.top - chip.offsetHeight * 0.62;
+  chip.classList.toggle("homing", !!animate);
+  chip.classList.remove("free");
+  chip.style.left = left + "px"; chip.style.top = top + "px";
+  if (animate) setTimeout(() => chip.classList.remove("homing"), 400);
+}
+(function chipDrag() {
+  let grab = null, lastTap = 0;
+  chip.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    chip.setPointerCapture(e.pointerId);
+    const r = chip.getBoundingClientRect();
+    grab = { dx: e.clientX - r.left, dy: e.clientY - r.top, x: e.clientX, y: e.clientY, moved: false };
+    chip.classList.remove("nudge", "homing");
+    chip.classList.add("drag");
+  });
+  chip.addEventListener("pointermove", e => {
+    if (!grab) return;
+    if (!grab.moved && Math.hypot(e.clientX - grab.x, e.clientY - grab.y) < 4) return;
+    grab.moved = true;
+    const s = screenEl.getBoundingClientRect();
+    state.chipFree = true;
+    chip.classList.add("free");
+    placeChip(e.clientX - s.left - grab.dx, e.clientY - s.top - grab.dy);
+  });
+  const end = () => {
+    if (!grab) return;
+    const tapped = !grab.moved;
+    grab = null;
+    chip.classList.remove("drag");
+    if (tapped) {
+      const now = Date.now();
+      if (now - lastTap < 350) { state.chipFree = false; homeChip(true); }
+      lastTap = now;
+    }
+  };
+  chip.addEventListener("pointerup", end);
+  chip.addEventListener("pointercancel", end);
+  chip.addEventListener("keydown", e => {
+    const step = e.shiftKey ? 40 : 12, k = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+    if (k) { e.preventDefault(); state.chipFree = true; chip.classList.add("free"); placeChip((parseFloat(chip.style.left) || 0) + k[0], (parseFloat(chip.style.top) || 0) + k[1]); }
+    if (e.key === "Escape" || e.key === "Enter") { state.chipFree = false; homeChip(true); }
+  });
+})();
+
+/* ---------------------------------------------------------------- wiring */
+function fromInput(input) {
+  const files = [...(input.files || [])].filter(f => /^image\//.test(f.type) || !f.type);
+  const urls = files.map(f => URL.createObjectURL(f));
+  input.value = "";
+  return urls;
+}
+$("fileStart").addEventListener("change", e => addPhotos(fromInput(e.target), "own"));
+$("fileMore").addEventListener("change", e => addPhotos(fromInput(e.target), "own"));
+$("back").addEventListener("click", () => show("start"));
+track.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") { e.preventDefault(); goTo(state.active + 1, true); }
+  if (e.key === "ArrowLeft") { e.preventDefault(); goTo(state.active - 1, true); }
+});
+
+[["warm", "A warm room with a terracotta sofa"], ["cool", "A white room with a navy sofa"], ["green", "A cream room with an olive wall"]].forEach(([k, label], i) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "sample";
+  /* The first room is the large one on the start screen, too big for the 360px thumbnail. */
+  b.style.backgroundImage = `url("${i === 0 ? SAMPLES[k] : SAMPLE_THUMBS[k]}")`;
+  b.setAttribute("aria-label", label);
+  b.addEventListener("click", () => addPhotos([SAMPLES[k]], "sample"));
+  $("srow").appendChild(b);
+});
+
+/* A link ending #warm, #cool or #green opens straight on that sample room. */
+if (SAMPLES[location.hash.slice(1)]) addPhotos([SAMPLES[location.hash.slice(1)]], "sample");
+</script>
+</body>
+
+</html>
