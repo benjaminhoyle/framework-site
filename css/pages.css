@@ -251,6 +251,12 @@ body {
 .pg-colors:hover, .pg-colors:focus,
 .ha-colours:hover, .ha-colours:focus { border-color: var(--accent); }
 
+/* On /how the strip is not one link but a line holding two (/customize and
+   /color-match), so the box stays still and the links say where they go. */
+div.pg-colors:hover { border-color: var(--rule); }
+.pg-colors a { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.pg-colors a:hover, .pg-colors a:focus { color: var(--accent); }
+
 /* Steel on the left of each dot, board on the right, from the builder's own
    palette in assets/shelving/builder-contract.json. The same four as the
    tiles on /colors. */

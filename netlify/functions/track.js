@@ -28,9 +28,12 @@ import { getStore } from '@netlify/blobs';
 // `design_page_open` is the catalogue lightbox's link to /d/<CODE>: a product
 // view that wanted the size and the room, which is a different intent from
 // opening the builder and worth telling apart from it.
+// `color_match` is /color-match reading a room: one per result, carrying
+// `dims.source` (own photo or sample), `dims.photos` and `dims.pick` (the finish
+// it suggested). Never the photo: it does not leave the phone.
 const EVENTS = new Set([
   'arrive', 'product_view', 'engage', 'wa_handoff', 'catalog_impression', 'designer_open',
-  'ar_open', 'ar_placed', 'design_page_open',
+  'ar_open', 'ar_placed', 'design_page_open', 'color_match',
 ]);
 const CODE_RE = /^[0-9A-HJKMNP-TV-Z]{6}$/; // Crockford Base32, uppercase, no I/L/O/U
 const MAX_BODY = 8 * 1024; // drop anything oversized

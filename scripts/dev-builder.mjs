@@ -285,6 +285,7 @@ const REWRITES = [
   [/^\/assembly\/?$/, "/assembly-lab.html"],
   [/^\/how\/?$/, "/how.html"],
   [/^\/customize\/?$/, "/customize.html"],
+  [/^\/color-match\/?$/, "/color-match.html"],
   [/^\/ordering\/?$/, "/ordering.html"],
   [/^\/marketing\/?$/, "/marketing.html"],
   [/^\/shelving\/?$/, "/shelving.html"]

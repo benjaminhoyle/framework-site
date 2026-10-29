@@ -93,6 +93,14 @@
   to = "/customize.html"
   status = 200
 
+# For someone who has seen the four colors and cannot choose: a photo of their
+# room, its colors marked, one of ours suggested. Linked from under the tiles on
+# /customize and from the colors strip on /how, nowhere else.
+[[redirects]]
+  from = "/color-match"
+  to = "/color-match.html"
+  status = 200
+
 # What someone needs before they pay: price, ordering, payment, delivery,
 # returns, and where to see one. The link the team sends when those come up.
 [[redirects]]

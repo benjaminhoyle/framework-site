@@ -20,6 +20,12 @@
 
 .co > * + * { margin-top: var(--gap); }
 
+/* The strip to /color-match sits close under the tiles, so it reads as their
+   footnote and not as a section of its own. Its look is the site's colors
+   strip (css/pages.css), as wide as its one line and no wider. */
+.co > .co-grid + .co-match { margin-top: clamp(22px, 3vw, 30px); }
+.co-match { width: fit-content; max-width: 100%; }
+
 /* ------------------------------------------------------------- the four */
 
 /* One colour at a time on a phone, two on a tablet, four across on a laptop.
