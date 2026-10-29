@@ -98,6 +98,21 @@
   .mini { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--wash); margin-top: 10px; overflow: hidden; }
   .mini i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
 
+  .linkbtn { background: none; border: 0; padding: 0; font: inherit; font-size: 13.5px; font-weight: 500; color: var(--accent); cursor: pointer; }
+  dialog.sheet { border: 0; padding: 20px; border-radius: 18px; width: min(520px, calc(100% - 32px)); background: var(--paper); color: var(--ink); }
+  dialog.sheet::backdrop { background: rgba(0, 0, 0, .35); }
+  .wrow, .wdates { display: grid; grid-template-columns: 84px 1fr 36px; align-items: center; gap: 10px; }
+  .wrow { padding: 11px 0; border-top: 1px solid var(--line); }
+  .wrow:first-child { border-top: 0; }
+  .wname { font-size: 14px; font-weight: 700; }
+  .dots { display: flex; justify-content: space-between; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--accent); box-sizing: border-box; }
+  .dot.met { background: var(--accent); }
+  .dot.none { border: 0; background: var(--line); transform: scale(.5); }
+  .wcount { font-size: 13px; color: var(--muted); text-align: right; }
+  .wdates { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .wdates span:nth-child(2) { display: flex; justify-content: space-between; }
+
   .earned { font-size: 14px; font-weight: 700; color: var(--accent); }
   .chart { margin-top: 14px; }
   .fine { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
@@ -133,7 +148,10 @@
   </section>
 
   <section class="card">
-    <h2>Last 7 days</h2>
+    <div class="head">
+      <h2 id="habitsTitle">This week</h2>
+      <button class="linkbtn" id="pastBtn" type="button" hidden>Past weeks</button>
+    </div>
     <p class="sub" id="habitsNote">Goals to help you make more sales.</p>
     <div id="habits"></div>
   </section>
@@ -147,6 +165,15 @@
     <p class="fine" id="ends"></p>
   </section>
 </main>
+
+<dialog class="sheet" id="weeksDlg">
+  <div class="head">
+    <h2>Past weeks</h2>
+    <button class="linkbtn" id="weeksClose" type="button">Close</button>
+  </div>
+  <p class="fine">Each dot is a week, filled when the goal was met.</p>
+  <div id="weeksGrid" style="margin-top:8px"></div>
+</dialog>
 
 <script>
 const KEY = 'tracker-pass';
@@ -270,7 +297,9 @@ function render() {
     ? `${data.quotes.count} ${data.quotes.count === 1 ? 'quote' : 'quotes'} not yet paid, about ${Math.round(data.quotes.units)} units.`
     : '';
 
+  if (data.habitsTitle) $('habitsTitle').textContent = data.habitsTitle;
   if (data.habitsNote) $('habitsNote').textContent = data.habitsNote;
+  $('pastBtn').hidden = !data.weeks?.length;
   $('habits').innerHTML = data.habits.map((h) => {
     const has = h.value != null;
     const met = has && h.value >= h.goal;
@@ -291,6 +320,31 @@ function render() {
 
 // The past year and this month: units, the two lines, and under each finished
 // bonus month what it paid.
+// Past weeks: one row per goal, one dot per full week, oldest on the left.
+function renderWeeks() {
+  const day = (d) => fmt({ day: 'numeric', month: 'short' }, new Date(d + 'T12:00:00Z'));
+  const rows = data.habits.map((h, i) => {
+    const vals = data.weeks.map((w) => w.values[i]);
+    const known = vals.filter((v) => v != null);
+    const met = known.filter((v) => v >= h.goal).length;
+    const dots = data.weeks.map((w, j) => {
+      const v = vals[j];
+      const cls = v == null ? ' none' : v >= h.goal ? ' met' : '';
+      const tip = v == null ? 'no record' : `${v}${h.unit} of ${h.goal}${h.unit}`;
+      return `<span class="dot${cls}" title="Week of ${day(w.start)}: ${tip}"></span>`;
+    }).join('');
+    return `<div class="wrow"><span class="wname">${h.name.replace(/^Instagram (.)/, (_, c) => c.toUpperCase())}</span>`
+      + `<span class="dots">${dots}</span><span class="wcount">${known.length ? `${met}/${known.length}` : ''}</span></div>`;
+  }).join('');
+  const first = data.weeks[0].start, last = data.weeks[data.weeks.length - 1].start;
+  $('weeksGrid').innerHTML = rows
+    + `<div class="wdates"><span></span><span><span>${day(first)}</span><span>${day(last)}</span></span><span></span></div>`;
+}
+
+$('pastBtn').addEventListener('click', () => { renderWeeks(); $('weeksDlg').showModal(); });
+$('weeksClose').addEventListener('click', () => $('weeksDlg').close());
+$('weeksDlg').addEventListener('click', (e) => { if (e.target === $('weeksDlg')) $('weeksDlg').close(); });
+
 function renderChart() {
   const { months, scheme } = data;
   const W = 340, H = 186, padL = 2, padR = 22, padT = 18, padB = 36;
