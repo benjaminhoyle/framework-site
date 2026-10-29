@@ -35,6 +35,21 @@
       "designCode": "35A2CC9"
     },
     {
+      "id": "lantern-end-table",
+      "title": "The Lantern End Table",
+      "price": "Ksh 14,000",
+      "priceValue": 14000,
+      "description": "The End Table with a hanging lamp, so the light falls on the top without taking up any of it. A bedside unit with steel frames and MDF surfaces, 52 x 45 cm and 42 cm high. Ksh 9,500 without the lamp. Note: lamp shade not included.",
+      "image": "images/shelving/configs/lantern-end-table-populated.jpg",
+      "images": [
+        "images/shelving/configs/lantern-end-table-populated.jpg",
+        "images/shelving/configs/lantern-end-table-emptied.jpg"
+      ],
+      "active": true,
+      "designerUrl": "https://framework.co.ke/builder/4ZW4GCA",
+      "designCode": "4ZW4GCA"
+    },
+    {
       "id": "low-console",
       "title": "The Low Console",
       "price": "Ksh 12,000",
