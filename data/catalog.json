@@ -1,6 +1,6 @@
 {
   "schema": "framework-catalog-public@1",
-  "updatedAt": "2026-09-20T15:17:36.335Z",
+  "updatedAt": "2026-10-29T05:13:48.594Z",
   "products": [
     {
       "id": "starter",
@@ -29,6 +29,19 @@
       "priceValue": 9500,
       "description": "A versatile two-tier unit that works perfectly as a side table, bedside shelf, or entryway organizer. Keep your books, crafts, and daily essentials within easy reach.",
       "designerUrl": "https://framework.co.ke/builder/35A2CC9"
+    },
+    {
+      "id": "lantern-end-table",
+      "title": "The Lantern End Table",
+      "image": "images/shelving/configs/lantern-end-table-populated.jpg",
+      "images": [
+        "images/shelving/configs/lantern-end-table-populated.jpg",
+        "images/shelving/configs/lantern-end-table-emptied.jpg"
+      ],
+      "price": "Ksh 14,000",
+      "priceValue": 14000,
+      "description": "The End Table with a hanging lamp, so the light falls on the top without taking up any of it. A bedside unit with steel frames and MDF surfaces, 52 x 45 cm and 42 cm high. Ksh 9,500 without the lamp. Note: lamp shade not included.",
+      "designerUrl": "https://framework.co.ke/builder/4ZW4GCA"
     },
     {
       "id": "low-console",
