@@ -116,6 +116,7 @@
   .earned { font-size: 14px; font-weight: 700; color: var(--accent); }
   .chart { margin-top: 14px; }
   .fine { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+  .smallprint { font-size: 11.5px; color: var(--faint); text-align: center; margin: 6px 0 0; }
   svg text { font-family: inherit; }
   .msg { text-align: center; color: var(--muted); padding: 40vh 16px 0; }
 </style>
@@ -164,6 +165,7 @@
     <div class="chart" id="chart"></div>
     <p class="fine" id="ends"></p>
   </section>
+  <p class="smallprint" id="smallprint">Counts every message and order, not only yours.</p>
 </main>
 
 <dialog class="sheet" id="weeksDlg">
@@ -314,6 +316,7 @@ function render() {
   const total = data.earned ?? data.months.reduce((s, m) => s + (m.pay || 0), 0);
   $('earned').textContent = total ? `${ksh(total)} earned` : '';
   const end = monthLabel(scheme.to, { month: 'long', year: 'numeric' });
+  if (data.smallprint) $('smallprint').textContent = data.smallprint;
   $('ends').textContent = `The bonus ${data.month > scheme.to ? 'ran' : 'runs'} to the end of ${end}.`;
   renderChart();
 }
