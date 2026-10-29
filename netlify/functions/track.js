@@ -29,8 +29,10 @@ import { getStore } from '@netlify/blobs';
 // view that wanted the size and the room, which is a different intent from
 // opening the builder and worth telling apart from it.
 // `color_match` is /color-match reading a room: one per result, carrying
-// `dims.source` (own photo or sample), `dims.photos` and `dims.pick` (the finish
-// it suggested). Never the photo: it does not leave the phone.
+// `dims.source` (own photo or sample), `dims.photos`, `dims.pick` (the finish
+// it suggested), `dims.scores` (all four) and `dims.rooms` (per photo, the
+// callouts' names and the colors it was reduced to, as OKLab plus share), enough
+// to re-run the rules offline. Never the photo: it does not leave the phone.
 const EVENTS = new Set([
   'arrive', 'product_view', 'engage', 'wa_handoff', 'catalog_impression', 'designer_open',
   'ar_open', 'ar_placed', 'design_page_open', 'color_match',
