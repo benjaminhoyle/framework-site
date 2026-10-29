@@ -389,10 +389,13 @@ label.icon:focus-within { outline: 2px solid var(--ink); outline-offset: 3px; }
 /* Three sample rooms, generated to show what the tool does; see the note in the head. */
 const SAMPLES = { warm: "/images/color-match/warm.jpg", cool: "/images/color-match/cool.jpg", green: "/images/color-match/green.jpg" };
 const SAMPLE_THUMBS = { warm: "/images/color-match/w360/warm.jpg", cool: "/images/color-match/w360/cool.jpg", green: "/images/color-match/w360/green.jpg" };
-/* The four finishes, from assets/shelving/builder-contract.json (the site hex pair). */
+/* The four finishes, from assets/shelving/builder-contract.json (the site hex pair). `temp` is how far a
+   finish cools (below 0) or warms a room. Sage sits close to Marine there: green balances a warm room
+   nearly as well as blue, and with Sage at half, Marine won 3 rooms in 4 (October 2026, 49 real rooms).
+   `goesWith` is a hue range a finish pairs with beyond what the color wheel says: green and wood. */
 const FINISHES = [
   { id: "marine",   name: "Marine",   board: "#82AAD0", steel: "#143F68", boardWord: "Sky blue",   steelWord: "deep blue",  temp: -1.0 },
-  { id: "sage",     name: "Sage",     board: "#B3D4BE", steel: "#6F986A", boardWord: "Mint green", steelWord: "leaf green", temp: -0.5 },
+  { id: "sage",     name: "Sage",     board: "#B3D4BE", steel: "#6F986A", boardWord: "Mint green", steelWord: "leaf green", temp: -0.8, goesWith: [35, 95] },
   { id: "charcoal", name: "Charcoal", board: "#94A4B0", steel: "#171E20", boardWord: "Cool grey",  steelWord: "charcoal",   temp: -0.3, neutral: true },
   { id: "coral",    name: "Coral",    board: "#F29A8C", steel: "#C8554B", boardWord: "Soft coral", steelWord: "coral",      temp: 1.0 },
 ];
@@ -637,7 +640,11 @@ function analyse(img) {
 /* A first pass at a designer's rules of thumb, each one a reason a person can read:
    echo a smaller color already in the room, set off a strong one from across the wheel,
    balance a warm room with a cool color and the other way round, give a busy room a calm
-   color and a quiet room some life, and stay away from a big color you would only compete with. */
+   color and a quiet room some life, stay away from a big color you would only compete with,
+   and put green with wood.
+   Checked against 49 real rooms (customers' own photos and inspiration pictures, October 2026):
+   these rules pick Marine in a little over half, Sage and Coral in most of the rest. Nairobi rooms
+   are warm, so blue leading is expected; before the rebalance it was 4 rooms in 5. */
 function suggest(result) {
   const cl = result.clusters;
   const walls = cl.filter(c => c.L > 0.6 && c.C < 0.07 && c.share >= 0.08);
@@ -665,7 +672,7 @@ function suggest(result) {
     // busy or quiet
     if (f.neutral) {
       if (busy >= 3) parts.push({ k: "calm", s: 0.8, txt: "calms a room full of color" });
-      else if (quiet) parts.push({ k: "calm", s: -0.3, txt: "keeps a quiet room quiet" });
+      else if (quiet) parts.push({ k: "calm", s: 0.05, txt: "keeps a quiet room quiet" }); // no longer a minus: a plain white room is where Charcoal gets chosen
       else parts.push({ k: "calm", s: 0.15, txt: "sits quietly with the rest" });
       if (blacks > 0.1) parts.push({ k: "echo", s: 0.3, txt: "its frame matches your black" });
     } else {
@@ -688,6 +695,8 @@ function suggest(result) {
       } else if (d > 100) {
         parts.push({ k: "foil", s: 0.45 * a.strength * Math.min(1, (d - 100) / 40), txt: `sets off your ${a.c.name}` });
       }
+      if (f.goesWith && a.c.h >= f.goesWith[0] && a.c.h < f.goesWith[1] && a.c.C < 0.12)
+        parts.push({ k: "pair", s: 0.28 * a.strength, txt: `sits well with your ${a.c.name}` });
     }
     // against the wall
     const dw = Math.sqrt(dist2(bl[0], bl[1], bl[2], wall.L, wall.a, wall.b) / (LW * LW));
@@ -695,6 +704,10 @@ function suggest(result) {
     // One reason of each kind counts: three things it sets off is still one idea.
     const byKind = new Map();
     for (const p of parts) { const o = byKind.get(p.k); if (!o || Math.abs(p.s) > Math.abs(o.s)) byKind.set(p.k, p); }
+    // Cooling a warm room and setting off its terracotta are mostly one idea, so the smaller counts half.
+    // Counted in full, the two together gave Marine nearly every warm room.
+    const tp = byKind.get("temp"), fo = byKind.get("foil");
+    if (tp && fo && tp.s > 0 && fo.s > 0) { const lo = tp.s < fo.s ? tp : fo; byKind.set(lo.k, { ...lo, s: lo.s / 2 }); }
     const kept = [...byKind.values()];
     const score = kept.reduce((s, p) => s + p.s, 0);
     return { f, score, parts: kept };
@@ -727,7 +740,7 @@ function sentence(x, avoid = []) {
 const $ = id => document.getElementById(id);
 const root = document.documentElement;
 const screenEl = $("screen"), track = $("track"), stage = $("stage"), chip = $("chip");
-const state = { kind: null, shots: [], active: 0, shown: null, rank: null, pick: null, chipFree: false, nudged: false };
+const state = { kind: null, shots: [], active: 0, shown: null, rank: null, pick: null, scores: null, chipFree: false, nudged: false };
 const STAR = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>`;
 const MAX_CROP = 0.3;       // the most of a photo's height the frame may hide to stay full width
 const MAX_SIDE_CROP = 0.22; // the most of its width it may hide to fill a tall screen
@@ -752,6 +765,24 @@ function rankAll() {
   const order = [...FINISHES].sort((a, b) => total.get(b.id) - total.get(a.id));
   state.rank = new Map(order.map((f, i) => [f.id, i + 1]));
   state.pick = order[0].id;
+  state.scores = total;
+}
+
+/* What the pick was made from, so the rules can be checked against real rooms and a change to them
+   re-run on what people actually photographed: every color each photo was reduced to (OKLab L, a, b
+   and its share of the photo, which is all suggest() reads), the callouts' names, and the four scores.
+   Never the photo. Six photos at most keeps the beacon well under /api/track's 8KB. */
+function logMatch(kind) {
+  if (!(window.fwk && window.fwk.track)) return;
+  const r3 = x => Math.round(x * 1000) / 1000;
+  window.fwk.track("color_match", {
+    source: kind, photos: state.shots.length, pick: state.pick,
+    scores: Object.fromEntries([...state.scores].map(([id, s]) => [id, r3(s)])),
+    rooms: state.shots.slice(0, 6).map(s => ({
+      shown: s.result.shown.map(c => c.name),
+      colors: s.result.clusters.map(c => [r3(c.L), r3(c.a), r3(c.b), r3(c.share)]),
+    })),
+  });
 }
 
 async function addPhotos(srcs, kind) {
@@ -767,7 +798,7 @@ async function addPhotos(srcs, kind) {
   }
   if (state.shots.length === first) return;
   rankAll();
-  if (window.fwk && window.fwk.track) window.fwk.track("color_match", { source: kind, photos: state.shots.length, pick: state.pick });
+  logMatch(kind);
   renderPicker();
   renderSlides();
   state.chipFree = false;
