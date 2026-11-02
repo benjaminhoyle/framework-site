@@ -29,7 +29,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -340,6 +340,6 @@ async function main() {
   console.log(`${made} of ${summary.images.length} scenes saved to ${out}`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => { console.error(error.message); process.exit(1); });
 }

@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from "node:url";
 
 const CATALOG = 'catalog.json';
 const CONFIG_IMAGE_DIR = 'images/shelving/configs';
@@ -124,7 +125,7 @@ export function exportPackage(id, destDir, { zip } = {}) {
 }
 
 // --- CLI --------------------------------------------------------------------
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [cmd, ...rest] = process.argv.slice(2);
   try {
     if (cmd === 'import') {
