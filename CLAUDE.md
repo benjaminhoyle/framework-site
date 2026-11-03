@@ -7,6 +7,22 @@ The public site (framework.co.ke), its Netlify functions, and the two gated
 dashboards. `AGENTS.md` holds the catalog and WhatsApp-CTA rules; read it
 before touching either; they are not repeated here.
 
+## Deploys: bundle production (Ben, 3 Nov 2026)
+
+Ben's personal Netlify team (behoyle) has 1,000 credits a month, and each
+production deploy costs 15. That is about 65 a month across all his sites
+(this one, the queue app, the Hindi workbench). Branch deploys, previews and
+builds Netlify cancels for no change cost nothing. The cycle that began on
+28 Oct used half its credits in five days, almost all on production deploys.
+
+- Commit to `marketing-build` and check the work on its free branch deploy,
+  https://marketing-build--framework-nairobi.netlify.app, never on production.
+- Production is pushing to `main`, with Ben's yes, once per batch: at the end
+  of a session, carrying everything that is ready, about once a day at most.
+  Only a fix for something broken on production goes sooner.
+- Set Netlify environment variables before that push; a change after it needs
+  another deploy (as "Redeploy so functions see TRACKER_PASSWORD" did).
+
 ## /builder
 
 The 3D shelf designer at `/builder`. `docs/builder.md` is the full account of
