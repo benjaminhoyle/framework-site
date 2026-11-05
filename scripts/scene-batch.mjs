@@ -26,6 +26,7 @@
  * The key is read from `--key-file` (default ../gemini-api.txt) and is never
  * printed, logged or written anywhere.
  */
+import { paidFetch } from "../../framework-ops/spend/spend.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -217,7 +218,7 @@ async function generate(key, prompt, reference, options) {
   const timer = setTimeout(() => controller.abort(), IMAGE_TIMEOUT_MS);
   let response;
   try {
-    response = await fetch(`${GEMINI_API_BASE}/${IMAGE_MODEL}:generateContent?key=${key}`, {
+    response = await paidFetch(`${GEMINI_API_BASE}/${IMAGE_MODEL}:generateContent?key=${key}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
@@ -228,7 +229,7 @@ async function generate(key, prompt, reference, options) {
           imageConfig: { aspectRatio: options.aspect, imageSize: options.size }
         }
       })
-    });
+    }, { tool: "scene-batch" });
   } catch (error) {
     throw new Error(error?.name === "AbortError" ? `timed out after ${IMAGE_TIMEOUT_MS / 1000}s` : String(error?.message || error));
   } finally {

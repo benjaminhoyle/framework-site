@@ -176,3 +176,9 @@ Airtable. `docs/build-spec.md` and `docs/strategy.md` have the reasoning.
 `/builder` deliberately does not load `js/site.js` (it would inject the site
 header over a full-screen tool) and loads the pixel and gtag on
 `requestIdleCallback`, after it is interactive.
+
+## Paid AI calls go on the record (Ben, 5 Nov 2026)
+
+Anything that calls Claude, OpenAI or Gemini goes through `framework-ops/spend/` (`spend.py`, or `paidFetch` in
+`spend.mjs`). The rule, the helpers and the weekly report are in `framework-ops/spend/README.md`. A paid call that
+gets past it shows up by name on Ben's morning card.
