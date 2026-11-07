@@ -197,7 +197,7 @@ const monthLabel = (m, opts) => fmt(opts, new Date(m + '-15T12:00:00Z'));
 let data = null, pass = store.get(), loadedAt = 0;
 
 async function load(p) {
-  const res = await fetch('/api/tracker', { headers: { 'x-tracker-pass': p }, cache: 'no-store' });
+  const res = await fetch('/api/tracker', { headers: p ? { 'x-tracker-pass': p } : {}, cache: 'no-store' });
   if (res.status === 401) return 'wrong';
   if (res.status === 404) return 'empty';
   if (!res.ok) throw new Error(res.status);
@@ -221,7 +221,7 @@ async function open(p, fromForm) {
     }
     return;
   }
-  store.set(p); pass = p;
+  if (p) { store.set(p); pass = p; }
   if (r === 'empty') { $('msg').textContent = 'No numbers yet. They arrive with the next refresh.'; show('msg'); return; }
   render(); show('app');
 }
@@ -238,7 +238,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && pass && Date.now() - loadedAt > 10 * 60e3) open(pass, false);
 });
 
-if (pass) open(pass, false); else show('gate');
+if (pass) open(pass, false); else if (/(?:^|;\s*)fw_staff=1/.test(document.cookie)) open('', false); else show('gate');
 
 // Whole units, except where rounding would show a bonus line that was not passed (69.6 is not "70").
 function fmtUnits(u) {
@@ -378,5 +378,6 @@ function renderChart() {
   $('chart').innerHTML = s;
 }
 </script>
+<script src="/js/app/staff-nav.js" defer></script>
 </body>
 </html>

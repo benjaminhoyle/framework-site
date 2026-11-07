@@ -317,12 +317,14 @@
     placedSinceChoose: false,
     previewCandidateId: null, // Advanced: the placement currently ghosted
     taughtPlacing: false, // whether the two-tap preview has been explained once
-    recentModuleIds: [], // the add sheet's chips, newest first, this visit only
-    showTrimmed: false, // whether the add sheet lists the shortened cuts too
+    recentModuleIds: [], // what leads the add sheet, newest first, this visit only
+    cycle: null, // Flexible: the piece just put down and what else fits there
     candidates: [],
     candidateContext: null,
     candidateCache: new Map(),
     pendingModules: new Set(),
+    quietModules: new Set(), // the pending ones fetched ahead, that nobody is waiting on
+    geometryLoads: Promise.resolve(), // settles when everything asked for has landed
     simple: { family: "standard", width: 1, levels: 2, lamp: false, trimmed: false },
     search: "",
     actionMenu: null,
@@ -347,6 +349,14 @@
     dom.fallback.hidden = false;
   }
 
+  // The page has failed for good, as opposed to still being on its way. Both
+  // calls below follow a showFallback that is the end of the road.
+  function failStart(title, body) {
+    showFallback(title, body);
+    readyFailed(new Error(title));
+    if (RENDER) tellParent({ error: title });
+  }
+
   function setHint(text, isError) {
     window.clearTimeout(ui.hintTimer);
     if (!text) {
@@ -369,7 +379,7 @@
 
   function boot() {
     if (!engine || !geometryLoader || !rendererFactory) {
-      showFallback("Could not start the designer", "Some files did not load. Please refresh the page.");
+      failStart("Could not start the designer", "Some files did not load. Please refresh the page.");
       return;
     }
 
@@ -391,11 +401,22 @@
       })
       .catch((error) => {
         console.error(error);
-        showFallback(
+        failStart(
           "Could not load the shelf catalogue",
           "Check your connection and refresh. You can also message us on WhatsApp and we will design it with you."
         );
       });
+  }
+
+  /*
+   * ?mode=advanced in the address picks the interface, whichever way the design
+   * got here. Asking for it is how somebody working on a client's design opens the
+   * same shelf with every piece to hand, and the mode is not part of the shelf, so
+   * the design keeps its code (see shelfOf).
+   */
+  function modeInAddress() {
+    const asked = new URLSearchParams(location.search).get("mode");
+    return ENTRY_MODES[String(asked || "").toLowerCase()] || null;
   }
 
   function start() {
@@ -408,7 +429,7 @@
       onFrame: positionOverlays
     });
     if (!renderer) {
-      showFallback(
+      failStart(
         "3D is not available in this browser",
         "Your browser could not start WebGL. Try Chrome, or message us on WhatsApp and we will design it with you."
       );
@@ -418,6 +439,10 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowEnd ? 1.5 : 2));
 
     dom.fallback.hidden = true;
+    if (RENDER) {
+      renderForParent();
+      return;
+    }
     ui.dimensionsSvg = document.createElementNS(SVG_NS, "svg");
     ui.dimensionsSvg.setAttribute("class", "nd-dim-layer");
     ui.dimensionsSvg.setAttribute("aria-hidden", "true");
@@ -437,7 +462,7 @@
     const restored = readHash();
     const savedCode = savedCodeInPath();
     if (restored) {
-      ui.mode = restored.mode;
+      ui.mode = modeInAddress() || restored.mode;
       ui.design = restored.design;
       if (restored.simple) ui.simple = restored.simple;
     } else if (savedCode) {
@@ -447,12 +472,12 @@
       loadSavedDesign(savedCode, { fallbackToDefault: true });
       return;
     } else {
-      const requestedMode = new URLSearchParams(location.search).get("mode");
-      ui.mode = ENTRY_MODES[String(requestedMode || "").toLowerCase()] || ui.mode;
+      ui.mode = modeInAddress() || ui.mode;
       ui.design = buildSimpleDesign(ui.simple, "sage", 0);
     }
     applyMode(ui.mode, { silent: true });
     refresh({ fit: true });
+    settleReady();
   }
 
   // ------------------------------------------------------------ design state --
@@ -733,24 +758,36 @@
   // --------------------------------------------------------------- geometry --
 
   /** Fetch any module geometry the current design needs, then redraw. */
-  function ensureGeometry(moduleIds) {
+  function ensureGeometry(moduleIds, quiet) {
+    // Fetched ahead and now actually wanted: from here somebody is waiting on it.
+    if (!quiet) moduleIds.forEach((id) => { if (ui.quietModules.delete(id)) setBusy(true); });
     const wanted = moduleIds.filter((id) => !ui.renderer.hasModule(id) && !ui.pendingModules.has(id));
     if (!wanted.length) return;
-    wanted.forEach((id) => ui.pendingModules.add(id));
-    setBusy(true);
-    Promise.all(wanted.map((id) =>
+    wanted.forEach((id) => {
+      ui.pendingModules.add(id);
+      if (quiet) ui.quietModules.add(id);
+    });
+    if (!quiet) setBusy(true);
+    const loading = Promise.all(wanted.map((id) =>
       geometryLoader.load(MODULE_BASE_URL, id, ASSET_VERSION)
         .then((geometry) => ui.renderer.addModule(id, geometry))
         .catch((error) => {
           console.error(error);
+          // Nobody asked for a piece fetched ahead. It is tried again if they do.
+          if (ui.quietModules.has(id)) return;
           setHint("A shelf part could not load. Check your connection.", true);
+          cyclePartFailed(id);
         })
-        .then(() => { ui.pendingModules.delete(id); })
+        .then(() => {
+          ui.pendingModules.delete(id);
+          ui.quietModules.delete(id);
+        })
     )).then(() => {
-      setBusy(ui.pendingModules.size > 0);
+      setBusy(ui.pendingModules.size > ui.quietModules.size);
       syncScene();
       positionOverlays();
     });
+    ui.geometryLoads = Promise.all([ui.geometryLoads, loading]);
   }
 
   function renderInstance(instance) {
@@ -849,6 +886,7 @@
       if (ui.selectedId) buildActionMenu();
     }
     updateStageActions();
+    drawCycleBar();
     positionOverlays();
     // Labelled markers and the action menu are centred and clamped from their
     // measured size, which only exists once they are in the document.
@@ -1380,8 +1418,8 @@
 
   /**
    * The "+" affordances: one at each free end of a run, and one above each
-   * stack. Each carries every piece that legally fits there, so tapping it opens
-   * a list instead of the app guessing.
+   * stack. Each carries every piece that legally fits there. An end opens a list;
+   * a stack puts the likely piece down at once (see PLACE_AND_CYCLE).
    *
    * One marker per end, not one per kind of placement. Carrying on along a run
    * and turning off it are two answers to the same question -- "what happens at
@@ -1437,7 +1475,7 @@
 
     if (firstBase.length) {
       const spot = centreOf(candidateBounds(firstBase[0].candidate));
-      addOverlay(plusButton("Start your shelf", firstBase.map(placeRow), { search: false }), spot);
+      addOverlay(cyclePlus("Start your shelf", firstBase), spot);
     }
 
     // Two units can share one end of a run: the unit at the end and the one
@@ -1469,7 +1507,7 @@
         // the corner, which is eight today and one family from tripping the
         // threshold in the mode whose whole promise is that you were never
         // supposed to know a part's name.
-        plusButton("Add a unit here", endOptions(placed.end), { search: false }),
+        plusButton("Add a unit here", cycleRows(endOptions(placed.end)), { search: false }),
         placed.anchor,
         outwardPush(placed.end.out, MARKER_PUSH_PX),
         { push: true }
@@ -1484,7 +1522,7 @@
       const bounds = stackBounds(ids, { excludeLamps: true });
       if (!bounds) return;
       addOverlay(
-        plusButton("Add on top", options.map(placeRow), { search: false }),
+        cyclePlus("Add on top", options, familyOnTop(ids)),
         [(bounds[0] + bounds[3]) / 2, (bounds[1] + bounds[4]) / 2, bounds[5]],
         [0, -MARKER_PUSH_PX],
         { push: true }
@@ -1515,7 +1553,7 @@
   }
 
   function placeRow(entry) {
-    return { module: entry.module, onPick: () => placeCandidate(entry.candidate) };
+    return { module: entry.module, candidate: entry.candidate, onPick: () => placeCandidate(entry.candidate) };
   }
 
   /**
@@ -1635,11 +1673,11 @@
     return button;
   }
 
-  function placeCandidate(candidate) {
+  /** The design with this candidate added, or null if it turns out not to fit. */
+  function withCandidate(candidate) {
     const module = ui.catalog.modules[candidate.moduleId];
-    let next = null;
     try {
-      next = engine.applyCandidate(ui.catalog, ui.design, candidate, {
+      return engine.applyCandidate(ui.catalog, ui.design, candidate, {
         // A candidate that turned a corner brings its own quarter turn; the
         // facing rules (a top bar reaching back over the shelf, say) are
         // relative to that, not instead of it.
@@ -1647,7 +1685,12 @@
       });
     } catch (error) {
       console.error(error);
+      return null;
     }
+  }
+
+  function placeCandidate(candidate) {
+    const next = withCandidate(candidate);
     // Advanced keeps the piece in hand and frames the spots that are left, so
     // the next one of the same part is two taps rather than a sheet away. The
     // framing has to be the candidates' rather than the design's, or the
@@ -1658,6 +1701,188 @@
     if (keep) ui.placedSinceChoose = true;
     const options = keep ? { fit: "candidates", keepModule: true } : { fit: true };
     if (commit(next, options)) track("designer_place", { module: candidate.moduleId, mode: ui.mode });
+  }
+
+  /*
+   * Flexible: put the likely piece down, then change it where it stands.
+   *
+   * Flexible's person starts from a place and does not know the parts by name, so
+   * a sheet of names is the wrong question, and it covers the thing they are
+   * looking at. Pressing the + over a stack (or on an empty shelf) places the likely
+   * piece at once, and a bar at the thumb steps through what else fits there on the
+   * model itself, total and all. Nothing asks to be confirmed: the piece is already
+   * down, and anything else you do next simply leaves it there, including pressing
+   * the + that is now above it for another. A + at the end of a run still opens its
+   * list, because the first guess there is right too rarely, and what is picked from
+   * that list gets the same bar.
+   *
+   * All of it hangs off one state and one rule. Every stop is worked out up front as
+   * a whole design built on the shelf as it stood, so a step only points `ui.design`
+   * at another one. The first placing is the one thing in the history, so Undo takes
+   * the whole affair back in one and Redo restores the stop it was left on. And a
+   * cycle is alive only while `ui.design` is its current stop, so any other edit,
+   * from anywhere, ends it without having to know about it.
+   *
+   * To take it out: set this to false. The markers go back to opening their lists.
+   */
+  const PLACE_AND_CYCLE = true;
+
+  /** A marker that places what is likeliest here, rather than opening a list. */
+  function cyclePlus(label, entries, family) {
+    if (!PLACE_AND_CYCLE) return plusButton(label, entries.map(placeRow), { search: false });
+    const rows = engine.likelyFirst(entries, family).map(placeRow);
+    const button = make("button", "nd-plus", "+");
+    button.type = "button";
+    button.title = label;
+    button.setAttribute("aria-label", label);
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      startCycle(rows, 0);
+    });
+    return button;
+  }
+
+  /** The rows of a list, each picked into a cycle over the whole list. */
+  function cycleRows(rows) {
+    if (!PLACE_AND_CYCLE) return rows;
+    return rows.map((row) => (row.candidate
+      ? Object.assign({}, row, { onPick: () => startCycle(rows, rows.indexOf(row)) })
+      : row));
+  }
+
+  /** The family of the highest piece in a stack, which is what comes next on it. */
+  function familyOnTop(ids) {
+    let top = null;
+    for (const id of ids) {
+      const instance = ui.design.instances.find((item) => item.id === id);
+      const module = instance && ui.catalog.modules[instance.moduleId];
+      if (!module || module.role === "lamp") continue;
+      const height = engine.instanceBounds(ui.catalog, instance)[5];
+      if (!top || height > top.height) top = { height, family: module.family };
+    }
+    return top ? top.family : null;
+  }
+
+  function startCycle(rows, index) {
+    const stops = [];
+    let start = -1;
+    rows.forEach((row, rowIndex) => {
+      const design = row.candidate && withCandidate(row.candidate);
+      if (!design) return;
+      if (rowIndex === index) start = stops.length;
+      stops.push({ moduleId: row.candidate.moduleId, label: row.label || moduleLabel(row.module), design });
+    });
+    if (start < 0) {
+      commit(null);
+      return;
+    }
+    // With one thing that fits there is nothing to step through, and so no bar.
+    ui.cycle = stops.length > 1 ? { stops, index: start, visited: [start] } : null;
+    commit(stops[start].design, { fit: true });
+    track("designer_place", { module: stops[start].moduleId, mode: ui.mode });
+    fetchAhead();
+  }
+
+  /** The cycle on screen, if there still is one. See the rule above. */
+  function liveCycle() {
+    const cycle = ui.cycle;
+    if (cycle && (ui.mode !== "standard" || cycle.stops[cycle.index].design !== ui.design)) ui.cycle = null;
+    return ui.cycle;
+  }
+
+  function goToStop(index) {
+    const cycle = ui.cycle;
+    cycle.index = index;
+    ui.design = cycle.stops[index].design;
+    // The camera holds still, because a shelf that rescales at each step cannot be
+    // compared with itself a step ago. Unless the piece has outgrown the view, as a
+    // lamp does, and then it comes straight back at the next step: otherwise one tall
+    // stop leaves every stop after it small, in a corner.
+    const outgrown = !ui.renderer.containsBounds(engine.designBounds(ui.catalog, ui.design));
+    refresh({ fit: outgrown || cycle.widened });
+    cycle.widened = outgrown;
+  }
+
+  function stepCycle(delta) {
+    const cycle = liveCycle();
+    if (!cycle) return;
+    const count = cycle.stops.length;
+    goToStop((cycle.index + delta + count) % count);
+    cycle.visited.push(cycle.index);
+    track("designer_cycle", { module: cycle.stops[cycle.index].moduleId, mode: ui.mode });
+    fetchAhead();
+  }
+
+  function endCycle() {
+    ui.cycle = null;
+    drawCycleBar();
+  }
+
+  /**
+   * A step changes the design, the name and the total at once and never waits on the
+   * network: the piece appears when its geometry lands, and that redraw reads
+   * whatever `ui.design` is by then, so a late arrival cannot put back a stop that
+   * has been left. The stops either side are fetched ahead, so that it rarely shows.
+   */
+  function fetchAhead() {
+    const cycle = liveCycle();
+    if (!cycle) return;
+    const count = cycle.stops.length;
+    ensureGeometry([
+      cycle.stops[(cycle.index + 1) % count].moduleId,
+      cycle.stops[(cycle.index - 1 + count) % count].moduleId
+    ], true);
+  }
+
+  /**
+   * The piece on screen could not be fetched. A piece that is priced and cannot be
+   * seen is the one wrong state a cycle could leave, so go back to the last stop they
+   * saw that can be drawn, or to the shelf as it was. Never to one they have not seen.
+   */
+  function cyclePartFailed(moduleId) {
+    const cycle = liveCycle();
+    if (!cycle || cycle.stops[cycle.index].moduleId !== moduleId) return;
+    const drawable = cycle.visited.filter((index) => ui.renderer.hasModule(cycle.stops[index].moduleId));
+    if (drawable.length) goToStop(drawable[drawable.length - 1]);
+    else undo();
+  }
+
+  /** Arrow keys step on a desktop, and Escape leaves the piece where it is. */
+  function cycleKey(event) {
+    if (!liveCycle() || !dom.modal.hidden || event.target.closest("input, select, textarea")) return false;
+    if (event.key === "Escape") endCycle();
+    else if (event.key === "ArrowLeft") stepCycle(-1);
+    else if (event.key === "ArrowRight") stepCycle(1);
+    else return false;
+    return true;
+  }
+
+  let cycleBar = null;
+
+  function drawCycleBar() {
+    const cycle = liveCycle();
+    const showing = Boolean(cycle) && !isPerspective();
+    dom.stage.classList.toggle("is-cycling", showing);
+    if (!cycleBar) {
+      if (!showing) return;
+      cycleBar = make("div", "nd-cycle");
+      const button = (glyph, label, delta) => {
+        const node = make("button", "nd-cycle-step", glyph);
+        node.type = "button";
+        node.title = label;
+        node.setAttribute("aria-label", label);
+        node.addEventListener("click", () => stepCycle(delta));
+        return node;
+      };
+      const name = make("span", "nd-cycle-name");
+      name.setAttribute("aria-live", "polite");
+      cycleBar.appendChild(button("\u2039", "Try the one before", -1));
+      cycleBar.appendChild(name);
+      cycleBar.appendChild(button("\u203A", "Try another", 1));
+      dom.stage.appendChild(cycleBar);
+    }
+    cycleBar.hidden = !showing;
+    if (showing) cycleBar.querySelector(".nd-cycle-name").textContent = cycle.stops[cycle.index].label;
   }
 
   /**
@@ -1811,8 +2036,8 @@
       const label = `Put the ${moduleLabel(module)} on this side`;
       // The ring only in Advanced, and only here: these sit beside markers
       // that place on the second tap, and that is the difference it marks. In
-      // Flexible every marker opens a list, so a ring on all of them would
-      // distinguish nothing and just add weight over the shelf.
+      // Flexible nothing about a marker needs working out before pressing it, so
+      // a ring there would only add weight over the shelf.
       addOverlay(plusButton(label, spacingRows(module, list), { menu: true }), list[0].point);
     });
 
@@ -2339,6 +2564,7 @@
    */
   function openSheet(spec) {
     ui.sheet = spec;
+    dom.modal.classList.toggle("is-searching", Boolean(spec.searching));
     dom.modalTitle.textContent = spec.title;
     clear(dom.modalBody);
     spec.render(dom.modalBody);
@@ -2356,42 +2582,26 @@
 
   function openPicker(title, options, settings) {
     const config = settings || {};
+    // Headings are not rows, and a section break is not a reason to put a
+    // keyboard on the screen. Flexible never reaches this: its lists are what
+    // fits at one place, and a search box there would be an admission that the
+    // buyer was supposed to know a part's name.
+    const searching = config.search !== false
+      && options.filter((option) => !option.heading).length > 8;
+    // A sheet with a search box keeps its height whatever is left in the list. It
+    // used to shrink with the results, and it stands on the floor of the page, so
+    // each letter typed dropped the field and the results further behind the
+    // keyboard: on a 390 x 844 phone the box moved 514px, and past two letters
+    // none of what had been found was above a 300px keyboard.
     openSheet({
       title,
+      searching,
       render: (body) => {
         if (!options.length) {
           body.appendChild(make("p", "nd-list-empty", config.emptyLabel || "Nothing fits here yet."));
           return;
         }
-        const chips = config.chips || [];
-        if (chips.length) {
-          const strip = make("div", "nd-chips");
-          strip.setAttribute("aria-label", "Recently used");
-          for (const chip of chips) {
-            const button = make("button", "nd-chip", chip.label || moduleLabel(chip.module));
-            button.type = "button";
-            button.addEventListener("click", () => {
-              closePicker();
-              chip.onPick();
-            });
-            strip.appendChild(button);
-          }
-          body.appendChild(strip);
-        }
-
-        // Headings are not rows, and a section break is not a reason to put a
-        // keyboard on the screen. Flexible never reaches this: its lists are
-        // what fits at one place, and a search box there would be an admission
-        // that the buyer was supposed to know a part's name.
-        const rows = options.filter((option) => !option.heading).length;
-        if (config.search !== false && rows > 8) {
-          const search = make("input", "nd-search");
-          search.type = "search";
-          search.placeholder = config.searchLabel || "Search pieces";
-          search.autocomplete = "off";
-          search.addEventListener("input", () => renderPickerRows(options, search.value));
-          body.appendChild(search);
-        }
+        if (searching) body.appendChild(pickerSearch(options, config));
         const list = make("div", "nd-list");
         list.id = "nd-picker-list";
         body.appendChild(list);
@@ -2405,37 +2615,97 @@
     if (search && window.matchMedia("(pointer: fine)").matches) search.focus();
   }
 
+  /**
+   * The search box and, under it, the words that save typing it.
+   *
+   * A word is not a second filter: pressing one puts it in the box, so there is
+   * one thing deciding what is listed, it is on screen, and it can be typed onto
+   * ("base" and then "d"). Typing never searches inside a tab that was left open
+   * somewhere, which is the kind of hiding this pass was asked to remove.
+   */
+  function pickerSearch(options, config) {
+    const head = make("div", "nd-pick-head");
+    const search = make("input", "nd-search");
+    search.type = "search";
+    search.placeholder = config.searchLabel || "Search pieces";
+    search.autocomplete = "off";
+    search.autocapitalize = "off";
+    search.spellcheck = false;
+    search.enterKeyHint = "go";
+    head.appendChild(search);
+
+    const words = (config.words || []).map((word) => {
+      const button = make("button", "nd-word", word);
+      button.type = "button";
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", () => {
+        const pressed = button.getAttribute("aria-pressed") === "true";
+        search.value = pressed ? "" : word.toLowerCase();
+        apply();
+      });
+      return button;
+    });
+    const apply = () => {
+      renderPickerRows(options, search.value);
+      const typed = search.value.trim().toLowerCase();
+      words.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.textContent.toLowerCase() === typed));
+      });
+    };
+    search.addEventListener("input", apply);
+    // The keyboard's Go, or a desktop's Enter, takes the first thing listed.
+    search.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      const first = dom.modalBody.querySelector("#nd-picker-list .nd-list-row:not(:disabled)");
+      if (first) first.click();
+    });
+    if (words.length) {
+      const strip = make("div", "nd-words");
+      words.forEach((button) => strip.appendChild(button));
+      head.appendChild(strip);
+    }
+    return head;
+  }
+
   function renderPickerRows(options, query) {
     const list = el("nd-picker-list");
     if (!list) return;
     clear(list);
-    const needle = String(query || "").trim().toLowerCase();
+    const needle = String(query || "").trim();
     // Rows are not always modules -- the colour sheet uses the same list -- so
     // everything about the module is optional from here down.
-    const matches = options.filter((option) => {
-      if (option.heading) return !needle; // a filtered list is one flat list
-      if (option.foot) return true; // the row that reveals more rows always shows
-      if (!needle) return true;
-      const module = option.module;
-      const haystack = module
-        ? `${module.id} ${option.label || moduleLabel(module)} ${module.family || ""} ${module.role}`
-        : String(option.label || "");
-      return haystack.toLowerCase().indexOf(needle) >= 0;
-    });
+    const termsOf = (option) => {
+      if (!option.terms) option.terms = engine.pieceTerms(option.module || { id: "", label: option.label });
+      return option.terms;
+    };
+    let matches = options;
+    if (needle) {
+      matches = options.filter((option) => !option.heading && engine.pieceMatches(termsOf(option), needle));
+      // What it is called before what else it answers to: "d" is a Deep Base
+      // first, and a Standard Top Bar only because the order book says display bar.
+      const named = (option) => engine.pieceMatches(
+        ` ${String(option.label || moduleLabel(option.module)).replace(/[()]/g, "").toLowerCase()} `,
+        needle
+      );
+      matches = matches.filter(named).concat(matches.filter((option) => !named(option)));
+    }
     if (!matches.some((option) => !option.heading)) {
       list.appendChild(make("p", "nd-list-empty", "Nothing matches."));
       return;
     }
+    const rows = document.createDocumentFragment();
     for (const option of matches) {
       // A heading separates two kinds of answer to one question -- carrying on
       // along a run, or turning off it -- without making them two markers.
       if (option.heading) {
-        list.appendChild(make("h3", "nd-list-heading", option.heading));
+        rows.appendChild(make("h3", "nd-list-heading", option.heading));
         continue;
       }
       const row = make("button", "nd-list-row");
       row.type = "button";
       if (option.selected) row.setAttribute("aria-pressed", "true");
+      if (option.disabled) row.disabled = true;
       if (option.swatch) {
         const chip = make("span", "nd-swatch-chip");
         const steel = make("span");
@@ -2458,8 +2728,12 @@
         closePicker();
         option.onPick();
       });
-      list.appendChild(row);
+      rows.appendChild(row);
     }
+    list.appendChild(rows);
+    // A new list starts at its top. The body is what scrolls, and it would keep
+    // the place it had in the list before.
+    if (dom.modalBody.scrollTop) dom.modalBody.scrollTop = 0;
   }
 
   /**
@@ -2829,6 +3103,38 @@
     };
   }
 
+  /** The share image, as a canvas. The one thing the button and the API share. */
+  function composePresent(logo) {
+    const composer = window.FrameworkDesignerPresent;
+    const withDimensions = ui.dimensionsOn && !isPerspective();
+    // Snapshot at the art box's own aspect, at 2x for a crisp downscale.
+    // Dimensions hang outside the model, so they need the shelf pulled in
+    // further -- the same trade the viewport makes while they are showing.
+    const snapshot = ui.renderer.snapshot({
+      width: composer.WIDTH * 2,
+      height: composer.ART_HEIGHT * 2,
+      boundsMm: engine.designBounds(ui.catalog, ui.design),
+      padding: withDimensions ? PRESENT_DIMENSION_PADDING : 1.14
+    });
+    const content = presentContent();
+    // The overlay follows the viewport's toggle. It is drawn, not
+    // photographed: the live one is SVG over the canvas, and the snapshot is
+    // the WebGL layer alone. Projecting through the snapshot's own camera and
+    // then through the art box's placement gives the composer coordinates in
+    // the finished image, so it never has to know about either.
+    if (withDimensions) {
+      const art = composer.artTransform(snapshot);
+      content.dimensions = dimensionGeometry(
+        (pointMm) => {
+          const point = snapshot.project(pointMm);
+          return { x: point.x * art.scale + art.offsetX, y: point.y * art.scale + art.offsetY };
+        },
+        PRESENT_DIMENSION_SCALE
+      );
+    }
+    return { canvas: composer.compose(snapshot, content, logo), content };
+  }
+
   function openPresent() {
     if (!ui.design.instances.length) return;
     dom.present.disabled = true;
@@ -2855,34 +3161,7 @@
 
     loadPresentLogo().then((logo) => {
       try {
-        const composer = window.FrameworkDesignerPresent;
-        const withDimensions = ui.dimensionsOn && !isPerspective();
-        // Snapshot at the art box's own aspect, at 2x for a crisp downscale.
-        // Dimensions hang outside the model, so they need the shelf pulled in
-        // further -- the same trade the viewport makes while they are showing.
-        const snapshot = ui.renderer.snapshot({
-          width: composer.WIDTH * 2,
-          height: composer.ART_HEIGHT * 2,
-          boundsMm: engine.designBounds(ui.catalog, ui.design),
-          padding: withDimensions ? PRESENT_DIMENSION_PADDING : 1.14
-        });
-        const content = presentContent();
-        // The overlay follows the viewport's toggle. It is drawn, not
-        // photographed: the live one is SVG over the canvas, and the snapshot is
-        // the WebGL layer alone. Projecting through the snapshot's own camera and
-        // then through the art box's placement gives the composer coordinates in
-        // the finished image, so it never has to know about either.
-        if (withDimensions) {
-          const art = composer.artTransform(snapshot);
-          content.dimensions = dimensionGeometry(
-            (pointMm) => {
-              const point = snapshot.project(pointMm);
-              return { x: point.x * art.scale + art.offsetX, y: point.y * art.scale + art.offsetY };
-            },
-            PRESENT_DIMENSION_SCALE
-          );
-        }
-        const canvas = composer.compose(snapshot, content, logo);
+        const { canvas, content } = composePresent(logo);
         dom.presentImage.src = canvas.toDataURL("image/png");
         // The same code the image prints, offered as text: it is what the render
         // console is opened with, and reading seven characters off a picture and
@@ -3171,11 +3450,8 @@
     }
   }
 
-  function loadSavedDesign(code, options) {
-    const settings = options || {};
-    setBusyMessage(`Opening design ${code}...`);
-    setBusy(true);
-    fetch(`${DESIGN_API}?code=${encodeURIComponent(code)}`)
+  function fetchSavedDesign(code) {
+    return fetch(`${DESIGN_API}?code=${encodeURIComponent(code)}`)
       .then((response) => response.json().then((body) => {
         if (!response.ok || !body.ok) throw new Error(body.error || `HTTP ${response.status}`);
         return body;
@@ -3184,21 +3460,34 @@
         .then((response) => response.json().then((body) => {
           if (!response.ok || !body.ok) throw new Error(body.error || `HTTP ${response.status}`);
           return body;
-        })))
+        })));
+  }
+
+  /** Put a saved record on the page, as the design and the mode it was saved in. */
+  function restoreSavedDesign(body) {
+    // The hash is the form the page reads natively; the serialised design is
+    // the fallback for a record written before the hash was stored.
+    const restored = body.hash
+      ? Object.assign(decodeDesign(body.hash), {})
+      : {
+        mode: body.mode || "simple",
+        design: engine.repairCornerGeometry(
+          ui.catalog,
+          engine.deserializeState(ui.catalog, body.design)
+        )
+      };
+    ui.mode = MODES.indexOf(restored.mode) >= 0 ? restored.mode : ui.mode;
+    ui.design = restored.design;
+  }
+
+  function loadSavedDesign(code, options) {
+    const settings = options || {};
+    setBusyMessage(`Opening design ${code}...`);
+    setBusy(true);
+    fetchSavedDesign(code)
       .then((body) => {
-        // The hash is the form the page reads natively; the serialised design is
-        // the fallback for a record written before the hash was stored.
-        const restored = body.hash
-          ? Object.assign(decodeDesign(body.hash), {})
-          : {
-            mode: body.mode || "simple",
-            design: engine.repairCornerGeometry(
-              ui.catalog,
-              engine.deserializeState(ui.catalog, body.design)
-            )
-          };
-        ui.mode = MODES.indexOf(restored.mode) >= 0 ? restored.mode : ui.mode;
-        ui.design = restored.design;
+        restoreSavedDesign(body);
+        ui.mode = modeInAddress() || ui.mode;
         ui.simple = deriveSimpleSpec(ui.design);
         ui.history.length = 0;
         ui.future.length = 0;
@@ -3211,7 +3500,7 @@
       .catch((error) => {
         console.warn("could not open the saved design:", error.message);
         if (settings.fallbackToDefault) {
-          ui.mode = "simple";
+          ui.mode = modeInAddress() || "simple";
           ui.design = buildSimpleDesign(ui.simple, "sage", 0);
           applyMode(ui.mode, { silent: true });
           refresh({ fit: true });
@@ -3223,6 +3512,7 @@
         delete dom.app.dataset.loading;
         setBusyMessage("Loading...");
         setBusy(ui.pendingModules.size > 0);
+        settleReady();
       });
   }
 
@@ -3458,88 +3748,47 @@
     return width ? `${mmToCm(width)} cm` : null;
   }
 
-  function spotsNote(module) {
-    const count = distinctSpots(ui.candidateCache.get(module.id) || []).length;
-    return count ? `${count} spot${count === 1 ? "" : "s"}` : null;
-  }
+  /*
+   * Every piece in the catalogue, always, in the order it is likely to be wanted.
+   *
+   * What it replaced hid things from the search box by two rules. A piece with no
+   * place on the shelf right now was not offered at all, so "extension" on an empty
+   * shelf and "deep" on a Standard one came back empty or short, with nothing to
+   * say the piece exists. And sixteen shortened cuts were kept behind a "Show N"
+   * row, the reason being that listed flat they doubled half the families and took
+   * the sheet to two dozen rows. The rows are ranked now, which answers that
+   * without hiding anything: a cut hardly anyone buys is low in the list and is
+   * found by its name like anything else.
+   *
+   * So there is one order: what fits before what does not, then what this person
+   * has just been reaching for, then what the shop sells most of. A piece that
+   * does not fit stays on the list, dimmed, and says so.
+   */
+  const PIECE_WORDS = ["Base", "Extension", "Spacer", "Hanger", "Top bar", "Adapter", "Booster"];
 
   function pieceRow(module) {
+    const fits = (ui.candidateCache.get(module.id) || []).length > 0;
     return {
       module,
-      note: [widthNote(module), spotsNote(module)].filter(Boolean).join(" · "),
+      rankId: module.id,
+      fits,
+      disabled: !fits,
+      note: fits ? widthNote(module) : "no place yet",
       onPick: () => chooseModule(module.id)
     };
   }
 
-  /**
-   * The pieces that fit, with the shortened cuts kept out of the way.
-   *
-   * Sixteen modules in the catalogue are a shortened cut of another and carry
-   * its `canonicalId` and its price; the only thing that differs is the width.
-   * Listed flat they doubled half the families -- "Wide Base" immediately above
-   * "Wide Base (Trimmed)" at the same price -- and took the sheet to two dozen
-   * rows on the default design.
-   *
-   * They are hidden behind one row at the foot of the list rather than folded
-   * into a length sub-choice, because folding put a second tap in front of the
-   * cut almost everybody wants in order to shorten a list they were scrolling
-   * once. This way the common case stays one tap, the list is a third shorter,
-   * and the trade user who wants the short cut pays one tap per sheet.
-   *
-   * A trimmed cut whose full unit does not fit is never hidden: for some
-   * families the short cut is the product the shop sells, and hiding it would
-   * hide a piece with nothing standing in for it.
-   */
   function addPieceOptions() {
-    const offered = tierModules(ui.mode)
-      .filter((module) => (ui.candidateCache.get(module.id) || []).length);
-    const shown = new Set(offered.map((module) => module.id));
-    const hidden = [];
-    const rows = [];
-    for (const module of offered) {
-      const coveredByItsFullCut = module.trimmed
-        && module.canonicalId
-        && shown.has(module.canonicalId);
-      if (coveredByItsFullCut && !ui.showTrimmed) {
-        hidden.push(module);
-        continue;
-      }
-      rows.push(pieceRow(module));
-    }
-    if (hidden.length) {
-      rows.push({
-        label: `Show ${hidden.length} shortened cut${hidden.length === 1 ? "" : "s"}`,
-        hidePrice: true,
-        foot: true,
-        note: "same price, narrower",
-        onPick: () => { ui.showTrimmed = true; openAddSheet(); }
-      });
-    } else if (ui.showTrimmed && offered.some((module) => module.trimmed)) {
-      rows.push({
-        label: "Hide the shortened cuts",
-        hidePrice: true,
-        foot: true,
-        onPick: () => { ui.showTrimmed = false; openAddSheet(); }
-      });
-    }
-    return rows;
-  }
-
-  /**
-   * The pieces reached for most recently, as a row of chips above the list.
-   *
-   * Keeping a piece in hand across placements (see `placeCandidate`) removes
-   * the repeat of the SAME part; this removes the repeat of alternating ones,
-   * which is what building a run actually is -- base, shelf, base, shelf.
-   * Filtered through the same test as the rows, because a chip offering a piece
-   * that no longer fits would be the only dead control on the screen.
-   */
-  function recentOptions() {
-    return ui.recentModuleIds
-      .map((id) => ui.catalog.modules[id])
-      .filter((module) => module && moduleAllowed(module, ui.mode)
-        && (ui.candidateCache.get(module.id) || []).length)
-      .map((module) => ({ module, onPick: () => chooseModule(module.id) }));
+    const rows = tierModules(ui.mode).map(pieceRow);
+    const bookend = bookendRow();
+    if (bookend) rows.push(bookend);
+    const recency = (row) => {
+      const index = row.fits ? ui.recentModuleIds.indexOf(row.rankId) : -1;
+      return index < 0 ? RECENT_LIMIT : index;
+    };
+    return rows.sort((first, second) => (Number(second.fits) - Number(first.fits))
+      || (recency(first) - recency(second))
+      || (engine.pieceRank(first.rankId) - engine.pieceRank(second.rankId)));
   }
 
   /**
@@ -3552,6 +3801,11 @@
     const count = ui.design.bookends || 0;
     return {
       label: accessory.label || "Bookend",
+      rankId: "bookend",
+      terms: engine.pieceTerms(accessory),
+      // Always pressable, because a count on a shelf with no ends is allowed and
+      // the stepper says what that means. Only the order follows whether it fits.
+      fits: count > 0 || engine.legalBookendAnchors(ui.catalog, ui.design).length > 0,
       note: count ? `${count} on the shelf` : null,
       price: accessory.priceKsh,
       onPick: openBookendSheet
@@ -3577,20 +3831,7 @@
   }
 
   function openAddSheet() {
-    const bookend = bookendRow();
-    // The bookend is a thing you can buy and belongs with them; the trimmed
-    // toggle is about the list itself, so it stays at the foot of it.
-    const pieces = addPieceOptions();
-    const foot = pieces.filter((row) => row.foot);
-    const options = pieces.filter((row) => !row.foot)
-      .concat(bookend ? [bookend] : [])
-      .concat(foot);
-    openPicker("Add a piece", options, {
-      chips: recentOptions(),
-      emptyLabel: ui.design.instances.length
-        ? "Nothing else will fit on this design."
-        : "Nothing to add yet. One moment."
-    });
+    openPicker("Add a piece", addPieceOptions(), { words: PIECE_WORDS });
   }
 
   /**
@@ -3616,10 +3857,10 @@
    * The pieces reached for most recently, newest first.
    *
    * Session-only and never serialised: a design is not the list of parts
-   * somebody tried on the way to it. Kept short because the chips are one row
-   * and a row that scrolls is a second list.
+   * somebody tried on the way to it. Kept short because these lead the sheet, and
+   * past a few they would push down what the shop sells most of.
    */
-  const RECENT_LIMIT = 3;
+  const RECENT_LIMIT = 4;
 
   function rememberModule(moduleId) {
     ui.recentModuleIds = [moduleId]
@@ -4813,6 +5054,7 @@
 
     buildOverlay();
     writeHash();
+    announceChange();
   }
 
   // ------------------------------------------------------------------ input --
@@ -4826,12 +5068,14 @@
   const pointers = new Map();
   let panState = null;
   let pinchState = null;
+  let tapPending = false;
 
   function bindEvents() {
     dom.canvas.addEventListener("pointerdown", onPointerDown);
     dom.canvas.addEventListener("pointermove", onPointerMove);
     dom.canvas.addEventListener("pointerup", onPointerUp);
     dom.canvas.addEventListener("pointercancel", onPointerUp);
+    dom.canvas.addEventListener("click", onCanvasClick);
     dom.canvas.addEventListener("wheel", onWheel, { passive: false });
     dom.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
@@ -4975,6 +5219,7 @@
         else undo();
         return;
       }
+      if (cycleKey(event)) return;
       if (event.key === "Escape") {
         if (!dom.presentModal.hidden) return closePresent();
         // The order form's own controls stop this first where they need to --
@@ -4997,6 +5242,8 @@
       }
     });
 
+    followKeyboard();
+
     if ("ResizeObserver" in window) {
       new ResizeObserver(() => ui.renderer.resize()).observe(dom.stage);
     } else {
@@ -5011,6 +5258,40 @@
       applyMode(restored.mode, { silent: true });
       refresh({ fit: true });
     });
+  }
+
+  /*
+   * Keep the sheets above the on-screen keyboard.
+   *
+   * A phone's keyboard does not move the page. It shrinks the visual viewport and
+   * leaves the layout where it was, so a sheet standing on the floor of the page
+   * stands behind the keyboard, and the browser only pans far enough to show the
+   * field that has the focus. While the keyboard is up the sheets stand on its
+   * top edge instead, in whatever part of the page is actually visible.
+   *
+   * 120px is taller than any browser's collapsing address bar and shorter than any
+   * keyboard. A zoomed page is left alone: its visual viewport has shrunk for a
+   * different reason.
+   */
+  const KEYBOARD_MIN_PX = 120;
+
+  function followKeyboard() {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const root = document.documentElement;
+    const follow = () => {
+      const open = viewport.scale < 1.05 && window.innerHeight - viewport.height > KEYBOARD_MIN_PX;
+      const opening = open && !root.classList.contains("nd-keyboard");
+      root.classList.toggle("nd-keyboard", open);
+      if (!open) return;
+      root.style.setProperty("--nd-visible-top", `${Math.round(viewport.offsetTop)}px`);
+      root.style.setProperty("--nd-visible-height", `${Math.round(viewport.height)}px`);
+      // The sheet has just shrunk around whichever field asked for the keyboard.
+      const field = document.activeElement;
+      if (opening && field && field.matches("input, textarea")) field.scrollIntoView({ block: "nearest" });
+    };
+    viewport.addEventListener("resize", follow);
+    viewport.addEventListener("scroll", follow);
   }
 
   function onPointerDown(event) {
@@ -5063,9 +5344,8 @@
     pointers.delete(event.pointerId);
     if (pointers.size < 2) pinchState = null;
     if (!pointers.size) {
-      const tap = wasTap;
+      tapPending = Boolean(wasTap);
       panState = null;
-      if (tap) handleTap(event.clientX, event.clientY);
     }
     try {
       dom.canvas.releasePointerCapture(event.pointerId);
@@ -5074,8 +5354,26 @@
     }
   }
 
+  /*
+   * A tap is acted on at its click, not when the finger comes up.
+   *
+   * On a touch screen the browser sends mousedown, mouseup and click after
+   * pointerup, and hit-tests them against the page as it then stands. Selecting
+   * a piece opens its menu centred on that piece, so a tap acted on at pointerup
+   * opened the menu under the finger and the click that followed pressed whatever
+   * button had just arrived there: 15% of taps on a piece at 390px and 21% at 360px,
+   * over a grid on the default design, and that included Remove and Omit, with
+   * nothing to say so.
+   */
+  function onCanvasClick(event) {
+    if (!tapPending) return;
+    tapPending = false;
+    handleTap(event.clientX, event.clientY);
+  }
+
   function handleTap(clientX, clientY) {
     if (ui.mode === "simple" || isPerspective()) return; // panel-driven, or view-only
+    if (ui.cycle) endCycle();
     if (ui.activeModuleId) {
       // Tapping empty space backs out: first out of a pending preview, then out
       // of placing the piece at all.
@@ -5109,6 +5407,203 @@
     const factor = Math.exp(-event.deltaY * (event.deltaMode === 1 ? 0.05 : 0.0016));
     ui.renderer.zoomBy(factor, event.clientX, event.clientY);
   }
+
+  // ------------------------------------------------------------- the API --
+
+  /*
+   * window.FrameworkBuilder: what a page around the builder may ask of it. Written
+   * up at the top of docs/builder.md. It draws nothing and fetches nothing until
+   * it is called.
+   */
+  let readyDone;
+  let readyFailed;
+  let readyReached = false;
+  const ready = new Promise((resolve, reject) => {
+    readyDone = resolve;
+    readyFailed = reject;
+  });
+  // Nobody may be listening, and a failed start must not also log an unhandled
+  // rejection. Whoever does listen still gets it.
+  ready.catch(() => {});
+
+  /** A design is on the page and everything needed to draw it has landed. */
+  function settleReady() {
+    ui.geometryLoads.then(() => {
+      lastAnnounced = encodeDesign();
+      readyReached = true;
+      readyDone();
+    });
+  }
+
+  const changeListeners = new Set();
+  let lastAnnounced = null;
+
+  function announceChange() {
+    // Nobody is listening on the public page, which pays nothing for this.
+    if (!readyReached || !changeListeners.size) return;
+    const hash = encodeDesign();
+    if (hash === lastAnnounced) return;
+    lastAnnounced = hash;
+    changeListeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error(error);
+      }
+    });
+  }
+
+  function designSnapshot() {
+    const { lines, total } = priceBreakdown();
+    const shelf = shelfBounds();
+    const empty = ui.design.instances.length === 0;
+    return {
+      code: empty ? null : designCode(),
+      hash: encodeDesign(),
+      finish: ui.design.finish,
+      totalKsh: total,
+      sizeCm: shelf
+        ? { w: mmToCm(shelf[3] - shelf[0]), d: mmToCm(shelf[4] - shelf[1]), h: mmToCm(heightAboveFloor(shelf)) }
+        : { w: 0, d: 0, h: 0 },
+      pieceCount: ui.design.instances.length,
+      pieces: lines.map((line) => ({ qty: line.quantity, name: line.label })),
+      empty
+    };
+  }
+
+  function saveForCaller() {
+    if (!ui.design.instances.length) return Promise.reject(new Error("the design is empty"));
+    return saveDesign().then((code) => {
+      ui.savedCode = code;
+      return code;
+    });
+  }
+
+  /*
+   * The canvas draws its text with whatever is loaded at that moment. The real
+   * page has been showing the webfont for as long as anyone has been using it, so
+   * the button never has to wait. A page with no one looking at it has to, or the
+   * image comes out in a fallback face and the pipeline that reads these back reads
+   * a different layout. Capped, because the picture is worth having without it.
+   */
+  function presentFontsLoaded() {
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    const fonts = Promise.all([400, 500, 700].map((weight) => document.fonts.load(`${weight} 28px "Red Hat Display"`)));
+    return Promise.race([fonts, new Promise((resolve) => window.setTimeout(resolve, 2500))]).catch(() => {});
+  }
+
+  /*
+   * The image prints the design's address, so the design has to be on record, as
+   * it is when the button makes the image. Not awaited, for the button's reason:
+   * the picture is worth having even if the save does not land. A design opened
+   * from its code and left alone is already there.
+   */
+  function saveBehindImage() {
+    const code = designCode();
+    if (code === ui.savedCode || (ui.openedDesign && ui.openedDesign.code === code)) return;
+    saveForCaller().catch((error) => {
+      console.warn("could not save the design behind the image:", error.message);
+    });
+  }
+
+  /** The image the Present button makes, as a PNG blob, once every piece is in. */
+  function presentBlob() {
+    if (!ui.design.instances.length) return Promise.reject(new Error("the design is empty"));
+    saveBehindImage();
+    const needed = ui.design.instances.map((instance) => instance.moduleId);
+    if ((ui.design.bookends || 0) > 0) needed.push("bookend");
+    ensureGeometry(needed);
+    return Promise.all([ui.geometryLoads, loadPresentLogo(), presentFontsLoaded()]).then(([, logo]) => {
+      // An image missing a piece would be a wrong quote with a right total on it.
+      const missing = needed.find((id) => !ui.renderer.hasModule(id));
+      if (missing) throw new Error(`could not load ${missing}`);
+      const { canvas } = composePresent(logo);
+      return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("the image could not be encoded"))), "image/png");
+      });
+    });
+  }
+
+  function setBottomInset(px) {
+    const inset = Math.max(0, Math.round(Number(px) || 0));
+    document.documentElement.style.setProperty("--nd-bottom-inset", `${inset}px`);
+    if (!ui.renderer || !ui.design || RENDER) return;
+    // Read back now: fit() measures the canvas, which has just changed height.
+    const padding = ui.dimensionsOn ? DIMENSION_FIT_PADDING : null;
+    const holding = ui.activeModuleId ? candidateFrame(ui.activeModuleId) : null;
+    ui.renderer.fit(holding, padding);
+    positionOverlays();
+  }
+
+  window.FrameworkBuilder = {
+    ready,
+    snapshot: designSnapshot,
+    save: saveForCaller,
+    presentBlob,
+    on(event, listener) {
+      if (event !== "change") throw new Error(`no such event: ${event}`);
+      if (readyReached && !changeListeners.size) lastAnnounced = encodeDesign();
+      changeListeners.add(listener);
+      return () => changeListeners.delete(listener);
+    },
+    setBottomInset
+  };
+
+  // ---------------------------------------------- rendering for another page --
+
+  /*
+   * /builder/<CODE>?render=present in a hidden same-origin iframe.
+   *
+   * The client's page wants a saved design's image without opening the builder, so
+   * the page loads, draws the design through the ordinary pipeline, and posts the
+   * PNG to its parent. It builds none of the interface and works out no placements,
+   * which is most of what a load costs a phone besides the downloads. Opened on its
+   * own, with no parent to answer, the address is just the builder. See
+   * docs/builder.md for the message.
+   */
+  function renderRequest() {
+    return window.parent !== window
+      && new URLSearchParams(location.search).get("render") === "present";
+  }
+
+  function tellParent(message) {
+    window.parent.postMessage(
+      Object.assign({ type: "fw-present", code: savedCodeInPath() }, message),
+      location.origin
+    );
+  }
+
+  function renderForParent() {
+    const code = savedCodeInPath();
+    let quotedTotalKsh = null;
+    (code ? fetchSavedDesign(code) : Promise.reject(new Error("no design was named")))
+      .catch((error) => {
+        throw new Error(code ? `design ${code} could not be opened` : error.message);
+      })
+      .then((body) => {
+        restoreSavedDesign(body);
+        quotedTotalKsh = body.total_ksh == null ? null : body.total_ksh;
+        ui.openedDesign = { code, shelf: shelfOf(encodeDesign()) };
+        ui.renderer.setPalette(shaderPalette(currentFinish()));
+        syncScene();
+        settleReady();
+        return presentBlob();
+      })
+      .then((blob) => tellParent({
+        blob,
+        totalKsh: priceBreakdown().total,
+        // What the record was first saved at. It never changes, and the catalogue
+        // does: where this differs from totalKsh, prices have moved since.
+        quotedTotalKsh
+      }))
+      .catch((error) => {
+        console.error(error);
+        readyFailed(error);
+        tellParent({ error: error.message });
+      });
+  }
+
+  const RENDER = renderRequest();
 
   boot();
 })();

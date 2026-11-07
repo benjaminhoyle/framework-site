@@ -35,6 +35,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { listBriefs, loadBrief, safeName } from "./lib/briefs.mjs";
 import { readStore, mergeRow, isPartialRow } from "./lib/lab-store.mjs";
+import { appDev } from "./lib/app-dev.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = Number(process.argv[2] || 8770);
@@ -585,8 +586,16 @@ async function marketingState() {
   return fromFile() || { status: 500, body: JSON.stringify({ ok: false, error: `marketing-state.js failed: ${built.error}` }) };
 }
 
+const handleApp = appDev({
+  root: ROOT,
+  localDesign: (code) => (designs.has(code) ? JSON.parse(designs.get(code)) : null),
+  rememberDesign: (code, record) => designs.set(code, JSON.stringify(record))
+});
+
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://127.0.0.1:${PORT}`);
+
+  if (await handleApp(request, response, url)) return;
 
   if (PROXIED.has(url.pathname)) {
     await proxyToSite(request, response, url);

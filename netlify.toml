@@ -204,6 +204,44 @@
   to = "/elvis.html"
   status = 200
 
+# The staff app. One page that draws whichever screen the address names, so every
+# address under /app is that page. Everything real happens behind /api/app, which needs
+# a signed-in staff member. /staff is the address people will guess.
+[[redirects]]
+  from = "/staff"
+  to = "/app"
+  status = 301
+
+[[redirects]]
+  from = "/app"
+  to = "/app/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/app/clients"
+  to = "/app/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/app/clients/*"
+  to = "/app/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/app/deliveries"
+  to = "/app/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/app/admin"
+  to = "/app/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/app/login"
+  to = "/app/index.html"
+  status = 200
+
 # They were called /scene-generator and /catalog-generator for one afternoon.
 [[redirects]]
   from = "/scene-generator"
@@ -261,6 +299,26 @@
   for = "/assets/shelving/catalog.json"
   [headers.values]
     Cache-Control = "public, max-age=3600"
+
+# --- The staff app ---------------------------------------------------------
+# Revalidated each time: sw.js already makes it instant, and a stale app after a
+# deploy would be talking to a newer server. Never indexed, never framed by another site.
+[[headers]]
+  for = "/app/*"
+  [headers.values]
+    Cache-Control = "no-cache"
+    X-Robots-Tag = "noindex, nofollow"
+    X-Frame-Options = "SAMEORIGIN"
+
+[[headers]]
+  for = "/js/app/*"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/css/app.css"
+  [headers.values]
+    Cache-Control = "no-cache"
 
 # --- The published catalogue -----------------------------------------------
 # shelving.html fetches this. Short max-age so a publish shows up promptly, and

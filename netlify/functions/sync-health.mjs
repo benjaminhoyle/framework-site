@@ -14,6 +14,8 @@
 // exactly like one that is right until you use it, which is why each check makes
 // a real call rather than testing for presence alone.
 
+import { getStore } from '@netlify/blobs';
+import { latest } from './_log.mjs';
 import { createHash } from 'node:crypto';
 import { refuseMachine } from './_auth.mjs';
 import { accessToken, invoices } from './_zoho.mjs';
@@ -79,9 +81,9 @@ export default async (req) => {
   });
 
   await run('airtable_log_tables', async () => {
-    const runs = await all(TABLES.syncRuns);
+    const passes = await latest(getStore, 'sync', 1);
     const log = await all(TABLES.syncLog);
-    return { note: `Sync - Runs ${runs.length} rows, Sync - Log ${log.length} rows` };
+    return { note: `last pass ${passes[0] ? passes[0].at : 'none logged'}, Sync - Log ${log.length} rows` };
   });
 
   return new Response(JSON.stringify({

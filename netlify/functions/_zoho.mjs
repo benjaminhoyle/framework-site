@@ -205,6 +205,27 @@ export async function createDraftInvoice(payload) {
   return d.invoice;
 }
 
+/** The invoice with this number, whatever its status, or null. */
+export async function invoiceByNumber(number) {
+  const d = await call('/invoices', { invoice_number: number });
+  return (d.invoices || [])[0] || null;
+}
+
+/**
+ * Replace a draft's lines and fields. Refuses anything that has left draft: once an
+ * invoice is out of draft it is on its way to KRA, and changing it is Ben's, in Zoho.
+ */
+export async function updateDraftInvoice(id, payload) {
+  const d = await call(`/invoices/${id}`, {}, 1, draftInvoicePayload(payload), 'PUT');
+  if (!d.invoice) throw new Error(`Zoho update returned no invoice: ${JSON.stringify(d).slice(0, 200)}`);
+  return d.invoice;
+}
+
+/** Send a draft for approval. Approving it, which is what files with KRA, stays a person's click in Zoho. */
+export async function submitInvoice(id) {
+  return call(`/invoices/${id}/submit`, {}, 1, {});
+}
+
 /**
  * Which custom fields the invoice form actually has.
  *

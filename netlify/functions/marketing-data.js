@@ -27,7 +27,7 @@ const json = (obj, status = 200) => new Response(JSON.stringify(obj), {
 
 export default async (req) => {
   if (req.method === 'GET') {
-    const denied = refuse(req);
+    const denied = refuse(req, { module: 'marketing' });
     if (denied) return denied;
     const data = await getStore('marketing').get('latest', { type: 'text' });
     if (!data) return json({ ok: false, error: 'no_data_yet' }, 404);

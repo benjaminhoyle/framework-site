@@ -11,7 +11,7 @@ const MAX = 2 * 1024 * 1024;
 
 export default async (req) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-  const denied = refuse(req);
+  const denied = refuse(req, { module: 'catalog' });
   if (denied) return denied;
   const raw = await req.text();
   if (!raw || raw.length > MAX) return new Response(JSON.stringify({ ok: false, error: 'bad_size' }), { status: 400 });

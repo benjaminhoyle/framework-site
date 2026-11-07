@@ -1389,9 +1389,16 @@ await test('two client rows sharing a Zoho contact id is an error', async () => 
 
 await test('two client rows sharing a name is an error, said once', async () => {
   const r = await run({
-    clients: [{ id: 'c1', fields: { Name: 'Jane Doe' } }, { id: 'c2', fields: { Name: 'jane  doe' } }]
+    clients: [{ id: 'c1', fields: { Name: 'Jane Doe', Orders: ['o1'] } }, { id: 'c2', fields: { Name: 'jane  doe', Orders: ['o2'] } }]
   });
   assert.equal(of(r, 'client-listed-once').length, 1);
+});
+
+await test('a client page for a lead shares a name freely: no contact and no orders yet', async () => {
+  const r = await run({
+    clients: [{ id: 'c1', fields: { Name: 'Hilda' } }, { id: 'c2', fields: { Name: 'Hilda' } }, { id: 'c3', fields: { Name: 'Hilda', Orders: ['o1'] } }]
+  });
+  assert.equal(of(r, 'client-listed-once').length, 0);
 });
 
 await test('one client with one row is silent', async () => {

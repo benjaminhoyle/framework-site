@@ -61,7 +61,7 @@ export default async (req) => {
     ok: res.status === 202 || res.ok,
     status: res.status,
     mode: full ? 'full' : 'incremental',
-    note: 'Started. A pass takes about a minute; the outcome lands in Sync - Runs.'
+    note: 'Started. A pass takes about a minute; the outcome lands in the log.'
   });
 };
 

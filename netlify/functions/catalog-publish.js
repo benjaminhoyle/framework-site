@@ -91,7 +91,7 @@ function github(env) {
 
 export default async (req) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-  const denied = refuse(req);
+  const denied = refuse(req, { module: 'catalog' });
   if (denied) return denied;
 
   const gh = github(process.env);

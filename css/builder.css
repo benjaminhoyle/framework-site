@@ -31,6 +31,9 @@
   --nd-tap: 44px;
   --nd-shadow: 0 1px 2px rgba(32, 36, 36, .06), 0 8px 24px rgba(32, 36, 36, .08);
   --nd-panel-h: min(46vh, 400px);
+  /* Height kept free under the page for a bar another page puts there. Set by
+     window.FrameworkBuilder.setBottomInset(); nothing here ever draws in it. */
+  --nd-bottom-inset: 0px;
 }
 
 * { box-sizing: border-box; }
@@ -61,8 +64,8 @@ button { cursor: pointer; }
   display: flex;
   flex-direction: column;
   /* dvh tracks the collapsing mobile URL bar; vh is the fallback. */
-  height: 100vh;
-  height: 100dvh;
+  height: calc(100vh - var(--nd-bottom-inset));
+  height: calc(100dvh - var(--nd-bottom-inset));
 }
 
 .nd-top {
@@ -389,7 +392,7 @@ button { cursor: pointer; }
   padding: 8px 10px;
   font-size: .85rem;
   font-weight: 500;
-  min-height: 36px;
+  min-height: var(--nd-tap);
   white-space: nowrap;
 }
 .nd-actions button:hover { background: var(--nd-soft); }
@@ -656,6 +659,57 @@ button { cursor: pointer; }
      the two fell to 9px. */
   padding: 0 13px;
   white-space: nowrap;
+}
+
+/*
+ * Flexible: what else fits where the last piece went. In the row the floating
+ * buttons stand in, with a step at each edge, so a thumb can stay where it is and
+ * the piece being looked at is never under the control looking at it. Those buttons
+ * finish a design, which is not what is going on, and on a phone there is no room
+ * for both.
+ */
+.nd-cycle {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  z-index: 4;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: min(calc(100% - 24px), 340px);
+  padding: 3px;
+  border: 1px solid var(--nd-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .95);
+  box-shadow: 0 1px 6px rgba(32, 36, 36, .16);
+}
+.nd-cycle[hidden] { display: none; }
+.nd-cycle-step {
+  flex: 0 0 auto;
+  width: var(--nd-tap);
+  height: var(--nd-tap);
+  padding: 0 0 3px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--nd-accent);
+  color: #fff;
+  font-size: 1.6rem;
+  line-height: 1;
+  transition: transform .12s ease;
+}
+.nd-cycle-step:active { transform: scale(.92); }
+.nd-cycle-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-size: .88rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+@media (max-width: 680px) {
+  .nd-stage.is-cycling .nd-fab { display: none; }
 }
 
 /* The label is the affordance on a phone — "+" alone does not say what it adds
@@ -985,8 +1039,6 @@ a.nd-button[aria-disabled="true"] {
 .nd-present-code[hidden] { display: none; }
 
 /* Module list (Advanced). */
-/* Sticky, because the body is the scroller: with two dozen rows, scrolling to
-   the bottom took the field you were filtering with off the screen. */
 .nd-search {
   position: sticky;
   top: 0;
@@ -1001,33 +1053,54 @@ a.nd-button[aria-disabled="true"] {
   -webkit-appearance: none;
 }
 
-/*
- * The pieces reached for most recently.
- *
- * One row, scrolling sideways rather than wrapping, so the sheet's height does
- * not change with how much someone has done. Above the search box because it is
- * the shortcut past it.
- */
-.nd-chips {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
+/* Stays put while the list scrolls under it: the body is the scroller, and with
+   every piece in the list the field you filter with would go off the top. The
+   fill is what stops rows showing through the gap around the field. */
+.nd-pick-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--nd-panel);
   padding-bottom: 2px;
+}
+.nd-pick-head .nd-search { position: static; margin-bottom: 0; }
+
+/*
+ * The words that save typing the search. A line of plain words, not a wall of
+ * chips, and one line, scrolling sideways rather than wrapping: the ones cut off
+ * at the edge are the ones least often wanted, and a sheet that keeps its height
+ * is the point of all this. Tall enough for a thumb, quiet enough to read past.
+ */
+.nd-words {
+  display: flex;
+  margin: 0 -14px;
+  padding: 0 6px;
   overflow-x: auto;
   scrollbar-width: none;
 }
-.nd-chips::-webkit-scrollbar { display: none; }
-.nd-chip {
+.nd-words::-webkit-scrollbar { display: none; }
+.nd-word {
+  position: relative;
   flex: 0 0 auto;
   min-height: var(--nd-tap);
-  padding: 0 12px;
-  border: 1px solid var(--nd-accent);
-  border-radius: 999px;
-  background: var(--nd-accent-soft);
-  color: var(--nd-accent);
-  font-size: .82rem;
+  padding: 0 9px;
+  border: 0;
+  background: none;
+  color: var(--nd-muted);
+  font-size: .84rem;
   font-weight: 600;
   white-space: nowrap;
+}
+.nd-word[aria-pressed="true"] { color: var(--nd-ink); }
+.nd-word[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  bottom: 7px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--nd-accent);
 }
 
 .nd-list { display: flex; flex-direction: column; gap: 4px; }
@@ -1057,6 +1130,11 @@ a.nd-button[aria-disabled="true"] {
   text-align: left;
 }
 .nd-list-row:hover { border-color: var(--nd-line-strong); }
+/* A piece with no place on this shelf yet: still on the list, and says so. */
+.nd-list-row:disabled { background: var(--nd-soft); opacity: .6; cursor: default; }
+.nd-list-row:disabled:hover { border-color: var(--nd-line); }
+/* The long list gets a whole thumb per row. */
+.nd-modal.is-searching .nd-list-row { min-height: 48px; }
 .nd-list-row[aria-pressed="true"] {
   border-color: var(--nd-accent);
   background: var(--nd-accent-soft);
@@ -1111,7 +1189,8 @@ a.nd-button[aria-disabled="true"] {
   padding: 8px 12px;
   border-top: 1px solid var(--nd-line);
   background: var(--nd-panel);
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  /* A bar under this one stands over the safe area and takes care of it. */
+  padding-bottom: calc(8px + max(0px, env(safe-area-inset-bottom, 0px) - var(--nd-bottom-inset)));
 }
 
 /* The disclosure for "what is in it", left of the figures it explains. */
@@ -1212,7 +1291,7 @@ a.nd-button[aria-disabled="true"] {
 
 /* The share image itself: shown rather than downloaded, so it can be
    long-pressed on a phone or right-clicked on a desktop. */
-.nd-modal-image .nd-modal-panel { max-height: 92vh; max-height: 92dvh; }
+.nd-modal-image .nd-modal-panel { max-height: 92vh; max-height: min(92dvh, 100%); }
 .nd-present-frame {
   display: flex;
   justify-content: center;
@@ -1269,7 +1348,7 @@ a.nd-button[aria-disabled="true"] {
 
 .nd-modal {
   position: fixed;
-  inset: 0;
+  inset: 0 0 var(--nd-bottom-inset);
   z-index: 30;
   display: flex;
   align-items: flex-end;
@@ -1281,14 +1360,31 @@ a.nd-button[aria-disabled="true"] {
 .nd-modal-panel {
   width: 100%;
   max-height: 82vh;
-  max-height: 82dvh;
+  max-height: min(82dvh, 100%);
   display: flex;
   flex-direction: column;
   background: var(--nd-panel);
   border-radius: 16px 16px 0 0;
   box-shadow: var(--nd-shadow);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: max(0px, env(safe-area-inset-bottom, 0px) - var(--nd-bottom-inset));
 }
+
+/* A search sheet is as tall as it will ever be from the start, so the field does
+   not move as the list under it gets shorter. */
+.nd-modal.is-searching .nd-modal-panel { height: 82vh; height: min(82dvh, 100%); }
+
+/* The keyboard is up: stand on it, in the part of the page that can be seen, and
+   give the results everything between the field and the keys. */
+.nd-keyboard .nd-modal {
+  top: var(--nd-visible-top);
+  bottom: auto;
+  height: var(--nd-visible-height);
+}
+.nd-keyboard .nd-modal-panel { max-height: 100%; padding-bottom: 0; }
+.nd-keyboard .nd-modal.is-searching .nd-modal-panel { height: 100%; }
+/* The words are for not typing, and whoever can see the keys is typing. */
+.nd-keyboard .nd-words { display: none; }
+.nd-keyboard .nd-pick-head { padding-bottom: 0; }
 
 .nd-modal-head {
   display: flex;
@@ -1368,9 +1464,10 @@ a.nd-button[aria-disabled="true"] {
   .nd-modal { align-items: center; }
   .nd-modal-panel {
     width: min(460px, 92vw);
-    max-height: min(560px, 82vh);
+    max-height: min(560px, 82vh, 100%);
     border-radius: 14px;
   }
+  .nd-modal.is-searching .nd-modal-panel { height: min(560px, 82vh, 100%); }
 
   /* A form to work through, not a list to pick from: wider, and tall enough
      that the client dropdown opens without moving anything. */

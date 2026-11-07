@@ -280,14 +280,17 @@ async function search(query) {
 
 // --------------------------------------------------------------------- push --
 
-async function push({ code, contact_id, new_client, rep, phone, address, kra_pin, delivery_date,
+export async function push({ code, codes, revise, airtable_client_id, contact_id, new_client, rep, phone, address, kra_pin, delivery_date,
                       delivery_date_status, window_start, window_end,
                       pickup, delivery_fee, notes, vat_exempt }) {
-  const upper = String(code || '').toUpperCase();
-  if (!CODE_RE.test(upper)) return json({ ok: false, error: 'bad_code' }, 422);
+  // Several shelves on one invoice is ordinary (at least 7 of the 39 order chats read in
+  // Nov 2026), so a list of codes, with one code still accepted. They are recorded on the
+  // invoice together, comma separated, which is also how a retry is recognised.
+  const wantedCodes = [...new Set((Array.isArray(codes) && codes.length ? codes : [code]).map((v) => String(v || '').toUpperCase()))];
+  if (!wantedCodes.length || !wantedCodes.every((v) => CODE_RE.test(v))) return json({ ok: false, error: 'bad_code' }, 422);
+  const upper = wantedCodes.slice().sort().join(', ');
   if (!rep) return json({ ok: false, error: 'no_rep' }, 422);
 
-  const collects = pickup === true;
   const wantPhone = clean(phone, 40);
   const wantAddress = clean(address, 500);
   // Normalised here rather than at each end: a PIN read off a certificate
@@ -295,15 +298,34 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
   // punctuation somebody typed once.
   const wantPin = normalisePin(kra_pin);
 
-  const stored = await getStore('design').get(upper, { type: 'json' });
-  if (!stored || !stored.design) return json({ ok: false, error: 'code_not_found' }, 404);
+  const records = await Promise.all(wantedCodes.map((v) => getStore('design').get(v, { type: 'json' })));
+  if (records.some((r) => !r || !r.design)) return json({ ok: false, error: 'code_not_found' }, 404);
+
+  // A revision replaces a draft in place, and only a draft. The number the client has seen is
+  // kept, and what it said before is the caller's to log.
+  let draft = null;
+  let manualLines = [];
+  if (revise) {
+    draft = await zoho.invoiceByNumber(String(revise));
+    if (!draft) return json({ ok: false, error: 'no_such_invoice' }, 404);
+    if (draft.status !== 'draft') return json({ ok: false, error: 'not_a_draft', status: draft.status }, 409);
+    if (contact_id && String(draft.customer_id) !== String(contact_id)) return json({ ok: false, error: 'not_their_draft' }, 409);
+    // A line someone typed in Zoho isn't ours to lose, and no fee given means keep the one there.
+    const full = await zoho.invoice(draft.invoice_id);
+    // Sent back without their old line ids: the whole list replaces what is there, so nothing doubles.
+    manualLines = (full.line_items || []).filter((li) => !li.item_id && !isDeliveryName(li.name))
+      .map(({ name, description, rate, quantity }) => ({ name, description, rate, quantity }));
+    const had = (full.line_items || []).find((li) => isDeliveryName(li.name));
+    if (delivery_fee === undefined && had) delivery_fee = Math.round(Number(had.rate) * Number(had.quantity || 1));
+    if (pickup === undefined) pickup = String(full.custom_field_hash?.cf_client_pickup_unformatted) === 'true';
+  }
 
   // One design, one invoice, per client. Checked before anything is created, the contact
   // included: a retry for a new client would otherwise stop at `client_exists`
   // and send the rep off to pick the client and push a third time. Two days
   // back covers a retry, and one list call is all it costs.
   const since = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10);
-  const earlier = alreadyRaised(await zoho.invoicesCreatedSince(since), upper, {
+  const earlier = revise ? null : alreadyRaised(await zoho.invoicesCreatedSince(since), upper, {
     customerId: contact_id ? String(contact_id) : null,
     name: contact_id ? null : contactName(new_client && new_client.first_name, new_client && new_client.last_name)
   });
@@ -316,7 +338,16 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
     }, 409);
   }
 
-  const groups = groupDesign(stored.design);
+  const collects = pickup === true;
+  const grouped = new Map();
+  for (const record of records) {
+    for (const g of groupDesign(record.design)) {
+      const key = `${g.moduleId}|${g.finish}`;
+      const had = grouped.get(key);
+      if (had) had.quantity += g.quantity; else grouped.set(key, { ...g });
+    }
+  }
+  const groups = [...grouped.values()];
   const items = await zoho.items();
   const { line_items, unknown } = buildLineItems(groups, items);
 
@@ -346,7 +377,8 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
   // Quote drift is measured NOW, on the ordinary VAT-inclusive prices, because
   // that is what the builder quoted. Measured after the exemption below it
   // would report every exempt order as 14% under its quote.
-  const drift = quoteDrift(goodsLines(line_items), stored.total_ksh);
+  const quoted = records.every((r) => r.total_ksh != null) ? records.reduce((sum, r) => sum + r.total_ksh, 0) : null;
+  const drift = quoteDrift(goodsLines(line_items), quoted);
 
   // VAT exempt only when Airtable says the client is AND the rep left it on.
   // Both, and the flag re-read here: the browser's copy may be a page loaded
@@ -359,7 +391,7 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
     warnings.push('This client is not marked VAT Exempt in Airtable, so the invoice was raised with VAT. Tick them in Base - Clients first if they are exempt.');
   }
   const standardTotal = linesTotal(line_items);
-  const invoiceLines = exempt ? exemptLines(line_items) : line_items;
+  const invoiceLines = [...(exempt ? exemptLines(line_items) : line_items), ...manualLines];
 
   // Either an existing client, or one created here and now. Creating the contact
   // BEFORE the invoice is deliberate: an invoice needs a customer_id, so there is
@@ -375,17 +407,20 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
     if (!first && !last) return json({ ok: false, error: 'no_customer' }, 422);
     try {
       const contact = await zoho.createContact(newContactPayload({
-        first_name: first, last_name: last, phone: wantPhone, address: wantAddress, pin: wantPin
+        first_name: first, last_name: last, phone: wantPhone, address: wantAddress, pin: wantPin,
+        company: new_client && new_client.company
       }));
       customerId = contact.contact_id;
       clientName = contact.contact_name || contactName(first, last);
       created = true;
       await rememberClient(customerId, clientName);
-      // And in Base - Clients, so the two records start life agreeing rather
-      // than starting apart and waiting for somebody to remember. Best-effort:
-      // the invoice is raised either way, and `rememberClient` above already
-      // keeps them findable if this fails.
-      airtableClient = await createAirtableClient(customerId, clientName, wantPhone, wantAddress, wantPin);
+      // A client page already has its row, so that row takes the contact id: a second row
+      // would be a second person. Otherwise, as the builder's form always has, make one, so
+      // the two records start life agreeing. Best-effort: the invoice is raised either way,
+      // and `rememberClient` above already keeps them findable if this fails.
+      if (!airtable_client_id) {
+        airtableClient = await createAirtableClient(customerId, clientName, wantPhone, wantAddress, wantPin);
+      }
     } catch (err) {
       // Zoho refuses a duplicate contact_name, and that refusal is the useful
       // one: it means this person is already in the books under that name.
@@ -395,6 +430,18 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
         error: duplicate ? 'client_exists' : 'client_failed',
         detail: String(err.message).slice(0, 300)
       }, 422);
+    }
+  }
+
+  // Outside the try above, so a failure here can't read as a refusal of the contact: the contact
+  // exists by now, and the invoice goes ahead. The sync's name match fills the id in if this fails.
+  if (created && airtable_client_id) {
+    try {
+      await patch(TABLES.clients, [{ id: String(airtable_client_id), fields: { 'Zoho Contact ID': String(customerId), Name: clientName } }]);
+      clientCache = { at: 0, list: null };
+      airtableClient = { ok: true, created: false, record_id: String(airtable_client_id) };
+    } catch (err) {
+      airtableClient = { ok: false, detail: String(err.message).slice(0, 200) };
     }
   }
 
@@ -426,12 +473,15 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
   // entitled to know it did not reach the invoice.
   const skipped = usable.filter(([name]) => !available.has(name)).map(([name]) => name);
 
-  const invoice = await zoho.createDraftInvoice({
+  const invoicePayload = {
     customer_id: customerId,
     line_items: invoiceLines,
     custom_fields,
     ...(notes ? { notes: String(notes).slice(0, 500) } : {})
-  });
+  };
+  const invoice = draft
+    ? await zoho.updateDraftInvoice(draft.invoice_id, invoicePayload)
+    : await zoho.createDraftInvoice(invoicePayload);
 
   // The client's own records, last and best-effort — BOTH of them.
   //
@@ -518,6 +568,7 @@ async function push({ code, contact_id, new_client, rep, phone, address, kra_pin
     invoice_id: invoice.invoice_id,
     status: invoice.status,
     total: invoice.total,
+    was: draft ? { total: draft.total, codes: draft.cf_design_code || null } : null,
     url: `https://books.zoho.com/app/${process.env.ZOHO_ORG_ID}#/invoices/${invoice.invoice_id}`,
     lines: invoiceLines.length,
     computed_total: linesTotal(invoiceLines),

@@ -42,7 +42,7 @@ async function storeImages(jobId, result) {
 }
 
 export default async (request) => {
-  const denied = refuse(request);
+  const denied = refuse(request, { module: 'studio' });
   if (denied) return denied;
   if (request.method !== "POST") return new Response(null, { status: 405 });
 

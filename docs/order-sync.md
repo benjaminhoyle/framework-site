@@ -86,7 +86,7 @@ old house.
 
 ### Airtable tables it writes
 
-- **`Sync - Runs`** (`tbluXBJ67iGn6JPHa`) — one row per pass. Answers "is it
+- **The log** (`netlify/functions/_log.mjs`, read at `/api/log?source=sync`; it was the `Sync - Runs` table until Nov 2026, and older mentions of that table below mean this) — one event per pass. Answers "is it
   running, and did it find anything?"
 - **`Sync - Log`** (`tblWXSMuTUny856S3`) — findings only. **A clean pass writes
   zero rows here.** Recurring drift updates `Last Seen` rather than adding a row.

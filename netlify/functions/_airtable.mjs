@@ -18,8 +18,7 @@ export const TABLES = {
   products: 'tblyL6ldOJm94uSGa',
   orders: 'tblytDBTVFWFyP2qc',
   lines: 'tbldzNLAqG6d98eir',
-  syncLog: 'tblWXSMuTUny856S3',
-  syncRuns: 'tbluXBJ67iGn6JPHa'
+  syncLog: 'tblWXSMuTUny856S3'
 };
 
 const base = () => BASE_ID;
@@ -60,6 +59,21 @@ export async function all(tableId) {
     const q = new URLSearchParams({ pageSize: '100' });
     if (offset) q.set('offset', offset);
     const d = await req(`${tableId}?${q}`);
+    out.push(...d.records);
+    offset = d.offset;
+  } while (offset);
+  return out;
+}
+
+/** Every record matching a formula, with the same paging as `all`. */
+export async function query(tableId, { filterByFormula } = {}) {
+  const out = [];
+  let offset;
+  do {
+    const q = new URLSearchParams({ pageSize: '100' });
+    if (filterByFormula) q.set('filterByFormula', filterByFormula);
+    if (offset) q.set('offset', offset);
+    const d = await req(`${encodeURIComponent(tableId)}?${q}`);
     out.push(...d.records);
     offset = d.offset;
   } while (offset);

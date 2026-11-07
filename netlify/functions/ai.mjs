@@ -341,7 +341,7 @@ function streamingJson(handler) {
 }
 
 export default async (request) => {
-  const denied = refuse(request);
+  const denied = refuse(request, { module: 'studio' });
   if (denied) return denied;
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {

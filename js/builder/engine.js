@@ -1938,9 +1938,94 @@
     return { rootOf, groups };
   }
 
+  /*
+   * Finding a piece by what people call it. Pure, and here rather than in app.js
+   * so scripts/test-builder.mjs can hold it to account: every module in the
+   * catalogue has to be findable, because the search used to hide the ones that
+   * did not fit and the shortened cuts behind a rule.
+   *
+   * The words past the catalogue's own names are the ones already in use: "display
+   * bar" is what the order book and /customize call a top bar, "hanging rail" is
+   * /builder's own word for a hanger, "tier" is the order book's for a shelf level,
+   * and a spacer base "starts a run at desk height" in its Zoho description.
+   */
+  const PIECE_ROLE_WORDS = {
+    base: "tier",
+    extension: "shelf level tier",
+    hanger: "hanging rail",
+    top_bar: "display bar topbar",
+    accessory: "book end",
+    booster: "riser"
+  };
+  // The widths a row shows, which are the ones a person can ask for. A column
+  // riser's 2 cm is no way to ask for one.
+  const PIECE_WIDTH_ROLES = ["base", "extension", "adapter"];
+
+  /** Every word a piece answers to, lower case, each preceded by a space. */
+  function pieceTerms(module) {
+    const words = [String(module.label || module.id).replace(/[()]/g, ""), String(module.id).replace(/_/g, " ")];
+    if (module.family) words.push(module.family);
+    if (module.role) words.push(String(module.role).replace(/_/g, " "), PIECE_ROLE_WORDS[module.role] || "");
+    if (/_spacer_base$/.test(String(module.id))) words.push("desk");
+    if (module.trimmed) words.push("trimmed short shortened cut");
+    if (module.dimensionsMm && PIECE_WIDTH_ROLES.indexOf(module.role) >= 0) {
+      words.push(String(Math.round(module.dimensionsMm[0] / 10)));
+    }
+    return ` ${words.join(" ").toLowerCase().replace(/\s+/g, " ")} `;
+  }
+
+  /** Does every word typed start a word this piece answers to? */
+  function pieceMatches(terms, query) {
+    const needles = String(query || "").toLowerCase().replace(/(\d)\s*cm\b/g, "$1").split(/\s+/).filter(Boolean);
+    return needles.every((needle) => terms.indexOf(` ${needle}`) >= 0);
+  }
+
+  /*
+   * The order pieces are reached for: how many of the 264 distinct designs the
+   * business sent in WhatsApp chats between August and November 2026 had each one
+   * in them. That beats units sold for this list, because it is what somebody
+   * designing for a client picks up: hangers sit near the top here and hardly
+   * show in the order book. Fixed rather than computed, because it only has to be
+   * roughly right and a list that reshuffled itself would be harder to learn.
+   * Anything not here was in none of them and follows in catalogue order.
+   */
+  const PIECE_RANK = [
+    "standard_extension", "standard_base", "wide_base", "wide_extension",
+    "compact_base_trimmed", "compact_extension_trimmed", "deep_base", "compact_spacer",
+    "lamp", "deep_extension", "deep_spacer", "compact_hanger", "deep_hanger",
+    "wide_adapter", "slim_extension", "deep_extension_trimmed", "broad_extension_trimmed",
+    "standard_spacer", "slim_base_trimmed", "deep_base_trimmed", "standard_base_trimmed",
+    "slim_extension_trimmed", "standard_extension_trimmed", "broad_base_trimmed",
+    "broad_spacer", "wide_spacer", "wide_base_trimmed", "deep_spacer_base",
+    "wide_extension_trimmed", "compact_extension", "standard_booster", "deep_booster",
+    "slim_base", "bookend", "deep_adapter", "compact_spacer_base", "corner_base",
+    "corner_extension", "deep_adapter_trimmed", "broad_base", "compact_base",
+    "broad_extension", "slim_spacer", "standard_top_bar", "broad_hanger",
+    "slim_spacer_base", "wide_spacer_base", "booster_adapter", "standard_spacer_base",
+    "compact_top_bar", "broad_spacer_base"
+  ];
+  const PIECE_RANK_INDEX = new Map(PIECE_RANK.map((id, index) => [id, index]));
+
+  function pieceRank(id) {
+    return PIECE_RANK_INDEX.has(id) ? PIECE_RANK_INDEX.get(id) : PIECE_RANK.length;
+  }
+
+  /**
+   * The order to offer what fits at one place, the likeliest first: an extension
+   * of the family already there, then whatever the shop uses most. 70% of the time
+   * the first of these is the piece that went on that stack, in the 264 designs the
+   * business sent (August to November 2026). Takes anything with a `module`.
+   */
+  function likelyFirst(entries, family) {
+    const continues = (entry) => (entry.module.role === "extension" && entry.module.family === family ? 0 : 1);
+    return entries.slice().sort((first, second) => (continues(first) - continues(second))
+      || (pieceRank(first.module.id) - pieceRank(second.module.id)));
+  }
+
   return {
     ADJACENT_BASE_GAP_MM,
     BASE_INTERVALS_MM,
+    PIECE_RANK,
     TOLERANCE_MM,
     addInstance,
     additionContext,
@@ -1962,6 +2047,10 @@
     moduleHasDistinctRotation,
     normaliseSpacing,
     normalizeCatalog,
+    pieceMatches,
+    pieceRank,
+    likelyFirst,
+    pieceTerms,
     removeInstance,
     repairCornerGeometry,
     replaceInstance,

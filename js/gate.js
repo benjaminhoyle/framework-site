@@ -26,6 +26,17 @@ window.FrameworkGate = (function () {
 
   var STORAGE = 'frameworkKey';
   var key = '';
+  // Which staff module opens this page, from <script src="/js/gate.js" data-module="monitor">.
+  var pageModule = (document.currentScript && document.currentScript.dataset.module) || '';
+
+  /** True when someone signed in to the staff app may open this page. No prompt for them. */
+  function signedIn() {
+    if (!pageModule || !/(?:^|;\s*)fw_staff=1/.test(document.cookie)) return Promise.resolve(false);
+    return window.fetch('/api/me', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (me) { return !!(me && me.modules && me.modules.indexOf(pageModule) >= 0); })
+      .catch(function () { return false; });
+  }
 
   function stored() {
     try { return window.localStorage.getItem(STORAGE) || ''; } catch (e) { return ''; }
@@ -58,7 +69,7 @@ window.FrameworkGate = (function () {
   /** The same fetch, with the key attached. Never put it in the URL. */
   function gatedFetch(path, options) {
     var opts = options || {};
-    var headers = Object.assign({}, opts.headers || {}, { 'x-framework-key': key });
+    var headers = Object.assign({}, opts.headers || {}, key ? { 'x-framework-key': key } : {});
     return window.fetch(path, Object.assign({}, opts, { headers: headers }));
   }
 
@@ -109,17 +120,18 @@ window.FrameworkGate = (function () {
   /** Resolves once there is a key that /api/auth accepts. */
   function ready() {
     if (readiness) return readiness;
-    readiness = (function () {
+    readiness = signedIn().then(function (ok) {
+      if (ok) return '';
       var fromUrl = adoptFromUrl();
       var candidate = fromUrl || stored();
       if (fromUrl) store(fromUrl);
       if (!candidate) return prompt('This page is private. Enter the access key.');
-      return check(candidate).then(function (ok) {
-        if (ok) return candidate;
+      return check(candidate).then(function (good) {
+        if (good) return candidate;
         forget();
         return prompt('The saved key is no longer valid. Enter the access key.');
       });
-    })().then(function (value) {
+    }).then(function (value) {
       key = value;
       return value;
     });

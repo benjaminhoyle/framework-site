@@ -20,7 +20,7 @@ import { refuse } from './_auth.mjs';
 import published from '../../catalog.json' with { type: 'json' };
 
 export default async (req) => {
-  const denied = refuse(req);
+  const denied = refuse(req, { module: 'catalog' });
   if (denied) return denied;
   const store = getStore('catalog');
   const [draft, stats] = await Promise.all([

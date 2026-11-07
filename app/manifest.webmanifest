@@ -1,0 +1,12 @@
+{
+  "name": "Framework",
+  "short_name": "Framework",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "standalone",
+  "background_color": "#f2f5f4",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "/images/global/fwk-icon-lg.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -25,7 +25,7 @@ async function writeJob(store, jobId, data) {
 }
 
 export default async (request) => {
-  const denied = refuse(request);
+  const denied = refuse(request, { module: 'studio' });
   if (denied) return denied;
   if (request.method !== "POST") return json(405, { error: "Method not allowed" });
 

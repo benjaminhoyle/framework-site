@@ -11,7 +11,7 @@ const SAFE = /^[a-z0-9][a-z0-9._-]{0,80}$/i;
 
 export default async (req) => {
   const u = new URL(req.url);
-  const denied = refuse(req);
+  const denied = refuse(req, { module: 'catalog' });
   if (denied) return denied;
   const store = getStore('catalog-uploads');
   const id = u.searchParams.get('id') || '';

@@ -32,6 +32,8 @@
 // js/gate.js moves a `?key=` into storage and strips it from the address bar the
 // first time it sees one.
 
+import { sessionAllows } from './_session.mjs';
+
 const HEADER = 'x-framework-key';
 
 /** The key on a request, from the header first and the query string second. */
@@ -71,9 +73,17 @@ function unauthorised() {
   });
 }
 
-/** `null` when the request may proceed, otherwise the response to return. */
-export function refuse(req) {
-  return authorised(req) ? null : unauthorised();
+/**
+ * `null` when the request may proceed, otherwise the response to return.
+ *
+ * `module` names what this endpoint belongs to, so a signed-in staff member with
+ * that module gets in without a key (_session.mjs). The shared keys keep working
+ * alongside, so nothing has to move on one day.
+ */
+export function refuse(req, { module } = {}) {
+  if (authorised(req)) return null;
+  if (module && sessionAllows(req, module)) return null;
+  return unauthorised();
 }
 
 /** As `refuse`, for the endpoints only the ops runner is meant to reach. */
@@ -95,6 +105,7 @@ export function refuseMachine(req) {
  * a page; the opposite instinct applies to something that writes.
  */
 export function refusePush(req) {
+  if (sessionAllows(req, 'invoice')) return null;
   const supplied = keyFrom(req);
   if (!supplied) return unauthorised();
   const machine = process.env.SITE_EXPORT_KEY;
@@ -112,6 +123,7 @@ export function refusePush(req) {
  * the variable unset, only the machine key reads, to check what was published.
  */
 export function trackerAllowed(req, env = process.env) {
+  if (sessionAllows(req, 'tracker')) return true;
   const supplied = (req.headers.get('x-tracker-pass') || '').trim().toLowerCase();
   const pass = (env.TRACKER_PASSWORD || '').trim().toLowerCase();
   if (supplied) return !!pass && supplied === pass;

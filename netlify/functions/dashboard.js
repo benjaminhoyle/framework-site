@@ -6,7 +6,7 @@ import { getStore } from '@netlify/blobs';
 import { refuse } from './_auth.mjs';
 
 export default async (req) => {
-  const denied = refuse(req);
+  const denied = refuse(req, { module: 'monitor' });
   if (denied) return denied;
   const data = await getStore('dashboard').get('latest', { type: 'text' });
   if (!data) return new Response(JSON.stringify({ ok: false, error: 'no_data_yet' }), { status: 404, headers: { 'content-type': 'application/json' } });

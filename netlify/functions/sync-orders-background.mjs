@@ -4,7 +4,7 @@
 // one needs a detail call the list response cannot substitute for. That runs well
 // past the 10s a synchronous function gets. Background functions return 202
 // immediately and may run for minutes, which is the right shape here — nobody is
-// waiting on the response. The answer lands in `Sync - Runs` and `Sync - Log`.
+// waiting on the response. The answer lands in the log (`/api/log`) and, for anything needing a person, `Sync - Log`.
 //
 //   ?mode=incremental   (default) only invoices touched since `since`, or the
 //                       last 2 hours. Cheap; usually finds nothing.

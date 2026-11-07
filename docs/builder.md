@@ -7,6 +7,82 @@ It is the desktop 3D builder from `framework-renderer` rebuilt for the public
 site: same placement engine and same Rhino-derived module geometry, but sized and
 paced for a mid-range Android phone on a slow connection.
 
+## What another page can ask of it
+
+`window.FrameworkBuilder`, for a bar or a page around the builder. It draws
+nothing, fetches nothing until called, and knows nothing about staff. The address
+picks the interface: `?mode=advanced` opens Advanced on a new shelf, a link and a
+saved code alike, and a saved design keeps its code, because the mode is not part
+of the shelf.
+
+```js
+window.FrameworkBuilder = {
+  ready,            // Promise: a design is on the page and every piece of it has landed.
+                    // Rejects if the page cannot start at all. A dead code does not
+                    // reject: the page starts a new shelf, as it does for anyone.
+  snapshot(),       // { code|null, hash, finish, totalKsh, sizeCm: {w, d, h},
+                    //   pieceCount, pieces: [{qty, name}], empty }
+  save(),           // Promise<code>, through /api/design as the share button does.
+                    // Rejects on an empty shelf.
+  presentBlob(),    // Promise<Blob>, the PNG the Present button makes, pixel for pixel.
+                    // Saves the design behind it, as the button does, because the
+                    // image prints its address. Rejects on an empty shelf, or if a
+                    // piece's geometry cannot load.
+  on(event, fn),    // 'change', after every edit that moves the design or the mode.
+                    // Returns the function that unsubscribes. Selecting a piece and
+                    // opening a sheet are not changes. A listener that throws is
+                    // logged and does not stop the tool.
+  setBottomInset(px) // Keeps px free under the page's own bottom bar, on the model,
+                    // the sheets and the modals, and re-fits the view. 0 gives it back.
+};
+```
+
+- `snapshot().code` is what the design would be saved under, or the code it was
+  opened from if it is unchanged; it is not a promise that it has been saved.
+  `pieces` are the invoice's lines, so omitted pieces are not in them and bookends
+  are. `pieceCount` is the pieces on the shelf, omitted included and bookends not,
+  as `/api/design` records it. `finish` is the design's own id: per-piece colours
+  stay in the hash.
+- **The bar is the caller's to draw**: fixed to the foot of the window, `px` tall.
+  It stands over the phone's safe area, so the page stops leaving room for that.
+  With the keyboard up the sheets stand on the keyboard, which covers the bar.
+
+### Rendering a saved design for another page
+
+`/builder/<CODE>?render=present` in a same-origin iframe, hidden any way you like
+(`display: none` works: nothing in it waits for an animation frame). It draws the
+design through the ordinary pipeline and posts one message to its parent:
+
+```js
+{ type: 'fw-present', code, blob, totalKsh, quotedTotalKsh }  // blob is the PNG
+{ type: 'fw-present', code, error }                           // and when it could not
+```
+
+It builds none of the interface, works out no placements, and loads no analytics:
+a picture a page asked for is nobody's visit. Opened on its own, with no parent to
+answer, the same address is just the builder. A cross-origin parent is told nothing.
+Changing a colour is not its job; that is done on the server.
+
+`totalKsh` is today's price. `quotedTotalKsh` is what the record was first saved
+at, which never changes, so where they differ the prices have moved since (see
+"Saved designs").
+
+Measured on 6 Nov 2026, Edge with a phone profile and a 4x CPU throttle against a
+local server sending Netlify's cache headers and brotli, on designs of 6 and 12
+pieces. No phone has run this yet: the GPU here was a software rasteriser and,
+separately, a laptop's, and they came out about the same.
+
+| | no network throttle | Slow 4G (1.6Mbps, 150ms) |
+|---|---|---|
+| empty cache, to the blob | 2.1 to 2.6s | 3.2 to 3.3s |
+| warm cache | 0.7 to 1.2s | 1.5 to 2.0s |
+
+An empty cache downloads about 260KB: scripts 106KB, geometry 88KB, fonts 31KB,
+stylesheet 13KB, catalogue 7KB, page 7KB, the rest 8KB. A warm load is about 3KB,
+but seven round trips, because the page, the stylesheet and the five scripts are on
+Netlify's default `max-age=0, must-revalidate`, which is what the difference
+between the two warm figures is.
+
 ## Three interfaces, one tool
 
 The viewport, the bottom bar, the pricing and the placement engine are identical
@@ -16,8 +92,8 @@ carries across switches (see "Switching down to Simple" below).
 | | Controls | Placement rules |
 |---|---|---|
 | **Simple** | a control column: unit type, width, height, colour, lamp, bookends | Design is generated from the spec — a plain run. Mirrors `/simplified-designer`. |
-| **Flexible** | one in-viewport `+` per free run end and per stack, each opening what fits there; tap a piece to swap/remove | Units may only butt directly against each other. Mirrors `/designer`. |
-| **Advanced** | every piece, from a searchable sheet, with a placement count each; rotate | Also offers the gapped unit spacing that bridging spans need. |
+| **Flexible** | one in-viewport `+` per free run end and per stack. A stack's puts the likely piece down, and a bar steps through what else fits there; an end's opens a list. Tap a piece to swap/remove | Units may only butt directly against each other. Mirrors `/designer`. |
+| **Advanced** | every piece, from a sheet in the order they are reached for; rotate | Also offers the gapped unit spacing that bridging spans need. |
 
 **The difference in one sentence: Flexible starts from a place on the shelf and
 asks what can go there; Advanced starts from a piece in the catalogue and asks
@@ -191,6 +267,134 @@ the markers that open a list.** Both halves are load-bearing:
   A marker that ghosts needs its piece framed; a marker that opens a list needs
   only itself.
 
+### Finding a piece in Advanced
+
+The add sheet is opened many times a day, mostly by somebody on a phone in a chat
+with a client, and typing is the slow part. So the list has to be useful before
+anything is typed.
+
+- **Every piece is on the list, always.** 57 modules and the bookend. Two rules
+  used to take rows away, and the search box could not see past either of them: a
+  piece with no place on the shelf right now was not offered at all, so "extension"
+  on an empty shelf or "deep" on a Standard one came back empty or short, as if the
+  piece did not exist; and the shortened cuts sat behind a "Show N" row, which also
+  threw away what had been typed. The reason for the second was real (listed flat
+  they doubled half the families), and ranking answers it without hiding anything.
+  A piece that does not fit is dimmed, says "no place yet", and cannot be pressed.
+- **One order**: what fits, then what this person has just reached for, then how
+  often a piece appears in the designs the business has sent (`PIECE_RANK` in
+  `engine.js`, from 264 designs in WhatsApp chats, August to November 2026). On a
+  phone the first screen is ten rows.
+- **The strip of chips is gone**, because the recent pieces now lead the list.
+- **The words under the box save typing it.** Base, Extension, Spacer, Hanger, Top
+  bar, Adapter, Booster: pressing one puts it in the box. That is the whole of what
+  they do, so there is one thing deciding what is listed, it is on screen, and it
+  can be typed onto ("base", then "d"). Typing can never be searching inside
+  something left selected. A line of plain words and not chips, scrolling sideways
+  rather than wrapping.
+- **The search takes the words people use** (`pieceTerms` in `engine.js`), in any
+  order and from the start of each word: "deep b", "base deep", "142", "142 cm",
+  "trimmed", and the shop's other names, "display bar", "hanging rail", "tier",
+  "desk". The piece's own name ranks above those. `scripts/test-builder.mjs` holds
+  every module in the catalogue to being found by its own name. The keyboard's Go
+  takes the first row.
+- **The row says width and price**, and no longer how many spots a piece has. It
+  was a number nobody chose by, and "no place yet" is the only thing about it that
+  changes what you do.
+- **A sheet with a search box keeps its height.** It used to shrink with the
+  results, standing on the floor of the page, so each letter moved the box down:
+  514px on a 390 x 844 phone, and past two letters neither the box nor anything
+  found was above a 300px keyboard. Now it is as tall as it will ever be from the
+  start.
+- **Sheets stand on the keyboard.** A phone's keyboard shrinks the visual viewport
+  and leaves the layout alone, so something fixed to the foot of the page is behind
+  it. `followKeyboard` puts the sheets in the part of the page that can be seen
+  while it is up, and the row of words gives its line back to the results.
+
+### What a tap on a marker does
+
+A placing marker previews the piece, then places it on the next tap; a mouse previews
+on hover, a keyboard on focus. All three go through one rule in the marker's click: if
+this marker's preview is not up yet, put it up and stop; if it is, place.
+
+**That comes out as two different gestures on two kinds of phone, and it is meant to
+stay that way.** iOS Safari does not focus a button when it is tapped, so the first
+tap's click finds no preview, shows the ghost and turns the disc into a tick, and the
+second places. Chrome on Android focuses the button on the way to its click, so the
+focus previews, the click finds a preview up, and one tap places. Elvis, who does most
+of the designing, is on an iPhone, where the ghost is a real check on a crowded shelf.
+The one sentence that explains this ("Tap again to place it") is shown once a visit whichever the phone, so
+on Android it describes a gesture that phone does not have.
+
+In November 2026 this was changed to one tap everywhere and, at Ben's request, put
+back the same week. Choosing a piece also briefly placed it outright where it had
+only one spot; that went too. Choosing always shows the markers.
+
+**A tap on the model is acted on at its click, not at pointerup.** On a touch screen
+the browser sends mousedown, mouseup and click after pointerup, hit-tested against
+the page as it then stands. Selecting a piece opens its menu centred on that piece,
+so a tap acted on at pointerup opened the menu under the finger and the click pressed
+whatever had just arrived there: 15% of taps on a piece at 390px and 21% at 360px,
+over a grid on the default design, and that included Remove and Omit, with nothing to
+say so.
+
+### Flexible: put it down, then change it where it stands
+
+`PLACE_AND_CYCLE` in `app.js`. Set it to false and the markers go back to opening
+their lists; nothing else needs touching.
+
+Flexible's person starts from a place and does not know the parts by name. A sheet of
+names asks them the one thing they cannot answer, and covers the shelf while it does.
+So the shelf answers instead:
+
+- **The `+` over a stack, or on an empty shelf, places at once.** The likely piece, from
+  `engine.likelyFirst`: an extension of the family already there, then what the shop
+  uses most. That first guess was right 70% of the time on a stack in the 264 designs
+  the business sent, which are sales designs and so only a stand-in for a customer's.
+- **A bar in the bottom row steps through what else fits there**, 3 to 8 things, wrapping
+  round, with the model, the total and the size changing at each step. It is at the
+  thumb and has a step at each edge, so the hand does not move and is never over the
+  piece being looked at. A control floating by the piece was the first idea, and it
+  would have stood on what it was showing and moved at each step as heights changed.
+- **Nothing asks to be confirmed.** The piece is already down, and whatever is done next
+  leaves it there: a tap anywhere, a tap on a piece for its menu, another `+`. Pressing
+  the `+` now above it for another level is one tap a level, where it was two.
+- **The `+` at the end of a run still opens its list.** The first guess there is right
+  only 59% of the time across about 8 options, and a wrong unit changes the shelf's whole
+  width, so it would cost more taps than it saves. What is picked from that list gets
+  the same bar, though, so trying the next width over no longer means Swap and a sheet.
+
+The markers look alike, ring or no ring, although one places and one opens a list.
+That is deliberate: both add something at that spot, there is nothing to get wrong by
+pressing either, and in Flexible the ring would only add weight over the shelf.
+
+Four things it rests on:
+
+- **Every stop is a whole design, worked out up front** from the shelf as it stood, so a
+  step only points `ui.design` at another one and cannot accumulate anything.
+- **Only the first placing is in the history.** Undo takes back the whole affair in one,
+  however many steps it took, and Redo restores the stop it was left on.
+- **A cycle is alive only while `ui.design` is its current stop** (`liveCycle`). A colour
+  change, an undo, a mode switch, anything: they make a new design, and that ends it
+  without them knowing it exists. Applied blindly, a step after a colour change would
+  have put the old colour back.
+- **A step never waits on the network.** The design, the name and the total change at
+  once; the piece appears when its geometry lands, and that redraw reads whatever
+  `ui.design` is by then, so a late arrival cannot bring back a stop that has been left.
+  The stops either side are fetched ahead (`ensureGeometry(ids, true)`), quietly: no
+  Loading pill and no error for something nobody has asked to see. If the stop on screen
+  cannot be fetched at all, it goes back to the last stop that was seen and can be drawn,
+  or to the shelf as it was, because a piece that is priced and invisible is the one
+  wrong state this could leave.
+
+The camera holds still between steps, because a shelf that rescales cannot be compared
+with itself a step ago. A stop that outgrows the view, as a lamp does, widens it, and the
+next step brings it back. On a phone the bar takes the floating buttons' row and they
+wait until it goes. On a desktop the arrow keys step and Escape leaves the piece.
+
+`designer_place` still fires for the first placing, and each step fires
+`designer_cycle`. Those two in GA4 are how to tell whether this is any use.
+
 ### Advanced keeps the piece in hand
 
 `commit` clears `ui.activeModuleId` for every edit except a placement in
@@ -234,8 +438,7 @@ unreachable — it was only ever called from `buildAddButtons`, which
 `buildOverlay` does not run in Advanced.
 
 A side with one place keeps its ordinary marker and its ghost: there is nothing
-to tell it apart from, and naming it would be labelling the only door in the
-room.
+to tell it apart from, and naming it would be labelling the only door in the room.
 
 ### Normalising the spacing
 
@@ -481,6 +684,15 @@ repeat POST must not replace the arrival details of whoever created it.
   printed on the image, or sent in the message, would be one that 404s. There is
   no separate "create a link" button: nobody ever wanted a link for its own
   sake, they wanted to send a picture or an order.
+- **A code says what the shelf is, not what it cost.** The hash covers
+  `serializeState`: finish, bookends, and each piece's id, type, origin, rotation,
+  placement, colour and omitted flag. No price is in it, so a price change moves
+  no code. The record's `total_ksh` is what the design came to when it was first
+  saved, and first write wins, so it stays that figure for good while the live page
+  works its total out from today's catalogue. To tell whether a quote has gone
+  stale, compare the two: `totalKsh` against `quotedTotalKsh` in the render's
+  message, or re-add the design's pieces from `catalog.json` against `total_ksh`
+  from `GET /api/design`.
 
 ## Bookends
 
@@ -778,3 +990,12 @@ cuts behind one row, and gained a strip of the pieces most recently reached for.
 The onboarding hint became one sentence shown once per person. Labelled pill
 markers were tried in Flexible in the same pass and taken out again: they read
 well and covered the shelf, which is the trade this page never makes.
+
+In November 2026 Advanced had a pass on a phone, for the sales team, who use it to
+design during a chat. The search stopped hiding anything, which undid the shortened
+cuts' row and the strip of recent pieces from September; the sheet stopped sinking
+behind the keyboard; and a tap on a piece stopped falling through to its menu. See
+"Finding a piece in Advanced" and "What a tap on a marker does". Flexible's `+` over a
+stack stopped opening a list in the same pass, as an experiment: see "Flexible: put it
+down, then change it where it stands". `window.FrameworkBuilder` and the render arrived in the same pass, for
+the staff app.

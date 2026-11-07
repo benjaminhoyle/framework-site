@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700&display=swap">
-    <link rel="stylesheet" href="/css/builder.css?v=164">
+    <link rel="stylesheet" href="/css/builder.css?v=175">
 
     <!--
       Nothing can render until the catalogue arrives, and the app's own scripts
@@ -36,7 +36,7 @@
         // with a stale catalogue silently loses whatever the catalogue gained,
         // which is exactly what a CDN or a browser cache will hand you a few
         // minutes after a deploy. Bump this whenever any of them changes.
-        window.frameworkDesignerVersion = '164';
+        window.frameworkDesignerVersion = '175';
         window.frameworkDesignerCatalog =
             fetch('/assets/shelving/catalog.json?v=' + window.frameworkDesignerVersion)
                 .then(function (response) {
@@ -364,11 +364,11 @@
         </div>
     </div>
 
-    <script src="/js/builder/engine.js?v=164" defer></script>
-    <script src="/js/builder/geometry.js?v=164" defer></script>
-    <script src="/js/builder/renderer.js?v=164" defer></script>
-    <script src="/js/builder/present.js?v=164" defer></script>
-    <script src="/js/builder/app.js?v=164" defer></script>
+    <script src="/js/builder/engine.js?v=175" defer></script>
+    <script src="/js/builder/geometry.js?v=175" defer></script>
+    <script src="/js/builder/renderer.js?v=175" defer></script>
+    <script src="/js/builder/present.js?v=175" defer></script>
+    <script src="/js/builder/app.js?v=175" defer></script>
 
     <!--
       Analytics loads after the designer is interactive. On a mid-range phone
@@ -377,6 +377,8 @@
     -->
     <script>
         window.addEventListener('load', function () {
+            // A render another page asked for in a hidden iframe is nobody's visit.
+            if (window.parent !== window && /[?&]render=/.test(location.search)) return;
             var started = false;
             var start = function () {
                 if (started) return;
@@ -426,6 +428,15 @@
             window.setTimeout(start, 4000);
         });
     </script>
+<!-- Only for someone signed in to the staff app. The cookie decides nothing but whether to look: /api/me decides. -->
+<script>
+  if (/(?:^|;\s*)fw_staff=1/.test(document.cookie) && !/[?&]render=/.test(location.search)) {
+    var staffBar = document.createElement('script');
+    staffBar.src = '/js/app/staff-bar.js';
+    staffBar.defer = true;
+    document.body.appendChild(staffBar);
+  }
+</script>
 </body>
 
 </html>

@@ -17,7 +17,9 @@
 // once `mode` is 'write'.
 
 import * as zoho from './_zoho.mjs';
+import { getStore } from '@netlify/blobs';
 import { TABLES, all, patch, create } from './_airtable.mjs';
+import { writeLog } from './_log.mjs';
 
 const ERROR = 'Error', WARN = 'Warning', INFO = 'Info';
 
@@ -747,7 +749,10 @@ export async function reconcile({ mode = 'read-only', trigger = 'Manual', since 
     const id = String(c.fields['Zoho Contact ID'] || '').trim();
     if (id) seenClientId.set(id, (seenClientId.get(id) || []).concat(c));
     const n = tidyName(c.fields.Name);
-    if (n) seenClientName.set(n, (seenClientName.get(n) || []).concat(c));
+    // A lead's row has no contact and no orders yet, and shares a first name freely. It only
+    // starts to matter once it is someone in the books.
+    const isLead = !id && !(c.fields.Orders || []).length;
+    if (n && !isLead) seenClientName.set(n, (seenClientName.get(n) || []).concat(c));
   }
   for (const [id, rows] of seenClientId) {
     if (rows.length > 1) {
@@ -1473,7 +1478,7 @@ export async function record(report) {
     const key = `${f.check}|${f.event}`;
     const hit = seen.get(key);
     if (hit) {
-      touch.push({ id: hit.id, fields: { 'Last Seen': report.finished, Run: [] } });
+      touch.push({ id: hit.id, fields: { 'Last Seen': report.finished } });
     } else {
       fresh.push({ fields: {
         Event: f.event, Severity: f.severity, Check: f.check,
@@ -1512,7 +1517,9 @@ export async function record(report) {
       .map((r) => ({ id: r.id, fields: { Status: 'Resolved', 'Last Seen': report.finished } }))
     : [];
 
-  const runs = await create(TABLES.syncRuns, [{
+  // Each pass goes to the one log (_log.mjs), under the same field names Sync - Runs had. Sync - Log
+  // stays in Airtable: that is what a person has to act on, and it is tied to orders.
+  await writeLog(getStore, 'sync', {
     fields: {
       Run: report.started,
       Started: report.started,
@@ -1540,11 +1547,10 @@ export async function record(report) {
         // zeroes. It goes here, and only when there is something to say.
         + (report.clientWrites ? `\n${report.clientWrites} client${report.clientWrites === 1 ? '' : 's'} given a KRA PIN` : '')
     }
-  }]);
-  const runId = runs[0].id;
+  });
 
-  if (fresh.length) await create(TABLES.syncLog, fresh.map((r) => ({ fields: { ...r.fields, Run: [runId] } })));
+  if (fresh.length) await create(TABLES.syncLog, fresh);
   if (resolved.length) await patch(TABLES.syncLog, resolved);
-  if (touch.length) await patch(TABLES.syncLog, touch.map((r) => ({ id: r.id, fields: { ...r.fields, Run: [runId] } })));
-  return { runId, created: fresh.length, touched: touch.length, resolved: resolved.length };
+  if (touch.length) await patch(TABLES.syncLog, touch);
+  return { created: fresh.length, touched: touch.length, resolved: resolved.length };
 }

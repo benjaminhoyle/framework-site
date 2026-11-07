@@ -1239,6 +1239,134 @@ test("a leg turning a corner is a run of its own", () => {
   assert.equal(runs.length, 2, "the corner and its turn are two runs");
 });
 
+// --- finding a piece ------------------------------------------------------
+
+test("every piece in the catalogue answers to its own name", () => {
+  // The add sheet's search used to hide what did not fit and the shortened cuts.
+  // Nothing in the catalogue may be out of reach of its own name.
+  for (const module of Object.values(catalog.modules)) {
+    const terms = engine.pieceTerms(module);
+    const name = module.label.replace(/[()]/g, "");
+    assert.ok(engine.pieceMatches(terms, name), `${module.id} is found as "${name}"`);
+    assert.ok(engine.pieceMatches(terms, name.toUpperCase()), `${module.id} ignores case`);
+    // Half-typed, which is what a phone gets.
+    assert.ok(engine.pieceMatches(terms, name.split(" ").map((word) => word.slice(0, 3)).join(" ")),
+      `${module.id} is found from the start of each word`);
+  }
+});
+
+test("the search answers to the words the shop uses", () => {
+  const found = (query) => Object.values(catalog.modules)
+    .filter((module) => engine.pieceMatches(engine.pieceTerms(module), query))
+    .map((module) => module.id);
+  const trimmed = Object.values(catalog.modules).filter((module) => module.trimmed).map((module) => module.id);
+  assert.deepEqual(found("trimmed").sort(), trimmed.sort(), "every shortened cut, by that word");
+  assert.ok(found("deep base").includes("deep_base_trimmed"), "a cut is found under its full name too");
+  assert.deepEqual(found("base deep"), found("deep base"), "in either order");
+  for (const [query, id] of [
+    ["display bar", "standard_top_bar"],
+    ["hanging rail", "deep_hanger"],
+    ["desk", "wide_spacer_base"],
+    ["142", "deep_base"],
+    ["142 cm", "wide_extension"],
+    ["142cm", "wide_extension"],
+    ["52", "compact_base_trimmed"]
+  ]) assert.ok(found(query).includes(id), `"${query}" finds ${id}`);
+  assert.deepEqual(found("zzz"), []);
+  assert.ok(!found("2").includes("standard_booster"), "a column riser's 2 cm is no way to ask for one");
+  assert.ok(engine.pieceMatches(engine.pieceTerms(catalog.modules.lamp), "lamp"));
+  const bookend = rawCatalog.accessories.bookend;
+  assert.ok(engine.pieceMatches(engine.pieceTerms(bookend), "bookend"));
+});
+
+test("the order pieces are listed in names only real pieces", () => {
+  const known = new Set(Object.keys(catalog.modules).concat(Object.keys(rawCatalog.accessories)));
+  assert.equal(new Set(engine.PIECE_RANK).size, engine.PIECE_RANK.length, "no piece is listed twice");
+  for (const id of engine.PIECE_RANK) assert.ok(known.has(id), `${id} is in the catalogue`);
+  assert.ok(engine.pieceRank("standard_extension") < engine.pieceRank("broad_top_bar"));
+  assert.equal(engine.pieceRank("not_a_piece"), engine.PIECE_RANK.length, "anything else follows, unranked");
+});
+
+// --- tapping a marker in Advanced ------------------------------------------
+
+test("Advanced's marker previews before it places, and choosing a piece never places", () => {
+  const app = fs.readFileSync(path.join(ROOT, "js/builder/app.js"), "utf8").replace(/\r\n/g, "\n");
+  // iOS does not focus a tapped button, so this is what makes its first tap a preview.
+  // Android focuses it on the way to the click, which is why one tap places there.
+  assert.ok(app.includes('button.addEventListener("focus", preview);'), "focus previews, whatever the pointer");
+  assert.ok(app.includes("if (preview()) return; // first tap: show what will happen"), "the click previews first");
+  assert.ok(app.includes("Tap again to place it."), "the sentence that teaches it");
+  const choose = app.slice(app.indexOf("function chooseModule"), app.indexOf("const RECENT_LIMIT"));
+  assert.ok(!choose.includes("placeCandidate"), "choosing a piece shows its markers and stops");
+  // Taps on the model stay at the click, or the menu under the finger takes them.
+  assert.ok(app.includes('dom.canvas.addEventListener("click", onCanvasClick);'));
+});
+
+// --- Flexible: put it down, then change it where it stands -------------------
+
+test("the first guess on a stack is an extension of the family already there", () => {
+  const entries = (ids) => ids.map((id) => ({ module: catalog.modules[id] }));
+  const order = (ids, family) => engine.likelyFirst(entries(ids), family).map((entry) => entry.module.id);
+  assert.equal(order(["lamp", "standard_spacer", "standard_extension", "broad_top_bar"], "standard")[0], "standard_extension");
+  assert.equal(order(["lamp", "deep_spacer", "deep_extension", "standard_extension"], "deep")[0], "deep_extension",
+    "its own family, though Standard is what the shop uses most");
+  assert.equal(order(["standard_top_bar", "lamp", "standard_spacer"], "standard")[0], "lamp",
+    "with no extension to offer, what the shop uses most");
+  assert.equal(order(["corner_base", "deep_base", "standard_base"], null)[0], "standard_base", "an empty shelf");
+  const input = entries(["lamp", "standard_extension"]);
+  engine.likelyFirst(input, "standard");
+  assert.equal(input[0].module.id, "lamp", "leaves what it was given alone");
+});
+
+test("each stop of a cycle is a design of its own, built on the shelf as it stood", () => {
+  // The whole of Undo and of a step rests on this: stops share nothing that one
+  // of them can change, and the shelf they came from is left exactly as it was.
+  let state = engine.createState(catalog);
+  state = engine.applyCandidate(catalog, state, engine.generateCandidates(catalog, state, "standard_base", { adjacentBasesOnly: true })[0]);
+  const before = JSON.stringify(engine.serializeState(state));
+  const stops = ["standard_extension", "standard_spacer", "lamp", "standard_top_bar"].map((id) => {
+    const [candidate] = engine.generateCandidates(catalog, state, id, { adjacentBasesOnly: true });
+    assert.ok(candidate, `${id} fits on a Standard Base`);
+    return { id, design: engine.applyCandidate(catalog, state, candidate) };
+  });
+  assert.equal(JSON.stringify(engine.serializeState(state)), before, "the shelf is untouched");
+  for (const stop of stops) {
+    assert.equal(stop.design.instances.length, 2);
+    assert.equal(stop.design.instances[1].moduleId, stop.id, "its own piece, and no other stop's");
+    assert.equal(stop.design.instances[0].moduleId, "standard_base");
+  }
+  assert.equal(new Set(stops.map((stop) => JSON.stringify(engine.serializeState(stop.design)))).size, stops.length);
+});
+
+test("place and cycle hangs off one switch and stays out of the other interfaces", () => {
+  const app = fs.readFileSync(path.join(ROOT, "js/builder/app.js"), "utf8").replace(/\r\n/g, "\n");
+  const uses = app.split("PLACE_AND_CYCLE").length - 1;
+  assert.ok(app.includes("const PLACE_AND_CYCLE = true;"), "the switch is there");
+  assert.equal(uses, 4, "declared, explained in one comment, and read by the two functions that build the markers");
+  assert.ok(app.includes('if (cycle && (ui.mode !== "standard" || cycle.stops[cycle.index].design !== ui.design)) ui.cycle = null;'),
+    "a cycle lives in Flexible only, and only while the design is its current stop");
+  const start = app.slice(app.indexOf("function startCycle"), app.indexOf("function liveCycle"));
+  assert.equal(start.split("commit(").length - 1, 2, "one history entry, and the refusal");
+  const steps = app.slice(app.indexOf("function goToStop"), app.indexOf("function endCycle"));
+  assert.ok(!steps.includes("commit(") && !steps.includes("pushHistory"), "a step is not a history entry");
+  // Advanced places through its own markers, and Simple has none.
+  const markers = app.slice(app.indexOf("function buildCandidateMarkers"), app.indexOf("function fitToCandidates"));
+  assert.ok(!markers.includes("Cycle"), "Advanced's markers know nothing of it");
+});
+
+// --- the staff bar's API and the headless render ----------------------------
+
+test("the page's API and the render mode are all there", () => {
+  const app = fs.readFileSync(path.join(ROOT, "js/builder/app.js"), "utf8");
+  const page = fs.readFileSync(path.join(ROOT, "builder.html"), "utf8");
+  for (const name of ["ready,", "snapshot: designSnapshot", "save: saveForCaller", "presentBlob,", "on(event, listener)", "setBottomInset\n"]) {
+    assert.ok(app.replace(/\r\n/g, "\n").includes(name), `window.FrameworkBuilder has ${name.trim()}`);
+  }
+  // A hidden render is nobody's visit: if this goes, every picture a client page
+  // asks for reaches Meta and Google as a page view.
+  assert.match(page, /window\.parent !== window && \/\[\?&\]render=\/\.test\(location\.search\)\) return;/);
+});
+
 if (failures) {
   console.error(`\n${failures} failing test${failures === 1 ? "" : "s"}`);
   process.exit(1);

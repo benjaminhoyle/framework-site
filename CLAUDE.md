@@ -166,6 +166,12 @@ node scripts/export-glb.mjs --all --out-dir /tmp/glb    # every catalogue design
 node scripts/test-design-glb.mjs  # the file, measured against the shelf it claims to be
 ```
 
+## /app, the staff app
+
+Clients, their designs, invoices and deliveries, behind one Google sign-in. `docs/staff-app.md` is the account of it. The
+test for every decision: delete the app and lose only the interface, because Airtable and Zoho hold every fact. `/builder`
+loads its staff strip only when the `fw_staff` cookie is set, so the public never downloads it.
+
 ## Analytics and the event lake
 
 `js/site.js` emits checkpoint events to `/api/track` (Netlify Blobs); the ops

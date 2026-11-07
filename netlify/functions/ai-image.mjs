@@ -8,7 +8,7 @@ function validJobId(jobId) {
 }
 
 export default async (request) => {
-  const denied = refuse(request);
+  const denied = refuse(request, { module: 'studio' });
   if (denied) return denied;
   const url = new URL(request.url);
   const jobId = url.searchParams.get("id") || "";

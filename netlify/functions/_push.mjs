@@ -332,8 +332,9 @@ export function contactDetails(contact) {
  * contact-level `phone`/`mobile` in a Zoho response are read-through copies of
  * that person's, and sending them at the top level silently does nothing.
  */
-export function newContactPayload({ first_name, last_name, phone, address, pin }) {
-  const name = contactName(first_name, last_name);
+export function newContactPayload({ first_name, last_name, phone, address, pin, company }) {
+  // Invoiced to a company: the company is the name on the invoice, and the person stays its contact.
+  const name = String(company || '').trim() || contactName(first_name, last_name);
   const person = {
     first_name: String(first_name || '').trim(),
     last_name: String(last_name || '').trim(),
@@ -342,7 +343,8 @@ export function newContactPayload({ first_name, last_name, phone, address, pin }
   if (phone) person.mobile = String(phone).trim();
   const payload = {
     contact_name: name,
-    customer_sub_type: 'individual',
+    customer_sub_type: String(company || '').trim() ? 'business' : 'individual',
+    ...(String(company || '').trim() ? { company_name: String(company).trim() } : {}),
     contact_type: 'customer',
     first_name: person.first_name,
     last_name: person.last_name,
@@ -527,13 +529,16 @@ export function contactUpdate(contact, { phone, address, pin, today }) {
  * as well as in the hash; either is accepted.
  */
 export function alreadyRaised(invoices, code, { customerId = null, name = null } = {}) {
-  const want = String(code || '').toUpperCase();
-  if (!want) return null;
+  // Either side can be several codes, "A, B". Any shelf in common is enough: raising A and
+  // then A with B would bill A twice.
+  const split = (v) => String(v || '').toUpperCase().split(/[,\s]+/).filter(Boolean);
+  const want = split(code);
+  if (!want.length) return null;
   const norm = (v) => String(v || '').trim().toLowerCase().replace(/\s+/g, ' ');
   return (invoices || []).find((inv) => {
     if (inv.status === 'void') return false;
-    const have = inv.cf_design_code ?? inv.custom_field_hash?.cf_design_code;
-    if (String(have || '').toUpperCase() !== want) return false;
+    const have = split(inv.cf_design_code ?? inv.custom_field_hash?.cf_design_code);
+    if (!have.some((c) => want.includes(c))) return false;
     if (customerId) return String(inv.customer_id || '') === String(customerId);
     return Boolean(norm(name)) && norm(inv.customer_name) === norm(name);
   }) || null;

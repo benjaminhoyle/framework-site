@@ -23,7 +23,7 @@ const RANK = { Error: 0, Warning: 1, Info: 2 };
 const rank = (s) => (s in RANK ? RANK[s] : RANK.Info);
 
 export default async (req) => {
-  const denied = refuse(req);
+  const denied = refuse(req, { module: 'monitor' });
   if (denied) return denied;
 
   let rows;
