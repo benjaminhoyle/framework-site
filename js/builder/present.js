@@ -175,7 +175,8 @@ window.FrameworkDesignerPresent = (function () {
       context.font = `700 ${LIST_REFERENCE_PX}px ${FONT}`;
       const count = context.measureText(`${line.quantity} ×`).width;
       context.font = `500 ${LIST_REFERENCE_PX}px ${FONT}`;
-      const rest = context.measureText(line.label).width + context.measureText(amountText(line)).width;
+      const rest = context.measureText(line.label).width + context.measureText(amountText(line)).width +
+        (line.note ? context.measureText(` ${line.note}`).width : 0);
       // The two gaps in the row, at the same reference size.
       widest = Math.max(widest, count + rest + LIST_REFERENCE_PX * 1.2);
     }
@@ -237,11 +238,15 @@ window.FrameworkDesignerPresent = (function () {
       context.fillStyle = INK;
       context.textAlign = "left";
       const labelLeft = left + countWidth + fontSize * 0.5;
-      context.fillText(
-        fitText(context, line.label, right - amountWidth - fontSize * 0.7 - labelLeft),
-        labelLeft,
-        middle
-      );
+      const noteText = line.note ? ` ${line.note}` : "";
+      const noteWidth = noteText ? context.measureText(noteText).width : 0;
+      const labelText = fitText(context, line.label, right - amountWidth - fontSize * 0.7 - labelLeft - noteWidth);
+      context.fillText(labelText, labelLeft, middle);
+      if (noteText) {
+        // Slightly greyer than the label, but still readable: not hidden.
+        context.fillStyle = MUTED;
+        context.fillText(noteText, labelLeft + context.measureText(labelText).width, middle);
+      }
     });
 
     if (hidden > 0) {

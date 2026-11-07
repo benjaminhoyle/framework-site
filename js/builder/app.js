@@ -2538,7 +2538,13 @@
         return;
       }
       total += unit * quantity;
-      lines.push({ label: moduleLabel(module), quantity, amount: unit * quantity });
+      lines.push({
+        label: moduleLabel(module),
+        quantity,
+        amount: unit * quantity,
+        // The lamp is sold without its shade and bulb; the design image says so.
+        note: module.role === "lamp" ? "(excl. shade and bulb)" : null
+      });
     });
 
     const bookendPrice = ui.catalog.accessoryPrices && ui.catalog.accessoryPrices.bookend;
@@ -2809,6 +2815,7 @@
       lines: breakdown.lines.map((line) => ({
         label: line.label,
         quantity: line.quantity,
+        note: line.note || null,
         // The unit price: the list runs in two columns for a long design, where
         // there is no room for a line total as well, and the unit price is the
         // one a client asks about.
